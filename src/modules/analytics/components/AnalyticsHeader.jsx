@@ -9,6 +9,22 @@ function AnalyticsHeader({ onOpenCharts, onToggleBoard, isBoardOpen }) {
         <p className="analytics-page-subtitle mb-0">
           Входящий поток, выплаты, риск по обязательствам и структура кошельков в одном модуле.
         </p>
+
+        <div className="analytics-header-motion" aria-hidden="true">
+          <div className="analytics-header-motion-label">
+            <span className="analytics-header-motion-dot" />
+            <span>Live analytics stream</span>
+          </div>
+          <div className="analytics-header-wave">
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-1" />
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-2" />
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-3" />
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-4" />
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-5" />
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-6" />
+            <span className="analytics-header-wave-bar analytics-header-wave-bar-7" />
+          </div>
+        </div>
       </div>
 
       <div className="d-flex flex-column align-items-lg-end gap-2">
