@@ -1,0 +1,1708 @@
+import AnalyticsHeader from "./components/AnalyticsHeader";
+import MetricsGrid from "./components/MetricsGrid";
+import ChartCard from "./components/ChartCard";
+import AnalyticsTabs from "./components/AnalyticsTabs";
+import AnalyticsDataTable from "./components/AnalyticsDataTable";
+import AnalyticsTable from "./components/AnalyticsTable";
+import AnalyticsInsights from "./components/AnalyticsInsights";
+import AnalyticsScenarios from "./components/AnalyticsScenarios";
+import AnalyticsPriorityActions from "./components/AnalyticsPriorityActions";
+import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSection";
+import AnalyticsIdeaCapture from "./components/AnalyticsIdeaCapture";
+import EmptyState from "./components/EmptyState";
+import LoadingState from "./components/LoadingState";
+import UsersGrowthChart from "./charts/UsersGrowthChart";
+import RevenueChart from "./charts/RevenueChart";
+import ConversionFunnelChart from "./charts/ConversionFunnelChart";
+import TrafficSourcesChart from "./charts/TrafficSourcesChart";
+import TrafficLifecycleChart from "./charts/TrafficLifecycleChart";
+import RetentionChart from "./charts/RetentionChart";
+import CampaignPerformanceChart from "./charts/CampaignPerformanceChart";
+import useAnalyticsData from "./hooks/useAnalyticsData";
+import { exportAnalyticsCsv } from "./services/analyticsApi";
+import formatCurrency from "./utils/formatCurrency";
+
+const BOARD_URL = import.meta.env.VITE_ANALYTICS_BOARD_URL || "";
+import "./styles/analytics.css";
+import { useState } from "react";
+
+function downloadCsv(csvContent) {
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "analytics-export-ru.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function getRiskTone(value) {
+  return value > 0 ? "danger" : "success";
+}
+
+function formatPercent(value) {
+  return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function formatDays(value) {
+  if (!Number.isFinite(value) || value <= 0) return "0 дн";
+  return value >= 10 ? `${Math.round(value)} дн` : `${value.toFixed(1)} дн`;
+}
+
+function getMetricValue(metrics = [], title) {
+  return metrics.find((item) => item.title === title)?.value ?? 0;
+}
+
+const ACTIVATION_PERIOD_OPTIONS = [
+  { value: "1d", label: "За день" },
+  { value: "30d", label: "За месяц" },
+  { value: "365d", label: "За год" },
+  { value: "all", label: "За весь период" },
+];
+
+const ACTIVATION_PAGE_SIZE = 10;
+
+function getLatestLifecycleDate(rows = []) {
+  const timestamps = rows
+    .map((row) => new Date(row.date).getTime())
+    .filter((value) => Number.isFinite(value));
+
+  return timestamps.length ? new Date(Math.max(...timestamps)) : null;
+}
+
+function filterLifecycleRows(rows = [], period) {
+  if (period === "all") return rows;
+
+  const latestDate = getLatestLifecycleDate(rows);
+  if (!latestDate) return rows;
+
+  const daysMap = {
+    "1d": 1,
+    "30d": 30,
+    "365d": 365,
+  };
+
+  const selectedDays = daysMap[period] ?? 30;
+  const fromTime = latestDate.getTime() - (selectedDays - 1) * 24 * 60 * 60 * 1000;
+
+  return rows.filter((row) => {
+    const rowTime = new Date(row.date).getTime();
+    return Number.isFinite(rowTime) && rowTime >= fromTime;
+  });
+}
+
+function buildLifecycleSummary(rows = [], periodLabel) {
+  const summary = rows.reduce(
+    (accumulator, row) => {
+      accumulator.registrations += Number(row.registrations || 0);
+      accumulator.walletConnects += Number(row.walletConnects || 0);
+      accumulator.cycleActivations += Number(row.cycleActivations || 0);
+      return accumulator;
+    },
+    { registrations: 0, walletConnects: 0, cycleActivations: 0 },
+  );
+
+  const walletConnectRate = summary.registrations ? (summary.walletConnects / summary.registrations) * 100 : 0;
+  const cycleActivationRate = summary.walletConnects ? (summary.cycleActivations / summary.walletConnects) * 100 : 0;
+
+  return [
+    {
+      period: periodLabel,
+      registrations: summary.registrations,
+      walletConnects: summary.walletConnects,
+      walletConnectRate,
+      cycleActivations: summary.cycleActivations,
+      cycleActivationRate,
+    },
+  ];
+}
+
+function scrollToSection(sectionId) {
+  if (typeof document === "undefined") return;
+
+  window.requestAnimationFrame(() => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+}
+
+function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [isBoardOpen, setIsBoardOpen] = useState(false);
+  const [activationPeriod, setActivationPeriod] = useState("30d");
+  const [activationPage, setActivationPage] = useState(1);
+  const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
+  const { data, isLoading } = useAnalyticsData();
+
+  if (isLoading) {
+    return <LoadingState />;
+  }
+
+  if (!data || !data.table.length) {
+    return (
+      <main className="analytics-layout">
+        <EmptyState />
+      </main>
+    );
+  }
+
+  const gapTone = getRiskTone(data.kpis.gapToday);
+  const riskTone = data.kpis.firstRiskDate === "без риска" ? "success" : "danger";
+  const cashPosition = data.kpis.cashPosition || {};
+  const trafficTabData = data.tabsData?.traffic || {
+    summary: { title: "Нет данных по трафику", description: "Пока нет live-данных для этого среза.", bullets: [] },
+    metrics: [],
+    countries: [],
+    sources: [],
+    funnel: [],
+    conversion: [],
+    qualityRows: [],
+    lifecycleRows: [],
+    lifecycleTotals: [],
+    sourceQualityRows: [],
+    timeline: [],
+    countryShare: [],
+  };
+  const productsTabData = data.tabsData?.products || { metrics: [], rows: [] };
+  const reinvestTabData = data.tabsData?.reinvest || {
+    summary: { title: "Нет данных по реинвесту", description: "Пока нет данных по возврату капитала.", bullets: [] },
+    metrics: [],
+    byProduct: [],
+    byCountry: [],
+    timeline: [],
+    productShare: [],
+  };
+  const filteredLifecycleRows = filterLifecycleRows(trafficTabData.lifecycleRows, activationPeriod);
+  const activationTotalPages = Math.max(1, Math.ceil(filteredLifecycleRows.length / ACTIVATION_PAGE_SIZE));
+  const safeActivationPage = Math.min(activationPage, activationTotalPages);
+  const pagedLifecycleRows = filteredLifecycleRows.slice(
+    (safeActivationPage - 1) * ACTIVATION_PAGE_SIZE,
+    safeActivationPage * ACTIVATION_PAGE_SIZE,
+  );
+  const activationPeriodLabel = ACTIVATION_PERIOD_OPTIONS.find((option) => option.value === activationPeriod)?.label ?? "За период";
+  const filteredLifecycleTotals = buildLifecycleSummary(filteredLifecycleRows, activationPeriodLabel);
+  const outgoingToday = cashPosition.outgoingFact ?? data.kpis.outgoingToday ?? 0;
+  const incomingToday = cashPosition.incomingFact ?? data.kpis.incomingToday ?? data.kpis.factToday ?? 0;
+  const contractNetFlowToday = data.kpis.contractNetFlowToday ?? incomingToday - outgoingToday;
+  const averageDailyContractLoad = (data.kpis.obligations7d + data.kpis.referralBurden + data.kpis.platformFee) / 7;
+  const runwayDays = averageDailyContractLoad > 0 ? (cashPosition.availableCash ?? 0) / averageDailyContractLoad : 0;
+  const outgoingCoverage = outgoingToday > 0 ? (incomingToday / outgoingToday) * 100 : 100;
+  const reinvestCapitalRate = getMetricValue(reinvestTabData.metrics, "Reinvest capital rate");
+  const repeatDepositRate = getMetricValue(reinvestTabData.metrics, "Repeat deposit rate");
+  const overviewOperations = data.overviewOperations || { periods: [], cycleTypes: [] };
+  const next72h = data.next72h || [];
+  const yesterdaySnapshot = overviewOperations.periods.find((item) => item.period === "Вчера") || null;
+  const todaySnapshot = overviewOperations.periods.find((item) => item.period === "Сегодня") || null;
+  const weekSnapshot = overviewOperations.periods.find((item) => item.period === "7 дней") || null;
+  const yesterdayNetFlow = (yesterdaySnapshot?.incoming || 0) - (yesterdaySnapshot?.outgoing || 0);
+
+  function handleOpenCharts() {
+    setActiveTab("overview");
+    setGraphsOpenSignal((current) => current + 1);
+    window.setTimeout(() => scrollToSection("overview-graphs"), 60);
+  }
+
+  const primaryKpis = [
+    {
+      title: "Пришло сегодня",
+      value: cashPosition.incomingFact ?? data.kpis.factToday,
+      variant: "currency",
+      tone: "success",
+      icon: "inflow",
+      statusLabel: "вход",
+      description: "Новый приток за день.",
+      emphasis: true,
+    },
+    {
+      title: "Выплаты сегодня",
+      value: cashPosition.outgoingFact ?? 0,
+      variant: "currency",
+      tone: (cashPosition.outgoingFact || 0) > 0 ? "accent" : "default",
+      icon: "claim",
+      statusLabel: "выход",
+      description: "Всё, что ушло за день.",
+      emphasis: true,
+    },
+    {
+      title: "Цель на сегодня",
+      value: data.kpis.targetToday,
+      variant: "currency",
+      tone: gapTone,
+      icon: "target",
+      statusLabel: `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
+      description: `План дня с учётом хвоста. Уже закрыто ${data.kpis.factToday}.`,
+      emphasis: true,
+      pulse: gapTone === "danger",
+    },
+    {
+      title: "Доступный остаток",
+      value: cashPosition.availableCash ?? 0,
+      variant: "currency",
+      tone: "accent",
+      icon: "wallet",
+      statusLabel: cashPosition.closingBalance ? `баланс ${cashPosition.closingBalance}` : "cash",
+      description: "Свободные деньги после резервов.",
+      emphasis: true,
+    },
+    {
+      title: "Первая дата риска",
+      value: data.kpis.firstRiskDate,
+      variant: "text",
+      tone: riskTone,
+      icon: "accrued",
+      statusLabel: data.kpis.firstRiskGap ? `${data.kpis.firstRiskGap}` : "нет",
+      description: "Ближайшая дата кассового риска.",
+      pulse: riskTone === "danger",
+      emphasis: true,
+    },
+  ];
+
+  const structureKpis = [
+    { title: "Требуемый новый приток", value: data.kpis.requiredNewMoney, variant: "currency", tone: "accent", icon: "inflow", statusLabel: "30д", description: "Нужно на 30 дней." },
+    { title: "Реферальная нагрузка", value: data.kpis.referralBurden, variant: "currency", icon: "network", statusLabel: "7д", description: "Ближайшая рефералка." },
+    { title: "Комиссия платформы", value: data.kpis.platformFee, variant: "currency", icon: "fee", statusLabel: "7д", description: "Ближайшая комиссия." },
+    { title: "Ваш остаток", value: data.kpis.operatorNet, variant: "currency", tone: "accent", icon: "wallet", statusLabel: "net", description: "После обязательств." },
+    { title: "Можно забрать сейчас", value: data.kpis.claimableNow, variant: "currency", tone: "success", icon: "claim", statusLabel: "claim", description: "Уже доступно." },
+    { title: "Начислено, но не выведено", value: data.kpis.accruedLater, variant: "currency", tone: "accent", icon: "accrued", statusLabel: "accrued", description: "Ещё не забрано." },
+  ];
+
+  const contractPulseKpis = [
+    {
+      title: "Чистый поток дня",
+      value: contractNetFlowToday,
+      variant: "currency",
+      tone: contractNetFlowToday >= 0 ? "success" : "danger",
+      icon: "fact",
+      statusLabel: contractNetFlowToday >= 0 ? "plus" : "минус",
+      description: "Что осталось после всех выходов дня.",
+      pulse: contractNetFlowToday < 0,
+    },
+    {
+      title: "Покрытие исходящего потока",
+      value: outgoingCoverage,
+      variant: "percent",
+      tone: outgoingCoverage >= 100 ? "success" : "danger",
+      icon: "target",
+      statusLabel: `${formatCurrency(outgoingToday)}`,
+      description: "Перекрыл ли входящий поток все выплаты дня.",
+      pulse: outgoingCoverage < 100,
+    },
+    {
+      title: "Запас контракта",
+      value: formatDays(runwayDays),
+      variant: "text",
+      tone: runwayDays >= 7 ? "success" : runwayDays >= 3 ? "accent" : "danger",
+      icon: "calendar",
+      statusLabel: formatCurrency(cashPosition.availableCash ?? 0),
+      description: "На сколько дней хватит текущего остатка.",
+      pulse: runwayDays < 3,
+    },
+    {
+      title: "Возврат в контракт",
+      value: reinvestCapitalRate,
+      variant: "percent",
+      tone: reinvestCapitalRate >= 35 ? "success" : reinvestCapitalRate >= 20 ? "accent" : "danger",
+      icon: "claim",
+      statusLabel: formatPercent(repeatDepositRate),
+      description: "Сколько капитала вернулось обратно.",
+    },
+  ];
+
+  const operationalSnapshotKpis = [
+    {
+      title: "Входящий вчера",
+      value: yesterdaySnapshot?.incoming || 0,
+      variant: "currency",
+      icon: "inflow",
+      statusLabel: "вчера",
+      description: "Быстрое сравнение со сегодня.",
+    },
+    {
+      title: "Выплачено за 7 дней",
+      value: weekSnapshot?.outgoing || 0,
+      variant: "currency",
+      icon: "claim",
+      statusLabel: "7д",
+      description: "Полный исходящий поток недели.",
+    },
+    {
+      title: "Новые деньги сегодня",
+      value: todaySnapshot?.newMoney || 0,
+      variant: "currency",
+      icon: "users",
+      statusLabel: todaySnapshot?.incoming ? `${Math.round(((todaySnapshot?.newMoney || 0) / todaySnapshot.incoming) * 100)}%` : "0%",
+      description: "Деньги от новых пользователей.",
+    },
+    {
+      title: "Повторные деньги сегодня",
+      value: todaySnapshot?.existingMoney || 0,
+      variant: "currency",
+      icon: "wallet",
+      statusLabel: todaySnapshot?.incoming ? `${Math.round(((todaySnapshot?.existingMoney || 0) / todaySnapshot.incoming) * 100)}%` : "0%",
+      description: "Деньги от возврата базы.",
+    },
+    {
+      title: "Выплачено вчера",
+      value: yesterdaySnapshot?.outgoing || 0,
+      variant: "currency",
+      icon: "claim",
+      statusLabel: "вчера",
+      description: "Полный исходящий поток вчера.",
+    },
+    {
+      title: "Чистый поток вчера",
+      value: yesterdayNetFlow,
+      variant: "currency",
+      tone: yesterdayNetFlow >= 0 ? "success" : "danger",
+      icon: "fact",
+      statusLabel: yesterdayNetFlow >= 0 ? "plus" : "минус",
+      description: "Что осталось после вчерашнего дня.",
+      pulse: yesterdayNetFlow < 0,
+    },
+  ];
+
+  const trafficToMoneyKpis = [
+    {
+      title: "Регистрации сегодня",
+      value: trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0,
+      icon: "users",
+      statusLabel: "today",
+      description: "Новые регистрации за день.",
+    },
+    {
+      title: "Подключили кошелёк",
+      value: trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0,
+      icon: "connected",
+      statusLabel:
+        trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%",
+      description: "Дошли до wallet connect.",
+    },
+    {
+      title: "Активировали цикл",
+      value: trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0,
+      icon: "calendar",
+      statusLabel:
+        trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%",
+      description: "Запустили smart-cycle.",
+    },
+    {
+      title: "Деньги на 1 активацию",
+      value:
+        (todaySnapshot?.cycleActivations || 0) > 0
+          ? (todaySnapshot?.incoming || 0) / Math.max(todaySnapshot?.cycleActivations || 1, 1)
+          : 0,
+      variant: "currency",
+      icon: "inflow",
+      statusLabel: formatCurrency(todaySnapshot?.incoming || 0),
+      description: "Средний вклад одной активации.",
+    },
+  ];
+
+  const web3Cards = [
+    { title: "Активные кошельки", value: data.kpis.activeWallets, icon: "active-wallet", statusLabel: "актив", description: "Кошельки с движением денег." },
+    { title: "Подключённые кошельки", value: data.kpis.connectedWallets, icon: "connected", statusLabel: "связь", description: "Участвуют в продуктах." },
+    { title: "Уникальные кошельки", value: data.kpis.uniqueWallets, icon: "unique", statusLabel: "чисто", description: "Без дублей в текущем срезе." },
+    { title: "Количество транзакций", value: data.kpis.transactions, icon: "transactions", statusLabel: "движение", description: "Все успешные действия." },
+    { title: "Объём транзакций", value: data.kpis.transactionVolume, variant: "currency", icon: "volume", statusLabel: "объём", description: "Денежный объём операций." },
+    { title: "Неуспешные транзакции", value: data.kpis.failedTransactions, tone: data.kpis.failedTransactions > 0 ? "danger" : "success", icon: "failed", statusLabel: data.kpis.failedTransactions > 0 ? "ошибки" : "чисто", pulse: data.kpis.failedTransactions > 0, description: "Ошибки исполнения." },
+    { title: "Средний чек транзакции", value: data.kpis.averageTransactionValue, variant: "currency", icon: "average", statusLabel: "среднее", description: "Средний объём одной операции." },
+    { title: "Топ-сеть", value: data.kpis.topNetwork, icon: "top-network", statusLabel: "лидер", description: "Самая активная сеть." },
+  ];
+
+  const analyticsTabs = [
+    { id: "overview", label: "Обзор", hint: "день" },
+    { id: "traffic", label: "Трафик / Онлайн", hint: "онлайн" },
+    { id: "products", label: "Продукты / Циклы", hint: "тарифы" },
+    { id: "reinvest", label: "Реинвест", hint: "повтор" },
+    { id: "base", label: "Состав базы", hint: "роли" },
+    { id: "leaders", label: "Лидеры", hint: "топы" },
+    { id: "geography", label: "География", hint: "страны" },
+    { id: "partner", label: "Партнёрская структура", hint: "ветки" },
+    { id: "wallets", label: "Кошельки", hint: "адреса" },
+  ];
+
+  function renderActivationSection(className = "mt-4") {
+    return (
+      <section className={className}>
+        <AnalyticsCollapsibleSection
+          kicker="Активация"
+          title="Посмотреть активацию пользователей"
+          subtitle="Регистрации, подключение кошелька и запуск цикла по выбранному периоду."
+          defaultOpen={false}
+          className="mt-0"
+        >
+          <div className="row g-3">
+            <div className="col-12">
+              <AnalyticsDataTable
+                title="Итог по выбранному периоду"
+                subtitle="Сводно по регистрации, подключению кошелька и активации цикла."
+                columns={[
+                  { key: "period", label: "Период" },
+                  { key: "registrations", label: "Регистрации", type: "number" },
+                  { key: "walletConnects", label: "Подключили кошелёк", type: "number" },
+                  { key: "walletConnectRate", label: "Connect rate", type: "percent" },
+                  { key: "cycleActivations", label: "Активировали цикл", type: "number" },
+                  { key: "cycleActivationRate", label: "Cycle rate", type: "percent" },
+                ]}
+                rows={filteredLifecycleTotals}
+                headerActions={
+                  <label className="analytics-inline-filter">
+                    <span>Период</span>
+                    <select
+                      className="form-select analytics-inline-select"
+                      value={activationPeriod}
+                      onChange={(event) => {
+                        setActivationPeriod(event.target.value);
+                        setActivationPage(1);
+                      }}
+                    >
+                      {ACTIVATION_PERIOD_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                }
+              />
+            </div>
+            <div className="col-12">
+              <AnalyticsDataTable
+                title="Активация по дням"
+                subtitle="Главы и названия столбцов остаются видны, а детали можно листать по страницам."
+                columns={[
+                  { key: "date", label: "Дата" },
+                  { key: "registrations", label: "Регистрации", type: "number" },
+                  { key: "walletConnects", label: "Подключили кошелёк", type: "number" },
+                  { key: "walletConnectRate", label: "Connect rate", type: "percent" },
+                  { key: "cycleActivations", label: "Активировали цикл", type: "number" },
+                  { key: "cycleActivationRate", label: "Cycle rate", type: "percent" },
+                ]}
+                rows={pagedLifecycleRows}
+                footer={
+                  <div className="analytics-pagination">
+                    <span className="analytics-pagination-copy">
+                      Страница {safeActivationPage} из {activationTotalPages}
+                    </span>
+                    <div className="analytics-pagination-controls">
+                      <button
+                        type="button"
+                        className="btn analytics-pagination-btn"
+                        onClick={() => setActivationPage((current) => Math.max(1, current - 1))}
+                        disabled={safeActivationPage === 1}
+                      >
+                        Назад
+                      </button>
+                      <button
+                        type="button"
+                        className="btn analytics-pagination-btn"
+                        onClick={() => setActivationPage((current) => Math.min(activationTotalPages, current + 1))}
+                        disabled={safeActivationPage === activationTotalPages}
+                      >
+                        Вперёд
+                      </button>
+                    </div>
+                  </div>
+                }
+              />
+            </div>
+          </div>
+        </AnalyticsCollapsibleSection>
+      </section>
+    );
+  }
+
+  function renderOverview() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Ключевые сигналы дня</span>
+            <h2 className="mb-0">Что происходит сейчас</h2>
+          </div>
+          <MetricsGrid metrics={primaryKpis} colClass="col-12 col-md-6 col-xl-4 col-xxl-2" />
+        </section>
+
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Контур Smart Contract</span>
+            <h2 className="mb-0">Главная касса дня</h2>
+          </div>
+          <MetricsGrid metrics={contractPulseKpis} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">День к дню</span>
+            <h2 className="mb-0">Сравнение со вчера</h2>
+          </div>
+          <MetricsGrid metrics={operationalSnapshotKpis} colClass="col-12 col-md-6 col-xl-4 col-xxl-2" />
+        </section>
+
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Traffic → Money</span>
+            <h2 className="mb-0">Трафик превращается в деньги</h2>
+          </div>
+          <MetricsGrid metrics={trafficToMoneyKpis} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+
+        <AnalyticsCollapsibleSection
+          kicker="Графики"
+          title="Посмотреть динамику, структуру и графики"
+          subtitle="Тренды по входящему потоку, выплатам, покрытию и продуктам."
+          defaultOpen={false}
+          sectionId="overview-graphs"
+          openSignal={graphsOpenSignal}
+        >
+          <section className="row g-3">
+            <div className="col-12 col-xxl-6">
+              <ChartCard title="Входящий поток по дням" subtitle="Сколько новых денег заходило в систему в каждом дне выбранного окна.">
+                <UsersGrowthChart data={data.charts.usersGrowth} />
+              </ChartCard>
+            </div>
+            <div className="col-12 col-xxl-6">
+              <ChartCard title="Выплаты по дням" subtitle="Давление по выплатам циклов в ежедневном разрезе.">
+                <RevenueChart data={data.charts.revenue} />
+              </ChartCard>
+            </div>
+            <div className="col-12 col-xl-6">
+              <ChartCard title="Разложение денег" subtitle="Как входящий поток распадается на выплаты, рефералку, комиссию и остаток.">
+                <ConversionFunnelChart data={data.charts.funnel} />
+              </ChartCard>
+            </div>
+            <div className="col-12 col-xl-6">
+              <ChartCard title="Структура по продуктам" subtitle="Какой продукт формирует основной входящий поток в выбранном окне.">
+                <TrafficSourcesChart data={data.charts.trafficSources} />
+              </ChartCard>
+            </div>
+            <div className="col-12 col-xl-6">
+              <ChartCard title="Покрытие обязательств" subtitle="Насколько ожидаемый входящий поток закрывает обязательства на ключевых горизонтах.">
+                <RetentionChart data={data.charts.retention} />
+              </ChartCard>
+            </div>
+            <div className="col-12 col-xl-6">
+              <ChartCard title="Давление по продуктам" subtitle="Какой продукт создаёт больше обязательств и где выше прогнозируемый разрыв.">
+                <CampaignPerformanceChart data={data.charts.campaigns} />
+              </ChartCard>
+            </div>
+          </section>
+        </AnalyticsCollapsibleSection>
+
+        <AnalyticsCollapsibleSection
+          kicker="Оперативная сводка"
+          title="Посмотреть деньги и циклы по периодам"
+          subtitle="Вчера, сегодня, 7 дней и 30 дней: сколько зашло, сколько ушло и сколько циклов создали."
+          defaultOpen={false}
+        >
+          <div className="row g-3">
+            <div className="col-12">
+              <AnalyticsDataTable
+                title="Деньги и циклы по периодам"
+                subtitle="Входящий поток, новые и повторные деньги, количество созданных циклов и общий исходящий поток."
+                columns={[
+                  { key: "period", label: "Период" },
+                  { key: "incoming", label: "Входящий поток", type: "currency" },
+                  { key: "newMoney", label: "Новые деньги", type: "currency" },
+                  { key: "existingMoney", label: "Повторные деньги", type: "currency" },
+                  { key: "cycleActivations", label: "Создано циклов", type: "number" },
+                  { key: "outgoing", label: "Выплачено", type: "currency" },
+                ]}
+                rows={overviewOperations.periods}
+              />
+            </div>
+            <div className="col-12">
+              <AnalyticsDataTable
+                title="Созданные smart-cycles по видам"
+                subtitle="Сколько циклов создаётся по каждому виду и какой поток он сегодня даёт."
+                columns={[
+                  { key: "cycleType", label: "Вид цикла" },
+                  { key: "source", label: "Контур" },
+                  { key: "todayCreated", label: "Сегодня", type: "number" },
+                  { key: "weekCreated", label: "7 дней", type: "number" },
+                  { key: "monthCreated", label: "30 дней", type: "number" },
+                  { key: "todayIncoming", label: "Входящий сегодня", type: "currency" },
+                  { key: "todayOutgoing", label: "Выплачено сегодня", type: "currency" },
+                ]}
+                rows={overviewOperations.cycleTypes}
+              />
+            </div>
+          </div>
+        </AnalyticsCollapsibleSection>
+
+        <AnalyticsCollapsibleSection
+          kicker="72 часа"
+          title="Посмотреть ближайшее давление по контракту"
+          subtitle="Ближайшие три дня: что должно выйти с адреса, что ожидается на вход и где уже виден разрыв."
+          defaultOpen={false}
+        >
+          <AnalyticsDataTable
+            title="Мини-календарь выплат на 72 часа"
+            subtitle="Cycle payouts, рефералка, комиссия и суммарное давление по каждому из ближайших дней."
+            columns={[
+              { key: "date", label: "Дата" },
+              { key: "cyclePayouts", label: "Циклы", type: "currency" },
+              { key: "referralPayouts", label: "Рефералка", type: "currency" },
+              { key: "platformFee", label: "Комиссия", type: "currency" },
+              { key: "totalOutgoing", label: "Всего выйдет", type: "currency" },
+              { key: "expectedIncoming", label: "Ожидаемый вход", type: "currency" },
+              { key: "projectedGap", label: "Разрыв", type: "currency" },
+            ]}
+            rows={next72h}
+          />
+        </AnalyticsCollapsibleSection>
+
+        <AnalyticsCollapsibleSection
+          kicker="План действий"
+          title="Посмотреть, что сделать сегодня"
+          subtitle="Короткий список главных действий на день без лишней аналитической нагрузки."
+          defaultOpen={false}
+        >
+          <AnalyticsPriorityActions actions={data.priorityActions} embedded />
+        </AnalyticsCollapsibleSection>
+
+        <AnalyticsInsights alerts={data.insights.alerts} recommendations={data.insights.recommendations} />
+
+        <AnalyticsScenarios scenarios={data.scenarios} defaultOpen={false} />
+
+        {renderActivationSection()}
+
+        <AnalyticsCollapsibleSection
+          kicker="Финансовая структура"
+          title="Посмотреть, куда уйдут деньги"
+          subtitle="Выплаты, рефералка, комиссия платформы и ваш остаток."
+          defaultOpen={false}
+        >
+          <MetricsGrid metrics={structureKpis} colClass="col-12 col-md-6 col-xl-4 col-xxl-2" />
+        </AnalyticsCollapsibleSection>
+
+        <AnalyticsCollapsibleSection
+          kicker="Таблица"
+          title="Посмотреть детальную разбивку"
+          subtitle="Полная таблица по продуктам, ордерам и денежной раскладке."
+          defaultOpen={false}
+        >
+          <AnalyticsTable rows={data.table} />
+        </AnalyticsCollapsibleSection>
+      </>
+    );
+  }
+
+  function renderTrafficTab() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Онлайн</div>
+            <div className="analytics-tab-summary-title">{trafficTabData.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{trafficTabData.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {trafficTabData.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Трафик / Онлайн</span>
+            <h2 className="mb-0">Кто сейчас на сайте и в кабинете</h2>
+          </div>
+          <MetricsGrid metrics={trafficTabData.metrics} colClass="col-12 col-md-6 col-xl-4 col-xxl-3" />
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12">
+            <ChartCard title="Регистрации -> Кошелёк -> Цикл по дням" subtitle="Как по дням движется базовая активация пользователей за выбранный период.">
+              <TrafficLifecycleChart data={trafficTabData.lifecycleRows} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Живой поток по дням" subtitle="Как менялась онлайн-активность за последние дни.">
+              <UsersGrowthChart data={trafficTabData.timeline} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Онлайн по странам" subtitle="Какие страны дают основной живой поток.">
+              <TrafficSourcesChart data={trafficTabData.countryShare} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Онлайн по странам"
+              subtitle="Где сейчас находится живой трафик."
+              columns={[
+                { key: "country", label: "Страна" },
+                { key: "siteUsers", label: "На сайте", type: "number" },
+                { key: "cabinetUsers", label: "В кабинете", type: "number" },
+                { key: "sessions", label: "Сессии", type: "number" },
+                { key: "wallets", label: "Кошельки", type: "number" },
+              ]}
+              rows={trafficTabData.countries}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Воронка пути" subtitle="Цепочка от сайта до старта депозита.">
+              <ConversionFunnelChart data={trafficTabData.funnel} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Конверсия по шагам" subtitle="Где теряется поток между шагами.">
+              <RetentionChart data={trafficTabData.conversion} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Воронка пути"
+              subtitle="Числа по шагам воронки."
+              columns={[
+                { key: "stage", label: "Шаг" },
+                { key: "value", label: "Пользователи", type: "number" },
+              ]}
+              rows={trafficTabData.funnel}
+            />
+          </div>
+        </section>
+        <section className="row g-3 mt-4">
+          <div className="col-12">{renderActivationSection("mt-0")}</div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Качество live-потока по странам"
+              subtitle="Где трафик не просто есть, а реально доходит до действий."
+              columns={[
+                { key: "country", label: "Страна" },
+                { key: "newVisitors", label: "Новые", type: "number" },
+                { key: "repeatVisitors", label: "Повторные", type: "number" },
+                { key: "engagementRate", label: "Вовлечение", type: "percent" },
+                { key: "depositConversion", label: "Конв. в депозит", type: "percent" },
+              ]}
+              rows={trafficTabData.qualityRows}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Качество источников"
+              subtitle="Какие источники дают лучший поток до wallet connect и депозита."
+              columns={[
+                { key: "source", label: "Источник / продукт" },
+                { key: "newVisitors", label: "Новые", type: "number" },
+                { key: "repeatVisitors", label: "Повторные", type: "number" },
+                { key: "bounceRate", label: "Отказы", type: "percent" },
+                { key: "walletConnects", label: "Подкл. кошелёк", type: "number" },
+                { key: "depositStarts", label: "Старт депозита", type: "number" },
+                { key: "depositConversion", label: "Конв. в депозит", type: "percent" },
+                { key: "qualityScore", label: "Качество", type: "percent" },
+              ]}
+              rows={trafficTabData.sourceQualityRows}
+            />
+          </div>
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Источники и продукты в live-потоке"
+            subtitle="Кто даёт онлайн-активность и депозитный старт."
+            columns={[
+              { key: "source", label: "Источник / продукт" },
+              { key: "siteUsers", label: "На сайте", type: "number" },
+              { key: "cabinetUsers", label: "В кабинете", type: "number" },
+              { key: "walletConnects", label: "Подкл. кошелёк", type: "number" },
+              { key: "deposits", label: "Депозиты", type: "currency" },
+              { key: "conversion", label: "Конверсия", type: "percent" },
+            ]}
+            rows={trafficTabData.sources}
+          />
+        </section>
+      </>
+    );
+  }
+
+  function renderProductsTab() {
+    const lockupRows = productsTabData.rows.filter((row) => row.source === "Lockup");
+    const dailyRows = productsTabData.rows.filter((row) => row.source === "Daily Flow");
+
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Продукты / Циклы</span>
+            <h2 className="mb-0">Какой продукт даёт приток и какой создаёт давление</h2>
+          </div>
+          <MetricsGrid metrics={productsTabData.metrics} colClass="col-12 col-md-6 col-xl-6" />
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Lockup</span>
+            <h2 className="mb-0">Lockup тарифы</h2>
+          </div>
+            <div className="row g-3">
+              {lockupRows.map((row) => (
+                <div key={row.tariff} className="col-12 col-md-6 col-xxl-4">
+                  <div className="analytics-surface analytics-product-tier-card">
+                    <div className="analytics-product-tier-head">
+                      <div className="analytics-products-badge analytics-products-badge-lockup">Lockup</div>
+                      <div className="analytics-product-tier-cycle">{row.cycle}</div>
+                    </div>
+                    <h3 className="analytics-product-tier-title">{row.tariff}</h3>
+                    <div className="analytics-product-tier-caption">{row.shortLabel}</div>
+                    <div className="analytics-product-tier-meta">
+                      <div className="analytics-product-tier-meta-row">
+                        <span>Входящий поток</span>
+                        <strong>{formatCurrency(row.inflow)}</strong>
+                      </div>
+                      <div className="analytics-product-tier-meta-row">
+                        <span>Ордера</span>
+                        <strong>{row.orders}</strong>
+                      </div>
+                      <div className="analytics-product-tier-meta-row">
+                        <span>Клейм сейчас</span>
+                        <strong>{formatCurrency(row.claimable)}</strong>
+                      </div>
+                      <div className="analytics-product-tier-meta-row">
+                        <span>Начислено позже</span>
+                        <strong>{formatCurrency(row.accrued)}</strong>
+                      </div>
+                      <div className="analytics-product-tier-meta-row">
+                        <span>Обязательства 30д</span>
+                        <strong>{formatCurrency(row.obligations30d)}</strong>
+                      </div>
+                      <div className="analytics-product-tier-meta-row">
+                        <span>Дата риска</span>
+                        <strong>{row.riskDate}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Daily Flow</span>
+            <h2 className="mb-0">Daily Flow тарифы</h2>
+          </div>
+          <div className="row g-3">
+            {dailyRows.map((row) => (
+              <div key={row.tariff} className="col-12 col-xl-6">
+                <div className="analytics-surface analytics-product-hero">
+                  <div className="analytics-product-hero-top">
+                    <div>
+                      <div className="analytics-products-badge analytics-products-badge-daily">Daily Flow</div>
+                      <h3 className="analytics-product-hero-title">{row.tariff}</h3>
+                      <div className="analytics-product-hero-caption">{row.shortLabel}</div>
+                    </div>
+                  </div>
+                  <div className="analytics-product-hero-grid">
+                    <div className="analytics-product-hero-cell">
+                      <span>Входящий поток</span>
+                      <strong>{formatCurrency(row.inflow)}</strong>
+                    </div>
+                    <div className="analytics-product-hero-cell">
+                      <span>Ордера</span>
+                      <strong>{row.orders}</strong>
+                    </div>
+                    <div className="analytics-product-hero-cell">
+                      <span>Клейм сейчас</span>
+                      <strong>{formatCurrency(row.claimable)}</strong>
+                    </div>
+                    <div className="analytics-product-hero-cell">
+                      <span>Начислено позже</span>
+                      <strong>{formatCurrency(row.accrued)}</strong>
+                    </div>
+                    <div className="analytics-product-hero-cell">
+                      <span>Обязательства 30д</span>
+                      <strong>{formatCurrency(row.obligations30d)}</strong>
+                    </div>
+                    <div className="analytics-product-hero-cell">
+                      <span>Дата риска</span>
+                      <strong>{row.riskDate}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12">
+            <AnalyticsDataTable
+              title="Сводная таблица всех тарифов"
+              subtitle="Сухое сравнение тарифов по деньгам, нагрузке и риску."
+              surfaceClassName="analytics-products-table analytics-products-table-daily"
+              tableClassName="analytics-products-summary-table"
+              columns={[
+                {
+                  key: "tariff",
+                  label: "Тариф",
+                  render: (row) => (
+                    <div className="analytics-products-summary-primary">
+                      <div className="analytics-products-summary-primary-top">
+                        <strong>{row.tariff}</strong>
+                        <span className={`analytics-products-badge analytics-products-badge-${row.source === "Lockup" ? "lockup" : "daily"}`}>{row.source}</span>
+                      </div>
+                      <span>{row.shortLabel}</span>
+                    </div>
+                  ),
+                },
+                {
+                  key: "money",
+                  label: "Деньги",
+                  render: (row) => (
+                    <div className="analytics-products-summary-stack">
+                      <div className="analytics-products-summary-line">
+                        <span>Входящий поток</span>
+                        <strong>{formatCurrency(row.inflow)}</strong>
+                      </div>
+                      <div className="analytics-products-summary-line">
+                        <span>Ордера</span>
+                        <strong>{row.orders}</strong>
+                      </div>
+                      <div className="analytics-products-summary-line">
+                        <span>Клейм сейчас</span>
+                        <strong>{formatCurrency(row.claimable)}</strong>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: "load",
+                  label: "Нагрузка",
+                  render: (row) => (
+                    <div className="analytics-products-summary-stack">
+                      <div className="analytics-products-summary-line">
+                        <span>Начислено позже</span>
+                        <strong>{formatCurrency(row.accrued)}</strong>
+                      </div>
+                      <div className="analytics-products-summary-line">
+                        <span>Обязательства 30д</span>
+                        <strong>{formatCurrency(row.obligations30d)}</strong>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: "risk",
+                  label: "Риск",
+                  render: (row) => (
+                    <div className="analytics-products-summary-stack">
+                      <div className="analytics-products-summary-line">
+                        <span>Разрыв</span>
+                        <strong className={row.pressure > 0 ? "analytics-products-summary-risk" : ""}>{formatCurrency(row.pressure)}</strong>
+                      </div>
+                      <div className="analytics-products-summary-line">
+                        <span>Дата риска</span>
+                        <strong>{row.riskDate}</strong>
+                      </div>
+                    </div>
+                  ),
+                },
+              ]}
+              rows={productsTabData.rows.sort((left, right) => {
+                if (left.source === right.source) return 0;
+                if (left.source === "Lockup") return -1;
+                return 1;
+              })}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderLeadersTab() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Лидеры</div>
+            <div className="analytics-tab-summary-title">{data.tabsData.leaders.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{data.tabsData.leaders.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {data.tabsData.leaders.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Лидеры</span>
+            <h2 className="mb-0">Кто двигает систему деньгами и структурно</h2>
+          </div>
+          <MetricsGrid metrics={data.tabsData.leaders.metrics} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Доли по участию" subtitle="Кто держит основной объём инвестиций.">
+              <TrafficSourcesChart data={data.tabsData.leaders.participationShare} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Доли по привлечению" subtitle="Кто приводит основной inflow.">
+              <TrafficSourcesChart data={data.tabsData.leaders.attractionShare} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="row g-3 mt-4">
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Лидеры по участию"
+              subtitle="Кто больше всего инвестирует и активно участвует."
+              columns={[
+                { key: "name", label: "Пользователь" },
+                { key: "country", label: "Страна" },
+                { key: "investment", label: "Объём", type: "currency" },
+                { key: "cycles", label: "Циклы", type: "number" },
+                { key: "activeDays", label: "Активные дни", type: "number" },
+              ]}
+              rows={data.tabsData.leaders.participation}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Лидеры по привлечению"
+              subtitle="Кто приводит участников и деньги."
+              columns={[
+                { key: "name", label: "Лидер" },
+                { key: "country", label: "Страна" },
+                { key: "invited", label: "Приглашено", type: "number" },
+                { key: "activeInvited", label: "Активных", type: "number" },
+                { key: "inflow", label: "Привлечённый inflow", type: "currency" },
+                { key: "referralLoad", label: "Referral load", type: "currency" },
+              ]}
+              rows={data.tabsData.leaders.attraction}
+            />
+          </div>
+        </section>
+        <section className="row g-3 mt-4">
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Качество лидеров по участию"
+              subtitle="Насколько лидер полезен системе, а не только большой по объёму."
+              columns={[
+                { key: "name", label: "Лидер" },
+                { key: "country", label: "Страна" },
+                { key: "obligations", label: "Obligations", type: "currency" },
+                { key: "referralIncome", label: "Рефдоход", type: "currency" },
+                { key: "netContribution", label: "Net contribution", type: "currency" },
+                { key: "reinvestRate", label: "Reinvest rate", type: "percent" },
+                { key: "retentionRate", label: "Retention", type: "percent" },
+                { key: "claimRate", label: "Claim rate", type: "percent" },
+              ]}
+              rows={data.tabsData.leaders.participationQuality}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Качество лидеров по привлечению"
+              subtitle="Насколько сильна и устойчива база каждого лидера."
+              columns={[
+                { key: "name", label: "Лидер" },
+                { key: "country", label: "Страна" },
+                { key: "activeInvited", label: "Активные", type: "number" },
+                { key: "depositingInvited", label: "С депозитом", type: "number" },
+                { key: "leaderDependency", label: "Зависимость", type: "percent" },
+                { key: "baseRetention", label: "Retention", type: "percent" },
+                { key: "reinvestRate", label: "Reinvest", type: "percent" },
+                { key: "claimPressure", label: "Claim pressure", type: "percent" },
+                { key: "netContribution", label: "Net contribution", type: "currency" },
+              ]}
+              rows={data.tabsData.leaders.attractionQuality}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderReinvestTab() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Реинвест</div>
+            <div className="analytics-tab-summary-title">{reinvestTabData.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{reinvestTabData.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {reinvestTabData.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Реинвест</span>
+            <h2 className="mb-0">Насколько пользователи возвращают деньги в систему</h2>
+          </div>
+          <MetricsGrid metrics={reinvestTabData.metrics} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Реинвест по продуктам" subtitle="Где пользователи чаще возвращают капитал в систему.">
+              <TrafficSourcesChart data={reinvestTabData.productShare} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Скорость реинвеста" subtitle="Как быстро пользователи возвращаются после claim.">
+              <RetentionChart data={reinvestTabData.timeline} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="row g-3 mt-4">
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Реинвест по продуктам"
+              subtitle="Claims, reinvest и возврат капитала по продуктам."
+              columns={[
+                { key: "source", label: "Продукт" },
+                { key: "claimUsers", label: "Claim users", type: "number" },
+                { key: "reinvestUsers", label: "Reinvest users", type: "number" },
+                { key: "userRate", label: "Users rate", type: "percent" },
+                { key: "claimedCapital", label: "Claimed capital", type: "currency" },
+                { key: "reinvestedCapital", label: "Reinvested capital", type: "currency" },
+                { key: "capitalRate", label: "Capital rate", type: "percent" },
+              ]}
+              rows={reinvestTabData.byProduct}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Реинвест по странам"
+              subtitle="Где реинвест выше по людям и по капиталу."
+              columns={[
+                { key: "country", label: "Страна" },
+                { key: "claimUsers", label: "Claim users", type: "number" },
+                { key: "reinvestUsers", label: "Reinvest users", type: "number" },
+                { key: "userRate", label: "Users rate", type: "percent" },
+                { key: "claimedCapital", label: "Claimed capital", type: "currency" },
+                { key: "reinvestedCapital", label: "Reinvested capital", type: "currency" },
+                { key: "capitalRate", label: "Capital rate", type: "percent" },
+              ]}
+              rows={reinvestTabData.byCountry}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderBaseCompositionTab() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Состав базы</div>
+            <div className="analytics-tab-summary-title">{data.tabsData.baseComposition.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{data.tabsData.baseComposition.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {data.tabsData.baseComposition.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Роли пользователей</span>
+            <h2 className="mb-0">Кто в системе просто инвестирует, кто строит сеть, а кто делает и то и другое</h2>
+          </div>
+          <MetricsGrid metrics={data.tabsData.baseComposition.metrics} colClass="col-12 col-md-6 col-xl-3 col-xxl-3" />
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Доля базы по ролям" subtitle="Как распределяется база между инвесторами, партнёрами и смешанной ролью.">
+              <TrafficSourcesChart data={data.tabsData.baseComposition.shareChart} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Inflow по ролям" subtitle="Какая роль даёт основной денежный поток.">
+              <TrafficSourcesChart data={data.tabsData.baseComposition.inflowChart} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Состав базы и качество сегментов"
+            subtitle="Размер базы, деньги, обязательства и устойчивость по каждой роли."
+            columns={[
+              { key: "segment", label: "Сегмент" },
+              { key: "users", label: "Users", type: "number" },
+              { key: "share", label: "Доля базы", type: "percent" },
+              { key: "inflow", label: "Inflow", type: "currency" },
+              { key: "avgDeposit", label: "Средний вклад", type: "currency" },
+              { key: "obligations", label: "Obligations", type: "currency" },
+              { key: "netContribution", label: "Net contribution", type: "currency" },
+              { key: "repeatRate", label: "Repeat rate", type: "percent" },
+              { key: "claimPressure", label: "Claim pressure", type: "percent" },
+            ]}
+            rows={data.tabsData.baseComposition.rows}
+          />
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Состояние ролей"
+            subtitle="Активность, платёжность и claim/referral-статус внутри каждой роли."
+            columns={[
+              { key: "segment", label: "Сегмент" },
+              { key: "activeUsers", label: "Активные", type: "number" },
+              { key: "activeRate", label: "Активность", type: "percent" },
+              { key: "sleepingUsers", label: "Спящие", type: "number" },
+              { key: "newUsers", label: "Новые", type: "number" },
+              { key: "repeatUsers", label: "Повторные", type: "number" },
+              { key: "repeatRate", label: "Repeat rate", type: "percent" },
+              { key: "payingUsers", label: "Платящие", type: "number" },
+              { key: "payingRate", label: "Платят", type: "percent" },
+              { key: "nonPayingUsers", label: "Неплатящие", type: "number" },
+              { key: "claimUsers", label: "С claim", type: "number" },
+              { key: "claimRate", label: "Claim rate", type: "percent" },
+              { key: "noClaimUsers", label: "Без claim", type: "number" },
+              { key: "referralIncomeUsers", label: "С рефдоходом", type: "number" },
+              { key: "referralIncomeRate", label: "Рефдоход", type: "percent" },
+              { key: "noReferralIncomeUsers", label: "Без рефдохода", type: "number" },
+            ]}
+            rows={data.tabsData.baseComposition.qualityRows}
+          />
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Размер базы по деньгам"
+            subtitle="Крупные, средние и мелкие участники внутри каждой роли."
+            columns={[
+              { key: "segment", label: "Сегмент" },
+              { key: "largeUsers", label: "Крупные", type: "number" },
+              { key: "largeShare", label: "Доля крупных", type: "percent" },
+              { key: "largeInflow", label: "Inflow крупных", type: "currency" },
+              { key: "mediumUsers", label: "Средние", type: "number" },
+              { key: "mediumShare", label: "Доля средних", type: "percent" },
+              { key: "mediumInflow", label: "Inflow средних", type: "currency" },
+              { key: "smallUsers", label: "Мелкие", type: "number" },
+              { key: "smallShare", label: "Доля мелких", type: "percent" },
+              { key: "smallInflow", label: "Inflow мелких", type: "currency" },
+            ]}
+            rows={data.tabsData.baseComposition.valueTierRows}
+          />
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Путь базы"
+            subtitle="Как пользователи проходят путь от нового участия к повтору и реинвесту."
+            columns={[
+              { key: "segment", label: "Сегмент" },
+              { key: "newUsers", label: "Новые", type: "number" },
+              { key: "repeatUsers", label: "Повторные", type: "number" },
+              { key: "repeatRate", label: "Repeat rate", type: "percent" },
+              { key: "reinvestUsers", label: "Реинвест", type: "number" },
+              { key: "reinvestRate", label: "Reinvest rate", type: "percent" },
+              { key: "claimUsers", label: "С claim", type: "number" },
+              { key: "mixedRoleConversion", label: "В смешанную роль", type: "percent" },
+            ]}
+            rows={data.tabsData.baseComposition.lifecycleRows}
+          />
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Удержание и риск потери"
+            subtitle="Кто просто спит, кто возвращается, а кто уже выпадает из системы."
+            columns={[
+              { key: "segment", label: "Сегмент" },
+              { key: "activeUsers", label: "Активные", type: "number" },
+              { key: "sleepingUsers", label: "Спящие", type: "number" },
+              { key: "dormantUsers", label: "Глубоко спят", type: "number" },
+              { key: "dormantRate", label: "Dormant rate", type: "percent" },
+              { key: "reactivatedUsers", label: "Вернулись", type: "number" },
+              { key: "reactivatedRate", label: "Return rate", type: "percent" },
+              { key: "churnedUsers", label: "Отвалились", type: "number" },
+              { key: "churnRate", label: "Churn rate", type: "percent" },
+            ]}
+            rows={data.tabsData.baseComposition.retentionRows}
+          />
+        </section>
+      </>
+    );
+  }
+
+  function renderGeographyTab() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">География</div>
+            <div className="analytics-tab-summary-title">{data.tabsData.geography.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{data.tabsData.geography.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {data.tabsData.geography.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">География</span>
+            <h2 className="mb-0">Какие страны дают пользователей, деньги и обязательства</h2>
+          </div>
+          <MetricsGrid metrics={data.tabsData.geography.metrics} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Inflow по странам" subtitle="Какие страны дают основной денежный поток.">
+              <TrafficSourcesChart data={data.tabsData.geography.inflowShare} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Obligations по странам" subtitle="Какие страны дают большую будущую нагрузку.">
+              <TrafficSourcesChart data={data.tabsData.geography.obligationsShare} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Страны"
+            subtitle="Ключевая география системы."
+            columns={[
+              { key: "country", label: "Страна" },
+              { key: "city", label: "Город" },
+              { key: "users", label: "Users", type: "number" },
+              { key: "wallets", label: "Wallets", type: "number" },
+              { key: "inflow", label: "Inflow", type: "currency" },
+              { key: "obligations", label: "Obligations", type: "currency" },
+              { key: "deposits", label: "Deposits", type: "currency" },
+            ]}
+            rows={data.tabsData.geography.rows}
+          />
+        </section>
+        <section className="row g-3 mt-4">
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Качество стран"
+              subtitle="Какие страны дают не просто объём, а более живую и зрелую базу."
+              columns={[
+                { key: "country", label: "Страна" },
+                { key: "activeUsers", label: "Активные", type: "number" },
+                { key: "activeRate", label: "Активность", type: "percent" },
+                { key: "newUsers", label: "Новые", type: "number" },
+                { key: "repeatUsers", label: "Повторные", type: "number" },
+                { key: "repeatRate", label: "Repeat rate", type: "percent" },
+                { key: "reinvestUsers", label: "Реинвест", type: "number" },
+                { key: "reinvestRate", label: "Reinvest rate", type: "percent" },
+                { key: "payingRate", label: "Платят", type: "percent" },
+              ]}
+              rows={data.tabsData.geography.qualityRows}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Risk profile стран"
+              subtitle="Где нагрузка и claim-профиль уже опаснее качества роста."
+              columns={[
+                { key: "country", label: "Страна" },
+                { key: "obligations", label: "Obligations", type: "currency" },
+                { key: "obligationLoad", label: "Load", type: "percent" },
+                { key: "claimRate", label: "Claim rate", type: "percent" },
+                { key: "riskScore", label: "Risk score", type: "percent" },
+                { key: "growthScore", label: "Growth score", type: "percent" },
+              ]}
+              rows={data.tabsData.geography.riskRows}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderPartnerTab() {
+    const partnerDiagnostics = data.tabsData.partner.diagnostics || {};
+
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Партнёрская структура</div>
+            <div className="analytics-tab-summary-title">{data.tabsData.partner.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{data.tabsData.partner.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {data.tabsData.partner.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Партнёрская структура</span>
+            <h2 className="mb-0">Какие ветки дают рост, а какие раздувают нагрузку</h2>
+          </div>
+          <MetricsGrid metrics={data.tabsData.partner.metrics} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Почему ветка дорогая</div>
+            <div className="analytics-tab-summary-title">
+              {partnerDiagnostics.costlyBranch?.branch || "Ветка"} сейчас даёт главный structural pressure
+            </div>
+            <div className="analytics-tab-summary-copy">
+              {partnerDiagnostics.dominantPressure?.type || "Партнёрская нагрузка"} сейчас выглядит самым сильным слоем давления на treasury, а ближайший tier jump уже нужно отслеживать отдельно.
+            </div>
+            <div className="analytics-tab-summary-points">
+              <div className="analytics-tab-summary-point">
+                <span className="analytics-executive-point-glyph">•</span>
+                <span>
+                  Дорогая ветка: {partnerDiagnostics.costlyBranch?.branch || "—"} · leak {partnerDiagnostics.costlyBranch?.structuralLeak ?? 0}% · dependency {partnerDiagnostics.costlyBranch?.leaderDependency ?? 0}%
+                </span>
+              </div>
+              <div className="analytics-tab-summary-point">
+                <span className="analytics-executive-point-glyph">•</span>
+                <span>
+                  Доминирующее давление: {partnerDiagnostics.dominantPressure?.type || "—"} · {formatCurrency(partnerDiagnostics.dominantPressure?.value || 0)} · {formatPercent(partnerDiagnostics.dominantPressure?.share || 0)}
+                </span>
+              </div>
+              <div className="analytics-tab-summary-point">
+                <span className="analytics-executive-point-glyph">•</span>
+                <span>
+                  Tier jump risk 7d: {formatPercent(partnerDiagnostics.jumpRisk?.score || 0)} · зона {partnerDiagnostics.jumpRisk?.branch || "—"}
+                </span>
+              </div>
+              <div className="analytics-tab-summary-point">
+                <span className="analytics-executive-point-glyph">•</span>
+                <span>
+                  Самая здоровая ветка: {partnerDiagnostics.healthiestBranch?.branch || "—"} · net {formatCurrency(partnerDiagnostics.healthiestBranch?.netBranch || 0)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Inflow по веткам" subtitle="Какие ветки приносят основной денежный поток.">
+              <TrafficSourcesChart data={data.tabsData.partner.inflowShare} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Referral burden по веткам" subtitle="Какие ветки сильнее всего нагружают реферальный контур.">
+              <TrafficSourcesChart data={data.tabsData.partner.referralShare} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Ветки и лидеры"
+            subtitle="Структурная эффективность и нагрузка по веткам."
+            columns={[
+              { key: "leader", label: "Лидер" },
+              { key: "branch", label: "Ветка" },
+              { key: "inflow", label: "Inflow", type: "currency" },
+              { key: "invited", label: "Invited", type: "number" },
+              { key: "referralAccrual", label: "Начислено", type: "currency" },
+              { key: "payout", label: "Выплачено", type: "currency" },
+            ]}
+            rows={data.tabsData.partner.rows}
+          />
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Качество веток"
+            subtitle="Насколько ветка живая, глубокая и зависимая от одного лидера."
+            columns={[
+              { key: "branch", label: "Ветка" },
+              { key: "activeInvited", label: "Активные", type: "number" },
+              { key: "depositingInvited", label: "С депозитом", type: "number" },
+              { key: "conversionToDeposit", label: "Deposit conv.", type: "percent" },
+              { key: "leaderDependency", label: "Зависимость от лидера", type: "percent" },
+              { key: "depthScore", label: "Глубина", type: "percent" },
+              { key: "structuralLeak", label: "Structural leak", type: "percent" },
+            ]}
+            rows={data.tabsData.partner.qualityRows}
+          />
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Финансы веток"
+            subtitle="Сколько ветка приносит, сколько нагружает и сколько остаётся системе."
+            columns={[
+              { key: "branch", label: "Ветка" },
+              { key: "inflow", label: "Inflow", type: "currency" },
+              { key: "obligations", label: "Obligations", type: "currency" },
+              { key: "referralAccrual", label: "Начислено", type: "currency" },
+              { key: "referralRate", label: "Referral rate", type: "percent" },
+              { key: "payout", label: "Выплачено", type: "currency" },
+              { key: "payoutRate", label: "Payout rate", type: "percent" },
+              { key: "netBranch", label: "Net ветки", type: "currency" },
+            ]}
+            rows={data.tabsData.partner.financeRows}
+          />
+        </section>
+      </>
+    );
+  }
+
+  function renderWalletsTab() {
+    return (
+      <>
+        <section className="mt-4">
+          <div className="analytics-surface analytics-tab-summary">
+            <div className="analytics-kicker">Кошельки</div>
+            <div className="analytics-tab-summary-title">{data.tabsData.wallets.summary.title}</div>
+            <div className="analytics-tab-summary-copy">{data.tabsData.wallets.summary.description}</div>
+            <div className="analytics-tab-summary-points">
+              {data.tabsData.wallets.summary.bullets.map((item) => (
+                <div key={item} className="analytics-tab-summary-point">
+                  <span className="analytics-executive-point-glyph">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="mt-4">
+          <div className="analytics-section-heading">
+            <span className="analytics-kicker">Кошельки</span>
+            <h2 className="mb-0">Где деньги, где нагрузка и где концентрация риска</h2>
+          </div>
+          <MetricsGrid metrics={data.tabsData.wallets.metrics} colClass="col-12 col-md-6 col-xl-3" />
+        </section>
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Inflow по кошелькам" subtitle="Какие кошельки держат основной объём.">
+              <TrafficSourcesChart data={data.tabsData.wallets.inflowShare} />
+            </ChartCard>
+          </div>
+          <div className="col-12 col-xl-6">
+            <ChartCard title="Obligations по кошелькам" subtitle="Какие кошельки создают большую будущую нагрузку.">
+              <TrafficSourcesChart data={data.tabsData.wallets.obligationsShare} />
+            </ChartCard>
+          </div>
+        </section>
+        <section className="mt-4">
+          <AnalyticsDataTable
+            title="Top wallets"
+            subtitle="Кошельки по объёму и будущей нагрузке."
+            columns={[
+              { key: "wallet", label: "Кошелёк" },
+              { key: "role", label: "Роль" },
+              { key: "ownerType", label: "Тип" },
+              { key: "inflow", label: "Inflow", type: "currency" },
+              { key: "obligations", label: "Obligations", type: "currency" },
+              { key: "network", label: "Сеть" },
+            ]}
+            rows={data.tabsData.wallets.rows}
+          />
+        </section>
+        <section className="row g-3 mt-4">
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Качество кошельков"
+              subtitle="Активность кошелька, claim-нагрузка и его полезность для системы."
+              columns={[
+                { key: "wallet", label: "Кошелёк" },
+                { key: "ownerType", label: "Тип" },
+                { key: "activityScore", label: "Активность", type: "percent" },
+                { key: "claimable", label: "Claimable", type: "currency" },
+                { key: "accrued", label: "Accrued", type: "currency" },
+                { key: "claimPressure", label: "Claim pressure", type: "percent" },
+                { key: "reinvestFlow", label: "Reinvest flow", type: "currency" },
+              ]}
+              rows={data.tabsData.wallets.qualityRows}
+            />
+          </div>
+          <div className="col-12 col-xl-6">
+            <AnalyticsDataTable
+              title="Risk profile кошельков"
+              subtitle="Где опасная концентрация, нагрузка и слабый net contribution."
+              columns={[
+                { key: "wallet", label: "Кошелёк" },
+                { key: "role", label: "Роль" },
+                { key: "concentrationShare", label: "Доля", type: "percent" },
+                { key: "obligations", label: "Obligations", type: "currency" },
+                { key: "obligationLoad", label: "Load", type: "percent" },
+                { key: "riskScore", label: "Risk score", type: "percent" },
+                { key: "netContribution", label: "Net contribution", type: "currency" },
+              ]}
+              rows={data.tabsData.wallets.riskRows}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderActiveTab() {
+    if (activeTab === "traffic") return renderTrafficTab();
+    if (activeTab === "products") return renderProductsTab();
+    if (activeTab === "reinvest") return renderReinvestTab();
+    if (activeTab === "base") return renderBaseCompositionTab();
+    if (activeTab === "leaders") return renderLeadersTab();
+    if (activeTab === "geography") return renderGeographyTab();
+    if (activeTab === "partner") return renderPartnerTab();
+    if (activeTab === "wallets") return renderWalletsTab();
+    return renderOverview();
+  }
+
+  return (
+    <main className="analytics-layout container-fluid py-4 px-3 px-xl-4">
+      <AnalyticsHeader
+        onOpenCharts={handleOpenCharts}
+        onToggleBoard={() => setIsBoardOpen((current) => !current)}
+        isBoardOpen={isBoardOpen}
+      />
+
+      {isBoardOpen ? (
+        <section className="analytics-board-embed mt-4">
+          <AnalyticsIdeaCapture activeTab={activeTab} />
+          {BOARD_URL ? (
+            <section className="analytics-surface analytics-board-embed-panel mt-3">
+              <div className="analytics-board-embed-head">
+                <div>
+                  <span className="analytics-kicker">Доска задач</span>
+                  <h2 className="analytics-idea-title">Наша доска внутри аналитики</h2>
+                  <p className="analytics-page-subtitle mb-0">
+                    Здесь можно сразу смотреть backlog и входящие идеи, не уходя с аналитической страницы.
+                  </p>
+                </div>
+                <a className="btn analytics-board-btn" href={BOARD_URL} target="_blank" rel="noreferrer">
+                  Открыть отдельно
+                </a>
+              </div>
+              <div className="analytics-board-frame-wrap">
+                <iframe className="analytics-board-frame" src={BOARD_URL} title="Доска аналитики" />
+              </div>
+            </section>
+          ) : null}
+        </section>
+      ) : null}
+
+      <AnalyticsTabs tabs={analyticsTabs} activeTab={activeTab} onChange={setActiveTab} />
+
+      {renderActiveTab()}
+
+      <section className="analytics-footer-actions mt-4">
+        <button type="button" className="btn analytics-export-btn analytics-export-btn-bottom" onClick={() => downloadCsv(exportAnalyticsCsv(data.table))}>
+          Экспорт CSV
+        </button>
+      </section>
+    </main>
+  );
+}
+
+export default AnalyticsPage;
