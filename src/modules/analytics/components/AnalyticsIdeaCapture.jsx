@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 const IDEAS_STORAGE_KEY = "analytics-idea-capture-v1";
-const BOARD_API_URL = import.meta.env.VITE_ANALYTICS_BOARD_API_URL || "";
+const BOARD_API_URL = "http://127.0.0.1:3003/api/signal";
 
 function loadIdeas() {
   if (typeof window === "undefined") return [];
@@ -44,10 +44,6 @@ function buildIdeaPayload(title, details, activeTab) {
 }
 
 async function sendIdeaToBoard(idea) {
-  if (!BOARD_API_URL) {
-    throw new Error("Board API URL is not configured");
-  }
-
   const response = await fetch(BOARD_API_URL, {
     method: "POST",
     headers: {

@@ -2,7 +2,7 @@ import { analyticsMockData } from "../data/analyticsMockData";
 import calculateConversion from "../utils/calculateConversion";
 import { groupByDate, groupBySource, groupNetworkStats } from "../utils/buildChartData";
 
-const ANALYTICS_API_BASE_URL = (import.meta.env.VITE_ANALYTICS_API_BASE_URL || "").replace(/\/$/, "");
+const ANALYTICS_API_BASE_URL = "http://127.0.0.1:3100/api/admin/analytics";
 const ANALYTICS_API_TIMEOUT_MS = 1500;
 
 const COUNTRY_PROFILES = [
@@ -63,10 +63,6 @@ async function fetchJson(url) {
 }
 
 async function fetchAnalyticsBackendBundle(filters) {
-  if (!ANALYTICS_API_BASE_URL) {
-    throw new Error("Analytics API base URL is not configured");
-  }
-
   const query = buildBackendQuery(filters);
   const [overview, cashPosition, obligations, planFact, orders, wallets, partnerStructure, reinvest, leaders, geography, traffic, baseComposition] = await Promise.all([
     fetchJson(`${ANALYTICS_API_BASE_URL}/overview?${query}`),

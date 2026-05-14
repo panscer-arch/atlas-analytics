@@ -5,8 +5,6 @@ import AnalyticsDataTable from "./components/AnalyticsDataTable";
 import AnalyticsDateTime from "./components/AnalyticsDateTime";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import formatCurrency from "./utils/formatCurrency";
-
-const BOARD_URL = import.meta.env.VITE_ANALYTICS_BOARD_URL || "";
 import "./styles/analytics.css";
 
 const restoredTabs = [
@@ -354,25 +352,23 @@ function AnalyticsRestoredPage() {
 
       {isBoardOpen ? (
         <section className="analytics-board-embed mt-4">
-          {BOARD_URL ? (
-            <section className="analytics-surface analytics-board-embed-panel">
-              <div className="analytics-board-embed-head">
-                <div>
-                  <span className="analytics-kicker">Доска задач</span>
-                  <h2 className="analytics-idea-title">Наша доска внутри аналитики</h2>
-                  <p className="analytics-page-subtitle mb-0">
-                    Здесь можно сразу смотреть backlog и текущие задачи по аналитике, не уходя с экрана.
-                  </p>
-                </div>
-                <a className="btn analytics-board-btn" href={BOARD_URL} target="_blank" rel="noreferrer">
-                  Открыть отдельно
-                </a>
+          <section className="analytics-surface analytics-board-embed-panel">
+            <div className="analytics-board-embed-head">
+              <div>
+                <span className="analytics-kicker">Доска задач</span>
+                <h2 className="analytics-idea-title">Наша доска внутри аналитики</h2>
+                <p className="analytics-page-subtitle mb-0">
+                  Здесь можно сразу смотреть backlog и текущие задачи по аналитике, не уходя с экрана.
+                </p>
               </div>
-              <div className="analytics-board-frame-wrap">
-                <iframe className="analytics-board-frame" src={BOARD_URL} title="Доска аналитики" />
-              </div>
-            </section>
-          ) : null}
+              <a className="btn analytics-board-btn" href="http://127.0.0.1:3003/" target="_blank" rel="noreferrer">
+                Открыть отдельно
+              </a>
+            </div>
+            <div className="analytics-board-frame-wrap">
+              <iframe className="analytics-board-frame" src="http://127.0.0.1:3003/" title="Доска аналитики" />
+            </div>
+          </section>
         </section>
       ) : null}
 

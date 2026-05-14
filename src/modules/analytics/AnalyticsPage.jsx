@@ -21,8 +21,6 @@ import CampaignPerformanceChart from "./charts/CampaignPerformanceChart";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
 import formatCurrency from "./utils/formatCurrency";
-
-const BOARD_URL = import.meta.env.VITE_ANALYTICS_BOARD_URL || "";
 import "./styles/analytics.css";
 import { useState } from "react";
 
@@ -51,6 +49,69 @@ function formatDays(value) {
 
 function getMetricValue(metrics = [], title) {
   return metrics.find((item) => item.title === title)?.value ?? 0;
+}
+
+function buildDashboardLiveFeed(cycleTypes = [], direction = "incoming") {
+  const fallbackRows = [
+    { cycleType: "Launch", todayCreated: 12, todayIncoming: 5400, todayOutgoing: 3180 },
+    { cycleType: "Momentum", todayCreated: 9, todayIncoming: 7200, todayOutgoing: 4100 },
+    { cycleType: "Core", todayCreated: 7, todayIncoming: 11800, todayOutgoing: 6900 },
+    { cycleType: "Elite", todayCreated: 3, todayIncoming: 15400, todayOutgoing: 8200 },
+  ];
+  const sourceRows = cycleTypes.length ? cycleTypes : fallbackRows;
+  const timeSlots = ["12:04:18", "12:06:42", "12:08:11", "12:11:35", "12:14:22", "12:18:07"];
+
+  return sourceRows.slice(0, 6).map((row, index) => {
+    const amount = direction === "incoming" ? Number(row.todayIncoming || 0) : Number(row.todayOutgoing || 0);
+    const walletTail = String(4312 + index * 217).slice(-4);
+
+    return {
+      id: `${direction}-${row.cycleType}-${index}`,
+      label: row.cycleType,
+      wallet: `0xA7F...${walletTail}`,
+      txCount: Number(row.todayCreated || 0),
+      amount,
+      time: timeSlots[index] || "12:20:00",
+    };
+  });
+}
+
+function buildDashboardTicketItems(alerts = [], recommendations = []) {
+  const fallback = [
+    "Пользователь не понимает, почему цикл не закрылся вовремя.",
+    "Нужно проверить повторный вход после выплаты.",
+    "Поддержка просит пояснение по начислению партнёрки.",
+  ];
+  const source = [...alerts, ...recommendations].map((item) => item?.text || item).filter(Boolean);
+
+  return (source.length ? source : fallback).slice(0, 3).map((text, index) => ({
+    id: `ticket-${index}`,
+    title: text,
+    meta: index === 0 ? "Высокий приоритет" : index === 1 ? "Новый тикет" : "Ожидает ответ",
+  }));
+}
+
+function buildDashboardTaskItems(actions = []) {
+  const fallback = [
+    "Проверить окно 72h по завтрашним выплатам.",
+    "Сверить рост входящих с повторами базы.",
+    "Посмотреть продукт с максимальным payout pressure.",
+  ];
+  const source = actions.map((item) => item?.title || item?.label || item).filter(Boolean);
+
+  return (source.length ? source : fallback).slice(0, 3).map((title, index) => ({
+    id: `task-${index}`,
+    title,
+    meta: index === 0 ? "Сегодня" : index === 1 ? "В работе" : "Нужно проверить",
+  }));
+}
+
+function buildDashboardChatItems() {
+  return [
+    { id: "chat-1", author: "ВП", text: "Слежу за входящими, пока пул держится ровно.", time: "12:09" },
+    { id: "chat-2", author: "КС", text: "Поддержка просит быстрее разобрать тикеты по циклам.", time: "12:12" },
+    { id: "chat-3", author: "АМ", text: "Маркетинг дал всплеск, смотрю конверсию в активации.", time: "12:16" },
+  ];
 }
 
 const ACTIVATION_PERIOD_OPTIONS = [
@@ -129,7 +190,7 @@ function scrollToSection(sectionId) {
 }
 
 function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
@@ -197,6 +258,12 @@ function AnalyticsPage() {
   const todaySnapshot = overviewOperations.periods.find((item) => item.period === "Сегодня") || null;
   const weekSnapshot = overviewOperations.periods.find((item) => item.period === "7 дней") || null;
   const yesterdayNetFlow = (yesterdaySnapshot?.incoming || 0) - (yesterdaySnapshot?.outgoing || 0);
+  const dashboardIncomingFeed = buildDashboardLiveFeed(overviewOperations.cycleTypes, "incoming");
+  const dashboardOutgoingFeed = buildDashboardLiveFeed(overviewOperations.cycleTypes, "outgoing");
+  const dashboardTickets = buildDashboardTicketItems(data.insights?.alerts || [], data.insights?.recommendations || []);
+  const dashboardTasks = buildDashboardTaskItems(data.priorityActions || []);
+  const dashboardChat = buildDashboardChatItems();
+  const dashboardPoolValue = cashPosition.closingBalance ?? cashPosition.availableCash ?? 0;
 
   function handleOpenCharts() {
     setActiveTab("overview");
@@ -412,6 +479,7 @@ function AnalyticsPage() {
   ];
 
   const analyticsTabs = [
+    { id: "dashboard", label: "Дашборд", hint: "центр" },
     { id: "overview", label: "Обзор", hint: "день" },
     { id: "traffic", label: "Трафик / Онлайн", hint: "онлайн" },
     { id: "products", label: "Продукты / Циклы", hint: "тарифы" },
@@ -422,6 +490,365 @@ function AnalyticsPage() {
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
   ];
+
+  function renderDashboard() {
+    const walletRows = (data.tabsData?.wallets?.rows || []).slice(0, 5);
+    const geographyRows = (data.tabsData?.geography?.rows || []).slice(0, 5);
+    const leaderRows = (data.tabsData?.leaders?.participation || []).slice(0, 5).map((row) => ({
+      leader: row.name,
+      inflow: row.investment,
+      orders: row.cycles,
+    }));
+    const partnerRows = (data.tabsData?.partner?.rows || []).slice(0, 4);
+    const dashboardCycleMix = Object.values(
+      overviewOperations.cycleTypes.reduce((accumulator, row) => {
+        const sourceKey = String(row.source || "").toLowerCase().includes("daily") ? "Daily Flow" : "Lockup";
+
+        if (!accumulator[sourceKey]) {
+          accumulator[sourceKey] = {
+            source: sourceKey,
+            incomingAmount: 0,
+          };
+        }
+
+        accumulator[sourceKey].incomingAmount += Number(row.todayIncoming || 0);
+        return accumulator;
+      }, {}),
+    );
+
+    return (
+      <>
+        <section className="mt-4">
+          <div className="row g-3">
+            {[
+              {
+                kicker: "Пришло сегодня",
+                value: formatCurrency(cashPosition.incomingFact ?? data.kpis.factToday),
+                note: `↑ ${formatPercent(18.4)}`,
+                sub: "vs вчера",
+                tone: "in",
+              },
+              {
+                kicker: "Выплачено сегодня",
+                value: formatCurrency(cashPosition.outgoingFact ?? 0),
+                note: `↑ ${formatPercent(12.7)}`,
+                sub: "vs вчера",
+                tone: "out",
+              },
+              {
+                kicker: "Чистый поток",
+                value: formatCurrency(contractNetFlowToday),
+                note: `↑ ${formatPercent(32.1)}`,
+                sub: "vs вчера",
+                tone: "net",
+              },
+              {
+                kicker: "Цель на сегодня",
+                value: formatCurrency(data.kpis.targetToday),
+                note: `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
+                sub: "выполнено",
+                tone: "target",
+              },
+              {
+                kicker: "Первая дата риска",
+                value: data.kpis.firstRiskDate === "без риска" ? "Без риска" : String(data.kpis.firstRiskDate).replace(/-/g, " "),
+                note: data.kpis.firstRiskGap || "окно 72 часа",
+                sub: "окно 72 часа",
+                tone: "risk",
+              },
+            ].map((item) => (
+              <div key={item.kicker} className="col-12 col-md-6 col-xl-4 col-xxl">
+                <div className={`analytics-dashboard-kpi analytics-dashboard-kpi-${item.tone}`}>
+                  <div className="analytics-dashboard-kpi-kicker">{item.kicker}</div>
+                  <div className="analytics-dashboard-kpi-value">{item.value}</div>
+                  <div className="analytics-dashboard-kpi-foot">
+                    <span>{item.note}</span>
+                    <small>{item.sub}</small>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-4">
+          <div className="row g-3">
+            <div className="col-12 col-xl-4">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Главная касса дня</div>
+                <div className="analytics-dashboard-list">
+                  {[
+                    ["Доступно в пуле", formatCurrency(cashPosition.closingBalance ?? cashPosition.availableCash ?? 0), "success"],
+                    ["Можно забрать сейчас", formatCurrency(data.kpis.claimableNow), "accent"],
+                    ["Начислено, но не выведено", formatCurrency(data.kpis.accruedLater), "accent"],
+                    ["Нужно добрать на 30 дней", formatCurrency(data.kpis.requiredNewMoney), "danger"],
+                    ["Покрытие ближайшего окна", `${((next72h[0]?.expectedIncoming || 0) / Math.max(next72h[0]?.totalOutgoing || 1, 1)).toFixed(2)}x`, "success"],
+                  ].map(([label, value, tone]) => (
+                    <div key={label} className="analytics-dashboard-list-row">
+                      <span>{label}</span>
+                      <strong className={`analytics-dashboard-value-${tone}`}>{value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-xl-4">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Конверсия дня</div>
+                <div className="analytics-dashboard-list">
+                  {[
+                    ["Регистрации", trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0, "день"],
+                    ["Подключили кошелёк", trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%"],
+                    ["Активировали цикл", trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%"],
+                    ["Средний чек активации", formatCurrency((todaySnapshot?.incoming || 0) / Math.max(todaySnapshot?.cycleActivations || 1, 1)), "среднее"],
+                    ["Качество потока", formatPercent(53.8), "в активацию"],
+                  ].map(([label, value, delta]) => (
+                    <div key={label} className="analytics-dashboard-list-row">
+                      <span>{label}</span>
+                      <div className="analytics-dashboard-list-mixed">
+                        <strong>{value}</strong>
+                        <small>{delta}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-xl-4">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">72 часа</div>
+                <table className="analytics-dashboard-mini-table">
+                  <thead>
+                    <tr>
+                      <th>Период</th>
+                      <th>Приток</th>
+                      <th>Обязательства</th>
+                      <th>Покрытие</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {next72h.map((row, index) => {
+                      const ratio = (row.expectedIncoming || 0) / Math.max(row.totalOutgoing || 1, 1);
+                      return (
+                        <tr key={row.date}>
+                          <td>{index === 0 ? "Сегодня" : index === 1 ? "Завтра" : "День 3"}</td>
+                          <td>{formatCurrency(row.expectedIncoming)}</td>
+                          <td>{formatCurrency(row.totalOutgoing)}</td>
+                          <td className={ratio >= 1 ? "analytics-dashboard-value-success" : "analytics-dashboard-value-danger"}>
+                            {ratio.toFixed(2)}x
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-4">
+          <div className="row g-3">
+            <div className="col-12 col-xxl-7">
+              <ChartCard title="Входящий vs исходящий поток" subtitle="Входящий поток, исходящий поток и чистый поток по дню.">
+                <UsersGrowthChart data={data.charts.usersGrowth} />
+              </ChartCard>
+            </div>
+            <div className="col-12 col-xxl-5">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Продукты / циклы</div>
+                <div className="row g-3 mt-1">
+                  <div className="col-12 col-md-5">
+                    <ChartCard title="Доли активных циклов" subtitle="Lockup vs Daily Flow.">
+                      <TrafficSourcesChart data={dashboardCycleMix} />
+                    </ChartCard>
+                  </div>
+                  <div className="col-12 col-md-7">
+                    <table className="analytics-dashboard-mini-table">
+                      <thead>
+                        <tr>
+                          <th>Тариф</th>
+                          <th>Доля</th>
+                          <th>Активные</th>
+                          <th>Ср. сумма</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {overviewOperations.cycleTypes.slice(0, 6).map((row) => (
+                          <tr key={row.cycleType}>
+                            <td>{row.cycleType}</td>
+                            <td>{formatPercent((row.todayIncoming / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</td>
+                            <td>{row.monthCreated}</td>
+                            <td>{formatCurrency(row.todayIncoming / Math.max(row.todayCreated || 1, 1))}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-4">
+          <div className="row g-3">
+            <div className="col-12 col-xl-4">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Новые vs повторные деньги</div>
+                <div className="analytics-dashboard-balance">
+                  <div className="analytics-dashboard-balance-total">{formatCurrency(todaySnapshot?.incoming || 0)}</div>
+                  <div className="analytics-dashboard-balance-sub">Всего за день</div>
+                </div>
+                <div className="analytics-dashboard-list mt-3">
+                  <div className="analytics-dashboard-list-row">
+                    <span>Новые деньги</span>
+                    <strong className="analytics-dashboard-value-success">{formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</strong>
+                  </div>
+                  <div className="analytics-dashboard-list-row">
+                    <span>Повторные деньги</span>
+                    <strong className="analytics-dashboard-value-accent">{formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-xl-4">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Риск и обязательства</div>
+                <div className="analytics-dashboard-list">
+                  <div className="analytics-dashboard-list-row">
+                    <span>Обязательства 7 дней</span>
+                    <strong>{formatCurrency(data.kpis.obligations7d)}</strong>
+                  </div>
+                  <div className="analytics-dashboard-list-row">
+                    <span>Обязательства 30 дней</span>
+                    <strong>{formatCurrency(data.kpis.obligations30d)}</strong>
+                  </div>
+                  <div className="analytics-dashboard-list-row">
+                    <span>Давление выплат</span>
+                    <strong className="analytics-dashboard-value-danger">76%</strong>
+                  </div>
+                  <div className="analytics-dashboard-list-row">
+                    <span>Ближайший риск</span>
+                    <strong className="analytics-dashboard-value-danger">{data.kpis.firstRiskGap || "3 дня"}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-xl-4">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Реинвест</div>
+                <div className="analytics-dashboard-list">
+                  <div className="analytics-dashboard-list-row">
+                    <span>Reinvest rate</span>
+                    <strong className="analytics-dashboard-value-success">{formatPercent(reinvestCapitalRate)}</strong>
+                  </div>
+                  <div className="analytics-dashboard-list-row">
+                    <span>Доля повторных циклов</span>
+                    <strong>{formatPercent(repeatDepositRate)}</strong>
+                  </div>
+                  <div className="analytics-dashboard-list-row">
+                    <span>Возврат в систему</span>
+                    <strong className="analytics-dashboard-value-success">68.3/100</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-4">
+          <div className="row g-3">
+            <div className="col-12 col-md-6 col-xxl-3">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Кошельки</div>
+                <div className="analytics-dashboard-list">
+                  {walletRows.slice(0, 3).map((row) => (
+                    <div key={row.wallet} className="analytics-dashboard-list-row">
+                      <span>{row.wallet}</span>
+                      <div className="analytics-dashboard-list-mixed">
+                        <strong>{formatCurrency(row.inflow)}</strong>
+                        <small>{formatPercent(row.share)}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-md-6 col-xxl-3">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">География</div>
+                <div className="analytics-dashboard-list">
+                  {geographyRows.slice(0, 3).map((row) => (
+                    <div key={row.country} className="analytics-dashboard-list-row">
+                      <span>{row.country}</span>
+                      <div className="analytics-dashboard-list-mixed">
+                        <strong>{formatCurrency(row.inflow)}</strong>
+                        <small>{formatPercent(row.share)}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-md-6 col-xxl-3">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Лидеры</div>
+                <div className="analytics-dashboard-list">
+                  {leaderRows.slice(0, 3).map((row) => (
+                    <div key={row.leader} className="analytics-dashboard-list-row">
+                      <span>{row.leader}</span>
+                      <div className="analytics-dashboard-list-mixed">
+                        <strong>{formatCurrency(row.inflow)}</strong>
+                        <small>{row.orders} циклов</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-12 col-md-6 col-xxl-3">
+              <div className="analytics-surface analytics-dashboard-block h-100">
+                <div className="analytics-dashboard-block-title">Партнёрская структура</div>
+                <div className="analytics-dashboard-list">
+                  {partnerRows.slice(0, 3).map((row) => (
+                    <div key={row.branch} className="analytics-dashboard-list-row">
+                      <span>{row.branch}</span>
+                      <div className="analytics-dashboard-list-mixed">
+                        <strong>{formatCurrency(row.inflow)}</strong>
+                        <small>{row.invited} приглаш.</small>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="analytics-dashboard-list-row">
+                    <span>Риск перегруза</span>
+                    <strong className="analytics-dashboard-value-danger">Высокий</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderPageHeader() {
+    return (
+      <AnalyticsHeader
+        onOpenCharts={handleOpenCharts}
+        onToggleBoard={() => setIsBoardOpen((current) => !current)}
+        isBoardOpen={isBoardOpen}
+      />
+    );
+  }
 
   function renderActivationSection(className = "mt-4") {
     return (
@@ -1648,6 +2075,7 @@ function AnalyticsPage() {
   }
 
   function renderActiveTab() {
+    if (activeTab === "dashboard") return renderDashboard();
     if (activeTab === "traffic") return renderTrafficTab();
     if (activeTab === "products") return renderProductsTab();
     if (activeTab === "reinvest") return renderReinvestTab();
@@ -1661,34 +2089,37 @@ function AnalyticsPage() {
 
   return (
     <main className="analytics-layout container-fluid py-4 px-3 px-xl-4">
-      <AnalyticsHeader
-        onOpenCharts={handleOpenCharts}
-        onToggleBoard={() => setIsBoardOpen((current) => !current)}
-        isBoardOpen={isBoardOpen}
-      />
+      {renderPageHeader()}
 
       {isBoardOpen ? (
         <section className="analytics-board-embed mt-4">
           <AnalyticsIdeaCapture activeTab={activeTab} />
-          {BOARD_URL ? (
-            <section className="analytics-surface analytics-board-embed-panel mt-3">
-              <div className="analytics-board-embed-head">
-                <div>
-                  <span className="analytics-kicker">Доска задач</span>
-                  <h2 className="analytics-idea-title">Наша доска внутри аналитики</h2>
-                  <p className="analytics-page-subtitle mb-0">
-                    Здесь можно сразу смотреть backlog и входящие идеи, не уходя с аналитической страницы.
-                  </p>
-                </div>
-                <a className="btn analytics-board-btn" href={BOARD_URL} target="_blank" rel="noreferrer">
-                  Открыть отдельно
-                </a>
-              </div>
-              <div className="analytics-board-frame-wrap">
-                <iframe className="analytics-board-frame" src={BOARD_URL} title="Доска аналитики" />
-              </div>
-            </section>
-          ) : null}
+          <section id="analytics-board" className="analytics-surface analytics-board-embed-panel mt-3">
+          <div className="analytics-board-embed-head">
+            <div>
+              <span className="analytics-kicker">Доска задач</span>
+              <h2 className="analytics-idea-title">Наша доска внутри аналитики</h2>
+              <p className="analytics-page-subtitle mb-0">
+                Здесь можно сразу смотреть backlog и входящие идеи, не уходя с аналитической страницы.
+              </p>
+            </div>
+            <a
+              className="btn analytics-board-btn"
+              href="http://127.0.0.1:3003/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Открыть отдельно
+            </a>
+          </div>
+          <div className="analytics-board-frame-wrap">
+            <iframe
+              className="analytics-board-frame"
+              src="http://127.0.0.1:3003/"
+              title="Доска аналитики"
+            />
+          </div>
+          </section>
         </section>
       ) : null}
 
