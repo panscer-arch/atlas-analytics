@@ -7,6 +7,8 @@ import useAnalyticsData from "./hooks/useAnalyticsData";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
 
+const ANALYTICS_BOARD_URL = "/analytics-board/";
+
 const restoredTabs = [
   { id: "overview", label: "Обзор" },
   { id: "traffic", label: "Трафик" },
@@ -361,12 +363,12 @@ function AnalyticsRestoredPage() {
                   Здесь можно сразу смотреть backlog и текущие задачи по аналитике, не уходя с экрана.
                 </p>
               </div>
-              <a className="btn analytics-board-btn" href="http://127.0.0.1:3003/" target="_blank" rel="noreferrer">
+              <a className="btn analytics-board-btn" href={ANALYTICS_BOARD_URL} target="_blank" rel="noreferrer">
                 Открыть отдельно
               </a>
             </div>
             <div className="analytics-board-frame-wrap">
-              <iframe className="analytics-board-frame" src="http://127.0.0.1:3003/" title="Доска аналитики" />
+              <iframe className="analytics-board-frame" src={ANALYTICS_BOARD_URL} title="Доска аналитики" />
             </div>
           </section>
         </section>

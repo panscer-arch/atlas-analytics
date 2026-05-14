@@ -24,6 +24,8 @@ import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
 import { useState } from "react";
 
+const ANALYTICS_BOARD_URL = "/analytics-board/";
+
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -2105,7 +2107,7 @@ function AnalyticsPage() {
             </div>
             <a
               className="btn analytics-board-btn"
-              href="http://127.0.0.1:3003/"
+              href={ANALYTICS_BOARD_URL}
               target="_blank"
               rel="noreferrer"
             >
@@ -2115,7 +2117,7 @@ function AnalyticsPage() {
           <div className="analytics-board-frame-wrap">
             <iframe
               className="analytics-board-frame"
-              src="http://127.0.0.1:3003/"
+              src={ANALYTICS_BOARD_URL}
               title="Доска аналитики"
             />
           </div>

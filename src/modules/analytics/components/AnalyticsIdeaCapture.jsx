@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 const IDEAS_STORAGE_KEY = "analytics-idea-capture-v1";
-const BOARD_API_URL = "http://127.0.0.1:3003/api/signal";
+const BOARD_SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
 
 function loadIdeas() {
   if (typeof window === "undefined") return [];
@@ -43,17 +43,30 @@ function buildIdeaPayload(title, details, activeTab) {
   };
 }
 
-async function sendIdeaToBoard(idea) {
-  const response = await fetch(BOARD_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=UTF-8",
-    },
-    body: JSON.stringify(idea),
-  });
+function sendIdeaToBoard(idea) {
+  if (typeof window === "undefined") return;
 
-  if (!response.ok) {
-    throw new Error(`Board request failed with ${response.status}`);
+  try {
+    const raw = window.localStorage.getItem(BOARD_SIGNALS_STORAGE_KEY);
+    const existingSignals = raw ? JSON.parse(raw) : [];
+    const nextSignals = [
+      {
+        id: idea.id,
+        title: idea.title,
+        summary: idea.details || "Без комментария",
+        source: "Analytics",
+        tab: idea.activeTab,
+        createdAt: idea.createdAt,
+        createdAtLabel: idea.createdAtLabel,
+        type: "idea",
+        status: "new",
+      },
+      ...existingSignals,
+    ];
+
+    window.localStorage.setItem(BOARD_SIGNALS_STORAGE_KEY, JSON.stringify(nextSignals.slice(0, 100)));
+  } catch (error) {
+    throw new Error(`Board storage failed: ${String(error)}`);
   }
 }
 
@@ -79,7 +92,7 @@ function AnalyticsIdeaCapture({ activeTab }) {
     setStatus("");
 
     try {
-      await sendIdeaToBoard(idea);
+      sendIdeaToBoard(idea);
       setIdeas(nextIdeas);
       saveIdeas(nextIdeas);
       setTitle("");
