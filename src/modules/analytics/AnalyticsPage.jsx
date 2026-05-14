@@ -2105,7 +2105,7 @@ function AnalyticsPage() {
             </div>
             <a
               className="btn analytics-board-btn"
-              href="/analytics-board/"
+              href="http://127.0.0.1:3003/"
               target="_blank"
               rel="noreferrer"
             >
@@ -2115,7 +2115,7 @@ function AnalyticsPage() {
           <div className="analytics-board-frame-wrap">
             <iframe
               className="analytics-board-frame"
-              src="/analytics-board/"
+              src="http://127.0.0.1:3003/"
               title="Доска аналитики"
             />
           </div>
