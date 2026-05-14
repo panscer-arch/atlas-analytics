@@ -1,14 +1,28 @@
 import { useMemo, useState } from "react";
 
 const IDEAS_STORAGE_KEY = "analytics-idea-capture-v1";
-const BOARD_API_URL = "http://127.0.0.1:3003/api/signal";
+const BOARD_SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
 
 function loadIdeas() {
   if (typeof window === "undefined") return [];
 
   try {
-    const raw = window.localStorage.getItem(IDEAS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const boardRaw = window.localStorage.getItem(BOARD_SIGNALS_STORAGE_KEY);
+    const boardIdeas = boardRaw ? JSON.parse(boardRaw) : [];
+    const legacyRaw = window.localStorage.getItem(IDEAS_STORAGE_KEY);
+    const legacyIdeas = legacyRaw ? JSON.parse(legacyRaw) : [];
+
+    const merged = [...boardIdeas, ...legacyIdeas].filter((idea) => idea?.type === "analytics-idea");
+    const uniqueIdeas = [];
+    const seen = new Set();
+
+    merged.forEach((idea) => {
+      if (!idea?.id || seen.has(idea.id)) return;
+      seen.add(idea.id);
+      uniqueIdeas.push(idea);
+    });
+
+    return uniqueIdeas;
   } catch (error) {
     console.error("Failed to load analytics ideas", error);
     return [];
@@ -20,6 +34,7 @@ function saveIdeas(ideas) {
 
   try {
     window.localStorage.setItem(IDEAS_STORAGE_KEY, JSON.stringify(ideas));
+    window.localStorage.setItem(BOARD_SIGNALS_STORAGE_KEY, JSON.stringify(ideas));
   } catch (error) {
     console.error("Failed to persist analytics ideas", error);
   }
@@ -41,20 +56,6 @@ function buildIdeaPayload(title, details, activeTab) {
     createdAt,
     createdAtLabel: formatDateTime(createdAt),
   };
-}
-
-async function sendIdeaToBoard(idea) {
-  const response = await fetch(BOARD_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=UTF-8",
-    },
-    body: JSON.stringify(idea),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Board request failed with ${response.status}`);
-  }
 }
 
 function AnalyticsIdeaCapture({ activeTab }) {
@@ -79,21 +80,20 @@ function AnalyticsIdeaCapture({ activeTab }) {
     setStatus("");
 
     try {
-      await sendIdeaToBoard(idea);
       setIdeas(nextIdeas);
       saveIdeas(nextIdeas);
       setTitle("");
       setDetails("");
-      setStatus("Идея отправлена в доску аналитики.");
+      setStatus("Идея добавлена во встроенную доску аналитики.");
     } catch (error) {
-      console.error("Failed to send idea to board", error);
-      const offlineIdea = { ...idea, offline: true };
-      const offlineIdeas = [offlineIdea, ...ideas];
-      setIdeas(offlineIdeas);
-      saveIdeas(offlineIdeas);
+      console.error("Failed to save analytics idea", error);
+      const safeIdea = { ...idea, offline: true };
+      const safeIdeas = [safeIdea, ...ideas];
+      setIdeas(safeIdeas);
+      saveIdeas(safeIdeas);
       setTitle("");
       setDetails("");
-      setStatus("Доска сейчас недоступна. Идея сохранена локально.");
+      setStatus("Не удалось обновить доску. Идея сохранена локально.");
     } finally {
       setIsSubmitting(false);
     }

@@ -361,12 +361,12 @@ function AnalyticsRestoredPage() {
                   Здесь можно сразу смотреть backlog и текущие задачи по аналитике, не уходя с экрана.
                 </p>
               </div>
-              <a className="btn analytics-board-btn" href="http://127.0.0.1:3003/" target="_blank" rel="noreferrer">
+              <a className="btn analytics-board-btn" href="/analytics-board/" target="_blank" rel="noreferrer">
                 Открыть отдельно
               </a>
             </div>
             <div className="analytics-board-frame-wrap">
-              <iframe className="analytics-board-frame" src="http://127.0.0.1:3003/" title="Доска аналитики" />
+              <iframe className="analytics-board-frame" src="/analytics-board/" title="Доска аналитики" />
             </div>
           </section>
         </section>

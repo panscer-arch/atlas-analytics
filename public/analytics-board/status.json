@@ -1,0 +1,107 @@
+{
+  "analytics-foundation": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "incoming-plan-fact": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "obligations-forecast": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "money-breakdown": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "wallets-structure": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "alerts-recommendations": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-screen-ui": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-module-scaffold": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-russian-ui": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-mock-data-real": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-visual-blocks": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-local-preview": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-tabs-architecture": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-live-traffic-tab": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-products-cycles-tab": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-leaders-tab": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-geography-tab": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-partner-structure-tab": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "api-bridge-later": {
+    "done": true,
+    "status": "done",
+    "progress": 100
+  },
+  "analytics-idea-net-cash-by-source": {
+    "done": false,
+    "status": "in_progress",
+    "progress": 10
+  },
+  "analytics-idea-cac-to-net-margin": {
+    "done": false,
+    "status": "in_progress",
+    "progress": 10
+  }
+}

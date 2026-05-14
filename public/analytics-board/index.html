@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Доска аналитики Web3</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d1117;
+        --panel: #121923;
+        --card: #1a2230;
+        --line: rgba(255, 255, 255, 0.08);
+        --text: #eff5ff;
+        --muted: #93a0b7;
+        --accent: #66d6bf;
+        --accent-2: #74a7ff;
+        --warn: #f4c76a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(102, 214, 191, 0.12), transparent 30%),
+          radial-gradient(circle at right, rgba(116, 167, 255, 0.1), transparent 26%),
+          var(--bg);
+      }
+      .wrap {
+        width: min(1420px, calc(100vw - 32px));
+        margin: 24px auto 40px;
+      }
+      .hero, .filters, .kanban {
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+      }
+      .ideas {
+        margin: 0 0 16px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+      }
+      .ideas-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+      .idea-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 16px;
+      }
+      .idea-card h3 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .idea-card p {
+        color: var(--muted);
+        line-height: 1.45;
+        margin-bottom: 10px;
+      }
+      .idea-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .hero { margin-bottom: 16px; }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 0.8fr;
+        gap: 18px;
+      }
+      h1, h2, h3, p { margin: 0; }
+      h1 {
+        font-size: clamp(34px, 5vw, 52px);
+        line-height: 1.02;
+        margin-bottom: 10px;
+        letter-spacing: -0.05em;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.5;
+        max-width: 52rem;
+      }
+      .hero-side {
+        display: grid;
+        gap: 12px;
+      }
+      .hero-stat {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 16px;
+      }
+      .hero-stat span {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .hero-stat strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 24px;
+        letter-spacing: -0.04em;
+      }
+      .filters { margin-bottom: 16px; }
+      .chips {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .chip.active {
+        border-color: rgba(102, 214, 191, 0.35);
+        background: rgba(102, 214, 191, 0.14);
+      }
+      .kanban-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .column {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 14px;
+        min-height: 420px;
+      }
+      .column h2 {
+        font-size: 24px;
+        margin-bottom: 12px;
+      }
+      .cards {
+        display: grid;
+        gap: 12px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 16px;
+      }
+      .card h3 {
+        font-size: 24px;
+        line-height: 1.12;
+        margin-bottom: 8px;
+      }
+      .task-title {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .task-number {
+        flex: 0 0 auto;
+        min-width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        border: 1px solid rgba(102, 214, 191, 0.28);
+        background: rgba(102, 214, 191, 0.14);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .task-title-text {
+        flex: 1;
+      }
+      .card p {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .meta {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 13px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      .plain-toggle, .subtasks-toggle, .do-btn, .open-link {
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        padding: 10px 14px;
+        cursor: pointer;
+        text-decoration: none;
+        font: inherit;
+      }
+      .do-btn {
+        background: rgba(102, 214, 191, 0.14);
+        border-color: rgba(102, 214, 191, 0.28);
+      }
+      .delete-btn {
+        border-radius: 16px;
+        border: 1px solid rgba(255, 122, 122, 0.26);
+        background: rgba(255, 122, 122, 0.12);
+        color: var(--text);
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .idea-badge {
+        border: 1px solid rgba(116, 167, 255, 0.28);
+        background: rgba(116, 167, 255, 0.12);
+      }
+      .plain, .subtasks {
+        display: none;
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .plain.open, .subtasks.open { display: block; }
+      .subtask {
+        display: grid;
+        grid-template-columns: 22px 52px 1fr;
+        gap: 10px;
+        align-items: start;
+        margin-bottom: 12px;
+      }
+      .subtask-number {
+        margin-top: 1px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        margin-top: 2px;
+      }
+      .checkbox.done {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .progress {
+        margin-top: 14px;
+      }
+      .bar {
+        height: 10px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      }
+      .status {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .status strong {
+        color: var(--text);
+      }
+      .note {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--warn);
+      }
+      @media (max-width: 980px) {
+        .hero-grid,
+        .kanban-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <div class="hero-grid">
+          <div>
+            <h1>Модуль аналитики Web3 для админ-панели</h1>
+            <p class="sub">
+              Отдельная доска только под сборку вкладки аналитики. Главный фокус: входящие деньги,
+              обязательства на сегодня / 7 дней / 30 дней, требуемый новый приток, структура кошельков и
+              ежедневные алерты для оператора.
+            </p>
+          </div>
+          <div class="hero-side">
+            <div class="hero-stat">
+              <span>Главный KPI</span>
+              <strong>Входящие деньги</strong>
+            </div>
+            <div class="hero-stat">
+              <span>Критичный вопрос</span>
+              <strong>Хватает ли притока на обязательства</strong>
+            </div>
+            <div class="hero-stat">
+              <span>Подключение API</span>
+              <strong>Только после сборки основы</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="filters">
+        <div class="chips" id="filter-chips"></div>
+      </section>
+
+      <section class="ideas">
+        <h2>Входящие идеи из аналитики</h2>
+        <p class="sub" style="margin-top: 8px; margin-bottom: 16px; font-size: 16px;">
+          Всё, что бросаем кнопкой из аналитики, прилетает сюда как быстрый входящий backlog.
+        </p>
+        <div class="ideas-grid" id="ideas-col"></div>
+      </section>
+
+      <section class="kanban">
+        <div class="kanban-grid">
+          <div class="column">
+            <h2>Запланировано</h2>
+            <div class="cards" id="todo-col"></div>
+          </div>
+          <div class="column">
+            <h2>В работе</h2>
+            <div class="cards" id="inprogress-col"></div>
+          </div>
+          <div class="column">
+            <h2>Готово</h2>
+            <div class="cards" id="done-col"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const PROJECT_TITLE = "Доска аналитики Web3";
+      const STORAGE_KEY = "web3-analytics-board-status-v1";
+      const SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
+      const MIGRATION_KEY = "web3-analytics-board-migration-v19";
+
+      const TASKS = [
+        {
+          id: "analytics-foundation",
+          title: "Собрать базу аналитического модуля",
+          copy: "Сначала нужно жёстко зафиксировать, что именно считает система и какие сущности лежат в основе аналитики.",
+          plain: "Проще говоря: ядро уже зафиксировано. Главный вопрос модуля: хватает ли входящих денег на текущие и будущие обязательства. Канонические сущности: кошельки, продукты, циклы, ордера, выплаты, клеймы, реферальные начисления, комиссия платформы, creator-кошельки. Обязательные окна: сегодня, 7 дней, 30 дней, текущий месяц, следующий месяц.",
+          priority: "P0",
+          importance: "Критично",
+          difficulty: "Средняя",
+          scope: "Analytics + product",
+          estimate: "3–6 часов",
+          tags: ["analytics", "foundation", "p0"],
+          subtasks: [
+            { id: "foundation-goal", label: "Зафиксировать главный вопрос модуля: входящие деньги против обязательств", done: true },
+            { id: "foundation-entities", label: "Определить канонические сущности: кошельки, продукты, циклы, ордера, клеймы, рефералка, комиссия", done: true },
+            { id: "foundation-windows", label: "Зафиксировать окна: сегодня, 7 дней, 30 дней, текущий месяц, следующий месяц", done: true }
+          ]
+        },
+        {
+          id: "incoming-plan-fact",
+          title: "Собрать блок входящие / план / факт / разрыв",
+          copy: "Нужен главный операционный блок, который показывает факт входящих денег, план и недобор по дню.",
+          plain: "Проще говоря: блок уже зафиксирован. Каждый день система показывает Входящие сегодня, План на сегодня, Факт на сегодня, Разрыв на сегодня и Цель на завтра. Если план не добрали, недобор переносится вперед, а цель следующего дня автоматически повышается. Это главный операционный контур всей аналитики.",
+          priority: "P0",
+          importance: "Критично",
+          difficulty: "Средняя",
+          scope: "Денежный поток",
+          estimate: "4–8 часов",
+          tags: ["incoming", "cashflow", "p0"],
+          subtasks: [
+            { id: "incoming-today", label: "Показать Входящие сегодня и План на сегодня", done: true },
+            { id: "gap-today", label: "Считать Разрыв на сегодня и перенос недобора вперед", done: true },
+            { id: "target-tomorrow", label: "Автоматически повышать Цель на завтра при недоборе", done: true }
+          ]
+        },
+        {
+          id: "obligations-forecast",
+          title: "Собрать обязательства и прогноз на 7 / 30 дней",
+          copy: "После входящих денег нужно видеть, какое давление система уже несет и что придётся закрывать дальше.",
+          plain: "Проще говоря: блок уже зафиксирован. Система должна показывать выплаты на сегодня, сумму уже выплаченного, сумму невыплаченного, обязательства на 7 дней и на 30 дней, а также первую дату риска и прогнозируемый разрыв. Это второй ключевой слой после входящего потока.",
+          priority: "P0",
+          importance: "Критично",
+          difficulty: "Средняя",
+          scope: "Прогноз + выплаты",
+          estimate: "4–8 часов",
+          tags: ["forecast", "obligations", "p0"],
+          subtasks: [
+            { id: "obligations-today", label: "Показать выплаты: сегодня / уже выплачено / не выплачено", done: true },
+            { id: "obligations-7d-30d", label: "Показать будущие обязательства на 7 и 30 дней", done: true },
+            { id: "risk-date", label: "Определить первую дату риска и прогнозируемый разрыв", done: true }
+          ]
+        },
+        {
+          id: "money-breakdown",
+          title: "Разложить требуемый новый приток на выплаты, рефералку, комиссию и остаток",
+          copy: "Одной общей суммы недостаточно: оператор должен понимать структуру будущего расхода.",
+          plain: "Проще говоря: блок уже зафиксирован. Требуемый новый приток раскладывается на выплаты по циклам, рефералку, комиссию платформы и ваш остаток. Отдельно разделяем: уже выплачено, можно забрать сейчас и будет начислено позже. Так оператор видит не одну сумму, а всю структуру давления на деньги.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Финансовое разложение",
+          estimate: "4–8 часов",
+          tags: ["finance", "referral", "fee"],
+          subtasks: [
+            { id: "required-money-formula", label: "Собрать формулу требуемого нового притока", done: true },
+            { id: "breakdown-block", label: "Построить разложение: выплаты по циклам / рефералка / комиссия платформы / ваш остаток", done: true },
+            { id: "claim-separation", label: "Разделить уже выплачено, можно забрать сейчас и будет начислено позже", done: true }
+          ]
+        },
+        {
+          id: "wallets-structure",
+          title: "Собрать аналитику по кошелькам и структуре",
+          copy: "Нужно видеть, какие кошельки и какие ветки создают главный объём, доход и будущую нагрузку.",
+          plain: "Проще говоря: блок уже зафиксирован. Аналитика должна разделять пользовательские, creator, treasury и platform-кошельки, показывать топ-кошельки по входящему объему и будущей нагрузке, а также понимать, куда стекаются рефералка и комиссия платформы. Это нужно, чтобы видеть концентрацию риска и структурные перекосы.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "Кошельки + структура",
+          estimate: "1–2 дня",
+          tags: ["wallets", "structure", "referral"],
+          subtasks: [
+            { id: "wallet-map", label: "Разделить пользовательские, creator, treasury и platform-кошельки", done: true },
+            { id: "wallet-pressure", label: "Показать топ-кошельки по входящему объему и будущей нагрузке", done: true },
+            { id: "creator-flow", label: "Понять, куда стекаются рефералка и комиссия платформы", done: true }
+          ]
+        },
+        {
+          id: "alerts-recommendations",
+          title: "Добавить алерты и ежедневные рекомендации",
+          copy: "Модуль должен не только считать, но и жёстко сигналить о просадках и давать следующий шаг.",
+          plain: "Проще говоря: блок уже зафиксирован. Система должна сигналить о дневном разрыве и нехватке покрытия на 7 и 30 дней, показывать главный источник давления на систему и формировать следующие действия для оператора: сколько привлечь, что усилить и где риск становится опасным.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Операционка + алерты",
+          estimate: "4–8 часов",
+          tags: ["alerts", "ops", "recommendations"],
+          subtasks: [
+            { id: "daily-gap-alert", label: "Сигналить о дневном разрыве и нехватке покрытия на 7 / 30 дней", done: true },
+            { id: "pressure-source", label: "Показывать источник главного давления: Daily, Lockup, рефералка или концентрация", done: true },
+            { id: "next-actions", label: "Формировать следующие действия для оператора", done: true }
+          ]
+        },
+        {
+          id: "analytics-screen-ui",
+          title: "Собрать страницу аналитики как самостоятельный модуль",
+          copy: "Когда база логики готова, можно собирать отдельный экран с фильтрами, карточками, таблицами и графиками.",
+          plain: "Проще говоря: блок уже зафиксирован. Страница аналитики собирается как независимый модуль с управленческим, операционным и структурным слоями. У неё есть свой контракт мок-данных, фильтры, детализация, карточки, таблицы и графики. Потом этот модуль можно спокойно импортировать в общую админку.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "Фронтенд-модуль",
+          estimate: "1–3 дня",
+          tags: ["ui", "frontend", "module"],
+          subtasks: [
+            { id: "screen-layers", label: "Разложить экран на управленческий, операционный и структурный слои", done: true },
+            { id: "mock-data-contract", label: "Подготовить контракт мок-данных под экран", done: true },
+            { id: "filters-drilldown", label: "Добавить фильтры и детализацию", done: true }
+          ]
+        },
+        {
+          id: "analytics-module-scaffold",
+          title: "Собрать каркас analytics-модуля в проекте",
+          copy: "Нужно перенести зафиксированную архитектуру в реальный модуль внутри admin-проекта, не затрагивая остальные разделы.",
+          plain: "Проще говоря: каркас уже собран. В проекте уже есть структура файлов analytics-модуля, точка входа, страница, роуты, компоненты, хуки, сервисы, мок-данные и стили, которые живут отдельно от остальных разделов.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Код + структура",
+          estimate: "4–8 часов",
+          tags: ["frontend", "module", "analytics"],
+          subtasks: [
+            { id: "scaffold-files", label: "Подготовить структуру файлов analytics-модуля", done: true },
+            { id: "scaffold-entry", label: "Сделать точку входа страницы и маршруты", done: true },
+            { id: "scaffold-components", label: "Разложить базовые компоненты и состояния по отдельным файлам", done: true }
+          ]
+        },
+        {
+          id: "analytics-russian-ui",
+          title: "Перевести интерфейс аналитики полностью на русский",
+          copy: "Готовый модуль должен быть русскоязычным: названия метрик, блоков, фильтров, таблиц и алертов.",
+          plain: "Проще говоря: задача уже закрыта. Пользовательский интерфейс модуля переведён на русский: заголовки, карточки, фильтры, таблица, пустые состояния, загрузка, подписи графиков и экспорт.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Низкая",
+          scope: "Контент + UI",
+          estimate: "2–4 часа",
+          tags: ["frontend", "analytics"],
+          subtasks: [
+            { id: "russian-metrics", label: "Перевести названия метрик и карточек", done: true },
+            { id: "russian-filters", label: "Перевести фильтры, таблицы и подписи графиков", done: true },
+            { id: "russian-alerts", label: "Перевести алерты, рекомендации и пустые состояния", done: true }
+          ]
+        },
+        {
+          id: "analytics-mock-data-real",
+          title: "Подготовить реалистичные мок-данные под аналитику",
+          copy: "Прежде чем подключать API, нужно, чтобы экран жил на правдоподобных данных и раскрывал всю логику блока.",
+          plain: "Проще говоря: задача уже закрыта. Мок-данные переведены на инвестиционную модель: Unity Lockup и Unity Daily, входящий поток, план, обязательства, рефералка, комиссия платформы, ваш остаток, claimable-суммы, будущие обязательства и первая дата риска.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Данные + фронтенд",
+          estimate: "4–8 часов",
+          tags: ["analytics", "frontend"],
+          subtasks: [
+            { id: "mock-cashflow", label: "Собрать мок-данные по входящему потоку и обязательствам", done: true },
+            { id: "mock-wallets", label: "Собрать мок-данные по кошелькам, веткам и структуре", done: true },
+            { id: "mock-alerts", label: "Собрать мок-данные по алертам и рекомендациям", done: true }
+          ]
+        },
+        {
+          id: "analytics-visual-blocks",
+          title: "Собрать карточки, таблицы и графики аналитики",
+          copy: "После структуры и моков нужно собрать сам экран: KPI, breakdown, таблицы кошельков и прогнозные блоки.",
+          plain: "Проще говоря: задача уже закрыта. Экран собран как живая аналитическая страница: KPI, блок кошельков, продуктовая таблица, графики по входящему потоку и выплатам, а также отдельный блок сигналов и действий для оператора.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "UI + графики",
+          estimate: "1–3 дня",
+          tags: ["frontend", "ui", "analytics"],
+          subtasks: [
+            { id: "visual-kpi", label: "Собрать KPI-карточки и summary-блок", done: true },
+            { id: "visual-tables", label: "Собрать таблицы по кошелькам, структуре и обязательствам", done: true },
+            { id: "visual-charts", label: "Собрать графики по прогнозу, входящему потоку и нагрузке", done: true }
+          ]
+        },
+        {
+          id: "analytics-local-preview",
+          title: "Поднять модуль локально и проверить результат в браузере",
+          copy: "Когда экран будет собран, его нужно поднять как живой локальный проект и пройти глазами перед API-этапом.",
+          plain: "Проще говоря: задача уже закрыта. Модуль поднят локально, живая ссылка есть, и экран уже можно смотреть в браузере как отдельный рабочий результат до этапа API.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Проверка + запуск",
+          estimate: "2–4 часа",
+          tags: ["frontend", "ui"],
+          subtasks: [
+            { id: "preview-run", label: "Поднять admin-проект локально", done: true },
+            { id: "preview-pass", label: "Проверить экран аналитики в браузере", done: true },
+            { id: "preview-polish", label: "Подчистить найденные визуальные и логические шероховатости", done: true }
+          ]
+        },
+        {
+          id: "analytics-tabs-architecture",
+          title: "Разложить аналитику на вкладки внутри модуля",
+          copy: "Нужно перестать расширять один экран и зафиксировать архитектуру раздела Аналитика как набора самостоятельных вкладок.",
+          plain: "Проще говоря: текущий Обзор уже есть, а дальше аналитика должна жить по вкладкам. Базовый каркас: Обзор, Трафик / Онлайн, Продукты / Циклы, Кошельки, Лидеры, География, Партнёрская структура, а расширенный Прогноз можно оставить на потом. Это не даёт разделу превратиться в портянку.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Product + IA",
+          estimate: "3–6 часов",
+          tags: ["analytics", "frontend", "module"],
+          subtasks: [
+            { id: "tabs-map", label: "Зафиксировать полный список вкладок внутри Аналитики", done: false },
+            { id: "tabs-order", label: "Определить порядок вкладок по важности для владельца", done: false },
+            { id: "tabs-mvp", label: "Разделить вкладки на MVP и later", done: false }
+          ]
+        },
+        {
+          id: "analytics-live-traffic-tab",
+          title: "Собрать вкладку Трафик / Онлайн",
+          copy: "Нужно видеть, сколько людей сейчас на сайте и в кабинете, из каких стран они приходят и что происходит в живой воронке.",
+          plain: "Проще говоря: это отдельная вкладка про live-аналитику через API. Она должна показывать онлайн на сайте, онлайн в личном кабинете, сессии за день, авторизованных пользователей, подключение кошельков, страны трафика и live-конверсию сайт -> кабинет -> кошелёк -> депозит.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "Traffic + live product analytics",
+          estimate: "1–3 дня",
+          tags: ["analytics", "frontend", "api", "traffic"],
+          subtasks: [
+            { id: "live-kpis", label: "Определить KPI: онлайн на сайте, онлайн в кабинете, сессии, авторизация, wallet connect", done: false },
+            { id: "live-geo", label: "Показать страны онлайн-трафика и распределение по странам", done: false },
+            { id: "live-funnel", label: "Собрать живую воронку сайт -> кабинет -> кошелёк -> депозит", done: false }
+          ]
+        },
+        {
+          id: "analytics-products-cycles-tab",
+          title: "Собрать вкладку Продукты / Циклы",
+          copy: "Нужно отдельно видеть, какой продукт и какой цикл создают приток, а какой продукт и какой цикл создают основное давление.",
+          plain: "Проще говоря: это экран про Unity Lockup и Unity Daily. Там должна быть аналитика по активным ордерам, сумме входов, ожидаемым выплатам, claimable, accrued, pressure by maturity dates и сравнению продуктов между собой.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "Products + cycle pressure",
+          estimate: "1–3 дня",
+          tags: ["analytics", "frontend", "geo"],
+          subtasks: [
+            { id: "products-compare", label: "Собрать сравнение Unity Lockup и Unity Daily", done: false },
+            { id: "cycles-pressure", label: "Показать нагрузку по циклам и датам maturity", done: false },
+            { id: "products-table", label: "Собрать таблицу продукт / циклы / inflow / payouts / pressure", done: false }
+          ]
+        },
+        {
+          id: "analytics-leaders-tab",
+          title: "Собрать вкладку Лидеры",
+          copy: "Нужно отдельно видеть, кто больше всего участвует сам и кто больше всего приводит участников и деньги.",
+          plain: "Проще говоря: вкладка Лидеры должна иметь два режима: По участию и По привлечению. Там должны быть топы по сумме инвестиций, числу циклов, активности, приглашённым людям, привлечённым деньгам и реферальной нагрузке.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Users + leaders",
+          estimate: "1–2 дня",
+          tags: ["analytics", "frontend"],
+          subtasks: [
+            { id: "leaders-investors", label: "Собрать лидеров по участию: инвестиции, циклы, активность", done: false },
+            { id: "leaders-referrers", label: "Собрать лидеров по привлечению: участники, деньги, referral load", done: false },
+            { id: "leaders-tables", label: "Собрать таблицы и режимы По участию / По привлечению", done: false }
+          ]
+        },
+        {
+          id: "analytics-geography-tab",
+          title: "Собрать вкладку География",
+          copy: "Нужно использовать страну из профиля и видеть, какие страны дают пользователей, деньги, активность и обязательства.",
+          plain: "Проще говоря: вкладка География должна показывать пользователей по странам, активные кошельки по странам, входящий поток по странам, обязательства по странам, депозиты по странам, а также топ стран по росту и по деньгам.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Geo analytics",
+          estimate: "1–2 дня",
+          tags: ["analytics", "frontend"],
+          subtasks: [
+            { id: "geo-kpis", label: "Определить KPI по странам: users, wallets, inflow, obligations, deposits", done: false },
+            { id: "geo-breakdown", label: "Собрать распределение и топ стран по росту и по деньгам", done: false },
+            { id: "geo-table", label: "Собрать таблицу страна / users / wallets / inflow / obligations / deposits", done: false }
+          ]
+        },
+        {
+          id: "analytics-partner-structure-tab",
+          title: "Собрать вкладку Партнёрская структура",
+          copy: "Нужно отдельно понимать, какие ветки и лидеры реально помогают росту, а какие создают лишнюю нагрузку.",
+          plain: "Проще говоря: эта вкладка показывает начислено партнёрам, выплачено партнёрам, незаклеймленную партнёрку, top branches by inflow, top branches by referral burden и structural inefficiency. Она нужна, потому что рефералка критична для вашей модели.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "Referral + structure",
+          estimate: "1–3 дня",
+          tags: ["analytics", "wallets", "frontend"],
+          subtasks: [
+            { id: "partner-branches", label: "Собрать ветки и лидеров по inflow, invited и referral load", done: false },
+            { id: "partner-inefficiency", label: "Показать structural inefficiency и проблемные ветки", done: false },
+            { id: "partner-table", label: "Собрать таблицу лидер / ветка / inflow / invited / referral accrual / payout", done: false }
+          ]
+        },
+        {
+          id: "api-bridge-later",
+          title: "Подключить API в самом конце",
+          copy: "Интеграцию с backend делаем только после того, как логика экрана и метрик стабилизировалась.",
+          plain: "Проще говоря: сначала собираем правильную аналитику и только потом связываем её с Nest, PostgreSQL и дальнейшим pipeline.",
+          priority: "P2",
+          importance: "Средняя",
+          difficulty: "Высокая",
+          scope: "Мост к API",
+          estimate: "1–2 дня",
+          tags: ["api", "backend", "later"],
+          subtasks: [
+            { id: "read-model", label: "Определить серверную read-model для аналитики", done: false },
+            { id: "refresh-strategy", label: "Зафиксировать стратегию снапшотов и обновления", done: false },
+            { id: "scale-path", label: "Описать путь от PostgreSQL к ClickHouse при росте", done: false }
+          ]
+        }
+      ];
+
+      const state = {
+        filter: "all",
+        statuses: {},
+        signals: [],
+      };
+
+      const filterDefs = [
+        { id: "all", label: "Все" },
+        { id: "P0", label: "Только P0" },
+        { id: "analytics", label: "Аналитика" },
+        { id: "wallets", label: "Кошельки" },
+        { id: "frontend", label: "Фронтенд" },
+        { id: "api", label: "API потом" },
+        { id: "geo", label: "География" },
+        { id: "traffic", label: "Трафик" }
+      ];
+
+      const filterChips = document.getElementById("filter-chips");
+      const todoCol = document.getElementById("todo-col");
+      const inprogressCol = document.getElementById("inprogress-col");
+      const doneCol = document.getElementById("done-col");
+      const ideasCol = document.getElementById("ideas-col");
+
+      function matchesFilter(task) {
+        if (state.filter === "all") return true;
+        if (state.filter === "P0") return task.priority === "P0";
+        return task.tags.includes(state.filter);
+      }
+
+      function getTaskStatus(task) {
+        const saved = state.statuses[task.id];
+        if (!saved) return "todo";
+        if (saved.done) return "done";
+        return saved.status || "todo";
+      }
+
+      function getProgress(task) {
+        const saved = state.statuses[task.id];
+        if (saved && Number.isFinite(saved.progress) && saved.progress > 0) {
+          return saved.progress;
+        }
+        const total = task.subtasks.length || 1;
+        const done = task.subtasks.filter((subtask) => subtask.done).length;
+        return Math.round((done / total) * 100);
+      }
+
+      function persistLocalStatuses() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.statuses));
+        } catch (error) {
+          console.error("Failed to persist local board state", error);
+        }
+      }
+
+      function loadLocalStatuses() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          console.error("Failed to read local board state", error);
+          return {};
+        }
+      }
+
+      function persistLocalSignals() {
+        try {
+          localStorage.setItem(SIGNALS_STORAGE_KEY, JSON.stringify(state.signals || []));
+        } catch (error) {
+          console.error("Failed to persist local board signals", error);
+        }
+      }
+
+      function loadLocalSignals() {
+        try {
+          const raw = localStorage.getItem(SIGNALS_STORAGE_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.error("Failed to read local board signals", error);
+          return [];
+        }
+      }
+
+      function mergeSignals(primary, fallback) {
+        const next = [];
+        const seen = new Set();
+
+        [...primary, ...fallback].forEach((signal) => {
+          if (!signal || !signal.id || seen.has(String(signal.id))) return;
+          seen.add(String(signal.id));
+          next.push(signal);
+        });
+
+        return next;
+      }
+
+      function migrateBoardState() {
+        try {
+          const currentMigration = localStorage.getItem(MIGRATION_KEY);
+          if (currentMigration === "task-18-partner-structure-in-progress") {
+            return;
+          }
+
+          state.statuses["analytics-foundation"] = {
+            taskId: "analytics-foundation",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["incoming-plan-fact"] = {
+            taskId: "incoming-plan-fact",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["obligations-forecast"] = {
+            taskId: "obligations-forecast",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["money-breakdown"] = {
+            taskId: "money-breakdown",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["wallets-structure"] = {
+            taskId: "wallets-structure",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["alerts-recommendations"] = {
+            taskId: "alerts-recommendations",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-screen-ui"] = {
+            taskId: "analytics-screen-ui",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-module-scaffold"] = {
+            taskId: "analytics-module-scaffold",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-russian-ui"] = {
+            taskId: "analytics-russian-ui",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-mock-data-real"] = {
+            taskId: "analytics-mock-data-real",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-visual-blocks"] = {
+            taskId: "analytics-visual-blocks",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-local-preview"] = {
+            taskId: "analytics-local-preview",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          if (!state.statuses["api-bridge-later"]) {
+            state.statuses["api-bridge-later"] = {
+              taskId: "api-bridge-later",
+              done: false,
+              status: "todo",
+              progress: 0,
+            };
+          }
+
+          state.statuses["analytics-tabs-architecture"] = {
+            taskId: "analytics-tabs-architecture",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-live-traffic-tab"] = {
+            taskId: "analytics-live-traffic-tab",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-products-cycles-tab"] = {
+            taskId: "analytics-products-cycles-tab",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-leaders-tab"] = {
+            taskId: "analytics-leaders-tab",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-geography-tab"] = {
+            taskId: "analytics-geography-tab",
+            done: true,
+            status: "done",
+            progress: 100,
+          };
+
+          state.statuses["analytics-partner-structure-tab"] = {
+            taskId: "analytics-partner-structure-tab",
+            done: false,
+            status: "in_progress",
+            progress: 15,
+          };
+
+          persistLocalStatuses();
+          localStorage.setItem(MIGRATION_KEY, "task-18-partner-structure-in-progress");
+        } catch (error) {
+          console.error("Failed to migrate board state", error);
+        }
+      }
+
+      async function saveStatus(payload) {
+        state.statuses[payload.taskId] = payload;
+        persistLocalStatuses();
+      }
+
+      async function deleteIdea(signalId) {
+        state.signals = (state.signals || []).filter((signal) => signal.id !== signalId);
+        persistLocalSignals();
+        renderIdeas();
+        renderTasks();
+      }
+
+      function renderFilters() {
+        filterChips.innerHTML = "";
+        filterDefs.forEach((filterDef) => {
+          const chip = document.createElement("button");
+          chip.className = `chip ${state.filter === filterDef.id ? "active" : ""}`;
+          chip.textContent = filterDef.label;
+          chip.onclick = () => {
+            state.filter = filterDef.id;
+            renderFilters();
+            renderTasks();
+          };
+          filterChips.appendChild(chip);
+        });
+      }
+
+      function createCard(task) {
+        const wrapper = document.createElement("article");
+        wrapper.className = "card";
+
+        const status = getTaskStatus(task);
+        const progress = getProgress(task);
+        const taskNumber = TASKS.findIndex((item) => item.id === task.id) + 1;
+
+        wrapper.innerHTML = `
+          <div class="task-title">
+            <div class="task-number">${taskNumber}</div>
+            <div class="task-title-text">
+              <h3>Задача ${taskNumber}. ${task.title}</h3>
+            </div>
+          </div>
+          <p>${task.copy}</p>
+          <div class="meta">
+            <span class="pill">${task.priority}</span>
+            <span class="pill">${task.scope}</span>
+            <span class="pill">${task.estimate}</span>
+          </div>
+          <div class="actions">
+            <button class="plain-toggle" type="button">Простыми словами</button>
+            <button class="subtasks-toggle" type="button">Подзадачи</button>
+            <button class="do-btn" type="button">Сделать</button>
+          </div>
+          <div class="plain">${task.plain}</div>
+          <div class="subtasks">
+            ${task.subtasks.map((subtask, subtaskIndex) => `
+              <div class="subtask">
+                <div class="checkbox ${subtask.done ? "done" : ""}"></div>
+                <div class="subtask-number">${taskNumber}.${subtaskIndex + 1}</div>
+                <div>${subtask.label}</div>
+              </div>
+            `).join("")}
+          </div>
+          <div class="progress">
+            <div class="bar"><div class="fill" style="width: ${progress}%"></div></div>
+            <div class="status"><strong>${status === "done" ? "Готово" : status === "in_progress" ? "В работе" : "Запланировано"}</strong> · ${progress}%</div>
+            <div class="note">API подключаем позже: сейчас собираем сильную основу модуля.</div>
+          </div>
+        `;
+
+        const plain = wrapper.querySelector(".plain");
+        const subtasks = wrapper.querySelector(".subtasks");
+        wrapper.querySelector(".plain-toggle").onclick = () => plain.classList.toggle("open");
+        wrapper.querySelector(".subtasks-toggle").onclick = () => subtasks.classList.toggle("open");
+        wrapper.querySelector(".do-btn").onclick = async () => {
+          const current = state.statuses[task.id] || {};
+          const nextStatus = current.status === "in_progress" ? "done" : "in_progress";
+          const payload = {
+            taskId: task.id,
+            done: nextStatus === "done",
+            status: nextStatus,
+            progress: nextStatus === "done" ? 100 : Math.max(progress, 10),
+          };
+
+          await saveStatus(payload);
+          renderTasks();
+        };
+
+        return wrapper;
+      }
+
+      function createIdeaTaskCard(idea) {
+        const wrapper = document.createElement("article");
+        wrapper.className = "card";
+        const status = getTaskStatus(idea);
+        const progress = idea.progress || 0;
+
+        wrapper.innerHTML = `
+          <div class="task-title">
+            <div class="task-number">Идея</div>
+            <div class="task-title-text">
+              <h3>${idea.title || "Идея без названия"}</h3>
+            </div>
+          </div>
+          <p>${idea.details || "Без комментария"}</p>
+          <div class="meta">
+            <span class="pill idea-badge">Идея</span>
+            <span class="pill">${idea.activeTab || "overview"}</span>
+            <span class="pill">${idea.createdAtLabel || "без даты"}</span>
+          </div>
+          <div class="actions">
+            <button class="do-btn" type="button">Сделать</button>
+            <button class="delete-btn" type="button">Удалить</button>
+          </div>
+          <div class="progress">
+            <div class="bar"><div class="fill" style="width: ${progress}%"></div></div>
+            <div class="status"><strong>${status === "done" ? "Готово" : status === "in_progress" ? "В работе" : "Запланировано"}</strong> · ${progress}%</div>
+            <div class="note">Карточка создана из идеи внутри аналитики.</div>
+          </div>
+        `;
+
+        wrapper.querySelector(".do-btn").onclick = async () => {
+          const current = state.statuses[idea.id] || {};
+          const nextStatus = current.status === "in_progress" ? "done" : "in_progress";
+          const payload = {
+            taskId: idea.id,
+            done: nextStatus === "done",
+            status: nextStatus,
+            progress: nextStatus === "done" ? 100 : Math.max(progress, 10),
+          };
+
+          await saveStatus(payload);
+          renderTasks();
+        };
+
+        wrapper.querySelector(".delete-btn").onclick = async () => {
+          await deleteIdea(idea.id);
+        };
+
+        return wrapper;
+      }
+
+      function renderTasks() {
+        todoCol.innerHTML = "";
+        inprogressCol.innerHTML = "";
+        doneCol.innerHTML = "";
+
+        const ideaSignals = (state.signals || []).filter((signal) => signal.type === "analytics-idea");
+        ideaSignals.forEach((idea) => {
+          const status = getTaskStatus(idea);
+          const card = createIdeaTaskCard(idea);
+
+          if (status === "done") {
+            doneCol.appendChild(card);
+          } else if (status === "in_progress") {
+            inprogressCol.appendChild(card);
+          } else {
+            todoCol.appendChild(card);
+          }
+        });
+
+        TASKS.filter(matchesFilter).forEach((task) => {
+          const status = getTaskStatus(task);
+          const card = createCard(task);
+
+          if (status === "done") {
+            doneCol.appendChild(card);
+          } else if (status === "in_progress") {
+            inprogressCol.appendChild(card);
+          } else {
+            todoCol.appendChild(card);
+          }
+        });
+      }
+
+      async function hydrateStatuses() {
+        state.statuses = loadLocalStatuses();
+        state.signals = loadLocalSignals();
+        migrateBoardState();
+
+        if (window.location.protocol === "file:") {
+          return;
+        }
+
+        try {
+          const [statusResponse, signalsResponse] = await Promise.all([
+            fetch("./status.json", { cache: "no-store" }),
+            fetch("./signals.json", { cache: "no-store" }),
+          ]);
+
+          const seededStatuses = statusResponse.ok ? await statusResponse.json() : {};
+          const seededSignals = signalsResponse.ok ? await signalsResponse.json() : [];
+
+          state.statuses = { ...seededStatuses, ...state.statuses };
+          state.signals = mergeSignals(state.signals, seededSignals);
+          persistLocalStatuses();
+          persistLocalSignals();
+        } catch (error) {
+          console.error("Failed to load board state", error);
+        }
+      }
+
+      function renderIdeas() {
+        ideasCol.innerHTML = "";
+        const ideaSignals = (state.signals || [])
+          .filter((signal) => signal.type === "analytics-idea")
+          .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))
+          .slice(0, 12);
+
+        if (!ideaSignals.length) {
+          ideasCol.innerHTML = '<div class="idea-card"><h3>Пока пусто</h3><p>Добавь идею прямо из аналитики, и она появится здесь.</p></div>';
+          return;
+        }
+
+        ideaSignals.forEach((idea) => {
+          const wrapper = document.createElement("article");
+          wrapper.className = "idea-card";
+          wrapper.innerHTML = `
+            <h3>${idea.title || "Идея без названия"}</h3>
+            <p>${idea.details || "Без комментария"}</p>
+            <div class="idea-meta">
+              <span class="pill">${idea.activeTab || "overview"}</span>
+              <span class="pill">${idea.createdAtLabel || "без даты"}</span>
+              <span class="pill">из аналитики</span>
+            </div>
+          `;
+          ideasCol.appendChild(wrapper);
+        });
+      }
+
+      async function boot() {
+        await hydrateStatuses();
+        renderFilters();
+        renderIdeas();
+        renderTasks();
+      }
+
+      boot();
+    </script>
+  </body>
+</html>

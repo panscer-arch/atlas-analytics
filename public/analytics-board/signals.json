@@ -1,0 +1,72 @@
+[
+  {
+    "id": "analytics-idea-net-cash-by-source",
+    "type": "analytics-idea",
+    "title": "Добавить net cash by source",
+    "details": "Показывать не только inflow, а чистый результат: inflow - payouts - referral - fee по стране, лидеру, продукту и источнику.",
+    "source": "arbitrage-operator",
+    "activeTab": "overview",
+    "createdAt": "2026-05-07T12:00:00.000Z",
+    "createdAtLabel": "07.05.2026, 15:00:00"
+  },
+  {
+    "id": "analytics-idea-cac-to-net-margin",
+    "type": "analytics-idea",
+    "title": "Добавить CAC -> deposit -> payout burden -> net margin",
+    "details": "Нужно видеть стоимость привлечения, внесённые деньги, созданную нагрузку и что осталось чистыми.",
+    "source": "arbitrage-operator",
+    "activeTab": "traffic",
+    "createdAt": "2026-05-07T12:02:00.000Z",
+    "createdAtLabel": "07.05.2026, 15:02:00"
+  },
+  {
+    "id": "analytics-idea-new-money-vs-new-obligations",
+    "type": "analytics-idea",
+    "title": "Сравнивать новые деньги и новые обязательства за день",
+    "details": "Каждый день показывать, сколько новых денег пришло и какой новый хвост обязательств они создали.",
+    "source": "arbitrage-operator",
+    "activeTab": "overview",
+    "createdAt": "2026-05-07T12:04:00.000Z",
+    "createdAtLabel": "07.05.2026, 15:04:00"
+  },
+  {
+    "id": "analytics-idea-profitable-leaders",
+    "type": "analytics-idea",
+    "title": "Добавить top profitable leaders",
+    "details": "Показывать лидеров не только по объёму, но и по реальной пользе: inflow, burden, referral load и net contribution.",
+    "source": "arbitrage-operator",
+    "activeTab": "leaders",
+    "createdAt": "2026-05-07T12:06:00.000Z",
+    "createdAtLabel": "07.05.2026, 15:06:00"
+  },
+  {
+    "id": "analytics-idea-payback-pressure-density",
+    "type": "analytics-idea",
+    "title": "Добавить payback pressure density по датам",
+    "details": "Показывать, на каких 5 окнах по датам и продуктам концентрируется максимальная нагрузка.",
+    "source": "arbitrage-operator",
+    "activeTab": "products",
+    "createdAt": "2026-05-07T12:08:00.000Z",
+    "createdAtLabel": "07.05.2026, 15:08:00"
+  },
+  {
+    "id": "analytics-idea-referral-burden-vs-inflow",
+    "type": "analytics-idea",
+    "title": "Сравнивать referral burden / attracted inflow",
+    "details": "Во вкладке партнёрской структуры показывать, какие ветки реально приводят деньги, а какие дорого обходятся системе.",
+    "source": "arbitrage-operator",
+    "activeTab": "partner",
+    "createdAt": "2026-05-07T12:10:00.000Z",
+    "createdAtLabel": "07.05.2026, 15:10:00"
+  },
+  {
+    "id": "analytics-idea-final-step-support-popup",
+    "type": "analytics-idea",
+    "title": "Добавить rescue pop-up на финальном этапе создания смарт-контракта",
+    "details": "Если пользователь дошёл до последнего шага, но завис или получил ошибку, показать мягкий pop-up с предложением связаться с поддержкой и помочь завершить процесс.",
+    "source": "analytics-module",
+    "activeTab": "traffic",
+    "createdAt": "2026-05-07T10:05:00.000Z",
+    "createdAtLabel": "07.05.2026, 13:05:00"
+  }
+]
