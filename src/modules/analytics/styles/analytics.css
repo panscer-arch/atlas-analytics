@@ -2444,6 +2444,41 @@
   transition: width 180ms ease;
 }
 
+.analytics-launch-browser-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.32rem;
+  margin: 0.8rem 0 0;
+  border: 1px solid rgba(157, 178, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(7, 12, 22, 0.5);
+}
+
+.analytics-launch-browser-tab {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 0.58rem 0.9rem;
+  background: rgba(255, 255, 255, 0.035);
+  color: #8fa3c0;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.analytics-launch-browser-tab:hover,
+.analytics-launch-browser-tab:focus-visible {
+  color: #edf3ff;
+  border-color: rgba(123, 180, 255, 0.24);
+  outline: none;
+}
+
+.analytics-launch-browser-tab-active {
+  border-color: rgba(105, 194, 179, 0.32);
+  background: linear-gradient(135deg, rgba(105, 194, 179, 0.22), rgba(123, 180, 255, 0.14));
+  color: #ffffff;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+}
+
 .analytics-launch-table th,
 .analytics-launch-table td {
   vertical-align: top;

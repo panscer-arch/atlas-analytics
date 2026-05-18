@@ -26,6 +26,7 @@ import { useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
 const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
+const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
 const LAUNCH_STATUSES = ["В работе", "Готово", "Отложено"];
 
 const defaultLaunchChecklistTasks = [
@@ -90,6 +91,72 @@ const defaultLaunchChecklistTasks = [
     title: "Брендбук",
     responsible: "Дизайн / продукт",
     comment: "Подготовить брендбук и залить его в личный кабинет или базу знаний, чтобы команда брала материалы из одного места.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+];
+
+const defaultKnowledgeBaseChecklistTasks = [
+  {
+    id: "kb-presentation",
+    title: "Презентация",
+    responsible: "Контент / продукт",
+    assignee: "",
+    comment: "Вычитать презентацию, проверить структуру, формулировки, цифры, механику циклов и партнерской программы.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "kb-faq",
+    title: "FAQ",
+    responsible: "Поддержка / продукт",
+    assignee: "",
+    comment: "Собрать частые вопросы по MetaMask, регистрации, циклам, claim, reinvest, тарифам и партнерке.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "kb-videos",
+    title: "Ролики",
+    responsible: "Контент / маркетинг",
+    assignee: "",
+    comment: "Собрать и разложить обучающие ролики: партнерка, как работает цикл, идеология, регистрация и создание цикла.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "kb-white-paper",
+    title: "White Paper",
+    responsible: "Продукт / юридический",
+    assignee: "",
+    comment: "Подготовить или актуализировать White Paper: экономика, smart-contract механика, тарифы, комиссии и риски.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "kb-mlm-materials",
+    title: "Материалы по MLM",
+    responsible: "Продукт / партнерка",
+    assignee: "",
+    comment: "Продумать материалы по MLM: статусы, уровни, компрессия, matching bonus и понятная схема начислений.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "kb-webinars",
+    title: "Вебинары",
+    responsible: "Обучение / маркетинг",
+    assignee: "",
+    comment: "Подготовить раздел для вебинаров: расписание, записи, темы, ссылки и ответственных за проведение.",
+    dueDate: "15.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "kb-instructions",
+    title: "Инструкции",
+    responsible: "Поддержка / продукт",
+    assignee: "",
+    comment: "Собрать пошаговые инструкции по регистрации, подключению кошелька, покупке цикла, claim и повторному депозиту.",
     dueDate: "15.05.2026",
     status: "В работе",
   },
@@ -286,6 +353,7 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
+  const [activeLaunchBoard, setActiveLaunchBoard] = useState("launch");
   const [launchTasks, setLaunchTasks] = useState(() => {
     if (typeof window === "undefined") return [];
 
@@ -296,7 +364,25 @@ function AnalyticsPage() {
       return defaultLaunchChecklistTasks;
     }
   });
+  const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const saved = window.localStorage.getItem(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : defaultKnowledgeBaseChecklistTasks;
+    } catch {
+      return defaultKnowledgeBaseChecklistTasks;
+    }
+  });
   const [newLaunchTask, setNewLaunchTask] = useState(() => createLaunchTask({
+    title: "",
+    responsible: "",
+    assignee: "",
+    comment: "",
+    dueDate: "",
+    status: "В работе",
+  }));
+  const [newKnowledgeBaseTask, setNewKnowledgeBaseTask] = useState(() => createLaunchTask({
     title: "",
     responsible: "",
     assignee: "",
@@ -381,9 +467,9 @@ function AnalyticsPage() {
     window.setTimeout(() => scrollToSection("overview-graphs"), 60);
   }
 
-  function persistLaunchTasks(nextTasks) {
+  function persistChecklistTasks(storageKey, nextTasks) {
     try {
-      window.localStorage.setItem(LAUNCH_CHECKLIST_STORAGE_KEY, JSON.stringify(nextTasks));
+      window.localStorage.setItem(storageKey, JSON.stringify(nextTasks));
     } catch {
       // Если storage недоступен, чеклист всё равно работает до перезагрузки страницы.
     }
@@ -392,21 +478,36 @@ function AnalyticsPage() {
   function updateLaunchTasks(updater) {
     setLaunchTasks((current) => {
       const next = updater(current);
-      persistLaunchTasks(next);
+      persistChecklistTasks(LAUNCH_CHECKLIST_STORAGE_KEY, next);
       return next;
     });
   }
 
+  function updateKnowledgeBaseTasks(updater) {
+    setKnowledgeBaseTasks((current) => {
+      const next = updater(current);
+      persistChecklistTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, next);
+      return next;
+    });
+  }
+
+  function patchChecklistTask(task, patch) {
+    const next = { ...task, ...patch };
+    if (patch.status === "Готово") next.done = true;
+    if (patch.done === true) next.status = "Готово";
+    if (patch.done === false && task.status === "Готово" && !patch.status) next.status = "В работе";
+    return next;
+  }
+
   function updateLaunchTask(taskId, patch) {
     updateLaunchTasks((current) =>
-      current.map((task) => {
-        if (task.id !== taskId) return task;
-        const next = { ...task, ...patch };
-        if (patch.status === "Готово") next.done = true;
-        if (patch.done === true) next.status = "Готово";
-        if (patch.done === false && task.status === "Готово" && !patch.status) next.status = "В работе";
-        return next;
-      }),
+      current.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)),
+    );
+  }
+
+  function updateKnowledgeBaseTask(taskId, patch) {
+    updateKnowledgeBaseTasks((current) =>
+      current.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)),
     );
   }
 
@@ -428,8 +529,30 @@ function AnalyticsPage() {
     setNewLaunchTask(createLaunchTask({ status: "В работе" }));
   }
 
+  function addKnowledgeBaseTask() {
+    const title = newKnowledgeBaseTask.title.trim();
+    if (!title) return;
+
+    const task = createLaunchTask({
+      title,
+      responsible: newKnowledgeBaseTask.responsible.trim() || "Контент / продукт",
+      assignee: newKnowledgeBaseTask.assignee.trim(),
+      comment: newKnowledgeBaseTask.comment.trim(),
+      dueDate: newKnowledgeBaseTask.dueDate,
+      status: newKnowledgeBaseTask.status || "В работе",
+      done: newKnowledgeBaseTask.status === "Готово",
+    });
+
+    updateKnowledgeBaseTasks((current) => [task, ...current]);
+    setNewKnowledgeBaseTask(createLaunchTask({ status: "В работе" }));
+  }
+
   function removeLaunchTask(taskId) {
     updateLaunchTasks((current) => current.filter((task) => task.id !== taskId));
+  }
+
+  function removeKnowledgeBaseTask(taskId) {
+    updateKnowledgeBaseTasks((current) => current.filter((task) => task.id !== taskId));
   }
 
   function resetLaunchTasks() {
@@ -437,12 +560,19 @@ function AnalyticsPage() {
     setEditingLaunchCell(null);
   }
 
-  function getLaunchCellKey(taskId, field) {
-    return `${taskId}:${field}`;
+  function resetKnowledgeBaseTasks() {
+    updateKnowledgeBaseTasks(() => defaultKnowledgeBaseChecklistTasks);
+    setEditingLaunchCell(null);
+  }
+
+  function getLaunchCellKey(boardId, taskId, field) {
+    return `${boardId}:${taskId}:${field}`;
   }
 
   function renderLaunchEditableCell(task, field, options = {}) {
-    const cellKey = getLaunchCellKey(task.id, field);
+    const boardId = options.boardId || "launch";
+    const updateTask = options.updateTask || updateLaunchTask;
+    const cellKey = getLaunchCellKey(boardId, task.id, field);
     const isEditing = editingLaunchCell === cellKey;
     const value = task[field] || "";
     const label = value || "Нажми, чтобы заполнить";
@@ -453,7 +583,7 @@ function AnalyticsPage() {
         className: inputClassName,
         value,
         autoFocus: true,
-        onChange: (event) => updateLaunchTask(task.id, { [field]: event.target.value }),
+        onChange: (event) => updateTask(task.id, { [field]: event.target.value }),
         onBlur: () => setEditingLaunchCell(null),
       };
 
@@ -2289,8 +2419,23 @@ function AnalyticsPage() {
   }
 
   function renderLaunchTab() {
-    const completedCount = launchTasks.filter((task) => task.done || task.status === "Готово").length;
-    const progress = launchTasks.length ? (completedCount / launchTasks.length) * 100 : 0;
+    const isKnowledgeBaseBoard = activeLaunchBoard === "knowledgeBase";
+    const visibleTasks = isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
+    const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
+    const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
+    const newTask = isKnowledgeBaseBoard ? newKnowledgeBaseTask : newLaunchTask;
+    const setNewTask = isKnowledgeBaseBoard ? setNewKnowledgeBaseTask : setNewLaunchTask;
+    const addTask = isKnowledgeBaseBoard ? addKnowledgeBaseTask : addLaunchTask;
+    const resetTasks = isKnowledgeBaseBoard ? resetKnowledgeBaseTasks : resetLaunchTasks;
+    const updateTask = isKnowledgeBaseBoard ? updateKnowledgeBaseTask : updateLaunchTask;
+    const removeTask = isKnowledgeBaseBoard ? removeKnowledgeBaseTask : removeLaunchTask;
+    const boardTitle = isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+    const boardSubtitle = isKnowledgeBaseBoard
+      ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
+      : "Что нужно закрыть перед стартом";
+    const boardDescription = isKnowledgeBaseBoard
+      ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
+      : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
 
     return (
       <>
@@ -2298,11 +2443,33 @@ function AnalyticsPage() {
           <span className="analytics-kicker">Запуск</span>
           <h2 className="analytics-tab-summary-title">Чеклист подготовки проекта к запуску</h2>
           <p className="analytics-tab-summary-copy">
-            Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.
+            {boardDescription}
           </p>
+          <div className="analytics-launch-browser-tabs" role="tablist" aria-label="Разделы чеклиста запуска">
+            <button
+              type="button"
+              className={`analytics-launch-browser-tab${activeLaunchBoard === "launch" ? " analytics-launch-browser-tab-active" : ""}`}
+              onClick={() => {
+                setActiveLaunchBoard("launch");
+                setEditingLaunchCell(null);
+              }}
+            >
+              Задачи запуска
+            </button>
+            <button
+              type="button"
+              className={`analytics-launch-browser-tab${activeLaunchBoard === "knowledgeBase" ? " analytics-launch-browser-tab-active" : ""}`}
+              onClick={() => {
+                setActiveLaunchBoard("knowledgeBase");
+                setEditingLaunchCell(null);
+              }}
+            >
+              База знаний
+            </button>
+          </div>
           <div className="analytics-tab-summary-points">
             <div className="analytics-tab-summary-point">
-              <span>Всего задач: {launchTasks.length}</span>
+              <span>Всего задач: {visibleTasks.length}</span>
             </div>
             <div className="analytics-tab-summary-point">
               <span>Готово: {completedCount}</span>
@@ -2318,7 +2485,7 @@ function AnalyticsPage() {
             <div className="col-12 col-md-4">
               <div className="analytics-launch-stat">
                 <span>Всего задач</span>
-                <strong>{launchTasks.length}</strong>
+                <strong>{visibleTasks.length}</strong>
               </div>
             </div>
             <div className="col-12 col-md-4">
@@ -2330,7 +2497,7 @@ function AnalyticsPage() {
             <div className="col-12 col-md-4">
               <div className="analytics-launch-stat">
                 <span>Осталось</span>
-                <strong>{launchTasks.length - completedCount}</strong>
+                <strong>{visibleTasks.length - completedCount}</strong>
               </div>
             </div>
           </div>
@@ -2343,12 +2510,12 @@ function AnalyticsPage() {
           <div className="analytics-data-table-head">
             <div>
               <span className="analytics-kicker">Добавить задачу</span>
-              <h3 className="analytics-section-title">Новая задача запуска</h3>
+              <h3 className="analytics-section-title">{isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача запуска"}</h3>
               <p className="analytics-page-subtitle mb-0">
                 Заполни минимум название. Остальные поля можно поправить прямо в таблице.
               </p>
             </div>
-            <button type="button" className="btn analytics-launch-reset-btn" onClick={resetLaunchTasks}>
+            <button type="button" className="btn analytics-launch-reset-btn" onClick={resetTasks}>
               Сбросить к шаблону
             </button>
           </div>
@@ -2357,26 +2524,26 @@ function AnalyticsPage() {
               <span>Название</span>
               <input
                 className="form-control analytics-launch-input"
-                value={newLaunchTask.title}
-                onChange={(event) => setNewLaunchTask((current) => ({ ...current, title: event.target.value }))}
-                placeholder="Например: наполнить базу знаний"
+                value={newTask.title}
+                onChange={(event) => setNewTask((current) => ({ ...current, title: event.target.value }))}
+                placeholder={isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
               />
             </label>
             <label>
               <span>Ответственный</span>
               <input
                 className="form-control analytics-launch-input"
-                value={newLaunchTask.responsible}
-                onChange={(event) => setNewLaunchTask((current) => ({ ...current, responsible: event.target.value }))}
-                placeholder="Backend / продукт / DevOps"
+                value={newTask.responsible}
+                onChange={(event) => setNewTask((current) => ({ ...current, responsible: event.target.value }))}
+                placeholder={isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
               />
             </label>
             <label>
               <span>Исполнитель</span>
               <input
                 className="form-control analytics-launch-input"
-                value={newLaunchTask.assignee}
-                onChange={(event) => setNewLaunchTask((current) => ({ ...current, assignee: event.target.value }))}
+                value={newTask.assignee}
+                onChange={(event) => setNewTask((current) => ({ ...current, assignee: event.target.value }))}
                 placeholder="Имя или ник"
               />
             </label>
@@ -2384,8 +2551,8 @@ function AnalyticsPage() {
               <span>Дата</span>
               <input
                 className="form-control analytics-launch-input"
-                value={newLaunchTask.dueDate}
-                onChange={(event) => setNewLaunchTask((current) => ({ ...current, dueDate: event.target.value }))}
+                value={newTask.dueDate}
+                onChange={(event) => setNewTask((current) => ({ ...current, dueDate: event.target.value }))}
                 placeholder="25.05.2026"
               />
             </label>
@@ -2393,8 +2560,8 @@ function AnalyticsPage() {
               <span>Статус</span>
               <select
                 className="form-select analytics-launch-input"
-                value={newLaunchTask.status}
-                onChange={(event) => setNewLaunchTask((current) => ({ ...current, status: event.target.value }))}
+                value={newTask.status}
+                onChange={(event) => setNewTask((current) => ({ ...current, status: event.target.value }))}
               >
                 {LAUNCH_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -2408,12 +2575,12 @@ function AnalyticsPage() {
               <textarea
                 className="form-control analytics-launch-input"
                 rows="2"
-                value={newLaunchTask.comment}
-                onChange={(event) => setNewLaunchTask((current) => ({ ...current, comment: event.target.value }))}
+                value={newTask.comment}
+                onChange={(event) => setNewTask((current) => ({ ...current, comment: event.target.value }))}
                 placeholder="Что должно быть внутри задачи, какие вкладки, данные или проверки"
               />
             </label>
-            <button type="button" className="btn analytics-launch-add-btn" onClick={addLaunchTask} disabled={!newLaunchTask.title.trim()}>
+            <button type="button" className="btn analytics-launch-add-btn" onClick={addTask} disabled={!newTask.title.trim()}>
               Добавить задачу
             </button>
           </div>
@@ -2423,9 +2590,9 @@ function AnalyticsPage() {
           <div className="analytics-data-table-head">
             <div>
               <span className="analytics-kicker">Задачи запуска</span>
-              <h3 className="analytics-section-title">Что нужно закрыть перед стартом</h3>
+              <h3 className="analytics-section-title">{boardTitle}</h3>
               <p className="analytics-page-subtitle mb-0">
-                Меняй название, ответственного, исполнителя, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
+                {boardSubtitle}. Меняй название, ответственного, исполнителя, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
               </p>
             </div>
           </div>
@@ -2445,7 +2612,7 @@ function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {launchTasks.map((task) => {
+                {visibleTasks.map((task) => {
                   const completed = task.done || task.status === "Готово";
                   const statusTone = getLaunchStatusTone(task.status);
 
@@ -2455,33 +2622,44 @@ function AnalyticsPage() {
                         <input
                           type="checkbox"
                           checked={completed}
-                          onChange={(event) => updateLaunchTask(task.id, { done: event.target.checked })}
+                          onChange={(event) => updateTask(task.id, { done: event.target.checked })}
                           aria-label={`Отметить задачу ${task.title}`}
                           className="analytics-launch-checkbox"
                         />
                       </td>
                       <td>
                         {renderLaunchEditableCell(task, "title", {
+                          boardId: activeLaunchBoard,
+                          updateTask,
                           inputClassName: "analytics-launch-title-input",
                           readClassName: "analytics-launch-title-read",
                         })}
                       </td>
                       <td>
-                        {renderLaunchEditableCell(task, "responsible")}
+                        {renderLaunchEditableCell(task, "responsible", {
+                          boardId: activeLaunchBoard,
+                          updateTask,
+                        })}
                       </td>
                       <td>
                         {renderLaunchEditableCell(task, "assignee", {
+                          boardId: activeLaunchBoard,
+                          updateTask,
                           readClassName: "analytics-launch-assignee-read",
                         })}
                       </td>
                       <td className="analytics-launch-comment">
                         {renderLaunchEditableCell(task, "comment", {
+                          boardId: activeLaunchBoard,
+                          updateTask,
                           multiline: true,
                           rows: 5,
                         })}
                       </td>
                       <td>
                         {renderLaunchEditableCell(task, "dueDate", {
+                          boardId: activeLaunchBoard,
+                          updateTask,
                           inputClassName: "analytics-launch-date-input",
                         })}
                       </td>
@@ -2489,7 +2667,7 @@ function AnalyticsPage() {
                         <select
                           className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`}
                           value={task.status}
-                          onChange={(event) => updateLaunchTask(task.id, { status: event.target.value, done: event.target.value === "Готово" })}
+                          onChange={(event) => updateTask(task.id, { status: event.target.value, done: event.target.value === "Готово" })}
                         >
                           {LAUNCH_STATUSES.map((status) => (
                             <option key={status} value={status}>
@@ -2503,7 +2681,7 @@ function AnalyticsPage() {
                           <button
                             type="button"
                             className="btn analytics-launch-icon-btn analytics-launch-done-btn"
-                            onClick={() => updateLaunchTask(task.id, { status: "Готово", done: true })}
+                            onClick={() => updateTask(task.id, { status: "Готово", done: true })}
                             title="Готово"
                             aria-label={`Отметить задачу ${task.title} готовой`}
                           >
@@ -2512,7 +2690,7 @@ function AnalyticsPage() {
                           <button
                             type="button"
                             className="btn analytics-launch-icon-btn analytics-launch-pause-btn"
-                            onClick={() => updateLaunchTask(task.id, { status: "Отложено", done: false })}
+                            onClick={() => updateTask(task.id, { status: "Отложено", done: false })}
                             title="Отложить"
                             aria-label={`Отложить задачу ${task.title}`}
                           >
@@ -2521,7 +2699,7 @@ function AnalyticsPage() {
                           <button
                             type="button"
                             className="btn analytics-launch-icon-btn analytics-launch-delete-btn"
-                            onClick={() => removeLaunchTask(task.id)}
+                            onClick={() => removeTask(task.id)}
                             title="Удалить"
                             aria-label={`Удалить задачу ${task.title}`}
                           >
