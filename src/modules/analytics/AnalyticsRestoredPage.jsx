@@ -3,6 +3,8 @@ import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import AnalyticsDataTable from "./components/AnalyticsDataTable";
 import AnalyticsDateTime from "./components/AnalyticsDateTime";
+import RestoredHeroCard from "./components/RestoredHeroCard";
+import RestoredSection from "./components/RestoredSection";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
@@ -17,29 +19,6 @@ const restoredTabs = [
   { id: "partner", label: "Структура" },
   { id: "geography", label: "География" },
 ];
-
-function HeroCard({ title, value, hint }) {
-  return (
-    <div className="analytics-surface analytics-restored-hero-card">
-      <div className="analytics-restored-hero-label">{title}</div>
-      <div className="analytics-restored-hero-value">{value}</div>
-      <div className="analytics-restored-hero-hint">{hint}</div>
-    </div>
-  );
-}
-
-function RestoredSection({ eyebrow, title, description, children }) {
-  return (
-    <section className="analytics-surface analytics-restored-section">
-      <div className="analytics-restored-section-head">
-        {eyebrow ? <div className="analytics-kicker">{eyebrow}</div> : null}
-        <h2 className="analytics-restored-section-title">{title}</h2>
-        {description ? <p className="analytics-restored-section-copy">{description}</p> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 function AnalyticsRestoredPage() {
   const { data, isLoading } = useAnalyticsData();
@@ -71,13 +50,13 @@ function AnalyticsRestoredPage() {
         >
           <div className="row g-3">
             <div className="col-12 col-md-4">
-              <HeroCard title="Главный KPI" value="Incoming Money" hint="Входящий поток" />
+              <RestoredHeroCard title="Главный KPI" value="Incoming Money" hint="Входящий поток" />
             </div>
             <div className="col-12 col-md-4">
-              <HeroCard title="Обязательства" value="Today / 7d / 30d" hint="Окна выплат" />
+              <RestoredHeroCard title="Обязательства" value="Today / 7d / 30d" hint="Окна выплат" />
             </div>
             <div className="col-12 col-md-4">
-              <HeroCard title="План добора" value={formatCurrency(data.kpis.requiredNewMoney)} hint="Требуемый новый приток" />
+              <RestoredHeroCard title="План добора" value={formatCurrency(data.kpis.requiredNewMoney)} hint="Требуемый новый приток" />
             </div>
           </div>
           <ul className="analytics-restored-list">
