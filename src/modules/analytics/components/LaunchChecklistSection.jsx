@@ -6,6 +6,7 @@ const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseCheck
 const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
+const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
 
 const defaultLaunchChecklistTasks = [
@@ -391,6 +392,7 @@ function createLaunchTask(overrides = {}) {
     comment: "",
     dueDate: "",
     status: "В работе",
+    priority: "Средний",
     done: false,
     ...overrides,
   };
@@ -403,14 +405,45 @@ function getLaunchStatusTone(status) {
   return "active";
 }
 
+function getLaunchPriorityTone(priority) {
+  if (priority === "Срочно") return "urgent";
+  if (priority === "Высокий") return "high";
+  if (priority === "Низкий") return "low";
+  return "medium";
+}
+
+function normalizeChecklistTasks(tasks) {
+  return tasks.map((task) => ({
+    priority: "Средний",
+    assignee: "",
+    done: false,
+    ...task,
+  }));
+}
+
 function readStoredTasks(storageKey, fallbackTasks) {
   if (typeof window === "undefined") return [];
 
   try {
     const saved = window.localStorage.getItem(storageKey);
-    return saved ? JSON.parse(saved) : fallbackTasks;
+    return normalizeChecklistTasks(saved ? JSON.parse(saved) : fallbackTasks);
   } catch {
-    return fallbackTasks;
+    return normalizeChecklistTasks(fallbackTasks);
+  }
+}
+
+function readStoredCustomChecklists() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(CUSTOM_CHECKLISTS_STORAGE_KEY);
+    const checklists = saved ? JSON.parse(saved) : [];
+    return checklists.map((checklist) => ({
+      ...checklist,
+      tasks: normalizeChecklistTasks(checklist.tasks || []),
+    }));
+  } catch {
+    return [];
   }
 }
 
@@ -436,7 +469,7 @@ function LaunchChecklistSection() {
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
   const [ideaTasks, setIdeaTasks] = useState(() => readStoredTasks(IDEAS_CHECKLIST_STORAGE_KEY, defaultIdeasChecklistTasks));
-  const [customChecklists, setCustomChecklists] = useState(() => readStoredTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, []));
+  const [customChecklists, setCustomChecklists] = useState(readStoredCustomChecklists);
   const [newTask, setNewTask] = useState(() => createLaunchTask({ status: "В работе" }));
   const [newChecklistName, setNewChecklistName] = useState("");
   const [isCreatingChecklist, setIsCreatingChecklist] = useState(false);
@@ -505,6 +538,7 @@ function LaunchChecklistSection() {
       comment: newTask.comment.trim(),
       dueDate: newTask.dueDate,
       status: newTask.status || "В работе",
+      priority: newTask.priority || "Средний",
       done: newTask.status === "Готово",
     });
 
@@ -816,6 +850,20 @@ function LaunchChecklistSection() {
             />
           </label>
           <label>
+            <span>Приоритет</span>
+            <select
+              className="form-select analytics-launch-input"
+              value={newTask.priority}
+              onChange={(event) => setNewTask((current) => ({ ...current, priority: event.target.value }))}
+            >
+              {LAUNCH_PRIORITIES.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             <span>Статус</span>
             <select
               className="form-select analytics-launch-input"
@@ -851,7 +899,7 @@ function LaunchChecklistSection() {
             <span className="analytics-kicker">Задачи запуска</span>
             <h3 className="analytics-section-title">{boardTitle}</h3>
             <p className="analytics-page-subtitle mb-0">
-              {boardSubtitle}. Меняй название, направление, исполнителя, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
+              {boardSubtitle}. Меняй название, направление, исполнителя, комментарий, дату, приоритет и статус прямо здесь. Готовые задачи зачёркиваются.
             </p>
           </div>
         </div>
@@ -866,6 +914,7 @@ function LaunchChecklistSection() {
                 <th>Исполнитель</th>
                 <th>Комментарий</th>
                 <th>Дата</th>
+                <th>Приоритет</th>
                 <th>Статус</th>
                 <th>Действия</th>
               </tr>
@@ -874,6 +923,8 @@ function LaunchChecklistSection() {
               {visibleTasks.map((task) => {
                 const completed = task.done || task.status === "Готово";
                 const statusTone = getLaunchStatusTone(task.status);
+                const priority = task.priority || "Средний";
+                const priorityTone = getLaunchPriorityTone(priority);
 
                 return (
                   <tr key={task.id} className={completed ? "analytics-launch-task-done" : undefined}>
@@ -896,6 +947,19 @@ function LaunchChecklistSection() {
                     <td>{renderEditableCell(task, "assignee", { readClassName: "analytics-launch-assignee-read", selectOptions: TASK_ASSIGNEES })}</td>
                     <td className="analytics-launch-comment">{renderEditableCell(task, "comment", { multiline: true, rows: 5 })}</td>
                     <td>{renderEditableCell(task, "dueDate", { inputClassName: "analytics-launch-date-input" })}</td>
+                    <td>
+                      <select
+                        className={`form-select analytics-launch-priority-select analytics-launch-priority-${priorityTone}`}
+                        value={priority}
+                        onChange={(event) => updateTask(task.id, { priority: event.target.value })}
+                      >
+                        {LAUNCH_PRIORITIES.map((priorityOption) => (
+                          <option key={priorityOption} value={priorityOption}>
+                            {priorityOption}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
                     <td>
                       <select
                         className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`}

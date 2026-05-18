@@ -2551,7 +2551,7 @@
 
 .analytics-launch-form-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(170px, 0.8fr) minmax(170px, 0.8fr) minmax(140px, 0.55fr) minmax(140px, 0.55fr);
+  grid-template-columns: minmax(220px, 1.2fr) minmax(170px, 0.8fr) minmax(160px, 0.7fr) minmax(130px, 0.55fr) minmax(130px, 0.55fr) minmax(140px, 0.55fr);
   gap: 1rem;
   margin-top: 1.1rem;
   align-items: end;
@@ -2568,11 +2568,12 @@
 }
 
 .analytics-launch-form-comment {
-  grid-column: span 4;
+  grid-column: span 5;
 }
 
 .analytics-launch-input,
 .analytics-launch-table-input,
+.analytics-launch-priority-select,
 .analytics-launch-status-select {
   border-color: rgba(157, 178, 255, 0.14) !important;
   background-color: rgba(7, 12, 22, 0.66) !important;
@@ -2586,6 +2587,7 @@
 
 .analytics-launch-input:focus,
 .analytics-launch-table-input:focus,
+.analytics-launch-priority-select:focus,
 .analytics-launch-status-select:focus {
   border-color: rgba(123, 180, 255, 0.42) !important;
   box-shadow: 0 0 0 0.2rem rgba(123, 180, 255, 0.1) !important;
@@ -2759,12 +2761,37 @@
   white-space: nowrap;
 }
 
+.analytics-launch-priority-select,
 .analytics-launch-status-select {
   min-width: 118px;
   border-radius: 999px;
   padding: 0.4rem 0.7rem;
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.analytics-launch-priority-urgent {
+  border-color: rgba(255, 122, 122, 0.36) !important;
+  background: rgba(255, 122, 122, 0.16) !important;
+  color: #ffc1c1 !important;
+}
+
+.analytics-launch-priority-high {
+  border-color: rgba(245, 196, 106, 0.34) !important;
+  background: rgba(245, 196, 106, 0.14) !important;
+  color: #f8d78d !important;
+}
+
+.analytics-launch-priority-medium {
+  border-color: rgba(90, 181, 255, 0.34) !important;
+  background: rgba(90, 181, 255, 0.13) !important;
+  color: #acd9ff !important;
+}
+
+.analytics-launch-priority-low {
+  border-color: rgba(157, 178, 255, 0.14) !important;
+  background: rgba(157, 178, 255, 0.08) !important;
+  color: #aebdd4 !important;
 }
 
 .analytics-launch-status-done {
