@@ -2393,6 +2393,113 @@
   background: rgba(123, 180, 255, 0.032);
 }
 
+.analytics-section-title {
+  margin: 0.45rem 0 0;
+  color: #f5f8ff;
+  font-size: clamp(1.25rem, 1.8vw, 1.65rem);
+  font-weight: 700;
+}
+
+.analytics-launch-progress,
+.analytics-launch-checklist {
+  padding: 1.25rem;
+}
+
+.analytics-launch-stat {
+  min-height: 112px;
+  border: 1px solid rgba(157, 178, 255, 0.1);
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.analytics-launch-stat span {
+  display: block;
+  color: #8fa3c0;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-launch-stat strong {
+  display: block;
+  margin-top: 0.7rem;
+  color: #f4fbff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.analytics-launch-progress-bar {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(157, 178, 255, 0.12);
+}
+
+.analytics-launch-progress-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #69c2b3 0%, #7bb4ff 100%);
+  transition: width 180ms ease;
+}
+
+.analytics-launch-table th,
+.analytics-launch-table td {
+  vertical-align: top;
+}
+
+.analytics-launch-checkbox {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: #69c2b3;
+}
+
+.analytics-launch-comment {
+  min-width: 320px;
+  line-height: 1.55;
+}
+
+.analytics-launch-task-done td {
+  color: #7d8ca5;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.analytics-launch-task-done {
+  background: rgba(105, 194, 179, 0.055) !important;
+}
+
+.analytics-launch-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  border-radius: 999px;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.analytics-launch-status-done {
+  border-color: rgba(105, 194, 179, 0.32);
+  background: rgba(105, 194, 179, 0.14);
+  color: #9ff0df;
+}
+
+.analytics-launch-status-active {
+  border-color: rgba(245, 196, 106, 0.32);
+  background: rgba(245, 196, 106, 0.13);
+  color: #f8d78d;
+}
+
+.analytics-launch-status-paused {
+  border-color: rgba(157, 178, 255, 0.14);
+  background: rgba(157, 178, 255, 0.08);
+  color: #aebdd4;
+}
+
 .analytics-insight {
   padding: 1.25rem;
   height: 100%;

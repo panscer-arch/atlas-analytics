@@ -25,6 +25,58 @@ import "./styles/analytics.css";
 import { useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
+const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.completed.v1";
+
+const launchChecklistTasks = [
+  {
+    id: "knowledge-base",
+    title: "Наполнить базу знаний",
+    responsible: "Контент / продукт",
+    comment: "В ней будут вкладки по циклам, MetaMask, claim, reinvest, партнёрке, статусам и частым ошибкам.",
+    dueDate: "25.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "analytics-api",
+    title: "Вывести API для аналитики",
+    responsible: "Backend",
+    comment: "Отдать реальные показатели по overview, Web3-воронке, обязательствам, тарифам, claim/reinvest и партнёрке.",
+    dueDate: "25.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "contract-events",
+    title: "Подключить события smart-contract",
+    responsible: "Blockchain / backend",
+    comment: "Синхронизировать deposit/createCycle, claim, referral accrual, platform fee и статусы транзакций.",
+    dueDate: "26.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "wallet-auth",
+    title: "Проверить MetaMask авторизацию",
+    responsible: "Frontend",
+    comment: "Проверить connect, подпись, загрузку баланса, ошибки сети, отмену транзакции и повторное подключение.",
+    dueDate: "26.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "tariffs-copy",
+    title: "Сверить тарифы и партнёрские статусы",
+    responsible: "Продукт / финансы",
+    comment: "Проверить лимиты, сроки, доходность, daily/monthly/yearly, delta bonus и matching bonus перед публичным запуском.",
+    dueDate: "27.05.2026",
+    status: "В работе",
+  },
+  {
+    id: "production-deploy",
+    title: "Подготовить production deploy",
+    responsible: "DevOps",
+    comment: "Проверить домен, env, базу данных, индексацию блоков, health-check и откат на случай ошибки.",
+    dueDate: "28.05.2026",
+    status: "Отложено",
+  },
+];
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -197,6 +249,16 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
+  const [completedLaunchTasks, setCompletedLaunchTasks] = useState(() => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const saved = window.localStorage.getItem(LAUNCH_CHECKLIST_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const { data, isLoading } = useAnalyticsData();
 
   if (isLoading) {
@@ -271,6 +333,22 @@ function AnalyticsPage() {
     setActiveTab("overview");
     setGraphsOpenSignal((current) => current + 1);
     window.setTimeout(() => scrollToSection("overview-graphs"), 60);
+  }
+
+  function toggleLaunchTask(taskId) {
+    setCompletedLaunchTasks((current) => {
+      const next = current.includes(taskId)
+        ? current.filter((id) => id !== taskId)
+        : [...current, taskId];
+
+      try {
+        window.localStorage.setItem(LAUNCH_CHECKLIST_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Если storage недоступен, чеклист всё равно работает до перезагрузки страницы.
+      }
+
+      return next;
+    });
   }
 
   const primaryKpis = [
@@ -491,6 +569,7 @@ function AnalyticsPage() {
     { id: "geography", label: "География", hint: "страны" },
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
+    { id: "launch", label: "Запуск", hint: "чеклист" },
   ];
 
   function renderDashboard() {
@@ -2076,6 +2155,119 @@ function AnalyticsPage() {
     );
   }
 
+  function renderLaunchTab() {
+    const completedCount = launchChecklistTasks.filter((task) => completedLaunchTasks.includes(task.id)).length;
+    const progress = launchChecklistTasks.length ? (completedCount / launchChecklistTasks.length) * 100 : 0;
+
+    return (
+      <>
+        <section className="analytics-surface analytics-tab-summary mt-4">
+          <span className="analytics-kicker">Запуск</span>
+          <h2 className="analytics-tab-summary-title">Чеклист подготовки проекта к запуску</h2>
+          <p className="analytics-tab-summary-copy">
+            Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.
+          </p>
+          <div className="analytics-tab-summary-points">
+            <div className="analytics-tab-summary-point">
+              <span>Всего задач: {launchChecklistTasks.length}</span>
+            </div>
+            <div className="analytics-tab-summary-point">
+              <span>Готово: {completedCount}</span>
+            </div>
+            <div className="analytics-tab-summary-point">
+              <span>Прогресс запуска: {formatPercent(progress)}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="analytics-surface analytics-launch-progress mt-4">
+          <div className="row g-3">
+            <div className="col-12 col-md-4">
+              <div className="analytics-launch-stat">
+                <span>Всего задач</span>
+                <strong>{launchChecklistTasks.length}</strong>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="analytics-launch-stat">
+                <span>Выполнено</span>
+                <strong>{completedCount}</strong>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="analytics-launch-stat">
+                <span>Осталось</span>
+                <strong>{launchChecklistTasks.length - completedCount}</strong>
+              </div>
+            </div>
+          </div>
+          <div className="analytics-launch-progress-bar mt-3">
+            <div style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+          </div>
+        </section>
+
+        <section className="analytics-surface analytics-launch-checklist mt-4">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">Задачи запуска</span>
+              <h3 className="analytics-section-title">Что нужно закрыть перед стартом</h3>
+              <p className="analytics-page-subtitle mb-0">
+                Отметь задачу выполненной, и вся строка зачеркнётся. Отметка сохраняется в браузере.
+              </p>
+            </div>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table analytics-table analytics-launch-table mb-0">
+              <thead>
+                <tr>
+                  <th>Готово</th>
+                  <th>Название</th>
+                  <th>Ответственный</th>
+                  <th>Комментарий</th>
+                  <th>Дата</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {launchChecklistTasks.map((task) => {
+                  const completed = completedLaunchTasks.includes(task.id);
+                  const status = completed ? "Готово" : task.status;
+                  const statusTone = status === "Готово" ? "done" : status === "Отложено" ? "paused" : "active";
+
+                  return (
+                    <tr key={task.id} className={completed ? "analytics-launch-task-done" : undefined}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={completed}
+                          onChange={() => toggleLaunchTask(task.id)}
+                          aria-label={`Отметить задачу ${task.title}`}
+                          className="analytics-launch-checkbox"
+                        />
+                      </td>
+                      <td>
+                        <strong>{task.title}</strong>
+                      </td>
+                      <td>{task.responsible}</td>
+                      <td className="analytics-launch-comment">{task.comment}</td>
+                      <td>{task.dueDate}</td>
+                      <td>
+                        <span className={`analytics-launch-status analytics-launch-status-${statusTone}`}>
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </>
+    );
+  }
+
   function renderActiveTab() {
     if (activeTab === "dashboard") return renderDashboard();
     if (activeTab === "traffic") return renderTrafficTab();
@@ -2086,6 +2278,7 @@ function AnalyticsPage() {
     if (activeTab === "geography") return renderGeographyTab();
     if (activeTab === "partner") return renderPartnerTab();
     if (activeTab === "wallets") return renderWalletsTab();
+    if (activeTab === "launch") return renderLaunchTab();
     return renderOverview();
   }
 
