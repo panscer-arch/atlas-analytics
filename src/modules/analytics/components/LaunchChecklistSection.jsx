@@ -3,6 +3,7 @@ import LaunchProgressBar from "./LaunchProgressBar";
 
 const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
 const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
+const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
@@ -140,6 +141,243 @@ const defaultKnowledgeBaseChecklistTasks = [
   },
 ];
 
+const defaultIdeasChecklistTasks = [
+  {
+    id: "ideas-unity-proverb",
+    title: "Ежедневная пословица про силу единства",
+    responsible: "Контент / комьюнити",
+    assignee: "",
+    comment: "Подготовить рубрику ежедневных коротких постов про объединение, взаимопомощь и силу единства.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-audience-import",
+    title: "Собрать аудитории Bitnest, PotokCash и сетевых чатов",
+    responsible: "Маркетинг / лидогенерация",
+    assignee: "",
+    comment: "Скачать или собрать участников Bitnest, PotokCash, чаты сетевых компаний, розыгрышей и вебинаров для дальнейшего прогрева.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-webinar-schedule",
+    title: "Расписание вебинаров на сайт",
+    responsible: "Вебинары / обучение",
+    assignee: "",
+    comment: "Сделать еженедельный большой вебинар и дать активным участникам возможность вести вебинары по языкам за доп. вознаграждение в личном кабинете.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-leader-mailing",
+    title: "Рассылка по лидерам",
+    responsible: "Коммуникации / лидеры",
+    assignee: "",
+    comment: "Написать текст рассылки для лидеров, отдельно подготовить письмо лидеру мнений и сценарий первого касания.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-internal-name",
+    title: "Название внутренней системы",
+    responsible: "Брендинг / продукт",
+    assignee: "",
+    comment: "Проработать название внутренней механики: 'внутряны' или PV, выбрать понятную терминологию для кабинета и материалов.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-social-warmup",
+    title: "Соцсети и прогрев",
+    responsible: "SMM / маркетинг",
+    assignee: "",
+    comment: "Завести соцсети, прогревать аудиторию, подготовить контент-план и рубрики под разные позиционирования.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-smart-contract-no-cabinet",
+    title: "Статья: взаимодействие со smart-contract без кабинета",
+    responsible: "Контент / Web3",
+    assignee: "",
+    comment: "Объяснить, как взаимодействовать со смарт-контрактом напрямую без личного кабинета: где смотреть контракт, как делать действия и какие риски.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-income-slide",
+    title: "Слайд про ежемесячный доход",
+    responsible: "Презентация / продажи",
+    assignee: "",
+    comment: "Сделать продающий слайд: ежемесячный доход, годовая перспектива, пример 'за год ты получишь 300' с корректными формулировками.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-partner-reinvest",
+    title: "Реинвест с партнерского счета в smart-contract",
+    responsible: "Продукт / smart-contract",
+    assignee: "",
+    comment: "Проработать сценарий реинвеста партнерского баланса обратно в смарт-контракт и отразить его в кабинете/аналитике.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-atlas-system-tree",
+    title: "atlas-system.io и моделирование дерева",
+    responsible: "Продукт / симуляции",
+    assignee: "",
+    comment: "Посмотреть atlas-system.io: как будет строиться дерево, как с рандомной вероятностью появляются лидеры, что можно использовать для симуляции.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-crypto-course",
+    title: "Курс по крипте с инструментом дохода",
+    responsible: "Обучение / продукт",
+    assignee: "",
+    comment: "Проработать курс по крипте с инструментом дохода 27% в месяц. Важно аккуратно проверить формулировки про гарантии дохода.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-chris-taylor-account",
+    title: "Аккаунт под Криса Тейлора",
+    responsible: "Брендинг / аккаунты",
+    assignee: "",
+    comment: "Зарегистрировать учетку и переименовать под Криса Тейлора, продумать легенду, аватар, био и правила использования.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-ref-landing",
+    title: "Лендинги с закрепленной реферальной ссылкой",
+    responsible: "Лендинги / реклама",
+    assignee: "",
+    comment: "Сделать отдельный лендинг под каждый вид рекламы, в каждом закреплять нужную реферальную ссылку и источник трафика.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-discord-plan",
+    title: "Пошаговый план запуска Discord-сервера",
+    responsible: "Комьюнити / Discord",
+    assignee: "",
+    comment: "Расписать структуру каналов, роли, правила, модерацию, welcome-сценарий, расписание активностей и onboarding.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-mutual-aid-articles",
+    title: "Статьи о кассах взаимопомощи",
+    responsible: "PR / контент",
+    assignee: "",
+    comment: "Заказать несколько статей о кассах взаимопомощи, их истории, механике и отличиях от классических инвестиционных продуктов.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-help-disclaimer",
+    title: "Дисклеймер по запросам помощи",
+    responsible: "Юридический / продукт",
+    assignee: "",
+    comment: "Сформулировать правило: любой запрос помощи не гарантирует ее получения. Добавить в правила участия и материалы.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-elite-plus",
+    title: "Elite+ клуб",
+    responsible: "Партнерка / клуб",
+    assignee: "",
+    comment: "Если Elite держится более 2 месяцев, участник попадает в Elite+: закрытые клубные обучения и оплачиваемые компанией поездки. Добавить блок в партнерку.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-positioning-landings",
+    title: "4 варианта позиционирования и лендинги",
+    responsible: "Маркетинг / позиционирование",
+    assignee: "",
+    comment: "Подготовить отдельные лендинги под позиционирования: касса взаимопомощи, money sharing, платформа взаимного финансирования, алгоритмическая модель коллективного распределения средств.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-performance-program",
+    title: "Atlas Performance Program",
+    responsible: "Партнерка / статусы",
+    assignee: "",
+    comment: "Показать механику развития, ступенчатые статусы, поздравление с достижением статуса и сколько дней участник держит статус.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-promotion-strategies",
+    title: "Стратегии продвижения Atlas",
+    responsible: "Маркетинг / стратегия",
+    assignee: "",
+    comment: "Разработать стратегии продвижения Atlas по каналам: лидеры, соцсети, вебинары, блогеры, лендинги, комьюнити и контент.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-smart-contract-bloggers",
+    title: "Поиск блогеров по smart-contract проектам",
+    responsible: "Research / инфлюенсеры",
+    assignee: "",
+    comment: "Найти блогеров, продвигающих проекты на смарт-контрактах; продумать YouTube-парсер и критерии отбора.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-superkopilka-research",
+    title: "Изучить архив SuperKopilka FAQ",
+    responsible: "Research / база знаний",
+    assignee: "",
+    comment: "Посмотреть архив FAQ SuperKopilka: https://web.archive.org/web/20220919061125/https://www.superkopilka.com/faq/ и вытащить полезную структуру вопросов.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-founder-registration-questions",
+    title: "Вопросы про регистрацию и основателя",
+    responsible: "FAQ / юридический",
+    assignee: "",
+    comment: "Проработать ответы на вопросы про регистрацию проекта, основателя, прозрачность, ответственность и правила участия.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-ama-binance-live",
+    title: "AMA-сессия в формате Binance Live",
+    responsible: "Комьюнити / эфиры",
+    assignee: "",
+    comment: "Проработать аналог AMA-сессии: формат, ведущие, вопросы, языки, запись, анонсы и follow-up материалы.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-epochs-dao",
+    title: "Серии циклов / эпохи с DAO-перезапуском",
+    responsible: "Продукт / DAO",
+    assignee: "",
+    comment: "Проработать идею серий циклов (эпох) с управляемым перезапуском через DAO: правила, триггеры, голосование, коммуникация.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+  {
+    id: "ideas-rules-core-content",
+    title: "Базовые смысловые материалы Atlas",
+    responsible: "База знаний / идеология",
+    assignee: "",
+    comment: "Подготовить материалы: правила участия и принцип работы Atlas, почему система может работать долго, кассы взаимопомощи, Web2 vs Web3, MLM.",
+    dueDate: "",
+    status: "Не в работе",
+  },
+];
+
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
 }
@@ -197,6 +435,7 @@ function LaunchChecklistSection() {
   const [activeBoard, setActiveBoard] = useState("launch");
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
+  const [ideaTasks, setIdeaTasks] = useState(() => readStoredTasks(IDEAS_CHECKLIST_STORAGE_KEY, defaultIdeasChecklistTasks));
   const [customChecklists, setCustomChecklists] = useState(() => readStoredTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, []));
   const [newTask, setNewTask] = useState(() => createLaunchTask({ status: "В работе" }));
   const [newChecklistName, setNewChecklistName] = useState("");
@@ -204,19 +443,24 @@ function LaunchChecklistSection() {
   const [editingCell, setEditingCell] = useState(null);
 
   const isKnowledgeBaseBoard = activeBoard === "knowledgeBase";
+  const isIdeasBoard = activeBoard === "ideas";
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
-  const visibleTasks = isCustomBoard ? activeCustomChecklist.tasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
+  const visibleTasks = isCustomBoard ? activeCustomChecklist.tasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
   const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
   const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
-  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
   const boardSubtitle = isCustomBoard
     ? "Пользовательский чек-лист с собственным набором задач."
+    : isIdeasBoard
+      ? "Сырые идеи разложены по направлениям, чтобы их можно было приоритизировать и превращать в задачи."
     : isKnowledgeBaseBoard
       ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
       : "Что нужно закрыть перед стартом";
   const boardDescription = isCustomBoard
     ? `Чек-лист «${activeCustomChecklist.title}»: добавляй задачи, назначай исполнителей и веди статусы.`
+    : isIdeasBoard
+      ? "Здесь вычитаны и структурированы идеи по контенту, комьюнити, партнерке, лендингам, smart-contract, вебинарам и исследованиям."
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
@@ -245,8 +489,8 @@ function LaunchChecklistSection() {
       return;
     }
 
-    const storageKey = isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
-    const setTasks = isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
+    const storageKey = isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
+    const setTasks = isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
     updateTasks(storageKey, setTasks, (current) => current.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)));
   }
 
@@ -256,7 +500,7 @@ function LaunchChecklistSection() {
 
     const task = createLaunchTask({
       title,
-      responsible: newTask.responsible.trim() || (isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
+      responsible: newTask.responsible.trim() || (isIdeasBoard ? "Идеи / приоритизация" : isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
       assignee: newTask.assignee.trim(),
       comment: newTask.comment.trim(),
       dueDate: newTask.dueDate,
@@ -270,6 +514,12 @@ function LaunchChecklistSection() {
         persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
         return next;
       });
+      setNewTask(createLaunchTask({ status: "В работе" }));
+      return;
+    }
+
+    if (isIdeasBoard) {
+      updateTasks(IDEAS_CHECKLIST_STORAGE_KEY, setIdeaTasks, (current) => [task, ...current]);
       setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
@@ -294,8 +544,8 @@ function LaunchChecklistSection() {
       return;
     }
 
-    const storageKey = isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
-    const setTasks = isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
+    const storageKey = isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
+    const setTasks = isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
     updateTasks(storageKey, setTasks, (current) => current.filter((task) => task.id !== taskId));
   }
 
@@ -306,6 +556,8 @@ function LaunchChecklistSection() {
         persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
         return next;
       });
+    } else if (isIdeasBoard) {
+      updateTasks(IDEAS_CHECKLIST_STORAGE_KEY, setIdeaTasks, () => defaultIdeasChecklistTasks);
     } else if (isKnowledgeBaseBoard) {
       updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, () => defaultKnowledgeBaseChecklistTasks);
     } else {
@@ -423,6 +675,16 @@ function LaunchChecklistSection() {
           >
             База знаний
           </button>
+          <button
+            type="button"
+            className={`analytics-launch-browser-tab${activeBoard === "ideas" ? " analytics-launch-browser-tab-active" : ""}`}
+            onClick={() => {
+              setActiveBoard("ideas");
+              setEditingCell(null);
+            }}
+          >
+            Идеи
+          </button>
           {customChecklists.map((checklist) => (
             <button
               key={checklist.id}
@@ -502,7 +764,7 @@ function LaunchChecklistSection() {
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Добавить задачу</span>
-            <h3 className="analytics-section-title">{isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
+            <h3 className="analytics-section-title">{isIdeasBoard ? "Новая идея" : isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
             <p className="analytics-page-subtitle mb-0">
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
@@ -518,7 +780,7 @@ function LaunchChecklistSection() {
               className="form-control analytics-launch-input"
               value={newTask.title}
               onChange={(event) => setNewTask((current) => ({ ...current, title: event.target.value }))}
-              placeholder={isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
+              placeholder={isIdeasBoard ? "Например: AMA-сессия" : isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
             />
           </label>
           <label>
@@ -527,7 +789,7 @@ function LaunchChecklistSection() {
               className="form-control analytics-launch-input"
               value={newTask.responsible}
               onChange={(event) => setNewTask((current) => ({ ...current, responsible: event.target.value }))}
-              placeholder={isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
+              placeholder={isIdeasBoard ? "Маркетинг / продукт" : isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
             />
           </label>
           <label>
