@@ -11,6 +11,7 @@ import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSectio
 import AnalyticsIdeaCapture from "./components/AnalyticsIdeaCapture";
 import LaunchChecklistSection from "./components/LaunchChecklistSection";
 import ActivationSection from "./components/ActivationSection";
+import TabSummary from "./components/TabSummary";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
@@ -1047,21 +1048,7 @@ function AnalyticsPage() {
   function renderTrafficTab() {
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Онлайн</div>
-            <div className="analytics-tab-summary-title">{trafficTabData.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{trafficTabData.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {trafficTabData.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="Онлайн" title={trafficTabData.summary.title} description={trafficTabData.summary.description} bullets={trafficTabData.summary.bullets} />
 
         <section className="mt-4">
           <div className="analytics-section-heading">
@@ -1387,21 +1374,7 @@ function AnalyticsPage() {
   function renderLeadersTab() {
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Лидеры</div>
-            <div className="analytics-tab-summary-title">{data.tabsData.leaders.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{data.tabsData.leaders.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {data.tabsData.leaders.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="Лидеры" title={data.tabsData.leaders.summary.title} description={data.tabsData.leaders.summary.description} bullets={data.tabsData.leaders.summary.bullets} />
         <section className="mt-4">
           <div className="analytics-section-heading">
             <span className="analytics-kicker">Лидеры</span>
@@ -1496,21 +1469,7 @@ function AnalyticsPage() {
   function renderReinvestTab() {
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Реинвест</div>
-            <div className="analytics-tab-summary-title">{reinvestTabData.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{reinvestTabData.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {reinvestTabData.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="Реинвест" title={reinvestTabData.summary.title} description={reinvestTabData.summary.description} bullets={reinvestTabData.summary.bullets} />
         <section className="mt-4">
           <div className="analytics-section-heading">
             <span className="analytics-kicker">Реинвест</span>
@@ -1571,21 +1530,7 @@ function AnalyticsPage() {
   function renderBaseCompositionTab() {
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Состав базы</div>
-            <div className="analytics-tab-summary-title">{data.tabsData.baseComposition.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{data.tabsData.baseComposition.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {data.tabsData.baseComposition.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="Состав базы" title={data.tabsData.baseComposition.summary.title} description={data.tabsData.baseComposition.summary.description} bullets={data.tabsData.baseComposition.summary.bullets} />
         <section className="mt-4">
           <div className="analytics-section-heading">
             <span className="analytics-kicker">Роли пользователей</span>
@@ -1709,21 +1654,7 @@ function AnalyticsPage() {
   function renderGeographyTab() {
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">География</div>
-            <div className="analytics-tab-summary-title">{data.tabsData.geography.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{data.tabsData.geography.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {data.tabsData.geography.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="География" title={data.tabsData.geography.summary.title} description={data.tabsData.geography.summary.description} bullets={data.tabsData.geography.summary.bullets} />
         <section className="mt-4">
           <div className="analytics-section-heading">
             <span className="analytics-kicker">География</span>
@@ -1803,21 +1734,7 @@ function AnalyticsPage() {
 
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Партнёрская структура</div>
-            <div className="analytics-tab-summary-title">{data.tabsData.partner.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{data.tabsData.partner.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {data.tabsData.partner.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="Партнёрская структура" title={data.tabsData.partner.summary.title} description={data.tabsData.partner.summary.description} bullets={data.tabsData.partner.summary.bullets} />
         <section className="mt-4">
           <div className="analytics-section-heading">
             <span className="analytics-kicker">Партнёрская структура</span>
@@ -1825,43 +1742,17 @@ function AnalyticsPage() {
           </div>
           <MetricsGrid metrics={data.tabsData.partner.metrics} density="balanced" />
         </section>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Почему ветка дорогая</div>
-            <div className="analytics-tab-summary-title">
-              {partnerDiagnostics.costlyBranch?.branch || "Ветка"} сейчас даёт главный structural pressure
-            </div>
-            <div className="analytics-tab-summary-copy">
-              {partnerDiagnostics.dominantPressure?.type || "Партнёрская нагрузка"} сейчас выглядит самым сильным слоем давления на treasury, а ближайший tier jump уже нужно отслеживать отдельно.
-            </div>
-            <div className="analytics-tab-summary-points">
-              <div className="analytics-tab-summary-point">
-                <span className="analytics-executive-point-glyph">•</span>
-                <span>
-                  Дорогая ветка: {partnerDiagnostics.costlyBranch?.branch || "—"} · leak {partnerDiagnostics.costlyBranch?.structuralLeak ?? 0}% · dependency {partnerDiagnostics.costlyBranch?.leaderDependency ?? 0}%
-                </span>
-              </div>
-              <div className="analytics-tab-summary-point">
-                <span className="analytics-executive-point-glyph">•</span>
-                <span>
-                  Доминирующее давление: {partnerDiagnostics.dominantPressure?.type || "—"} · {formatCurrency(partnerDiagnostics.dominantPressure?.value || 0)} · {formatPercent(partnerDiagnostics.dominantPressure?.share || 0)}
-                </span>
-              </div>
-              <div className="analytics-tab-summary-point">
-                <span className="analytics-executive-point-glyph">•</span>
-                <span>
-                  Tier jump risk 7d: {formatPercent(partnerDiagnostics.jumpRisk?.score || 0)} · зона {partnerDiagnostics.jumpRisk?.branch || "—"}
-                </span>
-              </div>
-              <div className="analytics-tab-summary-point">
-                <span className="analytics-executive-point-glyph">•</span>
-                <span>
-                  Самая здоровая ветка: {partnerDiagnostics.healthiestBranch?.branch || "—"} · net {formatCurrency(partnerDiagnostics.healthiestBranch?.netBranch || 0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
+        <TabSummary
+          kicker="Почему ветка дорогая"
+          title={`${partnerDiagnostics.costlyBranch?.branch || "Ветка"} сейчас даёт главный structural pressure`}
+          description={`${partnerDiagnostics.dominantPressure?.type || "Партнёрская нагрузка"} сейчас выглядит самым сильным слоем давления на treasury, а ближайший tier jump уже нужно отслеживать отдельно.`}
+          bullets={[
+            <>Дорогая ветка: {partnerDiagnostics.costlyBranch?.branch || "—"} · leak {partnerDiagnostics.costlyBranch?.structuralLeak ?? 0}% · dependency {partnerDiagnostics.costlyBranch?.leaderDependency ?? 0}%</>,
+            <>Доминирующее давление: {partnerDiagnostics.dominantPressure?.type || "—"} · {formatCurrency(partnerDiagnostics.dominantPressure?.value || 0)} · {formatPercent(partnerDiagnostics.dominantPressure?.share || 0)}</>,
+            <>Tier jump risk 7d: {formatPercent(partnerDiagnostics.jumpRisk?.score || 0)} · зона {partnerDiagnostics.jumpRisk?.branch || "—"}</>,
+            <>Самая здоровая ветка: {partnerDiagnostics.healthiestBranch?.branch || "—"} · net {formatCurrency(partnerDiagnostics.healthiestBranch?.netBranch || 0)}</>,
+          ]}
+        />
         <section className="row g-3 mt-1">
           <div className="col-12 col-xl-6">
             <ChartCard title="Inflow по веткам" subtitle="Какие ветки приносят основной денежный поток.">
@@ -1929,21 +1820,7 @@ function AnalyticsPage() {
   function renderWalletsTab() {
     return (
       <>
-        <section className="mt-4">
-          <div className="analytics-surface analytics-tab-summary">
-            <div className="analytics-kicker">Кошельки</div>
-            <div className="analytics-tab-summary-title">{data.tabsData.wallets.summary.title}</div>
-            <div className="analytics-tab-summary-copy">{data.tabsData.wallets.summary.description}</div>
-            <div className="analytics-tab-summary-points">
-              {data.tabsData.wallets.summary.bullets.map((item) => (
-                <div key={item} className="analytics-tab-summary-point">
-                  <span className="analytics-executive-point-glyph">•</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <TabSummary kicker="Кошельки" title={data.tabsData.wallets.summary.title} description={data.tabsData.wallets.summary.description} bullets={data.tabsData.wallets.summary.bullets} />
         <section className="mt-4">
           <div className="analytics-section-heading">
             <span className="analytics-kicker">Кошельки</span>
