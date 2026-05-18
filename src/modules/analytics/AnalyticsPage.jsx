@@ -10,6 +10,7 @@ import AnalyticsPriorityActions from "./components/AnalyticsPriorityActions";
 import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSection";
 import AnalyticsIdeaCapture from "./components/AnalyticsIdeaCapture";
 import LaunchChecklistSection from "./components/LaunchChecklistSection";
+import ActivationSection from "./components/ActivationSection";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
@@ -855,97 +856,6 @@ function AnalyticsPage() {
     );
   }
 
-  function renderActivationSection(marginTop = "lg") {
-    return (
-      <section className={marginTop === "none" ? "" : "mt-4"}>
-        <AnalyticsCollapsibleSection
-          kicker="Активация"
-          title="Посмотреть активацию пользователей"
-          subtitle="Регистрации, подключение кошелька и запуск цикла по выбранному периоду."
-          defaultOpen={false}
-          className="mt-0"
-        >
-          <div className="row g-3">
-            <div className="col-12">
-              <AnalyticsDataTable
-                title="Итог по выбранному периоду"
-                subtitle="Сводно по регистрации, подключению кошелька и активации цикла."
-                columns={[
-                  { key: "period", label: "Период" },
-                  { key: "registrations", label: "Регистрации", type: "number" },
-                  { key: "walletConnects", label: "Подключили кошелёк", type: "number" },
-                  { key: "walletConnectRate", label: "Connect rate", type: "percent" },
-                  { key: "cycleActivations", label: "Активировали цикл", type: "number" },
-                  { key: "cycleActivationRate", label: "Cycle rate", type: "percent" },
-                ]}
-                rows={filteredLifecycleTotals}
-                headerActions={
-                  <label className="analytics-inline-filter">
-                    <span>Период</span>
-                    <select
-                      className="form-select analytics-inline-select"
-                      value={activationPeriod}
-                      onChange={(event) => {
-                        setActivationPeriod(event.target.value);
-                        setActivationPage(1);
-                      }}
-                    >
-                      {ACTIVATION_PERIOD_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                }
-              />
-            </div>
-            <div className="col-12">
-              <AnalyticsDataTable
-                title="Активация по дням"
-                subtitle="Главы и названия столбцов остаются видны, а детали можно листать по страницам."
-                columns={[
-                  { key: "date", label: "Дата" },
-                  { key: "registrations", label: "Регистрации", type: "number" },
-                  { key: "walletConnects", label: "Подключили кошелёк", type: "number" },
-                  { key: "walletConnectRate", label: "Connect rate", type: "percent" },
-                  { key: "cycleActivations", label: "Активировали цикл", type: "number" },
-                  { key: "cycleActivationRate", label: "Cycle rate", type: "percent" },
-                ]}
-                rows={pagedLifecycleRows}
-                footer={
-                  <div className="analytics-pagination">
-                    <span className="analytics-pagination-copy">
-                      Страница {safeActivationPage} из {activationTotalPages}
-                    </span>
-                    <div className="analytics-pagination-controls">
-                      <button
-                        type="button"
-                        className="btn analytics-pagination-btn"
-                        onClick={() => setActivationPage((current) => Math.max(1, current - 1))}
-                        disabled={safeActivationPage === 1}
-                      >
-                        Назад
-                      </button>
-                      <button
-                        type="button"
-                        className="btn analytics-pagination-btn"
-                        onClick={() => setActivationPage((current) => Math.min(activationTotalPages, current + 1))}
-                        disabled={safeActivationPage === activationTotalPages}
-                      >
-                        Вперёд
-                      </button>
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-          </div>
-        </AnalyticsCollapsibleSection>
-      </section>
-    );
-  }
-
   function renderOverview() {
     return (
       <>
@@ -1099,7 +1009,19 @@ function AnalyticsPage() {
 
         <AnalyticsScenarios scenarios={data.scenarios} defaultOpen={false} />
 
-        {renderActivationSection()}
+        <ActivationSection
+          period={activationPeriod}
+          periodOptions={ACTIVATION_PERIOD_OPTIONS}
+          totals={filteredLifecycleTotals}
+          rows={pagedLifecycleRows}
+          page={safeActivationPage}
+          totalPages={activationTotalPages}
+          onPeriodChange={(nextPeriod) => {
+            setActivationPeriod(nextPeriod);
+            setActivationPage(1);
+          }}
+          onPageChange={setActivationPage}
+        />
 
         <AnalyticsCollapsibleSection
           kicker="Финансовая структура"
@@ -1203,7 +1125,22 @@ function AnalyticsPage() {
           </div>
         </section>
         <section className="row g-3 mt-4">
-          <div className="col-12">{renderActivationSection("none")}</div>
+          <div className="col-12">
+            <ActivationSection
+              marginTop="none"
+              period={activationPeriod}
+              periodOptions={ACTIVATION_PERIOD_OPTIONS}
+              totals={filteredLifecycleTotals}
+              rows={pagedLifecycleRows}
+              page={safeActivationPage}
+              totalPages={activationTotalPages}
+              onPeriodChange={(nextPeriod) => {
+                setActivationPeriod(nextPeriod);
+                setActivationPage(1);
+              }}
+              onPageChange={setActivationPage}
+            />
+          </div>
           <div className="col-12 col-xl-6">
             <AnalyticsDataTable
               title="Качество live-потока по странам"
