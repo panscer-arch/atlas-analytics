@@ -16,6 +16,8 @@ import SectionHeading from "./components/SectionHeading";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import ProductsTabSection from "./components/ProductsTabSection";
+import DashboardKpiCard from "./components/DashboardKpiCard";
+import DashboardValue from "./components/DashboardValue";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
 import ConversionFunnelChart from "./charts/ConversionFunnelChart";
@@ -566,14 +568,7 @@ function AnalyticsPage() {
               },
             ].map((item) => (
               <div key={item.kicker} className="col-12 col-md-6 col-xl-4 col-xxl">
-                <div className={`analytics-dashboard-kpi analytics-dashboard-kpi-${item.tone}`}>
-                  <div className="analytics-dashboard-kpi-kicker">{item.kicker}</div>
-                  <div className="analytics-dashboard-kpi-value">{item.value}</div>
-                  <div className="analytics-dashboard-kpi-foot">
-                    <span>{item.note}</span>
-                    <small>{item.sub}</small>
-                  </div>
-                </div>
+                <DashboardKpiCard {...item} />
               </div>
             ))}
           </div>
@@ -594,7 +589,7 @@ function AnalyticsPage() {
                   ].map(([label, value, tone]) => (
                     <div key={label} className="analytics-dashboard-list-row">
                       <span>{label}</span>
-                      <strong className={`analytics-dashboard-value-${tone}`}>{value}</strong>
+                      <DashboardValue tone={tone}>{value}</DashboardValue>
                     </div>
                   ))}
                 </div>
@@ -644,8 +639,8 @@ function AnalyticsPage() {
                           <td>{index === 0 ? "Сегодня" : index === 1 ? "Завтра" : "День 3"}</td>
                           <td>{formatCurrency(row.expectedIncoming)}</td>
                           <td>{formatCurrency(row.totalOutgoing)}</td>
-                          <td className={ratio >= 1 ? "analytics-dashboard-value-success" : "analytics-dashboard-value-danger"}>
-                            {ratio.toFixed(2)}x
+                          <td>
+                            <DashboardValue tone={ratio >= 1 ? "success" : "danger"}>{ratio.toFixed(2)}x</DashboardValue>
                           </td>
                         </tr>
                       );
@@ -713,11 +708,11 @@ function AnalyticsPage() {
                 <div className="analytics-dashboard-list mt-3">
                   <div className="analytics-dashboard-list-row">
                     <span>Новые деньги</span>
-                    <strong className="analytics-dashboard-value-success">{formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</strong>
+                    <DashboardValue tone="success">{formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</DashboardValue>
                   </div>
                   <div className="analytics-dashboard-list-row">
                     <span>Повторные деньги</span>
-                    <strong className="analytics-dashboard-value-accent">{formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</strong>
+                    <DashboardValue tone="accent">{formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</DashboardValue>
                   </div>
                 </div>
               </div>
@@ -737,11 +732,11 @@ function AnalyticsPage() {
                   </div>
                   <div className="analytics-dashboard-list-row">
                     <span>Давление выплат</span>
-                    <strong className="analytics-dashboard-value-danger">76%</strong>
+                    <DashboardValue tone="danger">76%</DashboardValue>
                   </div>
                   <div className="analytics-dashboard-list-row">
                     <span>Ближайший риск</span>
-                    <strong className="analytics-dashboard-value-danger">{data.kpis.firstRiskGap || "3 дня"}</strong>
+                    <DashboardValue tone="danger">{data.kpis.firstRiskGap || "3 дня"}</DashboardValue>
                   </div>
                 </div>
               </div>
@@ -753,7 +748,7 @@ function AnalyticsPage() {
                 <div className="analytics-dashboard-list">
                   <div className="analytics-dashboard-list-row">
                     <span>Reinvest rate</span>
-                    <strong className="analytics-dashboard-value-success">{formatPercent(reinvestCapitalRate)}</strong>
+                    <DashboardValue tone="success">{formatPercent(reinvestCapitalRate)}</DashboardValue>
                   </div>
                   <div className="analytics-dashboard-list-row">
                     <span>Доля повторных циклов</span>
@@ -761,7 +756,7 @@ function AnalyticsPage() {
                   </div>
                   <div className="analytics-dashboard-list-row">
                     <span>Возврат в систему</span>
-                    <strong className="analytics-dashboard-value-success">68.3/100</strong>
+                    <DashboardValue tone="success">68.3/100</DashboardValue>
                   </div>
                 </div>
               </div>
@@ -837,7 +832,7 @@ function AnalyticsPage() {
                   ))}
                   <div className="analytics-dashboard-list-row">
                     <span>Риск перегруза</span>
-                    <strong className="analytics-dashboard-value-danger">Высокий</strong>
+                    <DashboardValue tone="danger">Высокий</DashboardValue>
                   </div>
                 </div>
               </div>
