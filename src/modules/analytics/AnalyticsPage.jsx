@@ -16,7 +16,9 @@ import SectionHeading from "./components/SectionHeading";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import ProductsTabSection from "./components/ProductsTabSection";
+import DashboardBlock from "./components/DashboardBlock";
 import DashboardKpiCard from "./components/DashboardKpiCard";
+import DashboardListRow from "./components/DashboardListRow";
 import DashboardValue from "./components/DashboardValue";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
@@ -577,8 +579,7 @@ function AnalyticsPage() {
         <section className="mt-4">
           <div className="row g-3">
             <div className="col-12 col-xl-4">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Главная касса дня</div>
+              <DashboardBlock title="Главная касса дня">
                 <div className="analytics-dashboard-list">
                   {[
                     ["Доступно в пуле", formatCurrency(cashPosition.closingBalance ?? cashPosition.availableCash ?? 0), "success"],
@@ -587,18 +588,14 @@ function AnalyticsPage() {
                     ["Нужно добрать на 30 дней", formatCurrency(data.kpis.requiredNewMoney), "danger"],
                     ["Покрытие ближайшего окна", `${((next72h[0]?.expectedIncoming || 0) / Math.max(next72h[0]?.totalOutgoing || 1, 1)).toFixed(2)}x`, "success"],
                   ].map(([label, value, tone]) => (
-                    <div key={label} className="analytics-dashboard-list-row">
-                      <span>{label}</span>
-                      <DashboardValue tone={tone}>{value}</DashboardValue>
-                    </div>
+                    <DashboardListRow key={label} label={label} value={value} tone={tone} />
                   ))}
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Конверсия дня</div>
+              <DashboardBlock title="Конверсия дня">
                 <div className="analytics-dashboard-list">
                   {[
                     ["Регистрации", trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0, "день"],
@@ -607,21 +604,14 @@ function AnalyticsPage() {
                     ["Средний чек активации", formatCurrency((todaySnapshot?.incoming || 0) / Math.max(todaySnapshot?.cycleActivations || 1, 1)), "среднее"],
                     ["Качество потока", formatPercent(53.8), "в активацию"],
                   ].map(([label, value, delta]) => (
-                    <div key={label} className="analytics-dashboard-list-row">
-                      <span>{label}</span>
-                      <div className="analytics-dashboard-list-mixed">
-                        <strong>{value}</strong>
-                        <small>{delta}</small>
-                      </div>
-                    </div>
+                    <DashboardListRow key={label} label={label} value={value} sub={delta} />
                   ))}
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">72 часа</div>
+              <DashboardBlock title="72 часа">
                 <table className="analytics-dashboard-mini-table">
                   <thead>
                     <tr>
@@ -647,7 +637,7 @@ function AnalyticsPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </DashboardBlock>
             </div>
           </div>
         </section>
@@ -660,8 +650,7 @@ function AnalyticsPage() {
               </ChartCard>
             </div>
             <div className="col-12 col-xxl-5">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Продукты / циклы</div>
+              <DashboardBlock title="Продукты / циклы">
                 <div className="row g-3 mt-1">
                   <div className="col-12 col-md-5">
                     <ChartCard title="Доли активных циклов" subtitle="Lockup vs Daily Flow.">
@@ -691,7 +680,7 @@ function AnalyticsPage() {
                     </table>
                   </div>
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
           </div>
         </section>
@@ -699,67 +688,37 @@ function AnalyticsPage() {
         <section className="mt-4">
           <div className="row g-3">
             <div className="col-12 col-xl-4">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Новые vs повторные деньги</div>
+              <DashboardBlock title="Новые vs повторные деньги">
                 <div className="analytics-dashboard-balance">
                   <div className="analytics-dashboard-balance-total">{formatCurrency(todaySnapshot?.incoming || 0)}</div>
                   <div className="analytics-dashboard-balance-sub">Всего за день</div>
                 </div>
                 <div className="analytics-dashboard-list mt-3">
-                  <div className="analytics-dashboard-list-row">
-                    <span>Новые деньги</span>
-                    <DashboardValue tone="success">{formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</DashboardValue>
-                  </div>
-                  <div className="analytics-dashboard-list-row">
-                    <span>Повторные деньги</span>
-                    <DashboardValue tone="accent">{formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</DashboardValue>
-                  </div>
+                  <DashboardListRow label="Новые деньги" value={formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="success" />
+                  <DashboardListRow label="Повторные деньги" value={formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="accent" />
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Риск и обязательства</div>
+              <DashboardBlock title="Риск и обязательства">
                 <div className="analytics-dashboard-list">
-                  <div className="analytics-dashboard-list-row">
-                    <span>Обязательства 7 дней</span>
-                    <strong>{formatCurrency(data.kpis.obligations7d)}</strong>
-                  </div>
-                  <div className="analytics-dashboard-list-row">
-                    <span>Обязательства 30 дней</span>
-                    <strong>{formatCurrency(data.kpis.obligations30d)}</strong>
-                  </div>
-                  <div className="analytics-dashboard-list-row">
-                    <span>Давление выплат</span>
-                    <DashboardValue tone="danger">76%</DashboardValue>
-                  </div>
-                  <div className="analytics-dashboard-list-row">
-                    <span>Ближайший риск</span>
-                    <DashboardValue tone="danger">{data.kpis.firstRiskGap || "3 дня"}</DashboardValue>
-                  </div>
+                  <DashboardListRow label="Обязательства 7 дней" value={formatCurrency(data.kpis.obligations7d)} />
+                  <DashboardListRow label="Обязательства 30 дней" value={formatCurrency(data.kpis.obligations30d)} />
+                  <DashboardListRow label="Давление выплат" value="76%" tone="danger" />
+                  <DashboardListRow label="Ближайший риск" value={data.kpis.firstRiskGap || "3 дня"} tone="danger" />
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Реинвест</div>
+              <DashboardBlock title="Реинвест">
                 <div className="analytics-dashboard-list">
-                  <div className="analytics-dashboard-list-row">
-                    <span>Reinvest rate</span>
-                    <DashboardValue tone="success">{formatPercent(reinvestCapitalRate)}</DashboardValue>
-                  </div>
-                  <div className="analytics-dashboard-list-row">
-                    <span>Доля повторных циклов</span>
-                    <strong>{formatPercent(repeatDepositRate)}</strong>
-                  </div>
-                  <div className="analytics-dashboard-list-row">
-                    <span>Возврат в систему</span>
-                    <DashboardValue tone="success">68.3/100</DashboardValue>
-                  </div>
+                  <DashboardListRow label="Reinvest rate" value={formatPercent(reinvestCapitalRate)} tone="success" />
+                  <DashboardListRow label="Доля повторных циклов" value={formatPercent(repeatDepositRate)} />
+                  <DashboardListRow label="Возврат в систему" value="68.3/100" tone="success" />
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
           </div>
         </section>
@@ -767,75 +726,44 @@ function AnalyticsPage() {
         <section className="mt-4">
           <div className="row g-3">
             <div className="col-12 col-md-6 col-xxl-3">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Кошельки</div>
+              <DashboardBlock title="Кошельки">
                 <div className="analytics-dashboard-list">
                   {walletRows.slice(0, 3).map((row) => (
-                    <div key={row.wallet} className="analytics-dashboard-list-row">
-                      <span>{row.wallet}</span>
-                      <div className="analytics-dashboard-list-mixed">
-                        <strong>{formatCurrency(row.inflow)}</strong>
-                        <small>{formatPercent(row.share)}</small>
-                      </div>
-                    </div>
+                    <DashboardListRow key={row.wallet} label={row.wallet} value={formatCurrency(row.inflow)} sub={formatPercent(row.share)} />
                   ))}
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-md-6 col-xxl-3">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">География</div>
+              <DashboardBlock title="География">
                 <div className="analytics-dashboard-list">
                   {geographyRows.slice(0, 3).map((row) => (
-                    <div key={row.country} className="analytics-dashboard-list-row">
-                      <span>{row.country}</span>
-                      <div className="analytics-dashboard-list-mixed">
-                        <strong>{formatCurrency(row.inflow)}</strong>
-                        <small>{formatPercent(row.share)}</small>
-                      </div>
-                    </div>
+                    <DashboardListRow key={row.country} label={row.country} value={formatCurrency(row.inflow)} sub={formatPercent(row.share)} />
                   ))}
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-md-6 col-xxl-3">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Лидеры</div>
+              <DashboardBlock title="Лидеры">
                 <div className="analytics-dashboard-list">
                   {leaderRows.slice(0, 3).map((row) => (
-                    <div key={row.leader} className="analytics-dashboard-list-row">
-                      <span>{row.leader}</span>
-                      <div className="analytics-dashboard-list-mixed">
-                        <strong>{formatCurrency(row.inflow)}</strong>
-                        <small>{row.orders} циклов</small>
-                      </div>
-                    </div>
+                    <DashboardListRow key={row.leader} label={row.leader} value={formatCurrency(row.inflow)} sub={`${row.orders} циклов`} />
                   ))}
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
 
             <div className="col-12 col-md-6 col-xxl-3">
-              <div className="analytics-surface analytics-dashboard-block h-100">
-                <div className="analytics-dashboard-block-title">Партнёрская структура</div>
+              <DashboardBlock title="Партнёрская структура">
                 <div className="analytics-dashboard-list">
                   {partnerRows.slice(0, 3).map((row) => (
-                    <div key={row.branch} className="analytics-dashboard-list-row">
-                      <span>{row.branch}</span>
-                      <div className="analytics-dashboard-list-mixed">
-                        <strong>{formatCurrency(row.inflow)}</strong>
-                        <small>{row.invited} приглаш.</small>
-                      </div>
-                    </div>
+                    <DashboardListRow key={row.branch} label={row.branch} value={formatCurrency(row.inflow)} sub={`${row.invited} приглаш.`} />
                   ))}
-                  <div className="analytics-dashboard-list-row">
-                    <span>Риск перегруза</span>
-                    <DashboardValue tone="danger">Высокий</DashboardValue>
-                  </div>
+                  <DashboardListRow label="Риск перегруза" value="Высокий" tone="danger" />
                 </div>
-              </div>
+              </DashboardBlock>
             </div>
           </div>
         </section>
