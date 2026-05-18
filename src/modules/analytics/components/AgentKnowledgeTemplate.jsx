@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const AGENT_KNOWLEDGE_STORAGE_KEY = "atlas.analytics.agentKnowledgeTemplate.v1";
 
@@ -479,9 +480,9 @@ function AgentKnowledgeTemplate() {
             Русскоязычная база параметров для обучения AI-агента Atlas System. В третьем столбике можно хранить ссылку на документ, источник или короткое описание.
           </p>
         </div>
-        <button type="button" className="btn analytics-launch-reset-btn" onClick={resetTemplate}>
+        <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTemplate}>
           Сбросить шаблон
-        </button>
+        </AnalyticsActionButton>
       </div>
 
       <div className="analytics-agent-template-grid">
@@ -489,9 +490,9 @@ function AgentKnowledgeTemplate() {
           <div key={section.id} className="analytics-agent-template-card">
             <div className="analytics-agent-template-card-head">
               <h3>{section.title}</h3>
-              <button type="button" className="btn analytics-agent-template-add-row" onClick={() => addRow(section.id)}>
+              <AnalyticsActionButton variant="primary" size="sm" onClick={() => addRow(section.id)}>
                 + строка
-              </button>
+              </AnalyticsActionButton>
             </div>
             <div className="table-responsive">
               <table className="table analytics-table analytics-agent-template-table mb-0">
@@ -532,9 +533,9 @@ function AgentKnowledgeTemplate() {
                         />
                       </td>
                       <td>
-                        <button type="button" className="btn analytics-launch-icon-btn analytics-launch-delete-btn" onClick={() => removeRow(section.id, row.id)} title="Удалить строку">
+                        <AnalyticsActionButton variant="danger" size="icon" onClick={() => removeRow(section.id, row.id)} title="Удалить строку">
                           x
-                        </button>
+                        </AnalyticsActionButton>
                       </td>
                     </tr>
                   ))}
@@ -548,9 +549,9 @@ function AgentKnowledgeTemplate() {
       <div className="analytics-agent-notes">
         <div className="analytics-agent-template-card-head">
           <h3>ДОПОЛНИТЕЛЬНЫЕ ИДЕИ / ЗАМЕТКИ</h3>
-          <button type="button" className="btn analytics-agent-template-add-row" onClick={addNote}>
+          <AnalyticsActionButton variant="primary" size="sm" onClick={addNote}>
             + блок
-          </button>
+          </AnalyticsActionButton>
         </div>
         <div className="analytics-agent-notes-grid">
           {template.notes.map((note) => (
@@ -568,9 +569,9 @@ function AgentKnowledgeTemplate() {
                 placeholder="Свободные идеи, заметки, спорные формулировки"
                 rows="6"
               />
-              <button type="button" className="btn analytics-launch-delete-btn analytics-agent-note-delete" onClick={() => removeNote(note.id)}>
+              <AnalyticsActionButton variant="danger" size="sm" onClick={() => removeNote(note.id)}>
                 Удалить блок
-              </button>
+              </AnalyticsActionButton>
             </div>
           ))}
         </div>

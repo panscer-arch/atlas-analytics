@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const AGENT_FAQ_STORAGE_KEY = "atlas.analytics.agentFaqTemplate.v1";
 
@@ -311,9 +312,9 @@ function AgentFaqTemplate() {
             Стартовая база вопросов участников по категориям. Сейчас в шаблоне {totalQuestions} вопросов; ответы, ссылки и комментарии можно редактировать прямо в таблицах.
           </p>
         </div>
-        <button type="button" className="btn analytics-launch-reset-btn" onClick={resetTemplate}>
+        <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTemplate}>
           Сбросить FAQ
-        </button>
+        </AnalyticsActionButton>
       </div>
 
       <div className="analytics-agent-template-grid">
@@ -321,9 +322,9 @@ function AgentFaqTemplate() {
           <div key={section.id} className="analytics-agent-template-card">
             <div className="analytics-agent-template-card-head">
               <h3>{section.title}</h3>
-              <button type="button" className="btn analytics-agent-template-add-row" onClick={() => addRow(section.id)}>
+              <AnalyticsActionButton variant="primary" size="sm" onClick={() => addRow(section.id)}>
                 + вопрос
-              </button>
+              </AnalyticsActionButton>
             </div>
             <div className="table-responsive">
               <table className="table analytics-table analytics-agent-template-table mb-0">
@@ -364,9 +365,9 @@ function AgentFaqTemplate() {
                         />
                       </td>
                       <td>
-                        <button type="button" className="btn analytics-launch-icon-btn analytics-launch-delete-btn" onClick={() => removeRow(section.id, row.id)} title="Удалить вопрос">
+                        <AnalyticsActionButton variant="danger" size="icon" onClick={() => removeRow(section.id, row.id)} title="Удалить вопрос">
                           x
-                        </button>
+                        </AnalyticsActionButton>
                       </td>
                     </tr>
                   ))}

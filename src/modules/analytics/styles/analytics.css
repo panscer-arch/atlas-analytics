@@ -2660,42 +2660,40 @@
   min-width: 120px;
 }
 
-.analytics-launch-add-btn,
-.analytics-launch-reset-btn,
-.analytics-launch-mini-btn,
-.analytics-launch-icon-btn,
-.analytics-launch-delete-btn {
+.analytics-action-button {
   border: 1px solid rgba(157, 178, 255, 0.14);
   border-radius: 14px;
+  padding: 0.55rem 0.85rem;
   color: #edf3ff;
+  cursor: pointer;
   font-weight: 700;
 }
 
-.analytics-launch-add-btn {
+.analytics-action-button-primary {
   min-height: 44px;
   background: linear-gradient(135deg, rgba(105, 194, 179, 0.28), rgba(123, 180, 255, 0.2));
 }
 
-.analytics-launch-add-btn:disabled {
+.analytics-action-button:disabled {
   opacity: 0.48;
   cursor: not-allowed;
 }
 
-.analytics-launch-reset-btn,
-.analytics-launch-mini-btn,
-.analytics-launch-icon-btn {
+.analytics-action-button-secondary,
+.analytics-action-button-success,
+.analytics-action-button-warning {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.analytics-launch-done-btn {
+.analytics-action-button-success {
   color: #a7f3d0;
 }
 
-.analytics-launch-pause-btn {
+.analytics-action-button-warning {
   color: #d8e3ff;
 }
 
-.analytics-launch-delete-btn {
+.analytics-action-button-danger {
   border-color: rgba(255, 122, 122, 0.24);
   background: rgba(255, 122, 122, 0.1);
   color: #ffb6b6;
@@ -2708,13 +2706,12 @@
   min-width: 110px;
 }
 
-.analytics-launch-mini-btn,
-.analytics-launch-delete-btn {
+.analytics-action-button-sm {
   padding: 0.35rem 0.55rem;
   font-size: 0.78rem;
 }
 
-.analytics-launch-icon-btn {
+.analytics-action-button-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2726,8 +2723,8 @@
   line-height: 1;
 }
 
-.analytics-launch-icon-btn:hover,
-.analytics-launch-icon-btn:focus-visible {
+.analytics-action-button-icon:hover,
+.analytics-action-button-icon:focus-visible {
   border-color: rgba(123, 180, 255, 0.38);
   background: rgba(123, 180, 255, 0.1);
 }
@@ -3176,16 +3173,6 @@
   font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0.04em;
-}
-
-.analytics-agent-template-add-row {
-  border: 1px solid rgba(105, 194, 179, 0.24);
-  border-radius: 999px;
-  padding: 0.42rem 0.7rem;
-  background: rgba(105, 194, 179, 0.1);
-  color: #9ff0df;
-  font-size: 0.78rem;
-  font-weight: 800;
 }
 
 .analytics-agent-template-table {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AgentFaqTemplate from "./AgentFaqTemplate";
 import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
+import AnalyticsActionButton from "./AnalyticsActionButton";
 import LaunchProgressBar from "./LaunchProgressBar";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 
@@ -859,9 +860,9 @@ function LaunchChecklistSection() {
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
           </div>
-          <button type="button" className="btn analytics-launch-reset-btn" onClick={resetTasks}>
+          <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTasks}>
             Сбросить к шаблону
-          </button>
+          </AnalyticsActionButton>
         </div>
         <div className="analytics-launch-form-grid">
           <label>
@@ -943,9 +944,9 @@ function LaunchChecklistSection() {
               placeholder="Что должно быть внутри задачи, какие вкладки, данные или проверки"
             />
           </label>
-          <button type="button" className="btn analytics-launch-add-btn" onClick={addTask} disabled={!newTask.title.trim()}>
+          <AnalyticsActionButton variant="primary" onClick={addTask} disabled={!newTask.title.trim()}>
             Добавить задачу
-          </button>
+          </AnalyticsActionButton>
         </div>
       </section>
 
@@ -1031,33 +1032,33 @@ function LaunchChecklistSection() {
                     </td>
                     <td>
                       <div className="analytics-launch-actions">
-                        <button
-                          type="button"
-                          className="btn analytics-launch-icon-btn analytics-launch-done-btn"
+                        <AnalyticsActionButton
+                          variant="success"
+                          size="icon"
                           onClick={() => updateTask(task.id, { status: "Готово", done: true })}
                           title="Готово"
                           aria-label={`Отметить задачу ${task.title} готовой`}
                         >
                           ✓
-                        </button>
-                        <button
-                          type="button"
-                          className="btn analytics-launch-icon-btn analytics-launch-pause-btn"
+                        </AnalyticsActionButton>
+                        <AnalyticsActionButton
+                          variant="warning"
+                          size="icon"
                           onClick={() => updateTask(task.id, { status: "Отложено", done: false })}
                           title="Отложить"
                           aria-label={`Отложить задачу ${task.title}`}
                         >
                           ⏸
-                        </button>
-                        <button
-                          type="button"
-                          className="btn analytics-launch-icon-btn analytics-launch-delete-btn"
+                        </AnalyticsActionButton>
+                        <AnalyticsActionButton
+                          variant="danger"
+                          size="icon"
                           onClick={() => removeTask(task.id)}
                           title="Удалить"
                           aria-label={`Удалить задачу ${task.title}`}
                         >
                           ×
-                        </button>
+                        </AnalyticsActionButton>
                       </div>
                     </td>
                   </tr>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const MATERIALS_STORAGE_KEY = "atlas.analytics.materialLinks.v1";
 
@@ -728,9 +729,9 @@ function MaterialsLinksBoard() {
               Сохраняем привычный формат: документ остается в Google Docs, а здесь лежит карта ссылок по разделам.
             </p>
           </div>
-          <button type="button" className="btn analytics-launch-reset-btn" onClick={resetItems}>
+          <AnalyticsActionButton variant="secondary" size="sm" onClick={resetItems}>
             Сбросить к шаблону
-          </button>
+          </AnalyticsActionButton>
         </div>
         <div className="analytics-materials-add-grid">
           <label>
@@ -765,9 +766,9 @@ function MaterialsLinksBoard() {
               placeholder="https://docs.google.com/..."
             />
           </label>
-          <button type="button" className="btn analytics-launch-add-btn" onClick={addItem} disabled={!draft.title.trim()}>
+          <AnalyticsActionButton variant="primary" onClick={addItem} disabled={!draft.title.trim()}>
             Добавить ссылку
-          </button>
+          </AnalyticsActionButton>
         </div>
         <div className="analytics-materials-import">
           <label>
@@ -779,14 +780,9 @@ function MaterialsLinksBoard() {
               placeholder="https://docs.google.com/spreadsheets/d/..."
             />
           </label>
-          <button
-            type="button"
-            className="btn analytics-launch-add-btn"
-            onClick={importFromGoogleSheet}
-            disabled={!sheetUrl.trim() || importState.status === "loading"}
-          >
+          <AnalyticsActionButton variant="primary" onClick={importFromGoogleSheet} disabled={!sheetUrl.trim() || importState.status === "loading"}>
             {importState.status === "loading" ? "Считываю..." : "Считать ссылки"}
-          </button>
+          </AnalyticsActionButton>
           {importState.message ? (
             <div className={`analytics-materials-import-note analytics-materials-import-note-${importState.status}`}>
               {importState.message}
@@ -861,12 +857,12 @@ function MaterialsLinksBoard() {
                                 placeholder="Ссылка Google Docs / Drive"
                               />
                               <div className="analytics-materials-editor-actions">
-                                <button type="button" className="btn analytics-launch-icon-btn analytics-launch-done-btn" onClick={() => setEditingItemId(null)} title="Готово">
+                                <AnalyticsActionButton variant="success" size="icon" onClick={() => setEditingItemId(null)} title="Готово">
                                   ✓
-                                </button>
-                                <button type="button" className="btn analytics-launch-icon-btn analytics-launch-delete-btn" onClick={() => removeItem(item.id)} title="Удалить">
+                                </AnalyticsActionButton>
+                                <AnalyticsActionButton variant="danger" size="icon" onClick={() => removeItem(item.id)} title="Удалить">
                                   ×
-                                </button>
+                                </AnalyticsActionButton>
                               </div>
                             </div>
                           );
