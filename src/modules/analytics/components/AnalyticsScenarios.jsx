@@ -1,6 +1,12 @@
 import AnalyticsIcon from "./AnalyticsIcon";
 import AnalyticsCollapsibleSection from "./AnalyticsCollapsibleSection";
 
+const SCENARIO_TONES = new Set(["default", "accent", "success", "danger"]);
+
+function getTone(value) {
+  return SCENARIO_TONES.has(value) ? value : "default";
+}
+
 function scenarioGlyph(tone) {
   if (tone === "danger") return "alert";
   if (tone === "success") return "fact";
@@ -25,10 +31,10 @@ function AnalyticsScenarios({ scenarios = [], defaultOpen = false }) {
             <div className="analytics-surface analytics-scenario-card">
               <div className="analytics-scenario-topline">
                 <span className="analytics-scenario-index">
-                  <span className="analytics-scenario-glyph"><AnalyticsIcon name={scenarioGlyph(scenario.tone)} /></span>
+                  <span className="analytics-scenario-glyph"><AnalyticsIcon name={scenarioGlyph(getTone(scenario.tone))} /></span>
                   {scenario.kicker || `Сценарий ${index + 1}`}
                 </span>
-                <span className={`analytics-scenario-status analytics-scenario-status-${scenario.tone || "default"}`}>
+                <span className={`analytics-scenario-status analytics-scenario-status-${getTone(scenario.tone)}`}>
                   {scenario.status}
                 </span>
               </div>
