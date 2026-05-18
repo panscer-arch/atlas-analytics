@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const AGENT_FAQ_STORAGE_KEY = "atlas.analytics.agentFaqTemplate.v1";
@@ -186,6 +186,20 @@ const defaultFaqSections = [
 }));
 
 const defaultFaqTemplate = { sections: defaultFaqSections };
+const FAQ_SECTION_DESCRIPTIONS = {
+  start: "Первый вход, регистрация, подключение MetaMask и базовые проблемы на старте.",
+  wallet: "Кошелёк, сеть BSC, BNB на газ, безопасность seed-фразы и базовые ошибки MetaMask.",
+  deposit: "Создание цикла, первый депозит, pending / failed транзакции и повторные входы.",
+  tariffs: "Тарифы Smart Cycle, что они значат и как корректно объяснять расчётную модель.",
+  claim: "Когда доступен Claim, как проходит вывод и что делать при ошибках выплаты.",
+  partner: "Партнёрская программа, реферальная ссылка, бонусы, компрессия и matching bonus.",
+  statuses: "Статусы, квалификации, уровни Builder / Master и логика роста по структуре.",
+  dao: "DAO, голосование, право голоса и участие сообщества в развитии проекта.",
+  security: "Риски, аудит, приватные ключи, фишинг и как безопасно работать с Web3.",
+  support: "Куда писать, что отправлять в поддержку и как проверить tx hash и ошибки сети.",
+  materials: "Где искать презентацию, White Paper, инструкции, видео и обучающие материалы.",
+  analytics: "Что считается регистрацией, депозитом, обязательствами и как читать метрики проекта.",
+};
 
 function hydrateRows(defaultRows, savedRows = []) {
   const savedRowsById = new Map(savedRows.map((row) => [row.id, row]));
@@ -260,7 +274,12 @@ function createRow(sectionId) {
 
 function AgentFaqTemplate() {
   const [template, setTemplate] = useState(readStoredFaq);
-  const [activeSectionId, setActiveSectionId] = useState(() => defaultFaqTemplate.sections[0]?.id || "start");
+  const [activeSectionId, setActiveSectionId] = useState(() => {
+    if (typeof window === "undefined") return defaultFaqTemplate.sections[0]?.id || "start";
+
+    const url = new URL(window.location.href);
+    return url.searchParams.get("faq") || defaultFaqTemplate.sections[0]?.id || "start";
+  });
 
   function updateTemplate(updater) {
     setTemplate((current) => {
@@ -305,6 +324,32 @@ function AgentFaqTemplate() {
   const totalQuestions = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
   const activeSection =
     template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
+  const faqBaseUrl = typeof window === "undefined" ? "https://analytics.pupanel.cc/?board=agentFaq" : `${window.location.origin}${window.location.pathname}?board=agentFaq`;
+  const faqLinks = template.sections.map((section) => ({
+    id: section.id,
+    title: section.title,
+    description: FAQ_SECTION_DESCRIPTIONS[section.id] || "Раздел FAQ по отдельной категории вопросов участников.",
+    href: `${faqBaseUrl}&faq=${section.id}`,
+    isActive: activeSection?.id === section.id,
+  }));
+  const activeFaqLink = faqLinks.find((link) => link.isActive) || faqLinks[0];
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isKnownSection = template.sections.some((section) => section.id === activeSectionId);
+    const nextSectionId = isKnownSection ? activeSectionId : defaultFaqTemplate.sections[0]?.id || "start";
+
+    if (nextSectionId !== activeSectionId) {
+      setActiveSectionId(nextSectionId);
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("board", "agentFaq");
+    url.searchParams.set("faq", nextSectionId);
+    window.history.replaceState({}, "", url.toString());
+  }, [activeSectionId, template.sections]);
 
   return (
     <section className="analytics-surface analytics-agent-template mt-4">
@@ -334,6 +379,28 @@ function AgentFaqTemplate() {
             {section.title}
           </button>
         ))}
+      </div>
+      <div className="analytics-agent-template-links">
+        <div className="analytics-agent-template-links-active">
+          <span className="analytics-agent-template-links-label">Ссылка на категорию FAQ</span>
+          <a className="analytics-agent-template-links-anchor" href={activeFaqLink.href}>
+            {activeFaqLink.href}
+          </a>
+          <p className="analytics-agent-template-links-copy">{activeFaqLink.description}</p>
+        </div>
+        <div className="analytics-agent-template-links-grid">
+          {faqLinks.map((link) => (
+            <a
+              key={link.id}
+              href={link.href}
+              className={`analytics-agent-template-link-card${link.isActive ? " analytics-agent-template-link-card-active" : ""}`}
+            >
+              <span className="analytics-agent-template-link-card-title">{link.title}</span>
+              <span className="analytics-agent-template-link-card-url">{link.href}</span>
+              <span className="analytics-agent-template-link-card-copy">{link.description}</span>
+            </a>
+          ))}
+        </div>
       </div>
 
       {activeSection ? (
