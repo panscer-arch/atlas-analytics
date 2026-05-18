@@ -33,38 +33,11 @@ import RetentionChart from "./charts/RetentionChart";
 import CampaignPerformanceChart from "./charts/CampaignPerformanceChart";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
-import { buildAnalyticsUrl, parseAnalyticsRouteFromUrl } from "./routeRegistry";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
-const PAGE_TO_TAB_MAP = {
-  dashboard: "dashboard",
-  overview: "overview",
-  traffic: "traffic",
-  products: "products",
-  reinvest: "reinvest",
-  base: "base",
-  leaders: "leaders",
-  geography: "geography",
-  partners: "partner",
-  wallets: "wallets",
-  tasks: "launch",
-};
-const TAB_TO_PAGE_MAP = {
-  dashboard: "dashboard",
-  overview: "overview",
-  traffic: "traffic",
-  products: "products",
-  reinvest: "reinvest",
-  base: "base",
-  leaders: "leaders",
-  geography: "geography",
-  partner: "partners",
-  wallets: "wallets",
-  launch: "tasks",
-};
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -231,15 +204,8 @@ function scrollToSection(sectionId) {
   });
 }
 
-function readInitialAnalyticsTab() {
-  if (typeof window === "undefined") return "dashboard";
-
-  const parsedRoute = parseAnalyticsRouteFromUrl(window.location.href);
-  return PAGE_TO_TAB_MAP[parsedRoute.page] || "dashboard";
-}
-
 function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState(readInitialAnalyticsTab);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
@@ -313,23 +279,6 @@ function AnalyticsPage() {
   const dashboardTasks = buildDashboardTaskItems(data.priorityActions || []);
   const dashboardChat = buildDashboardChatItems();
   const dashboardPoolValue = cashPosition.closingBalance ?? cashPosition.availableCash ?? 0;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (activeTab === "launch") return;
-
-    const currentUrl = new URL(window.location.href);
-    const nextPage = TAB_TO_PAGE_MAP[activeTab] || "dashboard";
-    const nextUrl = buildAnalyticsUrl({
-      page: nextPage,
-      mode: "query",
-      root: `${currentUrl.origin}${currentUrl.pathname}`,
-    });
-
-    if (nextUrl !== currentUrl.toString()) {
-      window.history.replaceState({}, "", nextUrl);
-    }
-  }, [activeTab]);
 
   function handleOpenCharts() {
     setActiveTab("overview");
