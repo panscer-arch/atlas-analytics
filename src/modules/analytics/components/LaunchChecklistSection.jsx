@@ -14,6 +14,32 @@ const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
 const DEFAULT_BOARD_ID = "launch";
 const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "materials", "agentTasks", "agentFaq"];
+const STATIC_BOARD_META = {
+  launch: {
+    title: "Задачи запуска",
+    description: "Основной чек-лист запуска: задачи, ответственные, сроки и статус готовности.",
+  },
+  knowledgeBase: {
+    title: "База знаний",
+    description: "Презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции.",
+  },
+  ideas: {
+    title: "Идеи",
+    description: "Контент, комьюнити, маркетинг, вебинары, smart-contract и продуктовые гипотезы.",
+  },
+  materials: {
+    title: "Материалы",
+    description: "Быстрый вход в Google Docs и рабочие документы команды по всем направлениям.",
+  },
+  agentTasks: {
+    title: "Параметры",
+    description: "Параметры и факты проекта для AI-агента: Web3, циклы, партнерка, DAO, риски и ссылки.",
+  },
+  agentFaq: {
+    title: "FAQ",
+    description: "Готовая база вопросов участников по регистрации, кошельку, тарифам, Claim, безопасности и поддержке.",
+  },
+};
 
 const defaultLaunchChecklistTasks = [
   {
@@ -523,6 +549,24 @@ function LaunchChecklistSection() {
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
+  const boardBaseUrl = typeof window === "undefined" ? "https://analytics.pupanel.cc/" : `${window.location.origin}${window.location.pathname}`;
+  const boardLinks = [
+    ...Object.entries(STATIC_BOARD_META).map(([id, meta]) => ({
+      id,
+      title: meta.title,
+      description: meta.description,
+      href: id === DEFAULT_BOARD_ID ? boardBaseUrl : `${boardBaseUrl}?board=${id}`,
+      isActive: activeBoard === id,
+    })),
+    ...customChecklists.map((checklist) => ({
+      id: checklist.id,
+      title: checklist.title,
+      description: "Пользовательский чек-лист команды с собственным набором задач.",
+      href: `${boardBaseUrl}?board=${checklist.id}`,
+      isActive: activeBoard === checklist.id,
+    })),
+  ];
+  const activeBoardLink = boardLinks.find((link) => link.isActive) || boardLinks[0];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -832,6 +876,28 @@ function LaunchChecklistSection() {
               +
             </button>
           )}
+        </div>
+        <div className="analytics-launch-link-panel">
+          <div className="analytics-launch-link-panel-active">
+            <span className="analytics-launch-link-label">Текущая ссылка</span>
+            <a className="analytics-launch-link-anchor" href={activeBoardLink.href}>
+              {activeBoardLink.href}
+            </a>
+            <p className="analytics-launch-link-copy">{activeBoardLink.description}</p>
+          </div>
+          <div className="analytics-launch-link-grid">
+            {boardLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                className={`analytics-launch-link-card${link.isActive ? " analytics-launch-link-card-active" : ""}`}
+              >
+                <span className="analytics-launch-link-card-title">{link.title}</span>
+                <span className="analytics-launch-link-card-url">{link.href}</span>
+                <span className="analytics-launch-link-card-copy">{link.description}</span>
+              </a>
+            ))}
+          </div>
         </div>
         {!isMaterialsBoard && !isAgentTasksBoard && !isAgentFaqBoard ? (
           <div className="analytics-tab-summary-points">
