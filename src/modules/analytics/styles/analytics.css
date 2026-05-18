@@ -2981,6 +2981,18 @@
   resize: vertical;
 }
 
+.analytics-materials-helper {
+  border: 1px solid rgba(245, 196, 106, 0.22);
+  border-radius: 14px;
+  padding: 0.72rem 0.85rem;
+  background: rgba(245, 196, 106, 0.08);
+  color: #f8d78d;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .analytics-materials-export {
   display: grid;
   gap: 0.75rem;

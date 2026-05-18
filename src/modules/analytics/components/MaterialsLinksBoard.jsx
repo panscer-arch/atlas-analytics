@@ -389,13 +389,23 @@ function MaterialsLinksBoard() {
         title: item.title,
         url: item.url || "",
       }));
+    const linkedItemsCount = exportItems.filter((item) => item.url).length;
+
+    if (!linkedItemsCount) {
+      setImportState({
+        status: "error",
+        message: "В JSON сейчас 0 ссылок. Сначала вставь таблицу в поле «Вставить таблицу с живыми ссылками» или добавь URL вручную через «Изм.» у карточек.",
+      });
+      return;
+    }
+
     const json = JSON.stringify(exportItems, null, 2);
 
     try {
       await navigator.clipboard.writeText(json);
       setImportState({
         status: "success",
-        message: `JSON скопирован: ${exportItems.length} материалов, из них со ссылками ${exportItems.filter((item) => item.url).length}. Пришли его сюда одним сообщением.`,
+        message: `JSON скопирован: ${exportItems.length} материалов, из них со ссылками ${linkedItemsCount}. Пришли его сюда одним сообщением.`,
       });
     } catch {
       setImportState({
@@ -491,6 +501,9 @@ function MaterialsLinksBoard() {
               placeholder="Выдели таблицу в Google Sheets вместе с шапкой, нажми Cmd+C и вставь сюда. Скрытые ссылки из ячеек подтянутся автоматически."
             />
           </label>
+          <div className="analytics-materials-helper">
+            Если после экспорта в JSON у всех строк `url: ""`, значит в таблицу попали только названия. Нужно скопировать диапазон из Google Sheets именно через `Cmd+C`, не через CSV.
+          </div>
         </div>
         <div className="analytics-materials-export">
           <button type="button" className="btn analytics-board-btn" onClick={copyMaterialsJson}>
