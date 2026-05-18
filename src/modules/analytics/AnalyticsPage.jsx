@@ -19,6 +19,7 @@ import ProductsTabSection from "./components/ProductsTabSection";
 import DashboardBlock from "./components/DashboardBlock";
 import DashboardKpiCard from "./components/DashboardKpiCard";
 import DashboardListRow from "./components/DashboardListRow";
+import DashboardMiniTable from "./components/DashboardMiniTable";
 import DashboardValue from "./components/DashboardValue";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
@@ -527,48 +528,82 @@ function AnalyticsPage() {
         return accumulator;
       }, {}),
     );
+    const dashboardKpis = [
+      {
+        kicker: "Пришло сегодня",
+        value: formatCurrency(cashPosition.incomingFact ?? data.kpis.factToday),
+        note: `↑ ${formatPercent(18.4)}`,
+        sub: "vs вчера",
+        tone: "in",
+      },
+      {
+        kicker: "Выплачено сегодня",
+        value: formatCurrency(cashPosition.outgoingFact ?? 0),
+        note: `↑ ${formatPercent(12.7)}`,
+        sub: "vs вчера",
+        tone: "out",
+      },
+      {
+        kicker: "Чистый поток",
+        value: formatCurrency(contractNetFlowToday),
+        note: `↑ ${formatPercent(32.1)}`,
+        sub: "vs вчера",
+        tone: "net",
+      },
+      {
+        kicker: "Цель на сегодня",
+        value: formatCurrency(data.kpis.targetToday),
+        note: `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
+        sub: "выполнено",
+        tone: "target",
+      },
+      {
+        kicker: "Первая дата риска",
+        value: data.kpis.firstRiskDate === "без риска" ? "Без риска" : String(data.kpis.firstRiskDate).replace(/-/g, " "),
+        note: data.kpis.firstRiskGap || "окно 72 часа",
+        sub: "окно 72 часа",
+        tone: "risk",
+      },
+    ];
+    const cashRows = [
+      ["Доступно в пуле", formatCurrency(cashPosition.closingBalance ?? cashPosition.availableCash ?? 0), "success"],
+      ["Можно забрать сейчас", formatCurrency(data.kpis.claimableNow), "accent"],
+      ["Начислено, но не выведено", formatCurrency(data.kpis.accruedLater), "accent"],
+      ["Нужно добрать на 30 дней", formatCurrency(data.kpis.requiredNewMoney), "danger"],
+      ["Покрытие ближайшего окна", `${((next72h[0]?.expectedIncoming || 0) / Math.max(next72h[0]?.totalOutgoing || 1, 1)).toFixed(2)}x`, "success"],
+    ];
+    const conversionRows = [
+      ["Регистрации", trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0, "день"],
+      ["Подключили кошелёк", trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%"],
+      ["Активировали цикл", trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%"],
+      ["Средний чек активации", formatCurrency((todaySnapshot?.incoming || 0) / Math.max(todaySnapshot?.cycleActivations || 1, 1)), "среднее"],
+      ["Качество потока", formatPercent(53.8), "в активацию"],
+    ];
+    const next72hColumns = [
+      { key: "period", label: "Период", render: (_row, index) => (index === 0 ? "Сегодня" : index === 1 ? "Завтра" : "День 3") },
+      { key: "incoming", label: "Приток", render: (row) => formatCurrency(row.expectedIncoming) },
+      { key: "outgoing", label: "Обязательства", render: (row) => formatCurrency(row.totalOutgoing) },
+      {
+        key: "coverage",
+        label: "Покрытие",
+        render: (row) => {
+          const ratio = (row.expectedIncoming || 0) / Math.max(row.totalOutgoing || 1, 1);
+          return <DashboardValue tone={ratio >= 1 ? "success" : "danger"}>{ratio.toFixed(2)}x</DashboardValue>;
+        },
+      },
+    ];
+    const cycleColumns = [
+      { key: "cycleType", label: "Тариф" },
+      { key: "share", label: "Доля", render: (row) => formatPercent((row.todayIncoming / Math.max(todaySnapshot?.incoming || 1, 1)) * 100) },
+      { key: "monthCreated", label: "Активные" },
+      { key: "averageAmount", label: "Ср. сумма", render: (row) => formatCurrency(row.todayIncoming / Math.max(row.todayCreated || 1, 1)) },
+    ];
 
     return (
       <>
         <section className="mt-4">
           <div className="row g-3">
-            {[
-              {
-                kicker: "Пришло сегодня",
-                value: formatCurrency(cashPosition.incomingFact ?? data.kpis.factToday),
-                note: `↑ ${formatPercent(18.4)}`,
-                sub: "vs вчера",
-                tone: "in",
-              },
-              {
-                kicker: "Выплачено сегодня",
-                value: formatCurrency(cashPosition.outgoingFact ?? 0),
-                note: `↑ ${formatPercent(12.7)}`,
-                sub: "vs вчера",
-                tone: "out",
-              },
-              {
-                kicker: "Чистый поток",
-                value: formatCurrency(contractNetFlowToday),
-                note: `↑ ${formatPercent(32.1)}`,
-                sub: "vs вчера",
-                tone: "net",
-              },
-              {
-                kicker: "Цель на сегодня",
-                value: formatCurrency(data.kpis.targetToday),
-                note: `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
-                sub: "выполнено",
-                tone: "target",
-              },
-              {
-                kicker: "Первая дата риска",
-                value: data.kpis.firstRiskDate === "без риска" ? "Без риска" : String(data.kpis.firstRiskDate).replace(/-/g, " "),
-                note: data.kpis.firstRiskGap || "окно 72 часа",
-                sub: "окно 72 часа",
-                tone: "risk",
-              },
-            ].map((item) => (
+            {dashboardKpis.map((item) => (
               <div key={item.kicker} className="col-12 col-md-6 col-xl-4 col-xxl">
                 <DashboardKpiCard {...item} />
               </div>
@@ -581,13 +616,7 @@ function AnalyticsPage() {
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Главная касса дня">
                 <div className="analytics-dashboard-list">
-                  {[
-                    ["Доступно в пуле", formatCurrency(cashPosition.closingBalance ?? cashPosition.availableCash ?? 0), "success"],
-                    ["Можно забрать сейчас", formatCurrency(data.kpis.claimableNow), "accent"],
-                    ["Начислено, но не выведено", formatCurrency(data.kpis.accruedLater), "accent"],
-                    ["Нужно добрать на 30 дней", formatCurrency(data.kpis.requiredNewMoney), "danger"],
-                    ["Покрытие ближайшего окна", `${((next72h[0]?.expectedIncoming || 0) / Math.max(next72h[0]?.totalOutgoing || 1, 1)).toFixed(2)}x`, "success"],
-                  ].map(([label, value, tone]) => (
+                  {cashRows.map(([label, value, tone]) => (
                     <DashboardListRow key={label} label={label} value={value} tone={tone} />
                   ))}
                 </div>
@@ -597,13 +626,7 @@ function AnalyticsPage() {
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Конверсия дня">
                 <div className="analytics-dashboard-list">
-                  {[
-                    ["Регистрации", trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0, "день"],
-                    ["Подключили кошелёк", trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%"],
-                    ["Активировали цикл", trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%"],
-                    ["Средний чек активации", formatCurrency((todaySnapshot?.incoming || 0) / Math.max(todaySnapshot?.cycleActivations || 1, 1)), "среднее"],
-                    ["Качество потока", formatPercent(53.8), "в активацию"],
-                  ].map(([label, value, delta]) => (
+                  {conversionRows.map(([label, value, delta]) => (
                     <DashboardListRow key={label} label={label} value={value} sub={delta} />
                   ))}
                 </div>
@@ -612,31 +635,11 @@ function AnalyticsPage() {
 
             <div className="col-12 col-xl-4">
               <DashboardBlock title="72 часа">
-                <table className="analytics-dashboard-mini-table">
-                  <thead>
-                    <tr>
-                      <th>Период</th>
-                      <th>Приток</th>
-                      <th>Обязательства</th>
-                      <th>Покрытие</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {next72h.map((row, index) => {
-                      const ratio = (row.expectedIncoming || 0) / Math.max(row.totalOutgoing || 1, 1);
-                      return (
-                        <tr key={row.date}>
-                          <td>{index === 0 ? "Сегодня" : index === 1 ? "Завтра" : "День 3"}</td>
-                          <td>{formatCurrency(row.expectedIncoming)}</td>
-                          <td>{formatCurrency(row.totalOutgoing)}</td>
-                          <td>
-                            <DashboardValue tone={ratio >= 1 ? "success" : "danger"}>{ratio.toFixed(2)}x</DashboardValue>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <DashboardMiniTable
+                  columns={next72hColumns}
+                  getRowKey={(row) => row.date}
+                  rows={next72h}
+                />
               </DashboardBlock>
             </div>
           </div>
@@ -658,26 +661,11 @@ function AnalyticsPage() {
                     </ChartCard>
                   </div>
                   <div className="col-12 col-md-7">
-                    <table className="analytics-dashboard-mini-table">
-                      <thead>
-                        <tr>
-                          <th>Тариф</th>
-                          <th>Доля</th>
-                          <th>Активные</th>
-                          <th>Ср. сумма</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {overviewOperations.cycleTypes.slice(0, 6).map((row) => (
-                          <tr key={row.cycleType}>
-                            <td>{row.cycleType}</td>
-                            <td>{formatPercent((row.todayIncoming / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)}</td>
-                            <td>{row.monthCreated}</td>
-                            <td>{formatCurrency(row.todayIncoming / Math.max(row.todayCreated || 1, 1))}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <DashboardMiniTable
+                      columns={cycleColumns}
+                      getRowKey={(row) => row.cycleType}
+                      rows={overviewOperations.cycleTypes.slice(0, 6)}
+                    />
                   </div>
                 </div>
               </DashboardBlock>
