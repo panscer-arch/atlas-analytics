@@ -505,7 +505,7 @@ function LaunchChecklistSection() {
     : isMaterialsBoard
       ? "Здесь можно хранить такую же таблицу ссылок, как в Google Sheets: открыл документ, доработал и вернулся в аналитику."
     : isAgentTasksBoard
-      ? "Здесь собран Atlas Agent Knowledge Parameters Template: параметры проекта, Web3, циклы, MLM, DAO, юридика, аналитика и заметки."
+      ? "Здесь собраны параметры проекта, Web3, циклы, партнерка, DAO, юридика, риски, FAQ и ссылки на источники для AI-агента."
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
@@ -749,7 +749,7 @@ function LaunchChecklistSection() {
               setEditingCell(null);
             }}
           >
-            Задачи
+            Параметры
           </button>
           {customChecklists.map((checklist) => (
             <button
