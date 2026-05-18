@@ -25,7 +25,7 @@ function AnalyticsScenarios({ scenarios = [], defaultOpen = false }) {
             <div className="analytics-surface analytics-scenario-card">
               <div className="analytics-scenario-topline">
                 <span className="analytics-scenario-index">
-                  <span className="analytics-scenario-glyph"><AnalyticsIcon name={scenarioGlyph(scenario.tone)} className="analytics-inline-icon" /></span>
+                  <span className="analytics-scenario-glyph"><AnalyticsIcon name={scenarioGlyph(scenario.tone)} /></span>
                   {scenario.kicker || `Сценарий ${index + 1}`}
                 </span>
                 <span className={`analytics-scenario-status analytics-scenario-status-${scenario.tone || "default"}`}>

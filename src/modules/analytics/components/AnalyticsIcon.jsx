@@ -140,7 +140,7 @@ function iconPaths(name) {
   }
 }
 
-function AnalyticsIcon({ name, className = "" }) {
+function AnalyticsIcon({ name, size = "inline" }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -149,7 +149,7 @@ function AnalyticsIcon({ name, className = "" }) {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className={`analytics-icon analytics-icon-${size}`}
       aria-hidden="true"
     >
       {iconPaths(name)}

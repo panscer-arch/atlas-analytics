@@ -15,11 +15,11 @@ function AnalyticsDataTable({
   rows = [],
   headerActions = null,
   footer = null,
-  surfaceClassName = "",
-  tableClassName = "",
+  variant = "default",
+  density = "default",
 }) {
   return (
-    <div className={`analytics-surface ${surfaceClassName}`.trim()}>
+    <div className={`analytics-surface analytics-data-table analytics-data-table-${variant}`}>
       <div className="analytics-data-table-head d-flex justify-content-between align-items-center mb-3">
         <div>
           <h3 className="chart-card-title mb-1">{title}</h3>
@@ -29,7 +29,7 @@ function AnalyticsDataTable({
       </div>
 
       <div className="table-responsive">
-        <table className={`table analytics-table align-middle mb-0 ${tableClassName}`.trim()}>
+        <table className={`table analytics-table align-middle mb-0 analytics-data-table-grid analytics-data-table-grid-${density}`}>
           <thead>
             <tr>
               {columns.map((column) => (

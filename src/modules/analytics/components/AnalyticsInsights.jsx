@@ -7,7 +7,6 @@ function AnalyticsInsights({ alerts = [], recommendations = [] }) {
       kicker="Сигналы и действия"
       title="Посмотреть сигналы и реакции"
       subtitle="Где уже есть давление на систему и какие шаги стоит сделать прямо сейчас."
-      className="mt-4"
     >
       <div className="row g-3">
         <div className="col-12 col-xl-6">
@@ -20,7 +19,7 @@ function AnalyticsInsights({ alerts = [], recommendations = [] }) {
               {alerts.map((item, index) => (
                 <div key={item.title} className={`analytics-insight-item${index === 0 ? " analytics-insight-item-strong" : ""}`}>
                   <div className="analytics-insight-title">
-                    <span className="analytics-insight-glyph"><AnalyticsIcon name="alert" className="analytics-inline-icon" /></span>
+                    <span className="analytics-insight-glyph"><AnalyticsIcon name="alert" /></span>
                     {item.title}
                   </div>
                   <div className="analytics-insight-copy">{item.description}</div>
@@ -40,7 +39,7 @@ function AnalyticsInsights({ alerts = [], recommendations = [] }) {
               {recommendations.map((item, index) => (
                 <div key={item.title} className={`analytics-insight-item${index === 0 ? " analytics-insight-item-strong" : ""}`}>
                   <div className="analytics-insight-title">
-                    <span className="analytics-insight-glyph"><AnalyticsIcon name="action" className="analytics-inline-icon" /></span>
+                    <span className="analytics-insight-glyph"><AnalyticsIcon name="action" /></span>
                     {item.title}
                   </div>
                   <div className="analytics-insight-copy">{item.description}</div>

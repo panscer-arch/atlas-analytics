@@ -9,6 +9,7 @@ import AnalyticsScenarios from "./components/AnalyticsScenarios";
 import AnalyticsPriorityActions from "./components/AnalyticsPriorityActions";
 import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSection";
 import AnalyticsIdeaCapture from "./components/AnalyticsIdeaCapture";
+import LaunchProgressBar from "./components/LaunchProgressBar";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
@@ -1194,9 +1195,9 @@ function AnalyticsPage() {
     );
   }
 
-  function renderActivationSection(className = "mt-4") {
+  function renderActivationSection(marginTop = "lg") {
     return (
-      <section className={className}>
+      <section className={marginTop === "none" ? "" : "mt-4"}>
         <AnalyticsCollapsibleSection
           kicker="Активация"
           title="Посмотреть активацию пользователей"
@@ -1293,7 +1294,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Ключевые сигналы дня</span>
             <h2 className="mb-0">Что происходит сейчас</h2>
           </div>
-          <MetricsGrid metrics={primaryKpis} colClass="col-12 col-md-6 col-xl-4 col-xxl-2" />
+          <MetricsGrid metrics={primaryKpis} density="compact" />
         </section>
 
         <section className="mt-4">
@@ -1301,7 +1302,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Контур Smart Contract</span>
             <h2 className="mb-0">Главная касса дня</h2>
           </div>
-          <MetricsGrid metrics={contractPulseKpis} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={contractPulseKpis} density="balanced" />
         </section>
 
         <section className="mt-4">
@@ -1309,7 +1310,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">День к дню</span>
             <h2 className="mb-0">Сравнение со вчера</h2>
           </div>
-          <MetricsGrid metrics={operationalSnapshotKpis} colClass="col-12 col-md-6 col-xl-4 col-xxl-2" />
+          <MetricsGrid metrics={operationalSnapshotKpis} density="compact" />
         </section>
 
         <section className="mt-4">
@@ -1317,7 +1318,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Traffic → Money</span>
             <h2 className="mb-0">Трафик превращается в деньги</h2>
           </div>
-          <MetricsGrid metrics={trafficToMoneyKpis} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={trafficToMoneyKpis} density="balanced" />
         </section>
 
         <AnalyticsCollapsibleSection
@@ -1446,7 +1447,7 @@ function AnalyticsPage() {
           subtitle="Выплаты, рефералка, комиссия платформы и ваш остаток."
           defaultOpen={false}
         >
-          <MetricsGrid metrics={structureKpis} colClass="col-12 col-md-6 col-xl-4 col-xxl-2" />
+          <MetricsGrid metrics={structureKpis} density="compact" />
         </AnalyticsCollapsibleSection>
 
         <AnalyticsCollapsibleSection
@@ -1485,7 +1486,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Трафик / Онлайн</span>
             <h2 className="mb-0">Кто сейчас на сайте и в кабинете</h2>
           </div>
-          <MetricsGrid metrics={trafficTabData.metrics} colClass="col-12 col-md-6 col-xl-4 col-xxl-3" />
+          <MetricsGrid metrics={trafficTabData.metrics} />
         </section>
         <section className="row g-3 mt-1">
           <div className="col-12">
@@ -1542,7 +1543,7 @@ function AnalyticsPage() {
           </div>
         </section>
         <section className="row g-3 mt-4">
-          <div className="col-12">{renderActivationSection("mt-0")}</div>
+          <div className="col-12">{renderActivationSection("none")}</div>
           <div className="col-12 col-xl-6">
             <AnalyticsDataTable
               title="Качество live-потока по странам"
@@ -1605,7 +1606,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Продукты / Циклы</span>
             <h2 className="mb-0">Какой продукт даёт приток и какой создаёт давление</h2>
           </div>
-          <MetricsGrid metrics={productsTabData.metrics} colClass="col-12 col-md-6 col-xl-6" />
+          <MetricsGrid metrics={productsTabData.metrics} density="half" />
         </section>
         <section className="mt-4">
           <div className="analytics-section-heading">
@@ -1705,8 +1706,8 @@ function AnalyticsPage() {
             <AnalyticsDataTable
               title="Сводная таблица всех тарифов"
               subtitle="Сухое сравнение тарифов по деньгам, нагрузке и риску."
-              surfaceClassName="analytics-products-table analytics-products-table-daily"
-              tableClassName="analytics-products-summary-table"
+              variant="productsDaily"
+              density="productsSummary"
               columns={[
                 {
                   key: "tariff",
@@ -1809,7 +1810,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Лидеры</span>
             <h2 className="mb-0">Кто двигает систему деньгами и структурно</h2>
           </div>
-          <MetricsGrid metrics={data.tabsData.leaders.metrics} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={data.tabsData.leaders.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
           <div className="col-12 col-xl-6">
@@ -1918,7 +1919,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Реинвест</span>
             <h2 className="mb-0">Насколько пользователи возвращают деньги в систему</h2>
           </div>
-          <MetricsGrid metrics={reinvestTabData.metrics} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={reinvestTabData.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
           <div className="col-12 col-xl-6">
@@ -1993,7 +1994,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Роли пользователей</span>
             <h2 className="mb-0">Кто в системе просто инвестирует, кто строит сеть, а кто делает и то и другое</h2>
           </div>
-          <MetricsGrid metrics={data.tabsData.baseComposition.metrics} colClass="col-12 col-md-6 col-xl-3 col-xxl-3" />
+          <MetricsGrid metrics={data.tabsData.baseComposition.metrics} density="wide" />
         </section>
         <section className="row g-3 mt-1">
           <div className="col-12 col-xl-6">
@@ -2131,7 +2132,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">География</span>
             <h2 className="mb-0">Какие страны дают пользователей, деньги и обязательства</h2>
           </div>
-          <MetricsGrid metrics={data.tabsData.geography.metrics} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={data.tabsData.geography.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
           <div className="col-12 col-xl-6">
@@ -2225,7 +2226,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Партнёрская структура</span>
             <h2 className="mb-0">Какие ветки дают рост, а какие раздувают нагрузку</h2>
           </div>
-          <MetricsGrid metrics={data.tabsData.partner.metrics} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={data.tabsData.partner.metrics} density="balanced" />
         </section>
         <section className="mt-4">
           <div className="analytics-surface analytics-tab-summary">
@@ -2351,7 +2352,7 @@ function AnalyticsPage() {
             <span className="analytics-kicker">Кошельки</span>
             <h2 className="mb-0">Где деньги, где нагрузка и где концентрация риска</h2>
           </div>
-          <MetricsGrid metrics={data.tabsData.wallets.metrics} colClass="col-12 col-md-6 col-xl-3" />
+          <MetricsGrid metrics={data.tabsData.wallets.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
           <div className="col-12 col-xl-6">
@@ -2501,9 +2502,7 @@ function AnalyticsPage() {
               </div>
             </div>
           </div>
-          <div className="analytics-launch-progress-bar mt-3">
-            <div style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
-          </div>
+          <LaunchProgressBar value={progress} />
         </section>
 
         <section className="analytics-surface analytics-launch-form mt-4">

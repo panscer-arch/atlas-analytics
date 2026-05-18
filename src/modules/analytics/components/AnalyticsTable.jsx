@@ -49,7 +49,7 @@ function AnalyticsTable({ rows }) {
                       <strong>{row.source}</strong>
                       <span className="analytics-breakdown-toggle-copy">{openGroups[row.source] ? "Скрыть тарифы" : "Показать тарифы"}</span>
                       <span className={`analytics-breakdown-toggle-chevron${openGroups[row.source] ? " analytics-breakdown-toggle-chevron-open" : ""}`}>
-                        <AnalyticsIcon name="tomorrow" className="analytics-inline-icon" />
+                        <AnalyticsIcon name="tomorrow" />
                       </span>
                     </button>
                   </td>

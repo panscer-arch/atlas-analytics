@@ -33,7 +33,7 @@ function MetricCard({
     <div className={`analytics-surface metric-card metric-card-${tone}${pulse ? " metric-card-pulse" : ""}${emphasis ? " metric-card-emphasis" : ""}`}>
       <div className="metric-card-topline">
         <div className="metric-card-label-group">
-          {icon ? <div className="metric-card-icon"><AnalyticsIcon name={icon} className="metric-card-icon-svg" /></div> : null}
+          {icon ? <div className="metric-card-icon"><AnalyticsIcon name={icon} size="metric" /></div> : null}
           <div className="metric-card-label">{title}</div>
         </div>
         {statusLabel ? <div className={`metric-card-status metric-card-status-${tone}`}>{statusLabel}</div> : null}

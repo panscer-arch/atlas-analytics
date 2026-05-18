@@ -2020,6 +2020,15 @@
   margin-top: 1rem;
 }
 
+.analytics-data-table-productsDaily {
+  overflow: hidden;
+}
+
+.analytics-data-table-grid-productsSummary th,
+.analytics-data-table-grid-productsSummary td {
+  white-space: nowrap;
+}
+
 .analytics-pagination {
   display: flex;
   flex-wrap: wrap;
@@ -2153,7 +2162,7 @@
   font-weight: 700;
 }
 
-.metric-card-icon-svg {
+.analytics-icon-metric {
   width: 18px;
   height: 18px;
 }
@@ -2362,6 +2371,22 @@
   margin-bottom: 1rem;
 }
 
+.chart-card-plot {
+  width: 100%;
+}
+
+.chart-card-plot-sm {
+  height: 260px;
+}
+
+.chart-card-plot-md {
+  height: 320px;
+}
+
+.chart-card-plot-lg {
+  height: 400px;
+}
+
 .chart-card-title {
   margin: 0;
   font-size: 1.1rem;
@@ -2437,8 +2462,9 @@
   background: rgba(157, 178, 255, 0.12);
 }
 
-.analytics-launch-progress-bar div {
+.analytics-launch-progress-fill {
   height: 100%;
+  width: var(--launch-progress);
   border-radius: inherit;
   background: linear-gradient(90deg, #69c2b3 0%, #7bb4ff 100%);
   transition: width 180ms ease;
@@ -2824,7 +2850,7 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-.analytics-inline-icon {
+.analytics-icon-inline {
   width: 15px;
   height: 15px;
 }

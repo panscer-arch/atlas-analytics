@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AnalyticsIcon from "./AnalyticsIcon";
+import Wrapper from "./Wrapper";
 
 function AnalyticsCollapsibleSection({
   kicker,
@@ -7,7 +8,7 @@ function AnalyticsCollapsibleSection({
   subtitle = "",
   defaultOpen = false,
   children,
-  className = "mt-4",
+  marginTop = "lg",
   sectionId,
   openSignal,
 }) {
@@ -20,7 +21,7 @@ function AnalyticsCollapsibleSection({
   }, [openSignal]);
 
   return (
-    <section className={className} id={sectionId}>
+    <Wrapper as="section" marginTop={marginTop} id={sectionId}>
       <button
         type="button"
         className={`analytics-collapse-toggle${isOpen ? " analytics-collapse-toggle-open" : ""}`}
@@ -35,13 +36,13 @@ function AnalyticsCollapsibleSection({
         <div className="analytics-collapse-meta">
           <span className="analytics-collapse-cta">{isOpen ? "Свернуть" : "Развернуть"}</span>
           <span className={`analytics-collapse-chevron${isOpen ? " analytics-collapse-chevron-open" : ""}`}>
-            <AnalyticsIcon name="tomorrow" className="analytics-inline-icon" />
+            <AnalyticsIcon name="tomorrow" />
           </span>
         </div>
       </button>
 
       {isOpen ? <div className="analytics-collapse-body">{children}</div> : null}
-    </section>
+    </Wrapper>
   );
 }
 
