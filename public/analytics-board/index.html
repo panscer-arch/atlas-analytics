@@ -112,23 +112,55 @@
         letter-spacing: -0.04em;
       }
       .filters { margin-bottom: 16px; }
-      .chips {
+      .tabs-shell {
         display: flex;
-        gap: 10px;
+        align-items: center;
+        gap: 12px;
         flex-wrap: wrap;
       }
-      .chip {
+      .tabs-label {
+        font-size: 13px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding: 6px;
+        border-radius: 22px;
         border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.025);
+      }
+      .chip {
+        position: relative;
+        border: 1px solid transparent;
+        background: transparent;
         color: var(--text);
-        padding: 10px 14px;
-        border-radius: 999px;
+        padding: 12px 18px;
+        border-radius: 16px 16px 12px 12px;
         font-size: 14px;
         cursor: pointer;
+        transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, color 160ms ease;
       }
       .chip.active {
-        border-color: rgba(102, 214, 191, 0.35);
-        background: rgba(102, 214, 191, 0.14);
+        border-color: rgba(116, 167, 255, 0.28);
+        background: linear-gradient(180deg, rgba(116, 167, 255, 0.2), rgba(116, 167, 255, 0.08));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      }
+      .chip:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .chip-count {
+        margin-left: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .chip.active .chip-count {
+        color: rgba(239, 245, 255, 0.9);
       }
       .kanban-grid {
         display: grid;
@@ -330,7 +362,10 @@
       </section>
 
       <section class="filters">
-        <div class="chips" id="filter-chips"></div>
+        <div class="tabs-shell">
+          <div class="tabs-label">Флаг по этапам</div>
+          <div class="chips" id="filter-chips"></div>
+        </div>
       </section>
 
       <section class="ideas">
@@ -699,13 +734,10 @@
 
       const filterDefs = [
         { id: "all", label: "Все" },
-        { id: "P0", label: "Только P0" },
-        { id: "analytics", label: "Аналитика" },
-        { id: "wallets", label: "Кошельки" },
-        { id: "frontend", label: "Фронтенд" },
-        { id: "api", label: "API потом" },
-        { id: "geo", label: "География" },
-        { id: "traffic", label: "Трафик" }
+        { id: "start", label: "Старт" },
+        { id: "registration", label: "Регистрация" },
+        { id: "wallet", label: "Кошелёк" },
+        { id: "metamask", label: "MetaMask" }
       ];
 
       const filterChips = document.getElementById("filter-chips");
@@ -714,10 +746,60 @@
       const doneCol = document.getElementById("done-col");
       const ideasCol = document.getElementById("ideas-col");
 
+      function inferCategoryFromText(text) {
+        const source = String(text || "").toLowerCase();
+        if (source.includes("metamask") || source.includes("meta mask")) return "metamask";
+        if (
+          source.includes("кошел") ||
+          source.includes("wallet") ||
+          source.includes("wallet connect") ||
+          source.includes("подключ")
+        ) {
+          return "wallet";
+        }
+        if (
+          source.includes("регистрац") ||
+          source.includes("авторизац") ||
+          source.includes("кабинет") ||
+          source.includes("сесс") ||
+          source.includes("логин")
+        ) {
+          return "registration";
+        }
+        return "start";
+      }
+
+      function getTaskCategory(task) {
+        const textBlob = [
+          task.title,
+          task.copy,
+          task.plain,
+          ...(task.tags || []),
+          ...(task.subtasks || []).map((item) => item.label),
+        ].join(" ");
+
+        return inferCategoryFromText(textBlob);
+      }
+
+      function getIdeaCategory(idea) {
+        const textBlob = [idea.title, idea.details, idea.activeTab, idea.summary, idea.tab].join(" ");
+        return inferCategoryFromText(textBlob);
+      }
+
       function matchesFilter(task) {
         if (state.filter === "all") return true;
-        if (state.filter === "P0") return task.priority === "P0";
-        return task.tags.includes(state.filter);
+        return getTaskCategory(task) === state.filter;
+      }
+
+      function matchesIdeaFilter(idea) {
+        if (state.filter === "all") return true;
+        return getIdeaCategory(idea) === state.filter;
+      }
+
+      function getFilterCount(filterId) {
+        const tasksCount = TASKS.filter((task) => filterId === "all" || getTaskCategory(task) === filterId).length;
+        const ideasCount = (state.signals || []).filter((signal) => signal.type === "analytics-idea").filter((idea) => filterId === "all" || getIdeaCategory(idea) === filterId).length;
+        return tasksCount + ideasCount;
       }
 
       function getTaskStatus(task) {
@@ -956,11 +1038,12 @@
         filterDefs.forEach((filterDef) => {
           const chip = document.createElement("button");
           chip.className = `chip ${state.filter === filterDef.id ? "active" : ""}`;
-          chip.textContent = filterDef.label;
+          chip.innerHTML = `${filterDef.label}<span class="chip-count">${getFilterCount(filterDef.id)}</span>`;
           chip.onclick = () => {
             state.filter = filterDef.id;
             renderFilters();
             renderTasks();
+            renderIdeas();
           };
           filterChips.appendChild(chip);
         });
@@ -1086,7 +1169,7 @@
         inprogressCol.innerHTML = "";
         doneCol.innerHTML = "";
 
-        const ideaSignals = (state.signals || []).filter((signal) => signal.type === "analytics-idea");
+        const ideaSignals = (state.signals || []).filter((signal) => signal.type === "analytics-idea").filter(matchesIdeaFilter);
         ideaSignals.forEach((idea) => {
           const status = getTaskStatus(idea);
           const card = createIdeaTaskCard(idea);
@@ -1145,6 +1228,7 @@
         ideasCol.innerHTML = "";
         const ideaSignals = (state.signals || [])
           .filter((signal) => signal.type === "analytics-idea")
+          .filter(matchesIdeaFilter)
           .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))
           .slice(0, 12);
 
@@ -1160,6 +1244,7 @@
             <h3>${idea.title || "Идея без названия"}</h3>
             <p>${idea.details || "Без комментария"}</p>
             <div class="idea-meta">
+              <span class="pill">${getIdeaCategory(idea)}</span>
               <span class="pill">${idea.activeTab || "overview"}</span>
               <span class="pill">${idea.createdAtLabel || "без даты"}</span>
               <span class="pill">из аналитики</span>
