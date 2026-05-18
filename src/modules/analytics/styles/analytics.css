@@ -2451,7 +2451,7 @@
 
 .analytics-launch-form-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.8fr) minmax(150px, 0.6fr) minmax(150px, 0.6fr);
+  grid-template-columns: minmax(220px, 1.2fr) minmax(170px, 0.8fr) minmax(170px, 0.8fr) minmax(140px, 0.55fr) minmax(140px, 0.55fr);
   gap: 1rem;
   margin-top: 1.1rem;
   align-items: end;
@@ -2468,7 +2468,7 @@
 }
 
 .analytics-launch-form-comment {
-  grid-column: span 3;
+  grid-column: span 4;
 }
 
 .analytics-launch-input,
@@ -2537,6 +2537,10 @@
   font-weight: 700;
 }
 
+.analytics-launch-assignee-read {
+  min-width: 130px;
+}
+
 .analytics-launch-date-input {
   min-width: 120px;
 }
@@ -2544,6 +2548,7 @@
 .analytics-launch-add-btn,
 .analytics-launch-reset-btn,
 .analytics-launch-mini-btn,
+.analytics-launch-icon-btn,
 .analytics-launch-delete-btn {
   border: 1px solid rgba(157, 178, 255, 0.14);
   border-radius: 14px;
@@ -2562,8 +2567,17 @@
 }
 
 .analytics-launch-reset-btn,
-.analytics-launch-mini-btn {
+.analytics-launch-mini-btn,
+.analytics-launch-icon-btn {
   background: rgba(255, 255, 255, 0.04);
+}
+
+.analytics-launch-done-btn {
+  color: #a7f3d0;
+}
+
+.analytics-launch-pause-btn {
+  color: #d8e3ff;
 }
 
 .analytics-launch-delete-btn {
@@ -2575,14 +2589,32 @@
 .analytics-launch-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  min-width: 220px;
+  gap: 0.32rem;
+  min-width: 110px;
 }
 
 .analytics-launch-mini-btn,
 .analytics-launch-delete-btn {
   padding: 0.35rem 0.55rem;
   font-size: 0.78rem;
+}
+
+.analytics-launch-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  line-height: 1;
+}
+
+.analytics-launch-icon-btn:hover,
+.analytics-launch-icon-btn:focus-visible {
+  border-color: rgba(123, 180, 255, 0.38);
+  background: rgba(123, 180, 255, 0.1);
 }
 
 .analytics-launch-checkbox {

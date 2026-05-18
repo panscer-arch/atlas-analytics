@@ -100,6 +100,7 @@ function createLaunchTask(overrides = {}) {
     id: `launch-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title: "",
     responsible: "",
+    assignee: "",
     comment: "",
     dueDate: "",
     status: "В работе",
@@ -298,6 +299,7 @@ function AnalyticsPage() {
   const [newLaunchTask, setNewLaunchTask] = useState(() => createLaunchTask({
     title: "",
     responsible: "",
+    assignee: "",
     comment: "",
     dueDate: "",
     status: "В работе",
@@ -415,6 +417,7 @@ function AnalyticsPage() {
     const task = createLaunchTask({
       title,
       responsible: newLaunchTask.responsible.trim() || "Не назначен",
+      assignee: newLaunchTask.assignee.trim(),
       comment: newLaunchTask.comment.trim(),
       dueDate: newLaunchTask.dueDate,
       status: newLaunchTask.status || "В работе",
@@ -2369,6 +2372,15 @@ function AnalyticsPage() {
               />
             </label>
             <label>
+              <span>Исполнитель</span>
+              <input
+                className="form-control analytics-launch-input"
+                value={newLaunchTask.assignee}
+                onChange={(event) => setNewLaunchTask((current) => ({ ...current, assignee: event.target.value }))}
+                placeholder="Имя или ник"
+              />
+            </label>
+            <label>
               <span>Дата</span>
               <input
                 className="form-control analytics-launch-input"
@@ -2413,7 +2425,7 @@ function AnalyticsPage() {
               <span className="analytics-kicker">Задачи запуска</span>
               <h3 className="analytics-section-title">Что нужно закрыть перед стартом</h3>
               <p className="analytics-page-subtitle mb-0">
-                Меняй название, ответственного, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
+                Меняй название, ответственного, исполнителя, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
               </p>
             </div>
           </div>
@@ -2425,6 +2437,7 @@ function AnalyticsPage() {
                   <th>Готово</th>
                   <th>Название</th>
                   <th>Ответственный</th>
+                  <th>Исполнитель</th>
                   <th>Комментарий</th>
                   <th>Дата</th>
                   <th>Статус</th>
@@ -2456,6 +2469,11 @@ function AnalyticsPage() {
                       <td>
                         {renderLaunchEditableCell(task, "responsible")}
                       </td>
+                      <td>
+                        {renderLaunchEditableCell(task, "assignee", {
+                          readClassName: "analytics-launch-assignee-read",
+                        })}
+                      </td>
                       <td className="analytics-launch-comment">
                         {renderLaunchEditableCell(task, "comment", {
                           multiline: true,
@@ -2482,14 +2500,32 @@ function AnalyticsPage() {
                       </td>
                       <td>
                         <div className="analytics-launch-actions">
-                          <button type="button" className="btn analytics-launch-mini-btn" onClick={() => updateLaunchTask(task.id, { status: "Готово", done: true })}>
-                            Готово
+                          <button
+                            type="button"
+                            className="btn analytics-launch-icon-btn analytics-launch-done-btn"
+                            onClick={() => updateLaunchTask(task.id, { status: "Готово", done: true })}
+                            title="Готово"
+                            aria-label={`Отметить задачу ${task.title} готовой`}
+                          >
+                            ✓
                           </button>
-                          <button type="button" className="btn analytics-launch-mini-btn" onClick={() => updateLaunchTask(task.id, { status: "Отложено", done: false })}>
-                            Отложить
+                          <button
+                            type="button"
+                            className="btn analytics-launch-icon-btn analytics-launch-pause-btn"
+                            onClick={() => updateLaunchTask(task.id, { status: "Отложено", done: false })}
+                            title="Отложить"
+                            aria-label={`Отложить задачу ${task.title}`}
+                          >
+                            ⏸
                           </button>
-                          <button type="button" className="btn analytics-launch-delete-btn" onClick={() => removeLaunchTask(task.id)}>
-                            Удалить
+                          <button
+                            type="button"
+                            className="btn analytics-launch-icon-btn analytics-launch-delete-btn"
+                            onClick={() => removeLaunchTask(task.id)}
+                            title="Удалить"
+                            aria-label={`Удалить задачу ${task.title}`}
+                          >
+                            ×
                           </button>
                         </div>
                       </td>
