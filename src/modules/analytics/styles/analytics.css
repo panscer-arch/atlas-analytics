@@ -2981,6 +2981,22 @@
   resize: vertical;
 }
 
+.analytics-materials-export {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.analytics-materials-export .analytics-board-btn {
+  justify-self: start;
+}
+
+.analytics-materials-export textarea {
+  min-height: 7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+}
+
 .analytics-agent-template {
   padding: 1.25rem;
 }

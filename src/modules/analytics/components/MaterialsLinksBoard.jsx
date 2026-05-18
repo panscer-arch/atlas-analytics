@@ -381,6 +381,30 @@ function MaterialsLinksBoard() {
     importRows(parsePlainRows(text), "текста");
   }
 
+  async function copyMaterialsJson() {
+    const exportItems = items
+      .filter((item) => item.title?.trim())
+      .map((item) => ({
+        category: item.category,
+        title: item.title,
+        url: item.url || "",
+      }));
+    const json = JSON.stringify(exportItems, null, 2);
+
+    try {
+      await navigator.clipboard.writeText(json);
+      setImportState({
+        status: "success",
+        message: `JSON скопирован: ${exportItems.length} материалов, из них со ссылками ${exportItems.filter((item) => item.url).length}. Пришли его сюда одним сообщением.`,
+      });
+    } catch {
+      setImportState({
+        status: "error",
+        message: "Браузер не дал скопировать автоматически. Выдели текст в поле экспорта и скопируй вручную.",
+      });
+    }
+  }
+
   return (
     <>
       <section className="analytics-surface analytics-materials-form mt-4">
@@ -467,6 +491,24 @@ function MaterialsLinksBoard() {
               placeholder="Выдели таблицу в Google Sheets вместе с шапкой, нажми Cmd+C и вставь сюда. Скрытые ссылки из ячеек подтянутся автоматически."
             />
           </label>
+        </div>
+        <div className="analytics-materials-export">
+          <button type="button" className="btn analytics-board-btn" onClick={copyMaterialsJson}>
+            Скопировать все материалы JSON
+          </button>
+          <textarea
+            className="form-control analytics-launch-input"
+            readOnly
+            value={JSON.stringify(
+              items
+                .filter((item) => item.title?.trim())
+                .map((item) => ({ category: item.category, title: item.title, url: item.url || "" })),
+              null,
+              2,
+            )}
+            rows="4"
+            aria-label="JSON всех материалов"
+          />
         </div>
       </section>
 
