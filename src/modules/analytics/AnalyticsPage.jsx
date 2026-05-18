@@ -8,13 +8,14 @@ import AnalyticsInsights from "./components/AnalyticsInsights";
 import AnalyticsScenarios from "./components/AnalyticsScenarios";
 import AnalyticsPriorityActions from "./components/AnalyticsPriorityActions";
 import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSection";
-import AnalyticsIdeaCapture from "./components/AnalyticsIdeaCapture";
+import AnalyticsBoardEmbed from "./components/AnalyticsBoardEmbed";
 import LaunchChecklistSection from "./components/LaunchChecklistSection";
 import ActivationSection from "./components/ActivationSection";
 import TabSummary from "./components/TabSummary";
 import SectionHeading from "./components/SectionHeading";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
+import ProductsTabSection from "./components/ProductsTabSection";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
 import ConversionFunnelChart from "./charts/ConversionFunnelChart";
@@ -1166,186 +1167,7 @@ function AnalyticsPage() {
   }
 
   function renderProductsTab() {
-    const lockupRows = productsTabData.rows.filter((row) => row.source === "Lockup");
-    const dailyRows = productsTabData.rows.filter((row) => row.source === "Daily Flow");
-
-    return (
-      <>
-        <section className="mt-4">
-          <SectionHeading kicker="Продукты / Циклы" title="Какой продукт даёт приток и какой создаёт давление" />
-          <MetricsGrid metrics={productsTabData.metrics} density="half" />
-        </section>
-        <section className="mt-4">
-          <SectionHeading kicker="Lockup" title="Lockup тарифы" />
-            <div className="row g-3">
-              {lockupRows.map((row) => (
-                <div key={row.tariff} className="col-12 col-md-6 col-xxl-4">
-                  <div className="analytics-surface analytics-product-tier-card">
-                    <div className="analytics-product-tier-head">
-                      <div className="analytics-products-badge analytics-products-badge-lockup">Lockup</div>
-                      <div className="analytics-product-tier-cycle">{row.cycle}</div>
-                    </div>
-                    <h3 className="analytics-product-tier-title">{row.tariff}</h3>
-                    <div className="analytics-product-tier-caption">{row.shortLabel}</div>
-                    <div className="analytics-product-tier-meta">
-                      <div className="analytics-product-tier-meta-row">
-                        <span>Входящий поток</span>
-                        <strong>{formatCurrency(row.inflow)}</strong>
-                      </div>
-                      <div className="analytics-product-tier-meta-row">
-                        <span>Ордера</span>
-                        <strong>{row.orders}</strong>
-                      </div>
-                      <div className="analytics-product-tier-meta-row">
-                        <span>Клейм сейчас</span>
-                        <strong>{formatCurrency(row.claimable)}</strong>
-                      </div>
-                      <div className="analytics-product-tier-meta-row">
-                        <span>Начислено позже</span>
-                        <strong>{formatCurrency(row.accrued)}</strong>
-                      </div>
-                      <div className="analytics-product-tier-meta-row">
-                        <span>Обязательства 30д</span>
-                        <strong>{formatCurrency(row.obligations30d)}</strong>
-                      </div>
-                      <div className="analytics-product-tier-meta-row">
-                        <span>Дата риска</span>
-                        <strong>{row.riskDate}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-        </section>
-        <section className="mt-4">
-          <SectionHeading kicker="Daily Flow" title="Daily Flow тарифы" />
-          <div className="row g-3">
-            {dailyRows.map((row) => (
-              <div key={row.tariff} className="col-12 col-xl-6">
-                <div className="analytics-surface analytics-product-hero">
-                  <div className="analytics-product-hero-top">
-                    <div>
-                      <div className="analytics-products-badge analytics-products-badge-daily">Daily Flow</div>
-                      <h3 className="analytics-product-hero-title">{row.tariff}</h3>
-                      <div className="analytics-product-hero-caption">{row.shortLabel}</div>
-                    </div>
-                  </div>
-                  <div className="analytics-product-hero-grid">
-                    <div className="analytics-product-hero-cell">
-                      <span>Входящий поток</span>
-                      <strong>{formatCurrency(row.inflow)}</strong>
-                    </div>
-                    <div className="analytics-product-hero-cell">
-                      <span>Ордера</span>
-                      <strong>{row.orders}</strong>
-                    </div>
-                    <div className="analytics-product-hero-cell">
-                      <span>Клейм сейчас</span>
-                      <strong>{formatCurrency(row.claimable)}</strong>
-                    </div>
-                    <div className="analytics-product-hero-cell">
-                      <span>Начислено позже</span>
-                      <strong>{formatCurrency(row.accrued)}</strong>
-                    </div>
-                    <div className="analytics-product-hero-cell">
-                      <span>Обязательства 30д</span>
-                      <strong>{formatCurrency(row.obligations30d)}</strong>
-                    </div>
-                    <div className="analytics-product-hero-cell">
-                      <span>Дата риска</span>
-                      <strong>{row.riskDate}</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="row g-3 mt-1">
-          <div className="col-12">
-            <AnalyticsDataTable
-              title="Сводная таблица всех тарифов"
-              subtitle="Сухое сравнение тарифов по деньгам, нагрузке и риску."
-              variant="productsDaily"
-              density="productsSummary"
-              columns={[
-                {
-                  key: "tariff",
-                  label: "Тариф",
-                  render: (row) => (
-                    <div className="analytics-products-summary-primary">
-                      <div className="analytics-products-summary-primary-top">
-                        <strong>{row.tariff}</strong>
-                        <span className={`analytics-products-badge analytics-products-badge-${row.source === "Lockup" ? "lockup" : "daily"}`}>{row.source}</span>
-                      </div>
-                      <span>{row.shortLabel}</span>
-                    </div>
-                  ),
-                },
-                {
-                  key: "money",
-                  label: "Деньги",
-                  render: (row) => (
-                    <div className="analytics-products-summary-stack">
-                      <div className="analytics-products-summary-line">
-                        <span>Входящий поток</span>
-                        <strong>{formatCurrency(row.inflow)}</strong>
-                      </div>
-                      <div className="analytics-products-summary-line">
-                        <span>Ордера</span>
-                        <strong>{row.orders}</strong>
-                      </div>
-                      <div className="analytics-products-summary-line">
-                        <span>Клейм сейчас</span>
-                        <strong>{formatCurrency(row.claimable)}</strong>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "load",
-                  label: "Нагрузка",
-                  render: (row) => (
-                    <div className="analytics-products-summary-stack">
-                      <div className="analytics-products-summary-line">
-                        <span>Начислено позже</span>
-                        <strong>{formatCurrency(row.accrued)}</strong>
-                      </div>
-                      <div className="analytics-products-summary-line">
-                        <span>Обязательства 30д</span>
-                        <strong>{formatCurrency(row.obligations30d)}</strong>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "risk",
-                  label: "Риск",
-                  render: (row) => (
-                    <div className="analytics-products-summary-stack">
-                      <div className="analytics-products-summary-line">
-                        <span>Разрыв</span>
-                        <strong className={row.pressure > 0 ? "analytics-products-summary-risk" : ""}>{formatCurrency(row.pressure)}</strong>
-                      </div>
-                      <div className="analytics-products-summary-line">
-                        <span>Дата риска</span>
-                        <strong>{row.riskDate}</strong>
-                      </div>
-                    </div>
-                  ),
-                },
-              ]}
-              rows={productsTabData.rows.sort((left, right) => {
-                if (left.source === right.source) return 0;
-                if (left.source === "Lockup") return -1;
-                return 1;
-              })}
-            />
-          </div>
-        </section>
-      </>
-    );
+    return <ProductsTabSection productsTabData={productsTabData} />;
   }
 
   function renderLeadersTab() {
@@ -1874,37 +1696,7 @@ function AnalyticsPage() {
     <main className="analytics-layout container-fluid py-4 px-3 px-xl-4">
       {renderPageHeader()}
 
-      {isBoardOpen ? (
-        <section className="analytics-board-embed mt-4">
-          <AnalyticsIdeaCapture activeTab={activeTab} />
-          <section id="analytics-board" className="analytics-surface analytics-board-embed-panel mt-3">
-          <div className="analytics-board-embed-head">
-            <div>
-              <span className="analytics-kicker">Доска задач</span>
-              <h2 className="analytics-idea-title">Наша доска внутри аналитики</h2>
-              <p className="analytics-page-subtitle mb-0">
-                Здесь можно сразу смотреть backlog и входящие идеи, не уходя с аналитической страницы.
-              </p>
-            </div>
-            <a
-              className="btn analytics-board-btn"
-              href={ANALYTICS_BOARD_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Открыть отдельно
-            </a>
-          </div>
-          <div className="analytics-board-frame-wrap">
-            <iframe
-              className="analytics-board-frame"
-              src={ANALYTICS_BOARD_URL}
-              title="Доска аналитики"
-            />
-          </div>
-          </section>
-        </section>
-      ) : null}
+      {isBoardOpen ? <AnalyticsBoardEmbed activeTab={activeTab} boardUrl={ANALYTICS_BOARD_URL} /> : null}
 
       <AnalyticsTabs tabs={analyticsTabs} activeTab={activeTab} onChange={setActiveTab} />
 
