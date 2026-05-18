@@ -12,6 +12,16 @@ const MATERIAL_CATEGORIES = [
   { id: "marketing", title: "Маркетинг" },
 ];
 
+const CATEGORY_ALIASES = {
+  comments: ["комментарий", "комментарии", "наброски"],
+  site: ["тз сайт", "сайт", "лендинг"],
+  cabinet: ["тз личный кабинет", "личный кабинет", "кабинет"],
+  videos: ["ролики", "ролик", "видео", "вебинар"],
+  documents: ["документы", "документ", "юридические"],
+  research: ["идеи / исследования", "идеи", "исследования", "исследование"],
+  marketing: ["маркетинг", "реклама", "баннеры"],
+};
+
 const defaultMaterialItems = [
   { id: "comments-drafts", category: "comments", title: "Наброски", url: "" },
   { id: "comments-webinar", category: "comments", title: "Тезисы для вебинара", url: "" },
@@ -85,10 +95,149 @@ function createMaterialItem(overrides = {}) {
   };
 }
 
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function getCategoryIdByHeader(header) {
+  const normalizedHeader = normalizeText(header);
+  const exactCategory = MATERIAL_CATEGORIES.find((category) => normalizeText(category.title) === normalizedHeader);
+  if (exactCategory) return exactCategory.id;
+
+  return Object.entries(CATEGORY_ALIASES).find(([, aliases]) => aliases.some((alias) => normalizedHeader.includes(alias)))?.[0] || null;
+}
+
+function parseCsvRows(csvText) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let insideQuotes = false;
+
+  for (let index = 0; index < csvText.length; index += 1) {
+    const char = csvText[index];
+    const nextChar = csvText[index + 1];
+
+    if (char === '"' && insideQuotes && nextChar === '"') {
+      cell += '"';
+      index += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+      continue;
+    }
+
+    if (char === "," && !insideQuotes) {
+      row.push(cell.trim());
+      cell = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !insideQuotes) {
+      if (char === "\r" && nextChar === "\n") index += 1;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  row.push(cell.trim());
+  if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+function extractSpreadsheetId(url) {
+  return String(url || "").match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)?.[1] || "";
+}
+
+function extractSheetGid(url) {
+  return String(url || "").match(/[?#&]gid=(\d+)/)?.[1] || "";
+}
+
+function buildGoogleSheetCsvUrl(sheetUrl) {
+  const spreadsheetId = extractSpreadsheetId(sheetUrl);
+  if (!spreadsheetId) return "";
+
+  const gid = extractSheetGid(sheetUrl);
+  const gidQuery = gid ? `&gid=${encodeURIComponent(gid)}` : "";
+  return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv${gidQuery}`;
+}
+
+function extractUrlFromCell(cellValue) {
+  return String(cellValue || "").match(/https?:\/\/[^\s)]+/)?.[0] || "";
+}
+
+function getTitleFromCell(cellValue) {
+  return String(cellValue || "")
+    .replace(/https?:\/\/[^\s)]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildMaterialItemsFromRows(rows) {
+  const headerRowIndex = rows.findIndex((row) => row.map(getCategoryIdByHeader).filter(Boolean).length >= 2);
+  if (headerRowIndex < 0) return [];
+
+  const headerRow = rows[headerRowIndex];
+  const columnCategories = headerRow.map(getCategoryIdByHeader);
+  const importedItems = [];
+
+  rows.slice(headerRowIndex + 1).forEach((row, rowIndex) => {
+    row.forEach((cellValue, columnIndex) => {
+      const category = columnCategories[columnIndex];
+      const title = getTitleFromCell(cellValue) || String(cellValue || "").trim();
+      if (!category || !title) return;
+
+      importedItems.push(
+        createMaterialItem({
+          id: `imported-${category}-${headerRowIndex + rowIndex}-${columnIndex}-${title.slice(0, 24).replace(/\W+/g, "-")}`,
+          category,
+          title,
+          url: extractUrlFromCell(cellValue),
+        }),
+      );
+    });
+  });
+
+  return importedItems;
+}
+
+function mergeMaterialItems(currentItems, importedItems) {
+  const nextItems = [...currentItems];
+
+  importedItems.forEach((importedItem) => {
+    const existingIndex = nextItems.findIndex(
+      (item) => item.category === importedItem.category && normalizeText(item.title) === normalizeText(importedItem.title),
+    );
+
+    if (existingIndex >= 0) {
+      nextItems[existingIndex] = {
+        ...nextItems[existingIndex],
+        url: importedItem.url || nextItems[existingIndex].url,
+      };
+      return;
+    }
+
+    nextItems.push(importedItem);
+  });
+
+  return nextItems;
+}
+
 function MaterialsLinksBoard() {
   const [items, setItems] = useState(readStoredMaterials);
   const [draft, setDraft] = useState(() => createMaterialItem({ category: "comments" }));
   const [editingItemId, setEditingItemId] = useState(null);
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [importState, setImportState] = useState({ status: "idle", message: "" });
 
   const groupedItems = MATERIAL_CATEGORIES.map((category) => ({
     ...category,
@@ -123,6 +272,43 @@ function MaterialsLinksBoard() {
   function resetItems() {
     updateItems(() => defaultMaterialItems);
     setEditingItemId(null);
+  }
+
+  async function importFromGoogleSheet() {
+    const csvUrl = buildGoogleSheetCsvUrl(sheetUrl);
+    if (!csvUrl) {
+      setImportState({ status: "error", message: "Не вижу ID таблицы. Вставь ссылку вида docs.google.com/spreadsheets/d/..." });
+      return;
+    }
+
+    setImportState({ status: "loading", message: "Считываю таблицу..." });
+
+    try {
+      const response = await fetch(csvUrl);
+      if (!response.ok) throw new Error(`Google Sheets ответил ${response.status}`);
+
+      const csvText = await response.text();
+      const importedItems = buildMaterialItemsFromRows(parseCsvRows(csvText));
+      if (!importedItems.length) {
+        setImportState({
+          status: "error",
+          message: "Не нашел строки с колонками. Проверь, что в таблице есть шапка: Комментарий, ТЗ САЙТ, Документы и т.д.",
+        });
+        return;
+      }
+
+      updateItems((current) => mergeMaterialItems(current, importedItems));
+      const linkCount = importedItems.filter((item) => item.url).length;
+      setImportState({
+        status: "success",
+        message: `Импортировано: ${importedItems.length}. Ссылок с URL найдено: ${linkCount}.`,
+      });
+    } catch (error) {
+      setImportState({
+        status: "error",
+        message: `Не удалось считать таблицу. Открой доступ по ссылке или опубликуй лист для просмотра. Деталь: ${error.message}`,
+      });
+    }
   }
 
   return (
@@ -176,6 +362,30 @@ function MaterialsLinksBoard() {
           <button type="button" className="btn analytics-launch-add-btn" onClick={addItem} disabled={!draft.title.trim()}>
             Добавить ссылку
           </button>
+        </div>
+        <div className="analytics-materials-import">
+          <label>
+            <span>Импорт из Google Sheets</span>
+            <input
+              className="form-control analytics-launch-input"
+              value={sheetUrl}
+              onChange={(event) => setSheetUrl(event.target.value)}
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+            />
+          </label>
+          <button
+            type="button"
+            className="btn analytics-launch-add-btn"
+            onClick={importFromGoogleSheet}
+            disabled={!sheetUrl.trim() || importState.status === "loading"}
+          >
+            {importState.status === "loading" ? "Считываю..." : "Считать ссылки"}
+          </button>
+          {importState.message ? (
+            <div className={`analytics-materials-import-note analytics-materials-import-note-${importState.status}`}>
+              {importState.message}
+            </div>
+          ) : null}
         </div>
       </section>
 

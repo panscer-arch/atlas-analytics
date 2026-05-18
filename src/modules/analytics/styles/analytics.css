@@ -2922,6 +2922,46 @@
   justify-content: flex-end;
 }
 
+.analytics-materials-import {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(150px, 0.24fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: end;
+}
+
+.analytics-materials-import label {
+  display: grid;
+  gap: 0.45rem;
+  color: #8fa3c0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-materials-import-note {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 14px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(255, 255, 255, 0.035);
+  color: #aebdd4;
+  font-weight: 700;
+}
+
+.analytics-materials-import-note-success {
+  border-color: rgba(105, 194, 179, 0.22);
+  background: rgba(105, 194, 179, 0.09);
+  color: #9ff0df;
+}
+
+.analytics-materials-import-note-error {
+  border-color: rgba(255, 122, 122, 0.22);
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffc1c1;
+}
+
 @media (max-width: 1199.98px) {
   .analytics-launch-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2939,7 +2979,8 @@
 @media (max-width: 767.98px) {
   .analytics-launch-form-grid,
   .analytics-launch-form-comment,
-  .analytics-materials-add-grid {
+  .analytics-materials-add-grid,
+  .analytics-materials-import {
     grid-template-columns: 1fr;
     grid-column: auto;
   }
