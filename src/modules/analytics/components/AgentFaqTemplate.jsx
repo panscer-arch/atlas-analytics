@@ -260,6 +260,7 @@ function createRow(sectionId) {
 
 function AgentFaqTemplate() {
   const [template, setTemplate] = useState(readStoredFaq);
+  const [activeSectionId, setActiveSectionId] = useState(() => defaultFaqTemplate.sections[0]?.id || "start");
 
   function updateTemplate(updater) {
     setTemplate((current) => {
@@ -298,9 +299,12 @@ function AgentFaqTemplate() {
 
   function resetTemplate() {
     updateTemplate(() => defaultFaqTemplate);
+    setActiveSectionId(defaultFaqTemplate.sections[0]?.id || "start");
   }
 
   const totalQuestions = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
+  const activeSection =
+    template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
 
   return (
     <section className="analytics-surface analytics-agent-template mt-4">
@@ -317,12 +321,27 @@ function AgentFaqTemplate() {
         </AnalyticsActionButton>
       </div>
 
-      <div className="analytics-agent-template-grid">
+      <div className="analytics-agent-template-tabs" role="tablist" aria-label="Категории FAQ">
         {template.sections.map((section) => (
-          <div key={section.id} className="analytics-agent-template-card">
+          <button
+            key={section.id}
+            type="button"
+            role="tab"
+            aria-selected={activeSection?.id === section.id}
+            className={`analytics-agent-template-tab${activeSection?.id === section.id ? " analytics-agent-template-tab-active" : ""}`}
+            onClick={() => setActiveSectionId(section.id)}
+          >
+            {section.title}
+          </button>
+        ))}
+      </div>
+
+      {activeSection ? (
+        <div className="analytics-agent-template-grid">
+          <div className="analytics-agent-template-card">
             <div className="analytics-agent-template-card-head">
-              <h3>{section.title}</h3>
-              <AnalyticsActionButton variant="primary" size="sm" onClick={() => addRow(section.id)}>
+              <h3>{activeSection.title}</h3>
+              <AnalyticsActionButton variant="primary" size="sm" onClick={() => addRow(activeSection.id)}>
                 + вопрос
               </AnalyticsActionButton>
             </div>
@@ -337,13 +356,13 @@ function AgentFaqTemplate() {
                   </tr>
                 </thead>
                 <tbody>
-                  {section.rows.map((row) => (
+                  {activeSection.rows.map((row) => (
                     <tr key={row.id}>
                       <td>
                         <textarea
                           className="analytics-agent-template-input"
                           value={row.question}
-                          onChange={(event) => updateRow(section.id, row.id, "question", event.target.value)}
+                          onChange={(event) => updateRow(activeSection.id, row.id, "question", event.target.value)}
                           rows="2"
                         />
                       </td>
@@ -351,7 +370,7 @@ function AgentFaqTemplate() {
                         <textarea
                           className="analytics-agent-template-input"
                           value={row.answer}
-                          onChange={(event) => updateRow(section.id, row.id, "answer", event.target.value)}
+                          onChange={(event) => updateRow(activeSection.id, row.id, "answer", event.target.value)}
                           rows="3"
                         />
                       </td>
@@ -359,13 +378,13 @@ function AgentFaqTemplate() {
                         <textarea
                           className="analytics-agent-template-input"
                           value={row.source || ""}
-                          onChange={(event) => updateRow(section.id, row.id, "source", event.target.value)}
+                          onChange={(event) => updateRow(activeSection.id, row.id, "source", event.target.value)}
                           placeholder="Ссылка на документ, комментарий или что уточнить"
                           rows="2"
                         />
                       </td>
                       <td>
-                        <AnalyticsActionButton variant="danger" size="icon" onClick={() => removeRow(section.id, row.id)} title="Удалить вопрос">
+                        <AnalyticsActionButton variant="danger" size="icon" onClick={() => removeRow(activeSection.id, row.id)} title="Удалить вопрос">
                           x
                         </AnalyticsActionButton>
                       </td>
@@ -375,8 +394,8 @@ function AgentFaqTemplate() {
               </table>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }
