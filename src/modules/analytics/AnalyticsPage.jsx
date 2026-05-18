@@ -302,6 +302,7 @@ function AnalyticsPage() {
     dueDate: "",
     status: "В работе",
   }));
+  const [editingLaunchCell, setEditingLaunchCell] = useState(null);
   const { data, isLoading } = useAnalyticsData();
 
   if (isLoading) {
@@ -430,6 +431,54 @@ function AnalyticsPage() {
 
   function resetLaunchTasks() {
     updateLaunchTasks(() => defaultLaunchChecklistTasks);
+    setEditingLaunchCell(null);
+  }
+
+  function getLaunchCellKey(taskId, field) {
+    return `${taskId}:${field}`;
+  }
+
+  function renderLaunchEditableCell(task, field, options = {}) {
+    const cellKey = getLaunchCellKey(task.id, field);
+    const isEditing = editingLaunchCell === cellKey;
+    const value = task[field] || "";
+    const label = value || "Нажми, чтобы заполнить";
+    const inputClassName = `form-control analytics-launch-table-input${options.inputClassName ? ` ${options.inputClassName}` : ""}`;
+
+    if (isEditing) {
+      const commonProps = {
+        className: inputClassName,
+        value,
+        autoFocus: true,
+        onChange: (event) => updateLaunchTask(task.id, { [field]: event.target.value }),
+        onBlur: () => setEditingLaunchCell(null),
+      };
+
+      if (options.multiline) {
+        return <textarea {...commonProps} rows={options.rows || 4} />;
+      }
+
+      return (
+        <input
+          {...commonProps}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === "Escape") {
+              event.currentTarget.blur();
+            }
+          }}
+        />
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className={`analytics-launch-read-cell${value ? "" : " analytics-launch-read-cell-empty"}${options.readClassName ? ` ${options.readClassName}` : ""}`}
+        onClick={() => setEditingLaunchCell(cellKey)}
+      >
+        {label}
+      </button>
+    );
   }
 
   const primaryKpis = [
@@ -2399,33 +2448,24 @@ function AnalyticsPage() {
                         />
                       </td>
                       <td>
-                        <input
-                          className="form-control analytics-launch-table-input analytics-launch-title-input"
-                          value={task.title}
-                          onChange={(event) => updateLaunchTask(task.id, { title: event.target.value })}
-                        />
+                        {renderLaunchEditableCell(task, "title", {
+                          inputClassName: "analytics-launch-title-input",
+                          readClassName: "analytics-launch-title-read",
+                        })}
                       </td>
                       <td>
-                        <input
-                          className="form-control analytics-launch-table-input"
-                          value={task.responsible}
-                          onChange={(event) => updateLaunchTask(task.id, { responsible: event.target.value })}
-                        />
+                        {renderLaunchEditableCell(task, "responsible")}
                       </td>
                       <td className="analytics-launch-comment">
-                        <textarea
-                          className="form-control analytics-launch-table-input"
-                          rows="2"
-                          value={task.comment}
-                          onChange={(event) => updateLaunchTask(task.id, { comment: event.target.value })}
-                        />
+                        {renderLaunchEditableCell(task, "comment", {
+                          multiline: true,
+                          rows: 5,
+                        })}
                       </td>
                       <td>
-                        <input
-                          className="form-control analytics-launch-table-input analytics-launch-date-input"
-                          value={task.dueDate}
-                          onChange={(event) => updateLaunchTask(task.id, { dueDate: event.target.value })}
-                        />
+                        {renderLaunchEditableCell(task, "dueDate", {
+                          inputClassName: "analytics-launch-date-input",
+                        })}
                       </td>
                       <td>
                         <select

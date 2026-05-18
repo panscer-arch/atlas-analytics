@@ -2502,6 +2502,41 @@
   font-weight: 700;
 }
 
+.analytics-launch-read-cell {
+  display: block;
+  width: 100%;
+  min-width: 150px;
+  padding: 0.18rem 0;
+  border: 0;
+  background: transparent;
+  color: #edf3ff;
+  font: inherit;
+  line-height: 1.55;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.analytics-launch-read-cell:hover,
+.analytics-launch-read-cell:focus-visible {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-color: rgba(123, 180, 255, 0.55);
+  text-underline-offset: 0.22rem;
+  outline: none;
+}
+
+.analytics-launch-read-cell-empty {
+  color: #667791;
+  font-style: italic;
+}
+
+.analytics-launch-title-read {
+  min-width: 230px;
+  font-weight: 700;
+}
+
 .analytics-launch-date-input {
   min-width: 120px;
 }
@@ -2569,7 +2604,8 @@
 
 .analytics-launch-task-done input,
 .analytics-launch-task-done textarea,
-.analytics-launch-task-done select {
+.analytics-launch-task-done select,
+.analytics-launch-task-done .analytics-launch-read-cell {
   color: #7d8ca5 !important;
   text-decoration: line-through;
 }
