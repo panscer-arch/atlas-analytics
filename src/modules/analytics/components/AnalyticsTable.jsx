@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
 import formatCurrency from "../utils/formatCurrency";
 import AnalyticsIcon from "./AnalyticsIcon";
+import AnalyticsPanelHeader from "./AnalyticsPanelHeader";
 
 function AnalyticsTable({ rows }) {
   const [openGroups, setOpenGroups] = useState({ Lockup: false, "Daily Flow": false });
@@ -14,14 +15,10 @@ function AnalyticsTable({ rows }) {
 
   return (
     <div className="analytics-surface analytics-breakdown-table">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h3 className="chart-card-title mb-1">Разложение по продуктам</h3>
-          <p className="chart-card-subtitle mb-0">
-            Сначала идёт общий поток по продукту, ниже открываются тарифы внутри него.
-          </p>
-        </div>
-      </div>
+      <AnalyticsPanelHeader
+        subtitle="Сначала идёт общий поток по продукту, ниже открываются тарифы внутри него."
+        title="Разложение по продуктам"
+      />
 
       <div className="analytics-breakdown-note">Нажмите на строку продукта, чтобы открыть тарифы.</div>
 

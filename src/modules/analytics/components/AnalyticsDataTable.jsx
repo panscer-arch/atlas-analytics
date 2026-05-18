@@ -1,5 +1,6 @@
 import formatCurrency from "../utils/formatCurrency";
 import formatNumber from "../utils/formatNumber";
+import AnalyticsPanelHeader from "./AnalyticsPanelHeader";
 
 const TABLE_VARIANTS = new Set(["default", "productsDaily"]);
 const TABLE_DENSITIES = new Set(["default", "productsSummary"]);
@@ -30,13 +31,7 @@ function AnalyticsDataTable({
 
   return (
     <div className={`analytics-surface analytics-data-table analytics-data-table-${variantToken}`}>
-      <div className="analytics-data-table-head d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h3 className="chart-card-title mb-1">{title}</h3>
-          {subtitle ? <p className="chart-card-subtitle mb-0">{subtitle}</p> : null}
-        </div>
-        {headerActions ? <div className="analytics-table-actions">{headerActions}</div> : null}
-      </div>
+      <AnalyticsPanelHeader actions={headerActions} subtitle={subtitle} title={title} />
 
       <div className="table-responsive">
         <table className={`table analytics-table align-middle mb-0 analytics-data-table-grid analytics-data-table-grid-${densityToken}`}>
