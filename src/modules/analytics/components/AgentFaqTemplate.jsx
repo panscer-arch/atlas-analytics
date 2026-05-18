@@ -324,10 +324,7 @@ function AgentFaqTemplate() {
   const totalQuestions = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
   const activeSection =
     template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
-  const faqBaseUrl =
-    typeof window === "undefined"
-      ? "https://analytics.pupanel.cc/?tab=launch&board=agentFaq"
-      : `${window.location.origin}${window.location.pathname}?tab=launch&board=agentFaq`;
+  const faqBaseUrl = typeof window === "undefined" ? "https://analytics.pupanel.cc/?board=agentFaq" : `${window.location.origin}${window.location.pathname}?board=agentFaq`;
   const faqLinks = template.sections.map((section) => ({
     id: section.id,
     title: section.title,

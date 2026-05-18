@@ -555,14 +555,14 @@ function LaunchChecklistSection() {
       id,
       title: meta.title,
       description: meta.description,
-      href: id === DEFAULT_BOARD_ID ? `${boardBaseUrl}?tab=launch` : `${boardBaseUrl}?tab=launch&board=${id}`,
+      href: id === DEFAULT_BOARD_ID ? boardBaseUrl : `${boardBaseUrl}?board=${id}`,
       isActive: activeBoard === id,
     })),
     ...customChecklists.map((checklist) => ({
       id: checklist.id,
       title: checklist.title,
       description: "Пользовательский чек-лист команды с собственным набором задач.",
-      href: `${boardBaseUrl}?tab=launch&board=${checklist.id}`,
+      href: `${boardBaseUrl}?board=${checklist.id}`,
       isActive: activeBoard === checklist.id,
     })),
   ];
