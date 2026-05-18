@@ -16,11 +16,14 @@ import SectionHeading from "./components/SectionHeading";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import ProductsTabSection from "./components/ProductsTabSection";
+import DashboardBalance from "./components/DashboardBalance";
 import DashboardBlock from "./components/DashboardBlock";
 import DashboardKpiCard from "./components/DashboardKpiCard";
+import DashboardList from "./components/DashboardList";
 import DashboardListRow from "./components/DashboardListRow";
 import DashboardMiniTable from "./components/DashboardMiniTable";
 import DashboardValue from "./components/DashboardValue";
+import Wrapper from "./components/Wrapper";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
 import ConversionFunnelChart from "./charts/ConversionFunnelChart";
@@ -659,21 +662,21 @@ function AnalyticsPage() {
           <div className="row g-3">
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Главная касса дня">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   {cashRows.map(([label, value, tone]) => (
                     <DashboardListRow key={label} label={label} value={value} tone={tone} />
                   ))}
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Конверсия дня">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   {conversionRows.map(([label, value, delta]) => (
                     <DashboardListRow key={label} label={label} value={value} sub={delta} />
                   ))}
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
 
@@ -721,35 +724,34 @@ function AnalyticsPage() {
           <div className="row g-3">
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Новые vs повторные деньги">
-                <div className="analytics-dashboard-balance">
-                  <div className="analytics-dashboard-balance-total">{formatCurrency(todaySnapshot?.incoming || 0)}</div>
-                  <div className="analytics-dashboard-balance-sub">Всего за день</div>
-                </div>
-                <div className="analytics-dashboard-list mt-3">
-                  <DashboardListRow label="Новые деньги" value={formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="success" />
-                  <DashboardListRow label="Повторные деньги" value={formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="accent" />
-                </div>
+                <DashboardBalance label="Всего за день" value={formatCurrency(todaySnapshot?.incoming || 0)} />
+                <Wrapper marginTop="md">
+                  <DashboardList>
+                    <DashboardListRow label="Новые деньги" value={formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="success" />
+                    <DashboardListRow label="Повторные деньги" value={formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="accent" />
+                  </DashboardList>
+                </Wrapper>
               </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Риск и обязательства">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   <DashboardListRow label="Обязательства 7 дней" value={formatCurrency(data.kpis.obligations7d)} />
                   <DashboardListRow label="Обязательства 30 дней" value={formatCurrency(data.kpis.obligations30d)} />
                   <DashboardListRow label="Давление выплат" value="76%" tone="danger" />
                   <DashboardListRow label="Ближайший риск" value={data.kpis.firstRiskGap || "3 дня"} tone="danger" />
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
 
             <div className="col-12 col-xl-4">
               <DashboardBlock title="Реинвест">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   <DashboardListRow label="Reinvest rate" value={formatPercent(reinvestCapitalRate)} tone="success" />
                   <DashboardListRow label="Доля повторных циклов" value={formatPercent(repeatDepositRate)} />
                   <DashboardListRow label="Возврат в систему" value="68.3/100" tone="success" />
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
           </div>
@@ -759,42 +761,42 @@ function AnalyticsPage() {
           <div className="row g-3">
             <div className="col-12 col-md-6 col-xxl-3">
               <DashboardBlock title="Кошельки">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   {walletRows.slice(0, 3).map((row) => (
                     <DashboardListRow key={row.wallet} label={row.wallet} value={formatCurrency(row.inflow)} sub={formatPercent(row.share)} />
                   ))}
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
 
             <div className="col-12 col-md-6 col-xxl-3">
               <DashboardBlock title="География">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   {geographyRows.slice(0, 3).map((row) => (
                     <DashboardListRow key={row.country} label={row.country} value={formatCurrency(row.inflow)} sub={formatPercent(row.share)} />
                   ))}
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
 
             <div className="col-12 col-md-6 col-xxl-3">
               <DashboardBlock title="Лидеры">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   {leaderRows.slice(0, 3).map((row) => (
                     <DashboardListRow key={row.leader} label={row.leader} value={formatCurrency(row.inflow)} sub={`${row.orders} циклов`} />
                   ))}
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
 
             <div className="col-12 col-md-6 col-xxl-3">
               <DashboardBlock title="Партнёрская структура">
-                <div className="analytics-dashboard-list">
+                <DashboardList>
                   {partnerRows.slice(0, 3).map((row) => (
                     <DashboardListRow key={row.branch} label={row.branch} value={formatCurrency(row.inflow)} sub={`${row.invited} приглаш.`} />
                   ))}
                   <DashboardListRow label="Риск перегруза" value="Высокий" tone="danger" />
-                </div>
+                </DashboardList>
               </DashboardBlock>
             </div>
           </div>
