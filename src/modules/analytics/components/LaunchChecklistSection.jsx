@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
 import LaunchProgressBar from "./LaunchProgressBar";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 
@@ -479,6 +480,7 @@ function LaunchChecklistSection() {
   const isKnowledgeBaseBoard = activeBoard === "knowledgeBase";
   const isIdeasBoard = activeBoard === "ideas";
   const isMaterialsBoard = activeBoard === "materials";
+  const isAgentTasksBoard = activeBoard === "agentTasks";
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isCustomBoard ? activeCustomChecklist.tasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
@@ -491,6 +493,8 @@ function LaunchChecklistSection() {
       ? "Сырые идеи разложены по направлениям, чтобы их можно было приоритизировать и превращать в задачи."
     : isMaterialsBoard
       ? "Карта Google Docs и Drive-ссылок по разделам: ТЗ, кабинет, ролики, документы, исследования и маркетинг."
+    : isAgentTasksBoard
+      ? "Editable-документ параметров для обучения AI-агента Atlas System."
     : isKnowledgeBaseBoard
       ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
       : "Что нужно закрыть перед стартом";
@@ -500,6 +504,8 @@ function LaunchChecklistSection() {
       ? "Здесь вычитаны и структурированы идеи по контенту, комьюнити, партнерке, лендингам, smart-contract, вебинарам и исследованиям."
     : isMaterialsBoard
       ? "Здесь можно хранить такую же таблицу ссылок, как в Google Sheets: открыл документ, доработал и вернулся в аналитику."
+    : isAgentTasksBoard
+      ? "Здесь собран Atlas Agent Knowledge Parameters Template: параметры проекта, Web3, циклы, MLM, DAO, юридика, аналитика и заметки."
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
@@ -735,6 +741,16 @@ function LaunchChecklistSection() {
           >
             Материалы
           </button>
+          <button
+            type="button"
+            className={`analytics-launch-browser-tab${activeBoard === "agentTasks" ? " analytics-launch-browser-tab-active" : ""}`}
+            onClick={() => {
+              setActiveBoard("agentTasks");
+              setEditingCell(null);
+            }}
+          >
+            Задачи
+          </button>
           {customChecklists.map((checklist) => (
             <button
               key={checklist.id}
@@ -773,7 +789,7 @@ function LaunchChecklistSection() {
             </button>
           )}
         </div>
-        {!isMaterialsBoard ? (
+        {!isMaterialsBoard && !isAgentTasksBoard ? (
           <div className="analytics-tab-summary-points">
             <div className="analytics-tab-summary-point">
               <span>Всего задач: {visibleTasks.length}</span>
@@ -789,8 +805,9 @@ function LaunchChecklistSection() {
       </section>
 
       {isMaterialsBoard ? <MaterialsLinksBoard /> : null}
+      {isAgentTasksBoard ? <AgentKnowledgeTemplate /> : null}
 
-      {!isMaterialsBoard ? (
+      {!isMaterialsBoard && !isAgentTasksBoard ? (
         <>
       <section className="analytics-surface analytics-launch-progress mt-4">
         <div className="row g-3">
