@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AgentFaqTemplate from "./AgentFaqTemplate";
 import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
 import AnalyticsActionButton from "./AnalyticsActionButton";
@@ -12,6 +12,8 @@ const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
+const DEFAULT_BOARD_ID = "launch";
+const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "materials", "agentTasks", "agentFaq"];
 
 const defaultLaunchChecklistTasks = [
   {
@@ -469,7 +471,12 @@ function patchChecklistTask(task, patch) {
 }
 
 function LaunchChecklistSection() {
-  const [activeBoard, setActiveBoard] = useState("launch");
+  const [activeBoard, setActiveBoard] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_BOARD_ID;
+
+    const url = new URL(window.location.href);
+    return url.searchParams.get("board") || DEFAULT_BOARD_ID;
+  });
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
   const [ideaTasks, setIdeaTasks] = useState(() => readStoredTasks(IDEAS_CHECKLIST_STORAGE_KEY, defaultIdeasChecklistTasks));
@@ -516,6 +523,26 @@ function LaunchChecklistSection() {
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isKnownBoard = STATIC_BOARD_IDS.includes(activeBoard) || customChecklists.some((checklist) => checklist.id === activeBoard);
+    const nextBoard = isKnownBoard ? activeBoard : DEFAULT_BOARD_ID;
+
+    if (nextBoard !== activeBoard) {
+      setActiveBoard(nextBoard);
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (nextBoard === DEFAULT_BOARD_ID) {
+      url.searchParams.delete("board");
+    } else {
+      url.searchParams.set("board", nextBoard);
+    }
+    window.history.replaceState({}, "", url.toString());
+  }, [activeBoard, customChecklists]);
 
   function updateTasks(storageKey, setTasks, updater) {
     setTasks((current) => {
