@@ -492,7 +492,7 @@ function AnalyticsPage() {
     { id: "geography", label: "География", hint: "страны" },
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
-    { id: "launch", label: "Запуск", hint: "чеклист" },
+    { id: "launch", label: "Задачи", hint: "чеклисты" },
   ];
 
   function renderDashboard() {
@@ -848,6 +848,7 @@ function AnalyticsPage() {
     return (
       <AnalyticsHeader
         onOpenCharts={handleOpenCharts}
+        onOpenTasks={() => setActiveTab("launch")}
         onToggleBoard={() => setIsBoardOpen((current) => !current)}
         isBoardOpen={isBoardOpen}
       />

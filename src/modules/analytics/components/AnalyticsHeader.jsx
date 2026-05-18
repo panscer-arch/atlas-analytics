@@ -1,6 +1,6 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
-function AnalyticsHeader({ onOpenCharts, onToggleBoard, isBoardOpen, showAdmins = false, showMotion = true }) {
+function AnalyticsHeader({ onOpenCharts, onOpenTasks, onToggleBoard, isBoardOpen, showAdmins = false, showMotion = true }) {
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
@@ -45,6 +45,9 @@ function AnalyticsHeader({ onOpenCharts, onToggleBoard, isBoardOpen, showAdmins 
           </div>
         ) : null}
         <div className="analytics-header-actions-row">
+          <button type="button" className="btn analytics-tasks-btn analytics-header-action-btn" onClick={onOpenTasks}>
+            Задачи
+          </button>
           <button type="button" className="btn analytics-board-btn analytics-header-action-btn" onClick={onToggleBoard}>
             {isBoardOpen ? "Скрыть доску" : "Открыть доску"}
           </button>

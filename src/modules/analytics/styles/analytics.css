@@ -1239,12 +1239,19 @@
   background: linear-gradient(135deg, rgba(87, 121, 255, 0.9), rgba(76, 199, 255, 0.84));
 }
 
-.analytics-board-btn {
+.analytics-board-btn,
+.analytics-tasks-btn {
   border-radius: 14px;
   padding: 0.8rem 1.1rem;
   border: 1px solid rgba(157, 178, 255, 0.14);
   color: #dce8f8;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.analytics-tasks-btn {
+  border-color: rgba(105, 194, 179, 0.28);
+  background: linear-gradient(135deg, rgba(105, 194, 179, 0.18), rgba(123, 180, 255, 0.1));
+  color: #edf3ff;
 }
 
 .analytics-datetime {
@@ -2505,6 +2512,38 @@
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
 }
 
+.analytics-launch-browser-tab-add {
+  min-width: 2.4rem;
+  color: #9ff0df;
+}
+
+.analytics-launch-new-checklist {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.analytics-launch-new-checklist-input {
+  min-height: 2.15rem;
+  width: min(220px, 52vw);
+  border: 1px solid rgba(123, 180, 255, 0.24);
+  border-radius: 12px;
+  padding: 0.38rem 0.65rem;
+  background: rgba(7, 12, 22, 0.72);
+  color: #edf3ff;
+  font-weight: 700;
+}
+
+.analytics-launch-new-checklist-save {
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid rgba(105, 194, 179, 0.32);
+  border-radius: 999px;
+  background: rgba(105, 194, 179, 0.18);
+  color: #9ff0df;
+  font-weight: 900;
+}
+
 .analytics-launch-table th,
 .analytics-launch-table td {
   vertical-align: top;
@@ -2735,12 +2774,18 @@
 }
 
 .analytics-launch-status-active {
+  border-color: rgba(90, 181, 255, 0.34);
+  background: rgba(90, 181, 255, 0.14);
+  color: #acd9ff;
+}
+
+.analytics-launch-status-paused {
   border-color: rgba(245, 196, 106, 0.32);
   background: rgba(245, 196, 106, 0.13);
   color: #f8d78d;
 }
 
-.analytics-launch-status-paused {
+.analytics-launch-status-idle {
   border-color: rgba(157, 178, 255, 0.14);
   background: rgba(157, 178, 255, 0.08);
   color: #aebdd4;

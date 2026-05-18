@@ -3,7 +3,9 @@ import LaunchProgressBar from "./LaunchProgressBar";
 
 const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
 const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
-const LAUNCH_STATUSES = ["В работе", "Готово", "Отложено"];
+const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
+const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
+const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
 
 const defaultLaunchChecklistTasks = [
   {
@@ -159,6 +161,7 @@ function createLaunchTask(overrides = {}) {
 function getLaunchStatusTone(status) {
   if (status === "Готово") return "done";
   if (status === "Отложено") return "paused";
+  if (status === "Не в работе") return "idle";
   return "active";
 }
 
@@ -184,6 +187,7 @@ function persistChecklistTasks(storageKey, nextTasks) {
 function patchChecklistTask(task, patch) {
   const next = { ...task, ...patch };
   if (patch.status === "Готово") next.done = true;
+  if (patch.status && patch.status !== "Готово") next.done = false;
   if (patch.done === true) next.status = "Готово";
   if (patch.done === false && task.status === "Готово" && !patch.status) next.status = "В работе";
   return next;
@@ -193,23 +197,29 @@ function LaunchChecklistSection() {
   const [activeBoard, setActiveBoard] = useState("launch");
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
-  const [newLaunchTask, setNewLaunchTask] = useState(() => createLaunchTask({ status: "В работе" }));
-  const [newKnowledgeBaseTask, setNewKnowledgeBaseTask] = useState(() => createLaunchTask({ status: "В работе" }));
+  const [customChecklists, setCustomChecklists] = useState(() => readStoredTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, []));
+  const [newTask, setNewTask] = useState(() => createLaunchTask({ status: "В работе" }));
+  const [newChecklistName, setNewChecklistName] = useState("");
+  const [isCreatingChecklist, setIsCreatingChecklist] = useState(false);
   const [editingCell, setEditingCell] = useState(null);
 
   const isKnowledgeBaseBoard = activeBoard === "knowledgeBase";
-  const visibleTasks = isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
+  const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
+  const isCustomBoard = Boolean(activeCustomChecklist);
+  const visibleTasks = isCustomBoard ? activeCustomChecklist.tasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
   const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
   const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
-  const newTask = isKnowledgeBaseBoard ? newKnowledgeBaseTask : newLaunchTask;
-  const setNewTask = isKnowledgeBaseBoard ? setNewKnowledgeBaseTask : setNewLaunchTask;
-  const boardTitle = isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
-  const boardSubtitle = isKnowledgeBaseBoard
-    ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
-    : "Что нужно закрыть перед стартом";
-  const boardDescription = isKnowledgeBaseBoard
-    ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
-    : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
+  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+  const boardSubtitle = isCustomBoard
+    ? "Пользовательский чек-лист с собственным набором задач."
+    : isKnowledgeBaseBoard
+      ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
+      : "Что нужно закрыть перед стартом";
+  const boardDescription = isCustomBoard
+    ? `Чек-лист «${activeCustomChecklist.title}»: добавляй задачи, назначай исполнителей и веди статусы.`
+    : isKnowledgeBaseBoard
+      ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
+      : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
 
   function updateTasks(storageKey, setTasks, updater) {
     setTasks((current) => {
@@ -220,6 +230,21 @@ function LaunchChecklistSection() {
   }
 
   function updateTask(taskId, patch) {
+    if (isCustomBoard) {
+      setCustomChecklists((current) => {
+        const next = current.map((checklist) => {
+          if (checklist.id !== activeBoard) return checklist;
+          return {
+            ...checklist,
+            tasks: checklist.tasks.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)),
+          };
+        });
+        persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
+        return next;
+      });
+      return;
+    }
+
     const storageKey = isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
     const setTasks = isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
     updateTasks(storageKey, setTasks, (current) => current.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)));
@@ -231,7 +256,7 @@ function LaunchChecklistSection() {
 
     const task = createLaunchTask({
       title,
-      responsible: newTask.responsible.trim() || (isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначен"),
+      responsible: newTask.responsible.trim() || (isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
       assignee: newTask.assignee.trim(),
       comment: newTask.comment.trim(),
       dueDate: newTask.dueDate,
@@ -239,28 +264,74 @@ function LaunchChecklistSection() {
       done: newTask.status === "Готово",
     });
 
+    if (isCustomBoard) {
+      setCustomChecklists((current) => {
+        const next = current.map((checklist) => (checklist.id === activeBoard ? { ...checklist, tasks: [task, ...checklist.tasks] } : checklist));
+        persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
+        return next;
+      });
+      setNewTask(createLaunchTask({ status: "В работе" }));
+      return;
+    }
+
     if (isKnowledgeBaseBoard) {
       updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, (current) => [task, ...current]);
-      setNewKnowledgeBaseTask(createLaunchTask({ status: "В работе" }));
+      setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
 
     updateTasks(LAUNCH_CHECKLIST_STORAGE_KEY, setLaunchTasks, (current) => [task, ...current]);
-    setNewLaunchTask(createLaunchTask({ status: "В работе" }));
+    setNewTask(createLaunchTask({ status: "В работе" }));
   }
 
   function removeTask(taskId) {
+    if (isCustomBoard) {
+      setCustomChecklists((current) => {
+        const next = current.map((checklist) => (checklist.id === activeBoard ? { ...checklist, tasks: checklist.tasks.filter((task) => task.id !== taskId) } : checklist));
+        persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
+        return next;
+      });
+      return;
+    }
+
     const storageKey = isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
     const setTasks = isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
     updateTasks(storageKey, setTasks, (current) => current.filter((task) => task.id !== taskId));
   }
 
   function resetTasks() {
-    if (isKnowledgeBaseBoard) {
+    if (isCustomBoard) {
+      setCustomChecklists((current) => {
+        const next = current.map((checklist) => (checklist.id === activeBoard ? { ...checklist, tasks: [] } : checklist));
+        persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
+        return next;
+      });
+    } else if (isKnowledgeBaseBoard) {
       updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, () => defaultKnowledgeBaseChecklistTasks);
     } else {
       updateTasks(LAUNCH_CHECKLIST_STORAGE_KEY, setLaunchTasks, () => defaultLaunchChecklistTasks);
     }
+    setEditingCell(null);
+  }
+
+  function addChecklist() {
+    const title = newChecklistName.trim();
+    if (!title) return;
+
+    const checklist = {
+      id: `custom-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title,
+      tasks: [],
+    };
+
+    setCustomChecklists((current) => {
+      const next = [...current, checklist];
+      persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
+      return next;
+    });
+    setActiveBoard(checklist.id);
+    setNewChecklistName("");
+    setIsCreatingChecklist(false);
     setEditingCell(null);
   }
 
@@ -279,6 +350,24 @@ function LaunchChecklistSection() {
         onChange: (event) => updateTask(task.id, { [field]: event.target.value }),
         onBlur: () => setEditingCell(null),
       };
+
+      if (options.selectOptions) {
+        return (
+          <select
+            className={inputClassName}
+            value={value}
+            autoFocus
+            onChange={(event) => updateTask(task.id, { [field]: event.target.value })}
+            onBlur={() => setEditingCell(null)}
+          >
+            {options.selectOptions.map((option) => (
+              <option key={option || "empty"} value={option}>
+                {option || "Не назначен"}
+              </option>
+            ))}
+          </select>
+        );
+      }
 
       if (options.multiline) {
         return <textarea {...commonProps} rows={options.rows || 4} />;
@@ -310,8 +399,8 @@ function LaunchChecklistSection() {
   return (
     <>
       <section className="analytics-surface analytics-tab-summary mt-4">
-        <span className="analytics-kicker">Запуск</span>
-        <h2 className="analytics-tab-summary-title">Чеклист подготовки проекта к запуску</h2>
+        <span className="analytics-kicker">Задачи</span>
+        <h2 className="analytics-tab-summary-title">Чек-листы команды</h2>
         <p className="analytics-tab-summary-copy">{boardDescription}</p>
         <div className="analytics-launch-browser-tabs" role="tablist" aria-label="Разделы чеклиста запуска">
           <button
@@ -334,6 +423,43 @@ function LaunchChecklistSection() {
           >
             База знаний
           </button>
+          {customChecklists.map((checklist) => (
+            <button
+              key={checklist.id}
+              type="button"
+              className={`analytics-launch-browser-tab${activeBoard === checklist.id ? " analytics-launch-browser-tab-active" : ""}`}
+              onClick={() => {
+                setActiveBoard(checklist.id);
+                setEditingCell(null);
+              }}
+            >
+              {checklist.title}
+            </button>
+          ))}
+          {isCreatingChecklist ? (
+            <form
+              className="analytics-launch-new-checklist"
+              onSubmit={(event) => {
+                event.preventDefault();
+                addChecklist();
+              }}
+            >
+              <input
+                className="analytics-launch-new-checklist-input"
+                value={newChecklistName}
+                onChange={(event) => setNewChecklistName(event.target.value)}
+                placeholder="Название чек-листа"
+                autoFocus
+              />
+              <button type="submit" className="analytics-launch-new-checklist-save" aria-label="Создать чек-лист">
+                +
+              </button>
+            </form>
+          ) : (
+            <button type="button" className="analytics-launch-browser-tab analytics-launch-browser-tab-add" onClick={() => setIsCreatingChecklist(true)}>
+              +
+            </button>
+          )}
         </div>
         <div className="analytics-tab-summary-points">
           <div className="analytics-tab-summary-point">
@@ -376,7 +502,7 @@ function LaunchChecklistSection() {
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Добавить задачу</span>
-            <h3 className="analytics-section-title">{isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача запуска"}</h3>
+            <h3 className="analytics-section-title">{isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
             <p className="analytics-page-subtitle mb-0">
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
@@ -396,7 +522,7 @@ function LaunchChecklistSection() {
             />
           </label>
           <label>
-            <span>Ответственный</span>
+            <span>Направление</span>
             <input
               className="form-control analytics-launch-input"
               value={newTask.responsible}
@@ -406,12 +532,17 @@ function LaunchChecklistSection() {
           </label>
           <label>
             <span>Исполнитель</span>
-            <input
-              className="form-control analytics-launch-input"
+            <select
+              className="form-select analytics-launch-input"
               value={newTask.assignee}
               onChange={(event) => setNewTask((current) => ({ ...current, assignee: event.target.value }))}
-              placeholder="Имя или ник"
-            />
+            >
+              {TASK_ASSIGNEES.map((assignee) => (
+                <option key={assignee || "empty"} value={assignee}>
+                  {assignee || "Не назначен"}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <span>Дата</span>
@@ -458,7 +589,7 @@ function LaunchChecklistSection() {
             <span className="analytics-kicker">Задачи запуска</span>
             <h3 className="analytics-section-title">{boardTitle}</h3>
             <p className="analytics-page-subtitle mb-0">
-              {boardSubtitle}. Меняй название, ответственного, исполнителя, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
+              {boardSubtitle}. Меняй название, направление, исполнителя, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
             </p>
           </div>
         </div>
@@ -469,7 +600,7 @@ function LaunchChecklistSection() {
               <tr>
                 <th>Готово</th>
                 <th>Название</th>
-                <th>Ответственный</th>
+                <th>Направление</th>
                 <th>Исполнитель</th>
                 <th>Комментарий</th>
                 <th>Дата</th>
@@ -500,7 +631,7 @@ function LaunchChecklistSection() {
                       })}
                     </td>
                     <td>{renderEditableCell(task, "responsible")}</td>
-                    <td>{renderEditableCell(task, "assignee", { readClassName: "analytics-launch-assignee-read" })}</td>
+                    <td>{renderEditableCell(task, "assignee", { readClassName: "analytics-launch-assignee-read", selectOptions: TASK_ASSIGNEES })}</td>
                     <td className="analytics-launch-comment">{renderEditableCell(task, "comment", { multiline: true, rows: 5 })}</td>
                     <td>{renderEditableCell(task, "dueDate", { inputClassName: "analytics-launch-date-input" })}</td>
                     <td>
