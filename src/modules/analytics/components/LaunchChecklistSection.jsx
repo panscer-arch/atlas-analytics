@@ -1,5 +1,6 @@
 import { useState } from "react";
 import LaunchProgressBar from "./LaunchProgressBar";
+import MaterialsLinksBoard from "./MaterialsLinksBoard";
 
 const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
 const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
@@ -477,6 +478,7 @@ function LaunchChecklistSection() {
 
   const isKnowledgeBaseBoard = activeBoard === "knowledgeBase";
   const isIdeasBoard = activeBoard === "ideas";
+  const isMaterialsBoard = activeBoard === "materials";
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isCustomBoard ? activeCustomChecklist.tasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
@@ -487,6 +489,8 @@ function LaunchChecklistSection() {
     ? "Пользовательский чек-лист с собственным набором задач."
     : isIdeasBoard
       ? "Сырые идеи разложены по направлениям, чтобы их можно было приоритизировать и превращать в задачи."
+    : isMaterialsBoard
+      ? "Карта Google Docs и Drive-ссылок по разделам: ТЗ, кабинет, ролики, документы, исследования и маркетинг."
     : isKnowledgeBaseBoard
       ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
       : "Что нужно закрыть перед стартом";
@@ -494,6 +498,8 @@ function LaunchChecklistSection() {
     ? `Чек-лист «${activeCustomChecklist.title}»: добавляй задачи, назначай исполнителей и веди статусы.`
     : isIdeasBoard
       ? "Здесь вычитаны и структурированы идеи по контенту, комьюнити, партнерке, лендингам, smart-contract, вебинарам и исследованиям."
+    : isMaterialsBoard
+      ? "Здесь можно хранить такую же таблицу ссылок, как в Google Sheets: открыл документ, доработал и вернулся в аналитику."
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
@@ -719,6 +725,16 @@ function LaunchChecklistSection() {
           >
             Идеи
           </button>
+          <button
+            type="button"
+            className={`analytics-launch-browser-tab${activeBoard === "materials" ? " analytics-launch-browser-tab-active" : ""}`}
+            onClick={() => {
+              setActiveBoard("materials");
+              setEditingCell(null);
+            }}
+          >
+            Материалы
+          </button>
           {customChecklists.map((checklist) => (
             <button
               key={checklist.id}
@@ -757,19 +773,25 @@ function LaunchChecklistSection() {
             </button>
           )}
         </div>
-        <div className="analytics-tab-summary-points">
-          <div className="analytics-tab-summary-point">
-            <span>Всего задач: {visibleTasks.length}</span>
+        {!isMaterialsBoard ? (
+          <div className="analytics-tab-summary-points">
+            <div className="analytics-tab-summary-point">
+              <span>Всего задач: {visibleTasks.length}</span>
+            </div>
+            <div className="analytics-tab-summary-point">
+              <span>Готово: {completedCount}</span>
+            </div>
+            <div className="analytics-tab-summary-point">
+              <span>Прогресс запуска: {formatPercent(progress)}</span>
+            </div>
           </div>
-          <div className="analytics-tab-summary-point">
-            <span>Готово: {completedCount}</span>
-          </div>
-          <div className="analytics-tab-summary-point">
-            <span>Прогресс запуска: {formatPercent(progress)}</span>
-          </div>
-        </div>
+        ) : null}
       </section>
 
+      {isMaterialsBoard ? <MaterialsLinksBoard /> : null}
+
+      {!isMaterialsBoard ? (
+        <>
       <section className="analytics-surface analytics-launch-progress mt-4">
         <div className="row g-3">
           <div className="col-12 col-md-4">
@@ -1011,6 +1033,8 @@ function LaunchChecklistSection() {
           </table>
         </div>
       </section>
+        </>
+      ) : null}
     </>
   );
 }
