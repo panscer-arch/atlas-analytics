@@ -32,9 +32,10 @@ import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
+const ANALYTICS_TAB_IDS = ["dashboard", "overview", "traffic", "products", "reinvest", "base", "leaders", "geography", "partner", "wallets", "launch"];
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -201,8 +202,20 @@ function scrollToSection(sectionId) {
   });
 }
 
+function readInitialAnalyticsTab() {
+  if (typeof window === "undefined") return "dashboard";
+
+  const url = new URL(window.location.href);
+  const tab = url.searchParams.get("tab");
+
+  if (tab && ANALYTICS_TAB_IDS.includes(tab)) return tab;
+  if (url.searchParams.has("board") || url.searchParams.has("faq")) return "launch";
+
+  return "dashboard";
+}
+
 function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(readInitialAnalyticsTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
@@ -276,6 +289,37 @@ function AnalyticsPage() {
   const dashboardTasks = buildDashboardTaskItems(data.priorityActions || []);
   const dashboardChat = buildDashboardChatItems();
   const dashboardPoolValue = cashPosition.closingBalance ?? cashPosition.availableCash ?? 0;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const tab = url.searchParams.get("tab");
+    const hasChecklistDeepLink = url.searchParams.has("board") || url.searchParams.has("faq");
+
+    if (hasChecklistDeepLink && activeTab !== "launch") {
+      setActiveTab("launch");
+      return;
+    }
+
+    if (activeTab === "dashboard") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", activeTab);
+    }
+
+    if (activeTab !== "launch") {
+      url.searchParams.delete("board");
+      url.searchParams.delete("faq");
+    }
+
+    if (tab !== url.searchParams.get("tab")) {
+      window.history.replaceState({}, "", url.toString());
+      return;
+    }
+
+    window.history.replaceState({}, "", url.toString());
+  }, [activeTab]);
 
   function handleOpenCharts() {
     setActiveTab("overview");
