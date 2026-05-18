@@ -182,18 +182,29 @@ function getTitleFromCell(cellValue) {
     .trim();
 }
 
+function getCellText(cellValue) {
+  if (typeof cellValue === "object" && cellValue !== null) return cellValue.text || "";
+  return String(cellValue || "");
+}
+
+function getCellUrl(cellValue) {
+  if (typeof cellValue === "object" && cellValue !== null) return cellValue.url || extractUrlFromCell(cellValue.text);
+  return extractUrlFromCell(cellValue);
+}
+
 function buildMaterialItemsFromRows(rows) {
-  const headerRowIndex = rows.findIndex((row) => row.map(getCategoryIdByHeader).filter(Boolean).length >= 2);
+  const headerRowIndex = rows.findIndex((row) => row.map((cellValue) => getCategoryIdByHeader(getCellText(cellValue))).filter(Boolean).length >= 2);
   if (headerRowIndex < 0) return [];
 
   const headerRow = rows[headerRowIndex];
-  const columnCategories = headerRow.map(getCategoryIdByHeader);
+  const columnCategories = headerRow.map((cellValue) => getCategoryIdByHeader(getCellText(cellValue)));
   const importedItems = [];
 
   rows.slice(headerRowIndex + 1).forEach((row, rowIndex) => {
     row.forEach((cellValue, columnIndex) => {
       const category = columnCategories[columnIndex];
-      const title = getTitleFromCell(cellValue) || String(cellValue || "").trim();
+      const cellText = getCellText(cellValue);
+      const title = getTitleFromCell(cellText) || cellText.trim();
       if (!category || !title) return;
 
       importedItems.push(
@@ -201,13 +212,40 @@ function buildMaterialItemsFromRows(rows) {
           id: `imported-${category}-${headerRowIndex + rowIndex}-${columnIndex}-${title.slice(0, 24).replace(/\W+/g, "-")}`,
           category,
           title,
-          url: extractUrlFromCell(cellValue),
+          url: getCellUrl(cellValue),
         }),
       );
     });
   });
 
   return importedItems;
+}
+
+function parsePlainRows(text) {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((row) => row.split("\t").map((cell) => cell.trim()))
+    .filter((row) => row.some(Boolean));
+}
+
+function parseHtmlRows(html) {
+  if (typeof window === "undefined" || !html) return [];
+
+  const documentNode = new DOMParser().parseFromString(html, "text/html");
+  const tableRows = Array.from(documentNode.querySelectorAll("tr"));
+  if (!tableRows.length) return [];
+
+  return tableRows
+    .map((row) =>
+      Array.from(row.querySelectorAll("th,td")).map((cell) => {
+        const link = cell.querySelector("a[href]");
+        return {
+          text: cell.textContent.replace(/\s+/g, " ").trim(),
+          url: link?.href || "",
+        };
+      }),
+    )
+    .filter((row) => row.some((cell) => cell.text));
 }
 
 function mergeMaterialItems(currentItems, importedItems) {
@@ -311,6 +349,38 @@ function MaterialsLinksBoard() {
     }
   }
 
+  function importRows(rows, sourceLabel) {
+    const importedItems = buildMaterialItemsFromRows(rows);
+    if (!importedItems.length) {
+      setImportState({
+        status: "error",
+        message: `Не нашел колонки в ${sourceLabel}. Скопируй таблицу вместе с шапкой: Комментарий, ТЗ САЙТ, Документы и т.д.`,
+      });
+      return;
+    }
+
+    updateItems((current) => mergeMaterialItems(current, importedItems));
+    const linkCount = importedItems.filter((item) => item.url).length;
+    setImportState({
+      status: "success",
+      message: `Импортировано из ${sourceLabel}: ${importedItems.length}. Ссылок с URL найдено: ${linkCount}.`,
+    });
+  }
+
+  function handleTablePaste(event) {
+    event.preventDefault();
+    const html = event.clipboardData.getData("text/html");
+    const text = event.clipboardData.getData("text/plain");
+    const htmlRows = parseHtmlRows(html);
+
+    if (htmlRows.length) {
+      importRows(htmlRows, "буфера Google Sheets");
+      return;
+    }
+
+    importRows(parsePlainRows(text), "текста");
+  }
+
   return (
     <>
       <section className="analytics-surface analytics-materials-form mt-4">
@@ -386,6 +456,17 @@ function MaterialsLinksBoard() {
               {importState.message}
             </div>
           ) : null}
+        </div>
+        <div className="analytics-materials-paste-import">
+          <label>
+            <span>Вставить таблицу с живыми ссылками</span>
+            <textarea
+              className="form-control analytics-launch-input"
+              rows="3"
+              onPaste={handleTablePaste}
+              placeholder="Выдели таблицу в Google Sheets вместе с шапкой, нажми Cmd+C и вставь сюда. Скрытые ссылки из ячеек подтянутся автоматически."
+            />
+          </label>
         </div>
       </section>
 
