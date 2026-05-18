@@ -12,6 +12,7 @@ import AnalyticsIdeaCapture from "./components/AnalyticsIdeaCapture";
 import LaunchChecklistSection from "./components/LaunchChecklistSection";
 import ActivationSection from "./components/ActivationSection";
 import TabSummary from "./components/TabSummary";
+import SectionHeading from "./components/SectionHeading";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
@@ -861,34 +862,22 @@ function AnalyticsPage() {
     return (
       <>
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Ключевые сигналы дня</span>
-            <h2 className="mb-0">Что происходит сейчас</h2>
-          </div>
+          <SectionHeading kicker="Ключевые сигналы дня" title="Что происходит сейчас" />
           <MetricsGrid metrics={primaryKpis} density="compact" />
         </section>
 
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Контур Smart Contract</span>
-            <h2 className="mb-0">Главная касса дня</h2>
-          </div>
+          <SectionHeading kicker="Контур Smart Contract" title="Главная касса дня" />
           <MetricsGrid metrics={contractPulseKpis} density="balanced" />
         </section>
 
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">День к дню</span>
-            <h2 className="mb-0">Сравнение со вчера</h2>
-          </div>
+          <SectionHeading kicker="День к дню" title="Сравнение со вчера" />
           <MetricsGrid metrics={operationalSnapshotKpis} density="compact" />
         </section>
 
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Traffic → Money</span>
-            <h2 className="mb-0">Трафик превращается в деньги</h2>
-          </div>
+          <SectionHeading kicker="Traffic → Money" title="Трафик превращается в деньги" />
           <MetricsGrid metrics={trafficToMoneyKpis} density="balanced" />
         </section>
 
@@ -1051,10 +1040,7 @@ function AnalyticsPage() {
         <TabSummary kicker="Онлайн" title={trafficTabData.summary.title} description={trafficTabData.summary.description} bullets={trafficTabData.summary.bullets} />
 
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Трафик / Онлайн</span>
-            <h2 className="mb-0">Кто сейчас на сайте и в кабинете</h2>
-          </div>
+          <SectionHeading kicker="Трафик / Онлайн" title="Кто сейчас на сайте и в кабинете" />
           <MetricsGrid metrics={trafficTabData.metrics} />
         </section>
         <section className="row g-3 mt-1">
@@ -1186,17 +1172,11 @@ function AnalyticsPage() {
     return (
       <>
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Продукты / Циклы</span>
-            <h2 className="mb-0">Какой продукт даёт приток и какой создаёт давление</h2>
-          </div>
+          <SectionHeading kicker="Продукты / Циклы" title="Какой продукт даёт приток и какой создаёт давление" />
           <MetricsGrid metrics={productsTabData.metrics} density="half" />
         </section>
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Lockup</span>
-            <h2 className="mb-0">Lockup тарифы</h2>
-          </div>
+          <SectionHeading kicker="Lockup" title="Lockup тарифы" />
             <div className="row g-3">
               {lockupRows.map((row) => (
                 <div key={row.tariff} className="col-12 col-md-6 col-xxl-4">
@@ -1239,10 +1219,7 @@ function AnalyticsPage() {
             </div>
         </section>
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Daily Flow</span>
-            <h2 className="mb-0">Daily Flow тарифы</h2>
-          </div>
+          <SectionHeading kicker="Daily Flow" title="Daily Flow тарифы" />
           <div className="row g-3">
             {dailyRows.map((row) => (
               <div key={row.tariff} className="col-12 col-xl-6">
@@ -1376,10 +1353,7 @@ function AnalyticsPage() {
       <>
         <TabSummary kicker="Лидеры" title={data.tabsData.leaders.summary.title} description={data.tabsData.leaders.summary.description} bullets={data.tabsData.leaders.summary.bullets} />
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Лидеры</span>
-            <h2 className="mb-0">Кто двигает систему деньгами и структурно</h2>
-          </div>
+          <SectionHeading kicker="Лидеры" title="Кто двигает систему деньгами и структурно" />
           <MetricsGrid metrics={data.tabsData.leaders.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
@@ -1471,10 +1445,7 @@ function AnalyticsPage() {
       <>
         <TabSummary kicker="Реинвест" title={reinvestTabData.summary.title} description={reinvestTabData.summary.description} bullets={reinvestTabData.summary.bullets} />
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Реинвест</span>
-            <h2 className="mb-0">Насколько пользователи возвращают деньги в систему</h2>
-          </div>
+          <SectionHeading kicker="Реинвест" title="Насколько пользователи возвращают деньги в систему" />
           <MetricsGrid metrics={reinvestTabData.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
@@ -1532,10 +1503,7 @@ function AnalyticsPage() {
       <>
         <TabSummary kicker="Состав базы" title={data.tabsData.baseComposition.summary.title} description={data.tabsData.baseComposition.summary.description} bullets={data.tabsData.baseComposition.summary.bullets} />
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Роли пользователей</span>
-            <h2 className="mb-0">Кто в системе просто инвестирует, кто строит сеть, а кто делает и то и другое</h2>
-          </div>
+          <SectionHeading kicker="Роли пользователей" title="Кто в системе просто инвестирует, кто строит сеть, а кто делает и то и другое" />
           <MetricsGrid metrics={data.tabsData.baseComposition.metrics} density="wide" />
         </section>
         <section className="row g-3 mt-1">
@@ -1656,10 +1624,7 @@ function AnalyticsPage() {
       <>
         <TabSummary kicker="География" title={data.tabsData.geography.summary.title} description={data.tabsData.geography.summary.description} bullets={data.tabsData.geography.summary.bullets} />
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">География</span>
-            <h2 className="mb-0">Какие страны дают пользователей, деньги и обязательства</h2>
-          </div>
+          <SectionHeading kicker="География" title="Какие страны дают пользователей, деньги и обязательства" />
           <MetricsGrid metrics={data.tabsData.geography.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
@@ -1736,10 +1701,7 @@ function AnalyticsPage() {
       <>
         <TabSummary kicker="Партнёрская структура" title={data.tabsData.partner.summary.title} description={data.tabsData.partner.summary.description} bullets={data.tabsData.partner.summary.bullets} />
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Партнёрская структура</span>
-            <h2 className="mb-0">Какие ветки дают рост, а какие раздувают нагрузку</h2>
-          </div>
+          <SectionHeading kicker="Партнёрская структура" title="Какие ветки дают рост, а какие раздувают нагрузку" />
           <MetricsGrid metrics={data.tabsData.partner.metrics} density="balanced" />
         </section>
         <TabSummary
@@ -1822,10 +1784,7 @@ function AnalyticsPage() {
       <>
         <TabSummary kicker="Кошельки" title={data.tabsData.wallets.summary.title} description={data.tabsData.wallets.summary.description} bullets={data.tabsData.wallets.summary.bullets} />
         <section className="mt-4">
-          <div className="analytics-section-heading">
-            <span className="analytics-kicker">Кошельки</span>
-            <h2 className="mb-0">Где деньги, где нагрузка и где концентрация риска</h2>
-          </div>
+          <SectionHeading kicker="Кошельки" title="Где деньги, где нагрузка и где концентрация риска" />
           <MetricsGrid metrics={data.tabsData.wallets.metrics} density="balanced" />
         </section>
         <section className="row g-3 mt-1">
