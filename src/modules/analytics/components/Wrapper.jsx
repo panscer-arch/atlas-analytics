@@ -1,26 +1,15 @@
-const GAP_VALUES = {
-  none: "0",
-  xs: "0.35rem",
-  sm: "0.6rem",
-  md: "1rem",
-  lg: "1.5rem",
-  xl: "2rem",
+const WRAPPER_TOKENS = {
+  dir: new Set(["row", "column"]),
+  gap: new Set(["none", "xs", "sm", "md", "lg", "xl"]),
+  padding: new Set(["none", "sm", "md", "lg"]),
+  marginTop: new Set(["none", "sm", "md", "lg", "xl"]),
+  align: new Set(["stretch", "start", "center", "end"]),
+  justify: new Set(["start", "center", "end", "between"]),
 };
 
-const PAD_VALUES = {
-  none: "0",
-  sm: "0.75rem",
-  md: "1rem",
-  lg: "1.5rem",
-};
-
-const MARGIN_TOP_VALUES = {
-  none: "0",
-  sm: "0.75rem",
-  md: "1rem",
-  lg: "1.5rem",
-  xl: "2rem",
-};
+function getToken(group, value, fallback) {
+  return WRAPPER_TOKENS[group].has(value) ? value : fallback;
+}
 
 function Wrapper({
   as: Element = "div",
@@ -29,24 +18,24 @@ function Wrapper({
   padding = "none",
   marginTop = "none",
   align = "stretch",
-  justify = "flex-start",
+  justify = "start",
   wrap = false,
   children,
   id,
 }) {
-  const style = {
-    display: "flex",
-    flexDirection: dir === "row" ? "row" : "column",
-    gap: GAP_VALUES[gap] || gap,
-    padding: PAD_VALUES[padding] || padding,
-    marginTop: MARGIN_TOP_VALUES[marginTop] || marginTop,
-    alignItems: align,
-    justifyContent: justify,
-    flexWrap: wrap ? "wrap" : "nowrap",
-  };
+  const wrapperClassName = [
+    "analytics-wrapper",
+    `analytics-wrapper-dir-${getToken("dir", dir, "column")}`,
+    `analytics-wrapper-gap-${getToken("gap", gap, "none")}`,
+    `analytics-wrapper-padding-${getToken("padding", padding, "none")}`,
+    `analytics-wrapper-mt-${getToken("marginTop", marginTop, "none")}`,
+    `analytics-wrapper-align-${getToken("align", align, "stretch")}`,
+    `analytics-wrapper-justify-${getToken("justify", justify, "start")}`,
+    wrap ? "analytics-wrapper-wrap" : "analytics-wrapper-nowrap",
+  ].join(" ");
 
   return (
-    <Element id={id} style={style}>
+    <Element id={id} className={wrapperClassName}>
       {children}
     </Element>
   );

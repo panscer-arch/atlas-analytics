@@ -2463,18 +2463,31 @@
 }
 
 .analytics-launch-progress-bar {
+  display: block;
+  width: 100%;
   height: 12px;
   overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(157, 178, 255, 0.12);
+  appearance: none;
+}
+
+.analytics-launch-progress-bar::-webkit-progress-bar {
   border-radius: 999px;
   background: rgba(157, 178, 255, 0.12);
 }
 
-.analytics-launch-progress-fill {
-  height: 100%;
-  width: var(--launch-progress);
+.analytics-launch-progress-bar::-webkit-progress-value {
   border-radius: inherit;
   background: linear-gradient(90deg, #69c2b3 0%, #7bb4ff 100%);
   transition: width 180ms ease;
+}
+
+.analytics-launch-progress-bar::-moz-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #69c2b3 0%, #7bb4ff 100%);
 }
 
 .analytics-launch-browser-tabs {
@@ -3007,6 +3020,118 @@
   min-height: 7rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
+}
+
+.analytics-wrapper {
+  display: flex;
+}
+
+.analytics-wrapper-dir-row {
+  flex-direction: row;
+}
+
+.analytics-wrapper-dir-column {
+  flex-direction: column;
+}
+
+.analytics-wrapper-gap-none {
+  gap: 0;
+}
+
+.analytics-wrapper-gap-xs {
+  gap: 0.35rem;
+}
+
+.analytics-wrapper-gap-sm {
+  gap: 0.6rem;
+}
+
+.analytics-wrapper-gap-md {
+  gap: 1rem;
+}
+
+.analytics-wrapper-gap-lg {
+  gap: 1.5rem;
+}
+
+.analytics-wrapper-gap-xl {
+  gap: 2rem;
+}
+
+.analytics-wrapper-padding-none {
+  padding: 0;
+}
+
+.analytics-wrapper-padding-sm {
+  padding: 0.75rem;
+}
+
+.analytics-wrapper-padding-md {
+  padding: 1rem;
+}
+
+.analytics-wrapper-padding-lg {
+  padding: 1.5rem;
+}
+
+.analytics-wrapper-mt-none {
+  margin-top: 0;
+}
+
+.analytics-wrapper-mt-sm {
+  margin-top: 0.75rem;
+}
+
+.analytics-wrapper-mt-md {
+  margin-top: 1rem;
+}
+
+.analytics-wrapper-mt-lg {
+  margin-top: 1.5rem;
+}
+
+.analytics-wrapper-mt-xl {
+  margin-top: 2rem;
+}
+
+.analytics-wrapper-align-stretch {
+  align-items: stretch;
+}
+
+.analytics-wrapper-align-start {
+  align-items: flex-start;
+}
+
+.analytics-wrapper-align-center {
+  align-items: center;
+}
+
+.analytics-wrapper-align-end {
+  align-items: flex-end;
+}
+
+.analytics-wrapper-justify-start {
+  justify-content: flex-start;
+}
+
+.analytics-wrapper-justify-center {
+  justify-content: center;
+}
+
+.analytics-wrapper-justify-end {
+  justify-content: flex-end;
+}
+
+.analytics-wrapper-justify-between {
+  justify-content: space-between;
+}
+
+.analytics-wrapper-wrap {
+  flex-wrap: wrap;
+}
+
+.analytics-wrapper-nowrap {
+  flex-wrap: nowrap;
 }
 
 .analytics-agent-template {
