@@ -25,9 +25,10 @@ import "./styles/analytics.css";
 import { useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
-const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.completed.v1";
+const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v2";
+const LAUNCH_STATUSES = ["В работе", "Готово", "Отложено"];
 
-const launchChecklistTasks = [
+const defaultLaunchChecklistTasks = [
   {
     id: "knowledge-base",
     title: "Наполнить базу знаний",
@@ -77,6 +78,25 @@ const launchChecklistTasks = [
     status: "Отложено",
   },
 ];
+
+function createLaunchTask(overrides = {}) {
+  return {
+    id: `launch-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title: "",
+    responsible: "",
+    comment: "",
+    dueDate: "",
+    status: "В работе",
+    done: false,
+    ...overrides,
+  };
+}
+
+function getLaunchStatusTone(status) {
+  if (status === "Готово") return "done";
+  if (status === "Отложено") return "paused";
+  return "active";
+}
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -249,16 +269,23 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
-  const [completedLaunchTasks, setCompletedLaunchTasks] = useState(() => {
+  const [launchTasks, setLaunchTasks] = useState(() => {
     if (typeof window === "undefined") return [];
 
     try {
       const saved = window.localStorage.getItem(LAUNCH_CHECKLIST_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
+      return saved ? JSON.parse(saved) : defaultLaunchChecklistTasks;
     } catch {
-      return [];
+      return defaultLaunchChecklistTasks;
     }
   });
+  const [newLaunchTask, setNewLaunchTask] = useState(() => createLaunchTask({
+    title: "",
+    responsible: "",
+    comment: "",
+    dueDate: "",
+    status: "В работе",
+  }));
   const { data, isLoading } = useAnalyticsData();
 
   if (isLoading) {
@@ -335,20 +362,58 @@ function AnalyticsPage() {
     window.setTimeout(() => scrollToSection("overview-graphs"), 60);
   }
 
-  function toggleLaunchTask(taskId) {
-    setCompletedLaunchTasks((current) => {
-      const next = current.includes(taskId)
-        ? current.filter((id) => id !== taskId)
-        : [...current, taskId];
+  function persistLaunchTasks(nextTasks) {
+    try {
+      window.localStorage.setItem(LAUNCH_CHECKLIST_STORAGE_KEY, JSON.stringify(nextTasks));
+    } catch {
+      // Если storage недоступен, чеклист всё равно работает до перезагрузки страницы.
+    }
+  }
 
-      try {
-        window.localStorage.setItem(LAUNCH_CHECKLIST_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Если storage недоступен, чеклист всё равно работает до перезагрузки страницы.
-      }
-
+  function updateLaunchTasks(updater) {
+    setLaunchTasks((current) => {
+      const next = updater(current);
+      persistLaunchTasks(next);
       return next;
     });
+  }
+
+  function updateLaunchTask(taskId, patch) {
+    updateLaunchTasks((current) =>
+      current.map((task) => {
+        if (task.id !== taskId) return task;
+        const next = { ...task, ...patch };
+        if (patch.status === "Готово") next.done = true;
+        if (patch.done === true) next.status = "Готово";
+        if (patch.done === false && task.status === "Готово" && !patch.status) next.status = "В работе";
+        return next;
+      }),
+    );
+  }
+
+  function addLaunchTask() {
+    const title = newLaunchTask.title.trim();
+    if (!title) return;
+
+    const task = createLaunchTask({
+      title,
+      responsible: newLaunchTask.responsible.trim() || "Не назначен",
+      comment: newLaunchTask.comment.trim(),
+      dueDate: newLaunchTask.dueDate,
+      status: newLaunchTask.status || "В работе",
+      done: newLaunchTask.status === "Готово",
+    });
+
+    updateLaunchTasks((current) => [task, ...current]);
+    setNewLaunchTask(createLaunchTask({ status: "В работе" }));
+  }
+
+  function removeLaunchTask(taskId) {
+    updateLaunchTasks((current) => current.filter((task) => task.id !== taskId));
+  }
+
+  function resetLaunchTasks() {
+    updateLaunchTasks(() => defaultLaunchChecklistTasks);
   }
 
   const primaryKpis = [
@@ -2156,8 +2221,8 @@ function AnalyticsPage() {
   }
 
   function renderLaunchTab() {
-    const completedCount = launchChecklistTasks.filter((task) => completedLaunchTasks.includes(task.id)).length;
-    const progress = launchChecklistTasks.length ? (completedCount / launchChecklistTasks.length) * 100 : 0;
+    const completedCount = launchTasks.filter((task) => task.done || task.status === "Готово").length;
+    const progress = launchTasks.length ? (completedCount / launchTasks.length) * 100 : 0;
 
     return (
       <>
@@ -2169,7 +2234,7 @@ function AnalyticsPage() {
           </p>
           <div className="analytics-tab-summary-points">
             <div className="analytics-tab-summary-point">
-              <span>Всего задач: {launchChecklistTasks.length}</span>
+              <span>Всего задач: {launchTasks.length}</span>
             </div>
             <div className="analytics-tab-summary-point">
               <span>Готово: {completedCount}</span>
@@ -2185,7 +2250,7 @@ function AnalyticsPage() {
             <div className="col-12 col-md-4">
               <div className="analytics-launch-stat">
                 <span>Всего задач</span>
-                <strong>{launchChecklistTasks.length}</strong>
+                <strong>{launchTasks.length}</strong>
               </div>
             </div>
             <div className="col-12 col-md-4">
@@ -2197,12 +2262,83 @@ function AnalyticsPage() {
             <div className="col-12 col-md-4">
               <div className="analytics-launch-stat">
                 <span>Осталось</span>
-                <strong>{launchChecklistTasks.length - completedCount}</strong>
+                <strong>{launchTasks.length - completedCount}</strong>
               </div>
             </div>
           </div>
           <div className="analytics-launch-progress-bar mt-3">
             <div style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+          </div>
+        </section>
+
+        <section className="analytics-surface analytics-launch-form mt-4">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">Добавить задачу</span>
+              <h3 className="analytics-section-title">Новая задача запуска</h3>
+              <p className="analytics-page-subtitle mb-0">
+                Заполни минимум название. Остальные поля можно поправить прямо в таблице.
+              </p>
+            </div>
+            <button type="button" className="btn analytics-launch-reset-btn" onClick={resetLaunchTasks}>
+              Сбросить к шаблону
+            </button>
+          </div>
+          <div className="analytics-launch-form-grid">
+            <label>
+              <span>Название</span>
+              <input
+                className="form-control analytics-launch-input"
+                value={newLaunchTask.title}
+                onChange={(event) => setNewLaunchTask((current) => ({ ...current, title: event.target.value }))}
+                placeholder="Например: наполнить базу знаний"
+              />
+            </label>
+            <label>
+              <span>Ответственный</span>
+              <input
+                className="form-control analytics-launch-input"
+                value={newLaunchTask.responsible}
+                onChange={(event) => setNewLaunchTask((current) => ({ ...current, responsible: event.target.value }))}
+                placeholder="Backend / продукт / DevOps"
+              />
+            </label>
+            <label>
+              <span>Дата</span>
+              <input
+                className="form-control analytics-launch-input"
+                value={newLaunchTask.dueDate}
+                onChange={(event) => setNewLaunchTask((current) => ({ ...current, dueDate: event.target.value }))}
+                placeholder="25.05.2026"
+              />
+            </label>
+            <label>
+              <span>Статус</span>
+              <select
+                className="form-select analytics-launch-input"
+                value={newLaunchTask.status}
+                onChange={(event) => setNewLaunchTask((current) => ({ ...current, status: event.target.value }))}
+              >
+                {LAUNCH_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="analytics-launch-form-comment">
+              <span>Комментарий</span>
+              <textarea
+                className="form-control analytics-launch-input"
+                rows="2"
+                value={newLaunchTask.comment}
+                onChange={(event) => setNewLaunchTask((current) => ({ ...current, comment: event.target.value }))}
+                placeholder="Что должно быть внутри задачи, какие вкладки, данные или проверки"
+              />
+            </label>
+            <button type="button" className="btn analytics-launch-add-btn" onClick={addLaunchTask} disabled={!newLaunchTask.title.trim()}>
+              Добавить задачу
+            </button>
           </div>
         </section>
 
@@ -2212,7 +2348,7 @@ function AnalyticsPage() {
               <span className="analytics-kicker">Задачи запуска</span>
               <h3 className="analytics-section-title">Что нужно закрыть перед стартом</h3>
               <p className="analytics-page-subtitle mb-0">
-                Отметь задачу выполненной, и вся строка зачеркнётся. Отметка сохраняется в браузере.
+                Меняй название, ответственного, комментарий, дату и статус прямо здесь. Готовые задачи зачёркиваются.
               </p>
             </div>
           </div>
@@ -2227,13 +2363,13 @@ function AnalyticsPage() {
                   <th>Комментарий</th>
                   <th>Дата</th>
                   <th>Статус</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
-                {launchChecklistTasks.map((task) => {
-                  const completed = completedLaunchTasks.includes(task.id);
-                  const status = completed ? "Готово" : task.status;
-                  const statusTone = status === "Готово" ? "done" : status === "Отложено" ? "paused" : "active";
+                {launchTasks.map((task) => {
+                  const completed = task.done || task.status === "Готово";
+                  const statusTone = getLaunchStatusTone(task.status);
 
                   return (
                     <tr key={task.id} className={completed ? "analytics-launch-task-done" : undefined}>
@@ -2241,21 +2377,65 @@ function AnalyticsPage() {
                         <input
                           type="checkbox"
                           checked={completed}
-                          onChange={() => toggleLaunchTask(task.id)}
+                          onChange={(event) => updateLaunchTask(task.id, { done: event.target.checked })}
                           aria-label={`Отметить задачу ${task.title}`}
                           className="analytics-launch-checkbox"
                         />
                       </td>
                       <td>
-                        <strong>{task.title}</strong>
+                        <input
+                          className="form-control analytics-launch-table-input analytics-launch-title-input"
+                          value={task.title}
+                          onChange={(event) => updateLaunchTask(task.id, { title: event.target.value })}
+                        />
                       </td>
-                      <td>{task.responsible}</td>
-                      <td className="analytics-launch-comment">{task.comment}</td>
-                      <td>{task.dueDate}</td>
                       <td>
-                        <span className={`analytics-launch-status analytics-launch-status-${statusTone}`}>
-                          {status}
-                        </span>
+                        <input
+                          className="form-control analytics-launch-table-input"
+                          value={task.responsible}
+                          onChange={(event) => updateLaunchTask(task.id, { responsible: event.target.value })}
+                        />
+                      </td>
+                      <td className="analytics-launch-comment">
+                        <textarea
+                          className="form-control analytics-launch-table-input"
+                          rows="2"
+                          value={task.comment}
+                          onChange={(event) => updateLaunchTask(task.id, { comment: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="form-control analytics-launch-table-input analytics-launch-date-input"
+                          value={task.dueDate}
+                          onChange={(event) => updateLaunchTask(task.id, { dueDate: event.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <select
+                          className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`}
+                          value={task.status}
+                          onChange={(event) => updateLaunchTask(task.id, { status: event.target.value, done: event.target.value === "Готово" })}
+                        >
+                          {LAUNCH_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <div className="analytics-launch-actions">
+                          <button type="button" className="btn analytics-launch-mini-btn" onClick={() => updateLaunchTask(task.id, { status: "Готово", done: true })}>
+                            Готово
+                          </button>
+                          <button type="button" className="btn analytics-launch-mini-btn" onClick={() => updateLaunchTask(task.id, { status: "Отложено", done: false })}>
+                            Отложить
+                          </button>
+                          <button type="button" className="btn analytics-launch-delete-btn" onClick={() => removeLaunchTask(task.id)}>
+                            Удалить
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
