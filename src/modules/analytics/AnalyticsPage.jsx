@@ -204,8 +204,15 @@ function scrollToSection(sectionId) {
   });
 }
 
+function getInitialAnalyticsTab() {
+  if (typeof window === "undefined") return "dashboard";
+
+  const url = new URL(window.location.href);
+  return url.searchParams.has("board") ? "launch" : "dashboard";
+}
+
 function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(getInitialAnalyticsTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);

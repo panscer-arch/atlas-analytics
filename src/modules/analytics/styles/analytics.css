@@ -3613,13 +3613,674 @@
   line-height: 1.62;
 }
 
-.analytics-presentation-script {
-  max-height: 78vh;
-  overflow: auto;
+.analytics-presentation-direction {
+  grid-column: 1 / -1;
+  border-color: rgba(242, 102, 20, 0.16);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(242, 102, 20, 0.1), transparent 28%),
+    rgba(255, 255, 255, 0.025);
 }
 
-.analytics-presentation-script p {
-  color: #dbe6f7;
+.analytics-presentation-direction h4 {
+  margin: 0.35rem 0 0;
+  color: #f5f8ff;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.analytics-presentation-direction-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.analytics-presentation-direction-steps span {
+  border: 1px solid rgba(242, 102, 20, 0.16);
+  border-radius: 14px;
+  padding: 0.72rem;
+  background: rgba(7, 12, 22, 0.42);
+  color: #ffe2c2;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.analytics-presentation-brief-head,
+.analytics-presentation-tools-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analytics-presentation-brief-head div,
+.analytics-presentation-tools-head div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.analytics-presentation-brief-head strong {
+  align-self: center;
+  color: #f4c76a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-brief-head button,
+.analytics-presentation-tools-head button {
+  border: 1px solid rgba(157, 178, 255, 0.16);
+  border-radius: 12px;
+  padding: 0.56rem 0.72rem;
+  background: rgba(7, 12, 22, 0.48);
+  color: #eff7ff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analytics-presentation-brief-head button:hover,
+.analytics-presentation-brief-head button:focus-visible,
+.analytics-presentation-tools-head button:hover,
+.analytics-presentation-tools-head button:focus-visible {
+  border-color: rgba(242, 102, 20, 0.42);
+  background: rgba(242, 102, 20, 0.12);
+  outline: none;
+}
+
+.analytics-presentation-brief-head button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.analytics-presentation-visual-input,
+.analytics-presentation-script-input,
+.analytics-presentation-prompt textarea,
+.analytics-presentation-notes input {
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 12, 22, 0.54);
+  color: #d8e3f5;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.analytics-presentation-visual-input {
+  width: 100%;
+  min-height: 7rem;
+  margin-top: 0.75rem;
+  resize: vertical;
+}
+
+.analytics-presentation-script-input {
+  width: 100%;
+  min-height: 0;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  resize: vertical;
+}
+
+.analytics-presentation-tools {
+  grid-column: 1 / -1;
+  border-color: rgba(242, 102, 20, 0.18);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(242, 102, 20, 0.12), transparent 30%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.analytics-presentation-tools-head h4 {
+  margin: 0.25rem 0 0;
+  color: #f5f8ff;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.analytics-presentation-notes {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+}
+
+.analytics-presentation-notes span,
+.analytics-presentation-prompt span {
+  color: #9fb2cf;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-tools-grid {
+  display: block;
+  margin-top: 1rem;
+}
+
+.analytics-presentation-mode-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+
+.analytics-presentation-mode-control button {
+  display: grid;
+  gap: 0.14rem;
+  min-height: 3.15rem;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 14px;
+  padding: 0.58rem 0.72rem;
+  background: rgba(7, 12, 22, 0.5);
+  color: #eaf2ff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-presentation-mode-control button strong {
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.analytics-presentation-mode-control button span {
+  color: #9fb2cf;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.analytics-presentation-mode-control button:hover,
+.analytics-presentation-mode-control button:focus-visible,
+.analytics-presentation-mode-control .analytics-presentation-mode-active {
+  border-color: rgba(242, 102, 20, 0.44);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(242, 102, 20, 0.16), transparent 36%),
+    rgba(13, 18, 30, 0.78);
+  outline: none;
+}
+
+.analytics-presentation-draft {
+  position: relative;
+  min-height: 320px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(157, 178, 255, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at var(--draft-shift, 40%) 18%, rgba(242, 102, 20, 0.22), transparent 28%),
+    linear-gradient(135deg, #07090d 0%, #17120e 54%, #05070b 100%);
+}
+
+.analytics-presentation-draft img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 320ms ease, filter 320ms ease, transform 320ms ease;
+}
+
+.analytics-presentation-draft-mode-architect > img {
+  opacity: 0.16;
+  filter: saturate(0.82) contrast(0.88) blur(1.5px);
+  transform: scale(1.035);
+}
+
+.analytics-presentation-draft-mode-transition > img {
+  opacity: 0.58;
+  filter: saturate(0.9) contrast(0.94);
+}
+
+.analytics-presentation-draft-mode-slide > img {
+  opacity: 1;
+}
+
+.analytics-presentation-draft .analytics-presentation-corner-logo {
+  position: absolute;
+  left: clamp(0.9rem, 2.4vw, 1.5rem);
+  top: clamp(0.8rem, 2vw, 1.25rem);
+  z-index: 2;
+  width: min(28%, 220px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(242, 102, 20, 0.32));
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.analytics-presentation-draft-mode-architect .analytics-presentation-corner-logo,
+.analytics-presentation-draft-mode-transition .analytics-presentation-corner-logo {
+  opacity: 0.28;
+  filter: drop-shadow(0 0 18px rgba(242, 102, 20, 0.18));
+}
+
+.analytics-presentation-tariff-layer {
+  position: absolute;
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  top: clamp(0.75rem, 2vw, 1.25rem);
+  z-index: 2;
+  display: grid;
+  gap: 0.55rem;
+  width: min(42%, 390px);
+  border: 1px solid rgba(242, 102, 20, 0.26);
+  border-radius: 16px;
+  padding: clamp(0.65rem, 1.5vw, 0.95rem);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(242, 102, 20, 0.2), transparent 42%),
+    rgba(5, 8, 13, 0.78);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.analytics-presentation-draft-mode-architect .analytics-presentation-tariff-layer {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
+
+.analytics-presentation-draft-mode-transition .analytics-presentation-tariff-layer {
+  opacity: 0.58;
+}
+
+.analytics-presentation-tariff-layer .analytics-presentation-tariff-kicker {
+  color: #ff8b3d;
+  font-size: clamp(0.58rem, 0.8vw, 0.72rem);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-tariff-layer strong {
+  color: #fff2df;
+  font-size: clamp(0.86rem, 1.15vw, 1.12rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.analytics-presentation-tariff-layer div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.analytics-presentation-tariff-chip {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  border: 1px solid rgba(255, 209, 153, 0.16);
+  border-radius: 11px;
+  padding: 0.42rem 0.3rem;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+.analytics-presentation-tariff-chip small {
+  color: #b9c4d6;
+  font-size: clamp(0.52rem, 0.65vw, 0.65rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.analytics-presentation-tariff-chip b {
+  color: #ffd39a;
+  font-size: clamp(0.72rem, 1vw, 1rem);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.analytics-presentation-status-layer {
+  position: absolute;
+  inset: clamp(0.8rem, 2vw, 1.35rem);
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(0.65rem, 1.4vw, 1rem);
+  border: 1px solid rgba(242, 102, 20, 0.24);
+  border-radius: 18px;
+  padding: clamp(0.8rem, 1.8vw, 1.25rem);
+  background:
+    radial-gradient(circle at 80% 0%, rgba(242, 102, 20, 0.2), transparent 32%),
+    linear-gradient(135deg, rgba(4, 7, 12, 0.88), rgba(10, 15, 25, 0.76));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 24px 54px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.analytics-presentation-draft-mode-architect .analytics-presentation-status-layer {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
+
+.analytics-presentation-draft-mode-transition .analytics-presentation-status-layer {
+  opacity: 0.58;
+}
+
+.analytics-presentation-status-head {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.analytics-presentation-status-head span {
+  color: #ff8b3d;
+  font-size: clamp(0.58rem, 0.8vw, 0.74rem);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-status-head strong {
+  color: #fff2df;
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
+  font-weight: 950;
+  line-height: 1.02;
+}
+
+.analytics-presentation-status-head small {
+  color: #b8c5d6;
+  font-size: clamp(0.68rem, 0.9vw, 0.88rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.analytics-presentation-status-table {
+  display: grid;
+  grid-template-columns: 0.58fr 1.35fr 1.35fr 0.92fr;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.analytics-presentation-status-group {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  border: 1px solid rgba(157, 178, 255, 0.13);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.analytics-presentation-status-group h5 {
+  margin: 0;
+  padding: 0.52rem 0.62rem;
+  color: #fff8ec;
+  font-size: clamp(0.68rem, 0.9vw, 0.9rem);
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.analytics-presentation-status-group div {
+  display: grid;
+  align-content: start;
+  gap: 0.28rem;
+  padding: 0.52rem;
+}
+
+.analytics-presentation-status-group span {
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: clamp(0.3rem, 0.7vw, 0.45rem) 0.38rem;
+  background: rgba(5, 8, 13, 0.58);
+  color: #dfe8f6;
+  font-size: clamp(0.58rem, 0.78vw, 0.8rem);
+  font-weight: 850;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.analytics-presentation-status-start h5 {
+  background: rgba(123, 180, 255, 0.16);
+}
+
+.analytics-presentation-status-builder h5 {
+  background: rgba(242, 102, 20, 0.22);
+}
+
+.analytics-presentation-status-master h5 {
+  background: rgba(232, 235, 226, 0.16);
+}
+
+.analytics-presentation-status-top h5 {
+  background: rgba(255, 199, 91, 0.2);
+}
+
+.analytics-presentation-architect-head {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(0.8rem) scale(0.98);
+  transition: opacity 320ms ease, transform 320ms ease;
+  pointer-events: none;
+}
+
+.analytics-presentation-draft-mode-architect .analytics-presentation-architect-head {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.analytics-presentation-draft-mode-transition .analytics-presentation-architect-head {
+  opacity: 0.82;
+  transform: translateX(18%) translateY(1.5%) scale(0.9);
+}
+
+.analytics-presentation-architect-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255, 220, 176, 0.22), transparent 24%),
+    radial-gradient(circle at 62% 58%, rgba(242, 102, 20, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(3, 5, 8, 0.12), rgba(3, 5, 8, 0.78));
+}
+
+.analytics-presentation-architect-light {
+  position: absolute;
+  top: 0;
+  width: min(30%, 260px);
+  height: 38%;
+  border-radius: 0 0 999px 999px;
+  background:
+    radial-gradient(ellipse at center top, rgba(255, 230, 192, 0.9), rgba(255, 230, 192, 0.18) 38%, transparent 70%);
+  filter: blur(4px);
+  opacity: 0.72;
+}
+
+.analytics-presentation-architect-figure {
+  position: relative;
+  z-index: 1;
+  width: min(34%, 270px);
+  height: min(72%, 360px);
+  min-width: 170px;
+}
+
+.analytics-presentation-architect-head-shape {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  width: 31%;
+  aspect-ratio: 0.78;
+  border-radius: 48% 48% 44% 44%;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(237, 205, 176, 0.72), transparent 28%),
+    linear-gradient(180deg, #3a2217 0%, #0c0706 62%, #030304 100%);
+  box-shadow:
+    0 0 34px rgba(255, 218, 170, 0.16),
+    inset 0 -28px 24px rgba(0, 0, 0, 0.78);
+  transform: translateX(-50%);
+}
+
+.analytics-presentation-architect-neck {
+  position: absolute;
+  left: 50%;
+  top: 37%;
+  width: 15%;
+  height: 17%;
+  border-radius: 38% 38% 12% 12%;
+  background: linear-gradient(180deg, #2b1711, #080606 72%);
+  transform: translateX(-50%);
+}
+
+.analytics-presentation-architect-jacket {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 88%;
+  height: 55%;
+  border-radius: 34% 34% 4% 4%;
+  background:
+    linear-gradient(115deg, transparent 0 33%, rgba(255, 255, 255, 0.54) 34% 45%, transparent 46%),
+    linear-gradient(245deg, transparent 0 33%, rgba(255, 255, 255, 0.48) 34% 45%, transparent 46%),
+    linear-gradient(180deg, #f0ebe1 0%, #8c887f 48%, #171716 100%);
+  box-shadow:
+    inset 0 0 46px rgba(0, 0, 0, 0.52),
+    0 26px 50px rgba(0, 0, 0, 0.55);
+  transform: translateX(-50%);
+}
+
+.analytics-presentation-architect-caption {
+  position: absolute;
+  left: clamp(0.9rem, 2vw, 1.4rem);
+  bottom: clamp(0.8rem, 2vw, 1.3rem);
+  z-index: 2;
+  display: grid;
+  gap: 0.25rem;
+  max-width: min(42%, 360px);
+  border-left: 3px solid rgba(242, 102, 20, 0.78);
+  padding: 0.1rem 0 0.1rem 0.75rem;
+}
+
+.analytics-presentation-architect-caption span {
+  color: #ff8b3d;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-architect-caption strong {
+  color: #fff1dc;
+  font-size: clamp(1.05rem, 1.9vw, 1.7rem);
+  font-weight: 900;
+  line-height: 1.08;
+  text-shadow: 0 0 24px rgba(0, 0, 0, 0.74);
+}
+
+.analytics-presentation-brand-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.analytics-presentation-brand-primary,
+.analytics-presentation-brand-secondary {
+  position: absolute;
+  display: block;
+  filter: drop-shadow(0 0 18px rgba(242, 102, 20, 0.42));
+}
+
+.analytics-presentation-brand-primary {
+  left: 1.1rem;
+  top: 1rem;
+  width: min(34%, 260px);
+}
+
+.analytics-presentation-brand-primary img,
+.analytics-presentation-brand-secondary img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: screen;
+}
+
+.analytics-presentation-brand-secondary {
+  right: 1rem;
+  bottom: 1rem;
+  width: min(19%, 150px);
+  border: 1px solid rgba(242, 102, 20, 0.24);
+  border-radius: 14px;
+  padding: 0.36rem 0.44rem;
+  background: rgba(5, 7, 11, 0.5);
+}
+
+.analytics-presentation-draft-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: end;
+  gap: 0.35rem;
+  padding: 1rem;
+  background: linear-gradient(180deg, transparent 54%, rgba(5, 7, 11, 0.72));
+  pointer-events: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.analytics-presentation-draft-mode-architect .analytics-presentation-draft-overlay {
+  opacity: 0;
+  transform: translateY(0.7rem);
+}
+
+.analytics-presentation-draft-mode-transition .analytics-presentation-draft-overlay {
+  opacity: 0.45;
+}
+
+.analytics-presentation-draft-overlay span,
+.analytics-presentation-draft-overlay small {
+  color: #f26614;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-draft-overlay strong {
+  max-width: 70%;
+  color: #f7fbff;
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
+  line-height: 1.05;
+}
+
+.analytics-presentation-draft-overlay .analytics-presentation-draft-subtitle {
+  width: min(70%, 620px);
+  max-width: none;
+  border-left: 3px solid rgba(242, 102, 20, 0.8);
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  color: #ffd6a3;
+  font-size: clamp(1.15rem, 2vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.15;
+  text-shadow: 0 0 26px rgba(5, 7, 11, 0.82);
+}
+
+.analytics-presentation-prompt {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.9rem 0 0;
+}
+
+.analytics-presentation-prompt textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.analytics-presentation-script {
+  grid-column: 1 / -1;
+}
+
+.analytics-presentation-script-top {
+  margin-bottom: 1rem;
 }
 
 .analytics-agent-notes {
@@ -3674,6 +4335,10 @@
     grid-template-columns: 1fr;
   }
 
+  .analytics-presentation-direction-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .analytics-presentation-slide-list {
     display: flex;
     max-height: none;
@@ -3705,6 +4370,10 @@
 
   .analytics-presentation-script {
     max-height: none;
+  }
+
+  .analytics-presentation-direction-steps {
+    grid-template-columns: 1fr;
   }
 }
 
