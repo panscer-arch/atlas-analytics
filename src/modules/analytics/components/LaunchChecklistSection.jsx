@@ -10,12 +10,13 @@ import MaterialsLinksBoard from "./MaterialsLinksBoard";
 const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
 const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
 const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
+const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
 const DEFAULT_BOARD_ID = "launch";
-const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "materials", "agentTasks", "agentFaq", "ceoPresentation", "terminology"];
+const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "materials", "agentTasks", "agentFaq", "ceoPresentation", "terminology", "marketing"];
 const STATIC_BOARD_META = {
   launch: {
     title: "Задачи запуска",
@@ -48,6 +49,10 @@ const STATIC_BOARD_META = {
   terminology: {
     title: "Терминология",
     description: "Глоссарий Atlas System: термины, понятные описания, категории и комментарии для вычитки.",
+  },
+  marketing: {
+    title: "Маркетинг",
+    description: "Маркетинговый чек-лист: парсеры, рассылки, короткие ролики, почта, адаптация и команда.",
   },
 };
 
@@ -421,6 +426,119 @@ const defaultIdeasChecklistTasks = [
   },
 ];
 
+const defaultMarketingChecklistTasks = [
+  {
+    id: "marketing-youtube-parser",
+    title: "Парсер YouTube с рассылкой",
+    responsible: "Маркетинг / парсеры",
+    assignee: "",
+    comment: "Собрать инструмент для поиска и выгрузки релевантной аудитории/каналов YouTube и сценарий дальнейшей рассылки.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Высокий",
+  },
+  {
+    id: "marketing-telegram-parser",
+    title: "Парсер Telegram с рассылкой",
+    responsible: "Маркетинг / Telegram",
+    assignee: "",
+    comment: "Подготовить парсер Telegram по чатам/каналам и механику аккуратной рассылки без риска блокировок.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Высокий",
+  },
+  {
+    id: "marketing-social-parser",
+    title: "Парсер по социальным сетям",
+    responsible: "Маркетинг / соцсети",
+    assignee: "",
+    comment: "Проработать парсинг по VK, Instagram, LinkedIn, Facebook, Viber, WeChat, Line, KakaoTalk, Snapchat, Discord и другим соцсетям.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Высокий",
+  },
+  {
+    id: "marketing-short-video-cuts",
+    title: "Нарезки коротких роликов по гео",
+    responsible: "Контент / видео",
+    assignee: "",
+    comment: "Организовать нарезки коротких роликов под разные гео; отдельно продумать парсер/поисковик тем и референсов.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Средний",
+  },
+  {
+    id: "marketing-email-campaign",
+    title: "Email-рассылка",
+    responsible: "Email / рассылки",
+    assignee: "",
+    comment: "Собрать базовый сценарий email-рассылки: сегменты, тексты, прогрев, частота, домены и лимиты отправки.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Средний",
+  },
+  {
+    id: "marketing-mailbox-flow",
+    title: "Разобрать почту: приём и отправка",
+    responsible: "Email / инфраструктура",
+    assignee: "",
+    comment: "Настроить рабочую почту: входящие, исходящие, роли, шаблоны ответов, доступы и контроль доставляемости.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Средний",
+  },
+  {
+    id: "marketing-device-adaptation",
+    title: "Адаптация под все устройства",
+    responsible: "Frontend / QA",
+    assignee: "",
+    comment: "Проверить и адаптировать ключевые страницы под desktop, mobile, tablet и разные браузеры.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Высокий",
+  },
+  {
+    id: "marketing-full-functional-check",
+    title: "Проверка всего функционала полностью с ТЗ",
+    responsible: "QA / продукт",
+    assignee: "",
+    comment: "Пройти весь функционал по техническому заданию: сценарии пользователя, формы, вкладки, ссылки, адаптив, роли и ошибки.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Срочно",
+  },
+  {
+    id: "marketing-ai-employee",
+    title: "AI-сотрудник для маркетинга и поддержки",
+    responsible: "AI / автоматизация",
+    assignee: "",
+    comment: "Продумать AI-сотрудника в Telegram/кабинете: ответы, задачи, помощь участникам, сбор лидов и передача задач живым сотрудникам.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Высокий",
+  },
+  {
+    id: "marketing-live-staff-board",
+    title: "Добавление живых сотрудников",
+    responsible: "Команда / CRM",
+    assignee: "",
+    comment: "Сделать возможность добавлять сотрудников с контактами, временем работы, задачами, уровнем доступа и доской по сотрудникам.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Средний",
+  },
+  {
+    id: "marketing-manager-role",
+    title: "Добавить роль «Менеджер»",
+    responsible: "Продукт / роли",
+    assignee: "",
+    comment: "Добавить роль «Менеджер», определить права доступа, зоны ответственности и связь с задачами/сотрудниками.",
+    dueDate: "",
+    status: "Не в работе",
+    priority: "Средний",
+  },
+];
+
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
 }
@@ -516,6 +634,7 @@ function LaunchChecklistSection() {
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
   const [ideaTasks, setIdeaTasks] = useState(() => readStoredTasks(IDEAS_CHECKLIST_STORAGE_KEY, defaultIdeasChecklistTasks));
+  const [marketingTasks, setMarketingTasks] = useState(() => readStoredTasks(MARKETING_CHECKLIST_STORAGE_KEY, defaultMarketingChecklistTasks));
   const [customChecklists, setCustomChecklists] = useState(readStoredCustomChecklists);
   const [newTask, setNewTask] = useState(() => createLaunchTask({ status: "В работе" }));
   const [newChecklistName, setNewChecklistName] = useState("");
@@ -529,13 +648,14 @@ function LaunchChecklistSection() {
   const isAgentFaqBoard = activeBoard === "agentFaq";
   const isCeoPresentationBoard = activeBoard === "ceoPresentation";
   const isTerminologyBoard = activeBoard === "terminology";
+  const isMarketingBoard = activeBoard === "marketing";
   const isStaticContentBoard = isMaterialsBoard || isAgentTasksBoard || isAgentFaqBoard || isCeoPresentationBoard || isTerminologyBoard;
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
-  const visibleTasks = isStaticContentBoard ? [] : isCustomBoard ? activeCustomChecklist.tasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
+  const visibleTasks = isStaticContentBoard ? [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
   const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
   const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
-  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isMarketingBoard ? "Маркетинг" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
   const boardSubtitle = isCustomBoard
     ? "Пользовательский чек-лист с собственным набором задач."
     : isIdeasBoard
@@ -550,6 +670,8 @@ function LaunchChecklistSection() {
       ? "Согласованные слайды CEO-презентации: визуальное ТЗ и текст Архитектора."
     : isTerminologyBoard
       ? "Editable-глоссарий терминов Atlas System по категориям: Web3, циклы, партнерка, DAO, юридика и коммуникации."
+    : isMarketingBoard
+      ? "Маркетинговые задачи с фото: парсеры, рассылки, короткие ролики, почта, адаптация, QA и роли команды."
     : isKnowledgeBaseBoard
       ? "Материалы, которые нужно подготовить и вычитать для базы знаний."
       : "Что нужно закрыть перед стартом";
@@ -567,6 +689,8 @@ function LaunchChecklistSection() {
       ? "Здесь сохраняется approved-сценарий CEO-ролика Atlas System: 13 слайдов, отдельно ТЗ для визуала и речь Архитектора."
     : isTerminologyBoard
       ? "Здесь можно вычитывать терминологию Atlas: название термина, понятное описание, комментарий и спорные формулировки по категориям."
+    : isMarketingBoard
+      ? "Здесь собраны маркетинговые задачи: парсинг YouTube/Telegram/соцсетей, email-рассылки, короткие видео, проверка функционала, AI-сотрудник и роль менеджера."
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
@@ -633,8 +757,8 @@ function LaunchChecklistSection() {
       return;
     }
 
-    const storageKey = isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
-    const setTasks = isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
+    const storageKey = isMarketingBoard ? MARKETING_CHECKLIST_STORAGE_KEY : isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
+    const setTasks = isMarketingBoard ? setMarketingTasks : isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
     updateTasks(storageKey, setTasks, (current) => current.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)));
   }
 
@@ -644,7 +768,7 @@ function LaunchChecklistSection() {
 
     const task = createLaunchTask({
       title,
-      responsible: newTask.responsible.trim() || (isIdeasBoard ? "Идеи / приоритизация" : isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
+      responsible: newTask.responsible.trim() || (isMarketingBoard ? "Маркетинг / рост" : isIdeasBoard ? "Идеи / приоритизация" : isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
       assignee: newTask.assignee.trim(),
       comment: newTask.comment.trim(),
       dueDate: newTask.dueDate,
@@ -669,6 +793,12 @@ function LaunchChecklistSection() {
       return;
     }
 
+    if (isMarketingBoard) {
+      updateTasks(MARKETING_CHECKLIST_STORAGE_KEY, setMarketingTasks, (current) => [task, ...current]);
+      setNewTask(createLaunchTask({ status: "В работе" }));
+      return;
+    }
+
     if (isKnowledgeBaseBoard) {
       updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, (current) => [task, ...current]);
       setNewTask(createLaunchTask({ status: "В работе" }));
@@ -689,8 +819,8 @@ function LaunchChecklistSection() {
       return;
     }
 
-    const storageKey = isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
-    const setTasks = isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
+    const storageKey = isMarketingBoard ? MARKETING_CHECKLIST_STORAGE_KEY : isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
+    const setTasks = isMarketingBoard ? setMarketingTasks : isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
     updateTasks(storageKey, setTasks, (current) => current.filter((task) => task.id !== taskId));
   }
 
@@ -703,6 +833,8 @@ function LaunchChecklistSection() {
       });
     } else if (isIdeasBoard) {
       updateTasks(IDEAS_CHECKLIST_STORAGE_KEY, setIdeaTasks, () => defaultIdeasChecklistTasks);
+    } else if (isMarketingBoard) {
+      updateTasks(MARKETING_CHECKLIST_STORAGE_KEY, setMarketingTasks, () => defaultMarketingChecklistTasks);
     } else if (isKnowledgeBaseBoard) {
       updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, () => defaultKnowledgeBaseChecklistTasks);
     } else {
@@ -880,6 +1012,16 @@ function LaunchChecklistSection() {
           >
             Терминология
           </button>
+          <button
+            type="button"
+            className={`analytics-launch-browser-tab${activeBoard === "marketing" ? " analytics-launch-browser-tab-active" : ""}`}
+            onClick={() => {
+              setActiveBoard("marketing");
+              setEditingCell(null);
+            }}
+          >
+            Маркетинг
+          </button>
           {customChecklists.map((checklist) => (
             <button
               key={checklist.id}
@@ -991,7 +1133,7 @@ function LaunchChecklistSection() {
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Добавить задачу</span>
-            <h3 className="analytics-section-title">{isIdeasBoard ? "Новая идея" : isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
+            <h3 className="analytics-section-title">{isMarketingBoard ? "Новая маркетинговая задача" : isIdeasBoard ? "Новая идея" : isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
             <p className="analytics-page-subtitle mb-0">
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
@@ -1007,7 +1149,7 @@ function LaunchChecklistSection() {
               className="form-control analytics-launch-input"
               value={newTask.title}
               onChange={(event) => setNewTask((current) => ({ ...current, title: event.target.value }))}
-              placeholder={isIdeasBoard ? "Например: AMA-сессия" : isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
+              placeholder={isMarketingBoard ? "Например: парсер Telegram" : isIdeasBoard ? "Например: AMA-сессия" : isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
             />
           </label>
           <label>
@@ -1016,7 +1158,7 @@ function LaunchChecklistSection() {
               className="form-control analytics-launch-input"
               value={newTask.responsible}
               onChange={(event) => setNewTask((current) => ({ ...current, responsible: event.target.value }))}
-              placeholder={isIdeasBoard ? "Маркетинг / продукт" : isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
+              placeholder={isMarketingBoard ? "Маркетинг / парсеры" : isIdeasBoard ? "Маркетинг / продукт" : isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
             />
           </label>
           <label>
