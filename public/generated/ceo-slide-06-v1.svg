@@ -1,0 +1,217 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="warm" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1290 84) rotate(136) scale(980 760)">
+      <stop stop-color="#ff6a00" stop-opacity=".34"/>
+      <stop offset=".45" stop-color="#ff8a00" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#05070b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(255 760) rotate(-30) scale(780 460)">
+      <stop stop-color="#2f7bff" stop-opacity=".19"/>
+      <stop offset="1" stop-color="#05070b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#000000" flood-opacity=".58"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="900" fill="#05070b"/>
+  <rect width="1600" height="900" fill="url(#warm)"/>
+  <rect width="1600" height="900" fill="url(#blue)"/>
+  <g opacity=".22" stroke="#ff7a00" stroke-width="1">
+    <path d="M122 748C280 664 442 634 626 684C822 738 995 686 1168 595C1302 525 1435 498 1542 546"/>
+    <path d="M75 207C246 268 439 250 612 196C800 137 1005 123 1188 199C1320 254 1434 270 1548 235"/>
+    <path d="M168 155V785M374 120V820M580 96V842M786 86V852M992 102V835M1198 126V808M1404 171V756"/>
+  </g>
+  <g opacity=".82">
+    <circle cx="108" cy="754" r="4" fill="#ff7a00"/>
+    <circle cx="416" cy="641" r="3" fill="#ffb347"/>
+    <circle cx="738" cy="711" r="4" fill="#ff7a00"/>
+    <circle cx="1038" cy="655" r="3" fill="#ffb347"/>
+    <circle cx="1296" cy="552" r="4" fill="#ff7a00"/>
+    <circle cx="1485" cy="530" r="3" fill="#ffb347"/>
+  </g>
+  <foreignObject x="50" y="52" width="1500" height="805" filter="url(#shadow)">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="slide">
+      <style>
+        .slide {
+          box-sizing: border-box;
+          width: 1500px;
+          height: 805px;
+          padding: 28px 34px 24px;
+          border: 1px solid rgba(255, 122, 0, .26);
+          border-radius: 34px;
+          background:
+            linear-gradient(135deg, rgba(255, 122, 0, .12), rgba(9, 13, 21, .72) 34%, rgba(12, 15, 20, .92)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M0 32H64M32 0V64' stroke='%23ff7a00' stroke-opacity='.12'/%3E%3C/svg%3E");
+          color: #f4f7fb;
+          font-family: Inter, Arial, Helvetica, sans-serif;
+        }
+        .top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 28px;
+          margin-bottom: 14px;
+        }
+        .kicker {
+          display: block;
+          color: #ff8a1f;
+          font-size: 22px;
+          font-weight: 900;
+          letter-spacing: 8px;
+          text-transform: uppercase;
+        }
+        h1 {
+          margin: 8px 0 0;
+          font-size: 50px;
+          line-height: 1;
+          letter-spacing: 0;
+          font-weight: 950;
+        }
+        .sub {
+          margin-top: 12px;
+          color: #cdd7e6;
+          font-size: 24px;
+          font-weight: 700;
+        }
+        .mark {
+          display: grid;
+          place-items: center;
+          width: 98px;
+          height: 98px;
+          border-radius: 30px;
+          background: rgba(255, 122, 0, .10);
+          border: 1px solid rgba(255, 122, 0, .34);
+          box-shadow: inset 0 0 44px rgba(255, 122, 0, .18);
+        }
+        .orb {
+          position: relative;
+          width: 54px;
+          height: 54px;
+          border-radius: 50%;
+          background: #ff5b00;
+          box-shadow: 0 0 34px rgba(255, 91, 0, .55);
+        }
+        .orb span {
+          position: absolute;
+          width: 15px;
+          height: 28px;
+          border-radius: 999px;
+          background: #ffb21c;
+          left: 20px;
+          top: -30px;
+          transform-origin: 7.5px 57px;
+        }
+        .orb span:nth-child(2) { transform: rotate(60deg); }
+        .orb span:nth-child(3) { transform: rotate(120deg); }
+        .orb span:nth-child(4) { transform: rotate(180deg); }
+        .orb span:nth-child(5) { transform: rotate(240deg); }
+        .orb span:nth-child(6) { transform: rotate(300deg); }
+        .table-wrap {
+          overflow: hidden;
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, .24);
+          background: rgba(241, 247, 255, .96);
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          color: #111821;
+          table-layout: fixed;
+          font-size: 21px;
+          font-weight: 850;
+        }
+        th, td {
+          border: 2px solid rgba(13, 23, 31, .86);
+          text-align: center;
+          padding: 4px 8px;
+          line-height: 1.05;
+          white-space: nowrap;
+        }
+        thead th {
+          height: 61px;
+          background: #f1f3f6;
+          font-size: 20px;
+          font-weight: 950;
+          white-space: normal;
+        }
+        tbody th {
+          font-weight: 950;
+        }
+        tbody tr { height: 25px; }
+        .start, .builder-a { background: #cfe0e5; }
+        .builder-b { background: #d8ecd3; }
+        .master { background: #c9dbf4; }
+        .elite { background: #d9d2e8; }
+        .note {
+          display: flex;
+          justify-content: space-between;
+          gap: 30px;
+          margin-top: 14px;
+          color: #d5deeb;
+          font-size: 21px;
+          font-weight: 750;
+        }
+        .note b { color: #ff8a1f; }
+      </style>
+      <div class="top">
+        <div>
+          <span class="kicker">Atlas System</span>
+          <h1>Партнёрская система</h1>
+          <div class="sub">Реферальная программа для MLM-партнёров</div>
+        </div>
+        <div class="mark" aria-hidden="true">
+          <div class="orb">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <colgroup>
+            <col style="width: 17%"/>
+            <col style="width: 14%"/>
+            <col style="width: 21%"/>
+            <col style="width: 17%"/>
+            <col style="width: 15%"/>
+            <col style="width: 16%"/>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Статус</th>
+              <th>Личные<br/>циклы, $</th>
+              <th>1-я линия + 50%<br/>2-й линии, $</th>
+              <th>Объём<br/>в глубину, $</th>
+              <th>Бонус<br/>дельты, %</th>
+              <th>Matching<br/>начиная с Master, %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="start"><th>Start</th><td>10</td><td>не требуется</td><td>не требуется</td><td>15</td><td>—</td></tr>
+            <tr class="builder-a"><th>Builder - 1</th><td>50</td><td>100</td><td>не требуется</td><td>18</td><td>—</td></tr>
+            <tr class="builder-a"><th>Builder - 2</th><td>100</td><td>300</td><td>1.000</td><td>21</td><td>—</td></tr>
+            <tr class="builder-b"><th>Builder - 3</th><td>200</td><td>700</td><td>2.000</td><td>24</td><td>—</td></tr>
+            <tr class="builder-b"><th>Builder - 4</th><td>300</td><td>1.200</td><td>4.000</td><td>27</td><td>—</td></tr>
+            <tr class="builder-b"><th>Builder - 5</th><td>500</td><td>2.000</td><td>7.000</td><td>30</td><td>—</td></tr>
+            <tr class="builder-b"><th>Builder - 6</th><td>700</td><td>3.000</td><td>12.000</td><td>33</td><td>—</td></tr>
+            <tr class="builder-b"><th>Builder - 7</th><td>1.000</td><td>4.500</td><td>18.000</td><td>36</td><td>—</td></tr>
+            <tr class="master"><th>Master - 1</th><td>1.500</td><td>7.000</td><td>28.000</td><td>38</td><td>5</td></tr>
+            <tr class="master"><th>Master - 2</th><td>2.000</td><td>10.000</td><td>40.000</td><td>40</td><td>7</td></tr>
+            <tr class="master"><th>Master - 3</th><td>3.000</td><td>17.000</td><td>70.000</td><td>42</td><td>9</td></tr>
+            <tr class="master"><th>Master - 4</th><td>4.000</td><td>25.000</td><td>120.000</td><td>44</td><td>11</td></tr>
+            <tr class="master"><th>Master - 5</th><td>5.000</td><td>35.000</td><td>200.000</td><td>46</td><td>13</td></tr>
+            <tr class="master"><th>Master - 6</th><td>6.000</td><td>45.000</td><td>300.000</td><td>48</td><td>15</td></tr>
+            <tr class="master"><th>Master - 7</th><td>7.000</td><td>60.000</td><td>450.000</td><td>50</td><td>17</td></tr>
+            <tr class="elite"><th>Strategist</th><td>8.000</td><td>80.000</td><td>600.000</td><td>52,5</td><td>19</td></tr>
+            <tr class="elite"><th>Ambassador</th><td>10.000</td><td>100.000</td><td>800.000</td><td>55</td><td>21</td></tr>
+            <tr class="elite"><th>Director</th><td>12.000</td><td>120.000</td><td>1.100.000</td><td>57,5</td><td>23</td></tr>
+            <tr class="elite"><th>Executive</th><td>15.000</td><td>150.000</td><td>1.500.000</td><td>60</td><td>25</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">
+        <span><b>Builders</b> строят фундамент. <b>Masters</b> управляют ростом. <b>Elite</b> отвечает за стратегию и влияние.</span>
+        <span>Slide 06</span>
+      </div>
+    </div>
+  </foreignObject>
+</svg>

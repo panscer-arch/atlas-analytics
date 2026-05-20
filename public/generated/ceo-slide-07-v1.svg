@@ -1,0 +1,226 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="core" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(815 468) rotate(90) scale(330 520)">
+      <stop stop-color="#ff7a00" stop-opacity=".44"/>
+      <stop offset=".42" stop-color="#ff9a1f" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#05070b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="leftGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(205 735) rotate(-25) scale(660 420)">
+      <stop stop-color="#2d76ff" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#05070b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="island" x1="545" y1="520" x2="1035" y2="315" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111a26"/>
+      <stop offset=".54" stop-color="#1c211f"/>
+      <stop offset="1" stop-color="#ff7a00"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#000" flood-opacity=".58"/>
+    </filter>
+    <filter id="orangeGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1600" height="900" fill="#05070b"/>
+  <rect width="1600" height="900" fill="url(#core)"/>
+  <rect width="1600" height="900" fill="url(#leftGlow)"/>
+  <g opacity=".18" stroke="#8ca8c8" stroke-width="1">
+    <path d="M86 245C230 212 378 225 492 274C622 330 745 330 884 282C1022 235 1186 216 1510 260"/>
+    <path d="M96 612C252 565 417 569 564 615C742 671 929 660 1112 588C1266 528 1402 528 1514 560"/>
+    <path d="M132 448C290 396 480 382 642 424C812 468 1008 456 1178 407C1315 367 1430 382 1518 421"/>
+    <path d="M120 150L1488 150M120 250L1488 250M120 350L1488 350M120 450L1488 450M120 550L1488 550M120 650L1488 650M120 750L1488 750"/>
+    <path d="M190 112V790M354 112V790M518 112V790M682 112V790M846 112V790M1010 112V790M1174 112V790M1338 112V790"/>
+  </g>
+  <g opacity=".58" stroke="#ff7a00" stroke-width="2">
+    <path d="M178 594C310 512 454 480 614 505C704 519 760 546 816 548C882 550 942 508 1038 452C1178 370 1318 344 1450 390"/>
+    <path d="M206 333C365 403 506 412 662 373C804 338 915 295 1071 326C1214 354 1326 420 1438 466"/>
+  </g>
+  <g filter="url(#orangeGlow)">
+    <circle cx="183" cy="594" r="6" fill="#ff8a1f"/>
+    <circle cx="356" cy="512" r="5" fill="#ffb547"/>
+    <circle cx="614" cy="505" r="6" fill="#ff8a1f"/>
+    <circle cx="816" cy="548" r="7" fill="#ff7a00"/>
+    <circle cx="1038" cy="452" r="6" fill="#ffb547"/>
+    <circle cx="1256" cy="361" r="5" fill="#ff8a1f"/>
+    <circle cx="1450" cy="390" r="6" fill="#ff7a00"/>
+    <circle cx="312" cy="386" r="5" fill="#ffb547"/>
+    <circle cx="662" cy="373" r="6" fill="#ff8a1f"/>
+    <circle cx="1071" cy="326" r="6" fill="#ffb547"/>
+    <circle cx="1326" cy="420" r="5" fill="#ff8a1f"/>
+  </g>
+  <foreignObject x="72" y="58" width="1456" height="784" filter="url(#softShadow)">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="slide">
+      <style>
+        .slide {
+          box-sizing: border-box;
+          width: 1456px;
+          height: 784px;
+          border: 1px solid rgba(255, 122, 0, .28);
+          border-radius: 34px;
+          padding: 42px 46px 40px;
+          background:
+            radial-gradient(circle at 72% 38%, rgba(255, 122, 0, .18), transparent 31%),
+            linear-gradient(135deg, rgba(16, 23, 35, .86), rgba(6, 9, 14, .74) 46%, rgba(16, 12, 10, .88));
+          color: #f5f8ff;
+          font-family: Inter, Arial, Helvetica, sans-serif;
+          overflow: hidden;
+        }
+        .head {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 30px;
+        }
+        .kicker {
+          display: block;
+          color: #ff8a1f;
+          font-size: 25px;
+          font-weight: 950;
+          letter-spacing: 9px;
+          text-transform: uppercase;
+        }
+        h1 {
+          margin: 14px 0 0;
+          max-width: 760px;
+          font-size: 76px;
+          line-height: .95;
+          letter-spacing: 0;
+          font-weight: 950;
+        }
+        .subtitle {
+          max-width: 720px;
+          margin-top: 20px;
+          color: #cfdae8;
+          font-size: 31px;
+          line-height: 1.18;
+          font-weight: 780;
+        }
+        .badge {
+          min-width: 154px;
+          border: 1px solid rgba(255, 122, 0, .34);
+          border-radius: 24px;
+          padding: 18px 22px;
+          background: rgba(255, 122, 0, .10);
+          color: #ffd3a0;
+          text-align: center;
+          font-size: 24px;
+          font-weight: 900;
+        }
+        .scene {
+          position: relative;
+          height: 375px;
+          margin-top: 26px;
+        }
+        .island {
+          position: absolute;
+          left: 50%;
+          top: 44%;
+          width: 540px;
+          height: 210px;
+          transform: translate(-50%, -50%) perspective(700px) rotateX(58deg) rotateZ(-7deg);
+          border-radius: 42% 58% 44% 56%;
+          background:
+            radial-gradient(circle at 48% 45%, rgba(255, 138, 31, .62), transparent 20%),
+            linear-gradient(135deg, #111a26, #202b2d 52%, #ff7a00);
+          border: 2px solid rgba(255, 190, 102, .45);
+          box-shadow: 0 0 62px rgba(255, 122, 0, .30), inset 0 0 90px rgba(0, 0, 0, .46);
+        }
+        .island:before, .island:after {
+          content: "";
+          position: absolute;
+          inset: 18%;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 216, 164, .34);
+        }
+        .island:after {
+          inset: 33%;
+          background: rgba(255, 122, 0, .28);
+          box-shadow: 0 0 34px rgba(255, 122, 0, .52);
+        }
+        .line {
+          position: absolute;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, rgba(255, 122, 0, .86), transparent);
+          transform-origin: center;
+        }
+        .l1 { left: 120px; top: 104px; width: 460px; transform: rotate(13deg); }
+        .l2 { right: 110px; top: 112px; width: 480px; transform: rotate(-16deg); }
+        .l3 { left: 165px; bottom: 84px; width: 420px; transform: rotate(-10deg); }
+        .l4 { right: 150px; bottom: 92px; width: 430px; transform: rotate(12deg); }
+        .node {
+          position: absolute;
+          width: 74px;
+          height: 74px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 180, 70, .45);
+          background: radial-gradient(circle, rgba(255, 122, 0, .32), rgba(7, 11, 17, .82));
+          box-shadow: 0 0 28px rgba(255, 122, 0, .22);
+        }
+        .n1 { left: 105px; top: 54px; }
+        .n2 { right: 135px; top: 74px; }
+        .n3 { left: 188px; bottom: 35px; }
+        .n4 { right: 212px; bottom: 46px; }
+        .n5 { left: 608px; top: 15px; }
+        .chips {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+        }
+        .chip {
+          min-height: 118px;
+          border: 1px solid rgba(255, 255, 255, .13);
+          border-radius: 24px;
+          padding: 20px 20px 18px;
+          background: rgba(255, 255, 255, .055);
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .03);
+        }
+        .chip span {
+          display: block;
+          color: #ff9c38;
+          font-size: 18px;
+          font-weight: 950;
+          letter-spacing: 5px;
+          text-transform: uppercase;
+        }
+        .chip strong {
+          display: block;
+          margin-top: 10px;
+          color: #f6f8ff;
+          font-size: 31px;
+          line-height: 1;
+          font-weight: 950;
+        }
+      </style>
+      <div class="head">
+        <div>
+          <span class="kicker">Atlas System</span>
+          <h1>Миссия Atlas</h1>
+          <div class="subtitle">Международное движение прозрачной цифровой взаимопомощи</div>
+        </div>
+        <div class="badge">Slide 07</div>
+      </div>
+      <div class="scene" aria-hidden="true">
+        <div class="line l1"></div>
+        <div class="line l2"></div>
+        <div class="line l3"></div>
+        <div class="line l4"></div>
+        <div class="node n1"></div>
+        <div class="node n2"></div>
+        <div class="node n3"></div>
+        <div class="node n4"></div>
+        <div class="node n5"></div>
+        <div class="island"></div>
+      </div>
+      <div class="chips">
+        <div class="chip"><span>01</span><strong>Свобода</strong></div>
+        <div class="chip"><span>02</span><strong>Спокойствие</strong></div>
+        <div class="chip"><span>03</span><strong>Сообщество</strong></div>
+        <div class="chip"><span>04</span><strong>Взаимопомощь</strong></div>
+      </div>
+    </div>
+  </foreignObject>
+</svg>
