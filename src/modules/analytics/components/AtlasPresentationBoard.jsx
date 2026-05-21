@@ -37,7 +37,7 @@ const PARTNER_STATUS_TABLE_ROWS = [
   { status: "Executive", tone: "elite", personal: "15.000", line: "150.000", depth: "1.500.000", bonus: "60", matching: "25" },
 ];
 
-const PRESENTATION_SLIDES = [
+export const PRESENTATION_SLIDES = [
   {
     id: "slide-01",
     number: "01",

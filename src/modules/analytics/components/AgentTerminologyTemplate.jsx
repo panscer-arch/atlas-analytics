@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const AGENT_TERMINOLOGY_STORAGE_KEY = "atlas.analytics.agentTerminologyTemplate.v2";
+export const AGENT_TERMINOLOGY_STORAGE_KEY = "atlas.analytics.agentTerminologyTemplate.v2";
 
 const defaultTerminologySections = [
   {
@@ -112,7 +112,7 @@ const defaultTerminologySections = [
   })),
 }));
 
-const defaultTerminologyTemplate = { sections: defaultTerminologySections };
+export const defaultTerminologyTemplate = { sections: defaultTerminologySections };
 const TERMINOLOGY_SECTION_DESCRIPTIONS = {
   core: "Главные слова, которыми описываем Atlas, участника, регистрацию и личный кабинет.",
   web3: "Кошелёк, сеть, токены, gas и проверка транзакций в blockchain.",

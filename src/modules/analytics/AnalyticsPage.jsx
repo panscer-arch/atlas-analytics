@@ -9,6 +9,10 @@ import AnalyticsScenarios from "./components/AnalyticsScenarios";
 import AnalyticsPriorityActions from "./components/AnalyticsPriorityActions";
 import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSection";
 import AnalyticsBoardEmbed from "./components/AnalyticsBoardEmbed";
+import { AGENT_FAQ_STORAGE_KEY, defaultFaqTemplate } from "./components/AgentFaqTemplate";
+import { AGENT_KNOWLEDGE_STORAGE_KEY, defaultKnowledgeTemplate } from "./components/AgentKnowledgeTemplate";
+import { AGENT_TERMINOLOGY_STORAGE_KEY, defaultTerminologyTemplate } from "./components/AgentTerminologyTemplate";
+import { PRESENTATION_SLIDES } from "./components/AtlasPresentationBoard";
 import LaunchChecklistSection, {
   IDEAS_CHECKLIST_STORAGE_KEY,
   KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY,
@@ -19,6 +23,8 @@ import LaunchChecklistSection, {
   defaultLaunchChecklistTasks,
   defaultMarketingChecklistTasks,
 } from "./components/LaunchChecklistSection";
+import { MATERIALS_STORAGE_KEY, defaultMaterialItems } from "./components/MaterialsLinksBoard";
+import { VIDEO_SCRIPTS_STORAGE_KEY, defaultVideoScripts } from "./components/VideoScriptsBoard";
 import ActivationSection from "./components/ActivationSection";
 import TabSummary from "./components/TabSummary";
 import SectionHeading from "./components/SectionHeading";
@@ -96,6 +102,25 @@ function buildCrmTaskStats(source) {
     inWork: tasks.filter((task) => task?.status === "В работе").length,
     left: Math.max(tasks.length - getDoneTaskCount(tasks), 0),
   }));
+}
+
+function countTemplateRows(template, fallbackTemplate) {
+  const source = template?.sections ? template : fallbackTemplate;
+  return (source.sections || []).reduce((sum, section) => sum + (Array.isArray(section.rows) ? section.rows.length : 0), 0);
+}
+
+function buildCrmContentStats(source = {}) {
+  const materials = Array.isArray(source.materials) ? source.materials : defaultMaterialItems;
+  const videos = Array.isArray(source.videos) ? source.videos : defaultVideoScripts;
+
+  return [
+    ["Материалы", materials.length, "файлов", "success"],
+    ["Параметры", countTemplateRows(source.knowledge, defaultKnowledgeTemplate), "параметров", "accent"],
+    ["FAQ", countTemplateRows(source.faq, defaultFaqTemplate), "вопросов", "success"],
+    ["CEO", PRESENTATION_SLIDES.length, "слайдов", "accent"],
+    ["Ролики", videos.length, "роликов", "success"],
+    ["Термины", countTemplateRows(source.terminology, defaultTerminologyTemplate), "терминов", "accent"],
+  ];
 }
 
 function buildDashboardLiveFeed(cycleTypes = [], direction = "incoming") {
@@ -268,6 +293,7 @@ function AnalyticsPage() {
     ideas: defaultIdeasChecklistTasks,
     knowledgeBase: defaultKnowledgeBaseChecklistTasks,
   }));
+  const [crmContentStats, setCrmContentStats] = useState(() => buildCrmContentStats());
   const { data, isLoading } = useAnalyticsData();
 
   useEffect(() => {
@@ -287,6 +313,26 @@ function AnalyticsPage() {
         ideas: Array.isArray(ideas) ? ideas : defaultIdeasChecklistTasks,
         knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : defaultKnowledgeBaseChecklistTasks,
       }));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([
+      loadServerContent(MATERIALS_STORAGE_KEY),
+      loadServerContent(AGENT_KNOWLEDGE_STORAGE_KEY),
+      loadServerContent(AGENT_FAQ_STORAGE_KEY),
+      loadServerContent(VIDEO_SCRIPTS_STORAGE_KEY),
+      loadServerContent(AGENT_TERMINOLOGY_STORAGE_KEY),
+    ]).then(([materials, knowledge, faq, videos, terminology]) => {
+      if (!isMounted) return;
+
+      setCrmContentStats(buildCrmContentStats({ materials, knowledge, faq, videos, terminology }));
     });
 
     return () => {
@@ -893,14 +939,6 @@ function AnalyticsPage() {
       ["Кошельки", walletConnections, "success"],
       ["Активации", cycleActivations, "success"],
     ];
-    const contentStorageSignals = [
-      ["Материалы", "links", "success"],
-      ["Параметры", "facts", "accent"],
-      ["FAQ", "support", "success"],
-      ["CEO", "9 слайдов", "accent"],
-      ["Ролики", "scripts", "success"],
-      ["Термины", "glossary", "accent"],
-    ];
     const taskTotals = crmTaskStats.reduce(
       (accumulator, item) => ({
         total: accumulator.total + item.total,
@@ -926,7 +964,7 @@ function AnalyticsPage() {
       {
         id: "analytics",
         kicker: "Аналитика",
-        title: formatCurrency(contractNetFlowToday),
+        title: formatCurrency(dashboardPoolValue),
         text: "Пульс денег, трафика, продуктов и структуры.",
         meta: "BI-центр",
         action: "Открыть аналитику",
@@ -985,7 +1023,7 @@ function AnalyticsPage() {
                   </div>
                   <div className="analytics-crm-analytics-main">
                     <div>
-                      <span className="analytics-crm-analytics-label">Чистый поток дня</span>
+                      <span className="analytics-crm-analytics-label">Пул системы</span>
                       <strong className={contractNetFlowToday >= 0 ? "is-positive" : "is-negative"}>{card.title}</strong>
                     </div>
                     <button
@@ -1032,7 +1070,6 @@ function AnalyticsPage() {
                   </div>
                   <div className="analytics-crm-tasks-main">
                     <div>
-                      <span className="analytics-crm-analytics-label">Task control</span>
                       <strong>{taskTotals.inWork} в работе</strong>
                     </div>
                     <button type="button" onClick={() => setActiveTab("tasks")}>
@@ -1075,7 +1112,6 @@ function AnalyticsPage() {
                   </div>
                   <div className="analytics-crm-content-main">
                     <div>
-                      <span className="analytics-crm-analytics-label">Storage core</span>
                       <strong>{card.title}</strong>
                     </div>
                     <button type="button" onClick={() => setActiveTab("content")}>
@@ -1088,10 +1124,11 @@ function AnalyticsPage() {
                     <b />
                   </div>
                   <div className="analytics-crm-content-grid">
-                    {contentStorageSignals.map(([label, value, tone]) => (
+                    {crmContentStats.map(([label, value, unit, tone]) => (
                       <div key={label} className={`analytics-crm-content-cell is-${tone}`}>
                         <span>{label}</span>
                         <b>{value}</b>
+                        <small>{unit}</small>
                       </div>
                     ))}
                   </div>
@@ -1107,7 +1144,6 @@ function AnalyticsPage() {
                   </div>
                   <div className="analytics-crm-board-main">
                     <div>
-                      <span className="analytics-crm-analytics-label">Board control</span>
                       <strong>Доска задач</strong>
                     </div>
                     <button type="button" onClick={() => setActiveTab("crmBoard")}>

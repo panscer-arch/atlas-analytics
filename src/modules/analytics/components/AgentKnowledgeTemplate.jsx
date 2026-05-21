@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const AGENT_KNOWLEDGE_STORAGE_KEY = "atlas.analytics.agentKnowledgeTemplate.v1";
+export const AGENT_KNOWLEDGE_STORAGE_KEY = "atlas.analytics.agentKnowledgeTemplate.v1";
 
-const defaultKnowledgeSections = [
+export const defaultKnowledgeSections = [
   {
     id: "general",
     title: "ОБЩАЯ ИНФОРМАЦИЯ",
@@ -324,7 +324,8 @@ const defaultNotes = [
   },
 ];
 
-const defaultTemplate = { sections: defaultKnowledgeSections, notes: defaultNotes };
+export const defaultKnowledgeTemplate = { sections: defaultKnowledgeSections, notes: defaultNotes };
+const defaultTemplate = defaultKnowledgeTemplate;
 
 function hydrateRows(defaultRows, savedRows = []) {
   const savedRowsById = new Map(savedRows.map((row) => [row.id, row]));

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const VIDEO_SCRIPTS_STORAGE_KEY = "atlas.analytics.videoScripts.v2";
+export const VIDEO_SCRIPTS_STORAGE_KEY = "atlas.analytics.videoScripts.v2";
 
-const defaultVideoScripts = [
+export const defaultVideoScripts = [
   {
     id: "old-world-common-audience",
     title: "Atlas System — Когда старый мир начинает рушиться",

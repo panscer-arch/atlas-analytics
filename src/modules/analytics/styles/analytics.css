@@ -1633,11 +1633,12 @@
   display: block;
   margin-top: 0.35rem;
   color: #f7fbff;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   line-height: 1.1;
 }
 
-.analytics-crm-tasks-chip small {
+.analytics-crm-tasks-chip small,
+.analytics-crm-content-cell small {
   display: block;
   margin-top: 0.28rem;
   color: #8ea2bf;

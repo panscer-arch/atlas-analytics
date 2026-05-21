@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const AGENT_FAQ_STORAGE_KEY = "atlas.analytics.agentFaqTemplate.v1";
+export const AGENT_FAQ_STORAGE_KEY = "atlas.analytics.agentFaqTemplate.v1";
 
 const defaultFaqSections = [
   {
@@ -186,7 +186,7 @@ const defaultFaqSections = [
   })),
 }));
 
-const defaultFaqTemplate = { sections: defaultFaqSections };
+export const defaultFaqTemplate = { sections: defaultFaqSections };
 const FAQ_SECTION_DESCRIPTIONS = {
   start: "Первый вход, регистрация, подключение MetaMask и базовые проблемы на старте.",
   wallet: "Кошелёк, сеть BSC, BNB на газ, безопасность seed-фразы и базовые ошибки MetaMask.",

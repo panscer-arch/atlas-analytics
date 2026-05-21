@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const MATERIALS_STORAGE_KEY = "atlas.analytics.materialLinks.v1";
+export const MATERIALS_STORAGE_KEY = "atlas.analytics.materialLinks.v1";
 
 const MATERIAL_CATEGORIES = [
   { id: "comments", title: "Комментарий" },
@@ -24,7 +24,7 @@ const CATEGORY_ALIASES = {
   marketing: ["маркетинг", "реклама", "баннеры"],
 };
 
-const defaultMaterialItems = [
+export const defaultMaterialItems = [
   {
     id: "comments-drafts",
     category: "comments",
