@@ -30,6 +30,10 @@ function AnalyticsHeader({ onOpenCharts, onOpenNotes, onOpenTasks, onToggleBoard
         </p>
       </div>
 
+      <div className="analytics-header-center">
+        <AnalyticsDateTime />
+      </div>
+
       <div className="analytics-header-side">
         {showAdmins ? (
           <div className="analytics-header-admins">
@@ -58,7 +62,6 @@ function AnalyticsHeader({ onOpenCharts, onOpenNotes, onOpenTasks, onToggleBoard
             Графики
           </button>
         </div>
-        <AnalyticsDateTime compact />
       </div>
     </div>
   );
