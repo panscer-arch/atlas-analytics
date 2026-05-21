@@ -161,11 +161,14 @@ function AtlasPresentationBoard() {
   const [activeSlideId, setActiveSlideId] = useState(PRESENTATION_SLIDES[0].id);
   const [visualDrafts, setVisualDrafts] = useState({});
   const [scriptDrafts, setScriptDrafts] = useState(readStoredScriptDrafts);
+  const [scriptEditMode, setScriptEditMode] = useState({});
+  const [visualEditMode, setVisualEditMode] = useState({});
   const [draftSeed, setDraftSeed] = useState(1);
   const [draftNotes, setDraftNotes] = useState("");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedBrief, setCopiedBrief] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
+  const [copiedDrafts, setCopiedDrafts] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewMode, setPreviewMode] = useState("slide");
   const activeSlide = PRESENTATION_SLIDES.find((slide) => slide.id === activeSlideId) || PRESENTATION_SLIDES[0];
@@ -173,6 +176,9 @@ function AtlasPresentationBoard() {
   const activeScript = scriptDrafts[activeSlide.id] || activeSlide.script;
   const isVisualChanged = Boolean(visualDrafts[activeSlide.id] && visualDrafts[activeSlide.id] !== activeSlide.visual);
   const isScriptChanged = Boolean(scriptDrafts[activeSlide.id] && scriptDrafts[activeSlide.id] !== activeSlide.script);
+  const isScriptEditing = Boolean(scriptEditMode[activeSlide.id]);
+  const isVisualEditing = Boolean(visualEditMode[activeSlide.id]);
+  const localDraftCount = Object.keys(scriptDrafts).length + Object.keys(visualDrafts).length;
   const activeScriptRows = useMemo(() => {
     const estimatedRows = activeScript.split("\n").reduce((total, line) => total + Math.max(1, Math.ceil(line.length / 92)), 0);
     return Math.max(18, estimatedRows + 2);
@@ -241,6 +247,24 @@ function AtlasPresentationBoard() {
       persistScriptDrafts(next);
       return next;
     });
+  }
+
+  function exportLocalDrafts() {
+    const payload = PRESENTATION_SLIDES.reduce((result, slide) => {
+      const script = scriptDrafts[slide.id];
+      const visual = visualDrafts[slide.id];
+      if (script || visual) {
+        result[slide.id] = {
+          number: slide.number,
+          title: slide.title,
+          script: script || slide.script,
+          visual: visual || slide.visual,
+        };
+      }
+      return result;
+    }, {});
+
+    copyText(JSON.stringify(payload, null, 2), setCopiedDrafts);
   }
 
   function copyText(text, onCopied) {
@@ -313,11 +337,26 @@ function AtlasPresentationBoard() {
             </div>
           </div>
 
+          {localDraftCount > 0 ? (
+            <div className="analytics-presentation-local-warning">
+              <div>
+                <strong>Есть локальные правки: {localDraftCount}</strong>
+                <span>Они сохранены только в этом браузере. Для прода экспортируйте правки и зафиксируйте их в коде.</span>
+              </div>
+              <button type="button" onClick={exportLocalDrafts}>
+                {copiedDrafts ? "Правки скопированы" : "Скопировать все правки"}
+              </button>
+            </div>
+          ) : null}
+
           <article className="analytics-presentation-card analytics-presentation-script analytics-presentation-script-top">
             <div className="analytics-presentation-brief-head">
               <span className="analytics-kicker">Текст Архитектора</span>
               <div>
-                {isScriptChanged ? <strong>изменено локально</strong> : null}
+                {isScriptChanged ? <strong>локальный черновик, не прод</strong> : null}
+                <button type="button" onClick={() => setScriptEditMode((current) => ({ ...current, [activeSlide.id]: !current[activeSlide.id] }))}>
+                  {isScriptEditing ? "Готово" : "Редактировать"}
+                </button>
                 <button type="button" onClick={() => copyText(activeScript, setCopiedScript)}>
                   {copiedScript ? "Скопировано" : "Скопировать"}
                 </button>
@@ -330,6 +369,7 @@ function AtlasPresentationBoard() {
               className="form-control analytics-presentation-script-input"
               value={activeScript}
               onChange={(event) => updateScript(event.target.value)}
+              readOnly={!isScriptEditing}
               rows={activeScriptRows}
             />
           </article>
@@ -339,7 +379,10 @@ function AtlasPresentationBoard() {
               <div className="analytics-presentation-brief-head">
                 <span className="analytics-kicker">ТЗ для визуального отображения</span>
                 <div>
-                  {isVisualChanged ? <strong>изменено локально</strong> : null}
+                  {isVisualChanged ? <strong>локальный черновик, не прод</strong> : null}
+                  <button type="button" onClick={() => setVisualEditMode((current) => ({ ...current, [activeSlide.id]: !current[activeSlide.id] }))}>
+                    {isVisualEditing ? "Готово" : "Редактировать"}
+                  </button>
                   <button type="button" onClick={() => copyText(activeVisual, setCopiedBrief)}>
                     {copiedBrief ? "Скопировано" : "Скопировать"}
                   </button>
@@ -352,6 +395,7 @@ function AtlasPresentationBoard() {
                 className="form-control analytics-presentation-visual-input"
                 value={activeVisual}
                 onChange={(event) => updateVisual(event.target.value)}
+                readOnly={!isVisualEditing}
                 rows="4"
               />
             </article>
