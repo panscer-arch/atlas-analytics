@@ -7,7 +7,7 @@
     <style>
       :root {
         color-scheme: light;
-        --bg: #fffaf4;
+        --bg: #ffffff;
         --paper: #ffffff;
         --paper-soft: #fff6ed;
         --ink: #1d0704;
@@ -27,8 +27,10 @@
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--ink);
         background:
-          radial-gradient(circle at 72% 12%, rgba(255, 106, 0, 0.09), transparent 30%),
-          linear-gradient(180deg, #ffffff 0%, var(--bg) 50%, #ffffff 100%);
+          linear-gradient(rgba(255, 106, 0, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 106, 0, 0.035) 1px, transparent 1px),
+          linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+        background-size: 44px 44px, 44px 44px, auto;
       }
 
       a { color: inherit; }
@@ -63,13 +65,42 @@
       }
 
       .mark {
+        position: relative;
         width: 42px;
         height: 42px;
         border-radius: 50%;
-        background:
-          radial-gradient(circle, var(--orange) 0 30%, transparent 31%),
-          conic-gradient(from 0deg, #ff7a18, #ffb15f, #ff6a00, #ffb15f, #ff7a18);
+        background: transparent;
         box-shadow: 0 14px 34px rgba(255, 106, 0, 0.25);
+      }
+
+      .mark::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--orange);
+        transform: translate(-50%, -50%);
+      }
+
+      .mark::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: #ff8a00;
+        transform: translateX(-50%);
+        box-shadow:
+          17px 8px 0 #ff9f23,
+          18px 26px 0 #ff7a18,
+          0 34px 0 #ffb13e,
+          -18px 26px 0 #ff8b00,
+          -17px 8px 0 #ffb13e;
       }
 
       .nav {
@@ -92,7 +123,7 @@
         gap: 10px;
         min-height: 52px;
         border: 1px solid rgba(255, 106, 0, 0.3);
-        border-radius: 14px;
+        border-radius: 12px;
         padding: 0 22px;
         background: #fff;
         color: var(--ink);
@@ -113,7 +144,7 @@
         gap: 36px;
         align-items: center;
         min-height: calc(100vh - 84px);
-        padding: 48px 0 34px;
+        padding: 48px 0 8px;
       }
 
       .pill {
@@ -211,10 +242,10 @@
 
       .visual-card {
         border: 1px solid var(--line);
-        border-radius: 26px;
+        border-radius: 20px;
         padding: 14px;
         background: rgba(255, 255, 255, 0.72);
-        box-shadow: 0 30px 70px rgba(60, 28, 8, 0.1);
+        box-shadow: 0 18px 44px rgba(60, 28, 8, 0.08);
       }
 
       .video {
@@ -223,16 +254,52 @@
         overflow: hidden;
         border-radius: 18px;
         background:
-          radial-gradient(circle at 24% 40%, rgba(255, 106, 0, 0.3), transparent 22%),
+          radial-gradient(circle at 22% 56%, rgba(255, 106, 0, 0.3), transparent 18%),
+          linear-gradient(rgba(255, 106, 0, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 106, 0, 0.06) 1px, transparent 1px),
           linear-gradient(135deg, #0b0d10, #17191f);
+        background-size: auto, 34px 34px, 34px 34px, auto;
         color: #fff;
+      }
+
+      .video::before {
+        content: "";
+        position: absolute;
+        right: 22px;
+        top: 52px;
+        width: 150px;
+        height: 92px;
+        border: 1px solid rgba(255, 106, 0, 0.18);
+        border-radius: 10px;
+        background:
+          linear-gradient(180deg, rgba(255, 106, 0, 0.22) 0 12%, transparent 12% 100%),
+          repeating-linear-gradient(0deg, transparent 0 12px, rgba(255, 106, 0, 0.08) 12px 13px);
+        opacity: 0.7;
+      }
+
+      .video::after {
+        content: "";
+        position: absolute;
+        left: 20px;
+        right: 20px;
+        bottom: 18px;
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--orange) 0 24%, rgba(255,255,255,0.25) 24% 100%);
       }
 
       .architect {
         position: absolute;
-        inset: 18% 22% 0;
+        left: 50%;
+        bottom: 0;
+        width: 34%;
+        height: 78%;
         border-radius: 46% 46% 0 0;
-        background: linear-gradient(90deg, transparent 0 24%, rgba(255,255,255,0.16), transparent 76%), #06070a;
+        background:
+          radial-gradient(circle at 50% 19%, rgba(255,255,255,0.16), transparent 16%),
+          linear-gradient(90deg, transparent 0 24%, rgba(255,255,255,0.19), transparent 76%),
+          linear-gradient(180deg, #101319 0%, #030407 100%);
+        transform: translateX(-50%);
       }
 
       .play {
@@ -245,11 +312,35 @@
         text-shadow: 0 12px 28px rgba(0,0,0,0.4);
       }
 
+      .video-status {
+        position: absolute;
+        right: 18px;
+        top: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: rgba(0, 0, 0, 0.34);
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
       .video-label {
         position: absolute;
         left: 20px;
         top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
         font-weight: 800;
+      }
+
+      .video-label::before {
+        content: "";
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--orange) 0 34%, transparent 35%), conic-gradient(var(--orange), #ffb05a, var(--orange));
       }
 
       .assistant-list {
@@ -264,7 +355,7 @@
         align-items: center;
         gap: 14px;
         border: 1px solid var(--line);
-        border-radius: 18px;
+        border-radius: 16px;
         padding: 13px;
         background: #fff;
       }
@@ -274,7 +365,16 @@
         height: 58px;
         border-radius: 50%;
         background:
-          radial-gradient(circle at 50% 30%, #ffe0c2, #b2b8bb 36%, #3b3d3f 37% 100%);
+          radial-gradient(circle at 50% 28%, #ffe4c8 0 18%, transparent 19%),
+          radial-gradient(circle at 50% 66%, #2f3337 0 31%, transparent 32%),
+          linear-gradient(135deg, #d5dde0, #8e999f);
+      }
+
+      .avatar.female {
+        background:
+          radial-gradient(circle at 50% 30%, #ffe2c7 0 18%, transparent 19%),
+          radial-gradient(circle at 50% 66%, #412a23 0 34%, transparent 35%),
+          linear-gradient(135deg, #f0d6c4, #8e999f);
       }
 
       .assistant strong,
@@ -288,6 +388,14 @@
         font-size: 14px;
       }
 
+      .handle {
+        display: block;
+        margin-top: 4px;
+        color: var(--orange);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
       .telegram {
         display: grid;
         place-items: center;
@@ -298,13 +406,13 @@
         color: var(--blue);
         background: #f7fbff;
         text-decoration: none;
-        font-size: 22px;
+        font-size: 20px;
       }
 
       .network-scene {
         position: relative;
-        min-height: 430px;
-        margin-top: -74px;
+        min-height: 360px;
+        margin-top: 8px;
         background:
           linear-gradient(rgba(255, 106, 0, 0.1) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255, 106, 0, 0.1) 1px, transparent 1px);
@@ -361,10 +469,10 @@
 
       .section-card {
         border: 1px solid var(--line);
-        border-radius: 26px;
+        border-radius: 20px;
         padding: clamp(26px, 4vw, 46px);
         background: rgba(255, 255, 255, 0.78);
-        box-shadow: 0 24px 70px rgba(62, 30, 9, 0.07);
+        box-shadow: 0 16px 48px rgba(62, 30, 9, 0.055);
       }
 
       .section-head {
@@ -402,7 +510,7 @@
 
       .card {
         border: 1px solid var(--line);
-        border-radius: 20px;
+        border-radius: 16px;
         padding: 24px;
         background: #fff;
       }
@@ -425,7 +533,7 @@
 
       .step {
         border: 1px solid rgba(255, 106, 0, 0.16);
-        border-radius: 22px;
+        border-radius: 18px;
         padding: 24px;
         background: linear-gradient(180deg, #fff, #fff7ef);
       }
@@ -551,10 +659,12 @@
       <header class="topbar">
         <div class="brand"><span class="mark"></span> Atlas System</div>
         <nav class="nav" aria-label="Landing sections">
-          <a href="#ecosystem">Ecosystem</a>
+          <a href="#ecosystem">Ecosystem⌄</a>
           <a href="#cycle">Smart Cycle</a>
           <a href="#partners">For Partners</a>
-          <a href="#video">Video</a>
+          <a href="#docs">Docs</a>
+          <a href="#faq">FAQ</a>
+          <a href="#faq">Blog</a>
           <a class="button primary" href="#contacts">Contact Atlas</a>
         </nav>
       </header>
@@ -580,45 +690,67 @@
               </div>
               <div class="flag">
                 <div class="flag-icon">✓</div>
-                <div><strong>Secure & Transparent</strong><span>Built around smart-contract logic and clear rules.</span></div>
+                <div><strong>Clear on-chain rules</strong><span>Smart-contract logic designed to be verifiable.</span></div>
               </div>
             </div>
+            <section class="network-scene" aria-label="Atlas community network">
+              <div class="core"></div>
+              <div class="node n1"></div>
+              <div class="node n2"></div>
+              <div class="node n3"></div>
+              <div class="node n4"></div>
+              <div class="node n5"></div>
+              <div class="node n6"></div>
+            </section>
           </div>
 
           <aside class="visual-card" id="video">
             <div class="video">
               <div class="video-label">Architect Pre-launch Address</div>
+              <div class="video-status">Coming soon</div>
               <div class="architect"></div>
               <div class="play">▶</div>
             </div>
             <div class="assistant-list" id="contacts">
               <div class="assistant">
                 <div class="avatar"></div>
-                <div><strong>Atlas Assistant 01</strong><span>Support & Onboarding</span></div>
-                <a class="telegram" href="#">↗</a>
+                <div><strong>Atlas Assistant 01</strong><span>Support & Onboarding</span><small class="handle">@AtlasAssistant01</small></div>
+                <a class="telegram" href="#">✈</a>
+              </div>
+              <div class="assistant">
+                <div class="avatar female"></div>
+                <div><strong>Atlas Assistant 02</strong><span>Partnerships & Growth</span><small class="handle">@AtlasAssistant02</small></div>
+                <a class="telegram" href="#">✈</a>
               </div>
               <div class="assistant">
                 <div class="avatar"></div>
-                <div><strong>Atlas Assistant 02</strong><span>Partnerships & Growth</span></div>
-                <a class="telegram" href="#">↗</a>
-              </div>
-              <div class="assistant">
-                <div class="avatar"></div>
-                <div><strong>Atlas Assistant 03</strong><span>Technical & Ecosystem</span></div>
-                <a class="telegram" href="#">↗</a>
+                <div><strong>Atlas Assistant 03</strong><span>Technical & Ecosystem</span><small class="handle">@AtlasAssistant03</small></div>
+                <a class="telegram" href="#">✈</a>
               </div>
             </div>
           </aside>
         </section>
 
-        <section class="network-scene" aria-label="Atlas community network">
-          <div class="core"></div>
-          <div class="node n1"></div>
-          <div class="node n2"></div>
-          <div class="node n3"></div>
-          <div class="node n4"></div>
-          <div class="node n5"></div>
-          <div class="node n6"></div>
+        <section class="section" id="ecosystem">
+          <div class="section-head">
+            <div class="eyebrow">Ecosystem</div>
+            <h2>Atlas System in one minute</h2>
+            <p class="section-copy">
+              Atlas System is a Web3-based mutual-support ecosystem built around Smart Cycle mechanics,
+              transparent smart contracts, knowledge, partner growth and future DAO infrastructure.
+            </p>
+          </div>
+          <div class="chips">
+            <span class="chip active">Smart Cycle-1 DAO</span>
+            <span class="chip">Invite & Earn</span>
+            <span class="chip">Knowledge Hub</span>
+            <span class="chip">Academy</span>
+            <span class="chip">P2P Exchange</span>
+            <span class="chip">Cryptowallet</span>
+            <span class="chip">Governance</span>
+            <span class="chip">Swap DAO</span>
+            <span class="chip">Bank DAO</span>
+          </div>
         </section>
 
         <section class="section" id="community">
@@ -627,8 +759,8 @@
               <div class="eyebrow">Our foundation</div>
               <h2>Why Atlas starts with community</h2>
               <p class="section-copy">
-                Atlas is not launching as a faceless product. It starts with people:
-                leaders, teams and communities who can explain the idea and build trust before the official launch.
+                Atlas starts with people: leaders, teams and communities who can explain the idea,
+                study the rules and prepare responsibly before the official launch.
               </p>
             </div>
             <div class="grid">
@@ -648,28 +780,6 @@
           </div>
         </section>
 
-        <section class="section" id="ecosystem">
-          <div class="section-head">
-            <div class="eyebrow">Ecosystem</div>
-            <h2>Atlas System in one minute</h2>
-            <p class="section-copy">
-              Atlas System is a Web3-based mutual-support ecosystem built around Smart Cycle mechanics,
-              transparent smart contracts, knowledge, partner growth and future DAO infrastructure.
-            </p>
-          </div>
-          <div class="chips">
-            <span class="chip active">Smart Cycle-1 DAO</span>
-            <span class="chip">Invite & Earn MLM</span>
-            <span class="chip">Knowledge Hub</span>
-            <span class="chip">Academy</span>
-            <span class="chip">P2P Exchange</span>
-            <span class="chip">Cryptowallet</span>
-            <span class="chip">Governance</span>
-            <span class="chip">Swap DAO</span>
-            <span class="chip">Bank DAO</span>
-          </div>
-        </section>
-
         <section class="section" id="cycle">
           <div class="section-card">
             <div class="section-head">
@@ -678,6 +788,10 @@
               <p class="section-copy">
                 Smart Cycle-1 is the first core product of Atlas. The pre-launch page only gives a short explanation,
                 while deeper mechanics stay in separate educational videos and docs.
+              </p>
+              <p class="section-copy">
+                Requests and calculated deltas depend on smart-contract rules, community activity and available liquidity.
+                They should be studied as risk-bearing participation, not as a guaranteed income product.
               </p>
             </div>
             <div class="flow">
@@ -712,13 +826,13 @@
           </div>
         </section>
 
-        <section class="section">
+        <section class="section" id="docs">
           <div class="section-head">
-            <div class="eyebrow">Visual reference</div>
-            <h2>Generated first-screen concept</h2>
+            <div class="eyebrow">Design reference</div>
+            <h2>First-screen visual direction</h2>
             <p class="section-copy">
-              This is the one-screen concept image that inspired the full mockup structure.
-              It is kept here as a reference for designer direction.
+              Internal reference for the Atlas design team: the approved direction is light, clean,
+              ecosystem-first, with the community grid and Architect video visible from the first screen.
             </p>
           </div>
           <img class="concept-image" src="./hero-concept.png" alt="Atlas System first screen concept" />
@@ -734,9 +848,22 @@
               </p>
             </div>
             <div class="assistant-list">
-              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 01</strong><span>General questions</span></div><a class="telegram" href="#">↗</a></div>
-              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 02</strong><span>Leaders and partners</span></div><a class="telegram" href="#">↗</a></div>
-              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 03</strong><span>Launch preparation</span></div><a class="telegram" href="#">↗</a></div>
+              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 01</strong><span>General questions</span><small class="handle">@AtlasAssistant01</small></div><a class="telegram" href="#">✈</a></div>
+              <div class="assistant"><div class="avatar female"></div><div><strong>Atlas Assistant 02</strong><span>Leaders and partners</span><small class="handle">@AtlasAssistant02</small></div><a class="telegram" href="#">✈</a></div>
+              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 03</strong><span>Launch preparation</span><small class="handle">@AtlasAssistant03</small></div><a class="telegram" href="#">✈</a></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="faq">
+          <div class="section-card">
+            <div class="section-head">
+              <div class="eyebrow">FAQ / Blog placeholder</div>
+              <h2>Rules and educational materials will be published before launch</h2>
+              <p class="section-copy">
+                The final page should link to official docs, FAQ and educational articles.
+                Until then, Telegram assistants remain the main pre-launch contact channel.
+              </p>
             </div>
           </div>
         </section>
