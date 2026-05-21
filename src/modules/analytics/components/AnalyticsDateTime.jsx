@@ -20,6 +20,12 @@ function formatCurrentDateTime(date) {
   };
 }
 
+function splitTime(time) {
+  const [hours = "00", minutes = "00", seconds = "00"] = time.split(":");
+
+  return { hours, minutes, seconds };
+}
+
 function AnalyticsDateTime({ compact = false }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -32,12 +38,23 @@ function AnalyticsDateTime({ compact = false }) {
   }, []);
 
   const { date, time } = formatCurrentDateTime(now);
+  const { hours, minutes, seconds } = splitTime(time);
 
   return (
     <div className={`analytics-datetime${compact ? " analytics-datetime-compact" : ""}`}>
-      <div className="analytics-datetime-label">Сегодня</div>
+      <div className="analytics-datetime-scanline" aria-hidden="true" />
+      <div className="analytics-datetime-topline">
+        <span className="analytics-datetime-label">System time</span>
+        <span className="analytics-datetime-zone">MSK</span>
+      </div>
+      <div className="analytics-datetime-clock" aria-label={`Текущее время ${time}`}>
+        <span className="analytics-datetime-unit">{hours}</span>
+        <span className="analytics-datetime-separator">:</span>
+        <span className="analytics-datetime-unit">{minutes}</span>
+        <span className="analytics-datetime-separator">:</span>
+        <span className="analytics-datetime-unit analytics-datetime-unit-seconds">{seconds}</span>
+      </div>
       <div className="analytics-datetime-date">{date}</div>
-      <div className="analytics-datetime-time">{time}</div>
     </div>
   );
 }
