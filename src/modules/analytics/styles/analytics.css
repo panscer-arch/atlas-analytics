@@ -200,7 +200,7 @@
 
 .analytics-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 640px) 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px) 320px;
   gap: 1rem;
   align-items: start;
 }
@@ -1403,11 +1403,11 @@
 .analytics-datetime {
   display: flex;
   flex-direction: column;
-  gap: 0.32rem;
-  width: min(100%, 640px);
+  gap: 0.12rem;
+  width: min(100%, 360px);
   min-width: 0;
-  padding: 1.45rem 1.9rem;
-  border-radius: 28px;
+  padding: 0.78rem 1rem;
+  border-radius: 18px;
   border: 1px solid rgba(157, 178, 255, 0.14);
   background: rgba(255, 255, 255, 0.035);
   color: #dce8f8;
@@ -1442,21 +1442,21 @@
 }
 
 .analytics-datetime-label {
-  font-size: 1.05rem;
+  font-size: 0.78rem;
   font-weight: 900;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #7bb4ff;
 }
 
 .analytics-datetime-date {
-  font-size: clamp(1.25rem, 1.85vw, 2rem);
-  font-weight: 850;
+  font-size: 1rem;
+  font-weight: 800;
   color: #f4f8ff;
 }
 
 .analytics-datetime-time {
-  font-size: clamp(1.6rem, 2.6vw, 2.65rem);
+  font-size: 1.35rem;
   font-weight: 900;
   letter-spacing: 0.04em;
 }
