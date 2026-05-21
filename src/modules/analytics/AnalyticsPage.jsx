@@ -55,11 +55,7 @@ import "./styles/analytics.css";
 import { useEffect, useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
-const CRM_FOCUS_STORAGE_KEY = "atlas.analytics.crmFocus.v1";
-const DEFAULT_CRM_FOCUS = {
-  priority: "Сформулировать главный приоритет дня",
-  nextStep: "Записать следующий конкретный шаг",
-};
+const CRM_MY_TASKS_STORAGE_KEY = "atlas.analytics.crmMyTasks.v1";
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -126,6 +122,25 @@ function buildCrmContentStats(source = {}) {
     ["Ролики", videos.length, "роликов", "success"],
     ["Термины", countTemplateRows(source.terminology, defaultTerminologyTemplate), "терминов", "accent"],
   ];
+}
+
+function getTodayInputDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatTaskDate(dateValue) {
+  if (!dateValue) return { day: "--", month: "без даты" };
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return { day: "--", month: "без даты" };
+
+  return {
+    day: String(date.getDate()).padStart(2, "0"),
+    month: date.toLocaleDateString("ru-RU", { month: "short" }).replace(".", ""),
+  };
 }
 
 function buildDashboardLiveFeed(cycleTypes = [], direction = "incoming") {
@@ -292,8 +307,9 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
-  const [crmFocus, setCrmFocus] = useState(DEFAULT_CRM_FOCUS);
-  const [isCrmFocusLoaded, setIsCrmFocusLoaded] = useState(false);
+  const [crmMyTasks, setCrmMyTasks] = useState([]);
+  const [isCrmMyTasksLoaded, setIsCrmMyTasksLoaded] = useState(false);
+  const [newMyTask, setNewMyTask] = useState({ title: "", dueDate: getTodayInputDate() });
   const [crmTaskStats, setCrmTaskStats] = useState(() => buildCrmTaskStats({
     launch: defaultLaunchChecklistTasks,
     marketing: defaultMarketingChecklistTasks,
@@ -306,15 +322,10 @@ function AnalyticsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    loadServerContent(CRM_FOCUS_STORAGE_KEY).then((savedFocus) => {
+    loadServerContent(CRM_MY_TASKS_STORAGE_KEY).then((savedTasks) => {
       if (!isMounted) return;
-      if (savedFocus && typeof savedFocus === "object") {
-        setCrmFocus({
-          priority: savedFocus.priority || DEFAULT_CRM_FOCUS.priority,
-          nextStep: savedFocus.nextStep || DEFAULT_CRM_FOCUS.nextStep,
-        });
-      }
-      setIsCrmFocusLoaded(true);
+      setCrmMyTasks(Array.isArray(savedTasks) ? savedTasks : []);
+      setIsCrmMyTasksLoaded(true);
     });
 
     return () => {
@@ -323,14 +334,14 @@ function AnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    if (!isCrmFocusLoaded) return undefined;
+    if (!isCrmMyTasksLoaded) return undefined;
 
     const saveTimer = window.setTimeout(() => {
-      saveServerContent(CRM_FOCUS_STORAGE_KEY, crmFocus);
+      saveServerContent(CRM_MY_TASKS_STORAGE_KEY, crmMyTasks);
     }, 450);
 
     return () => window.clearTimeout(saveTimer);
-  }, [crmFocus, isCrmFocusLoaded]);
+  }, [crmMyTasks, isCrmMyTasksLoaded]);
 
   useEffect(() => {
     let isMounted = true;
@@ -473,6 +484,30 @@ function AnalyticsPage() {
 
   function handleToggleBoard() {
     setIsBoardOpen((current) => !current);
+  }
+
+  function handleAddMyTask() {
+    const title = newMyTask.title.trim();
+    if (!title) return;
+
+    setCrmMyTasks((current) => [
+      ...current,
+      {
+        id: `my-task-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        title,
+        dueDate: newMyTask.dueDate || getTodayInputDate(),
+        done: false,
+      },
+    ]);
+    setNewMyTask({ title: "", dueDate: newMyTask.dueDate || getTodayInputDate() });
+  }
+
+  function updateMyTask(taskId, patch) {
+    setCrmMyTasks((current) => current.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
+  }
+
+  function deleteMyTask(taskId) {
+    setCrmMyTasks((current) => current.filter((task) => task.id !== taskId));
   }
 
   const primaryKpis = [
@@ -991,10 +1026,7 @@ function AnalyticsPage() {
       ["Всего", taskTotals.total, "default"],
     ];
     const taskDoneWidth = `${taskTotals.total ? Math.min((taskTotals.done / taskTotals.total) * 100, 100) : 0}%`;
-    const focusItems = [
-      ["Главный приоритет", "priority", crmFocus.priority, "success"],
-      ["Следующий шаг", "nextStep", crmFocus.nextStep, "accent"],
-    ];
+    const sortedMyTasks = [...crmMyTasks].sort((first, second) => String(first.dueDate || "").localeCompare(String(second.dueDate || "")));
     const dashboardCards = [
       {
         id: "analytics",
@@ -1021,12 +1053,11 @@ function AnalyticsPage() {
         action: "Открыть контент",
       },
       {
-        id: "focus",
-        kicker: "Фокус дня",
-        title: "Операционный статус",
-        text: "Короткая выжимка того, что сейчас требует внимания.",
-        meta: "Сегодня",
-        action: "Открыть задачи",
+        id: "myTasks",
+        kicker: "Мои задачи",
+        title: "Мои задачи",
+        text: "Личный список задач с датами.",
+        meta: "Май / июнь",
       },
     ];
 
@@ -1152,29 +1183,72 @@ function AnalyticsPage() {
                     <span>Единое хранилище текстов, материалов и production-базы</span>
                   </div>
                 </article>
-              ) : card.id === "focus" ? (
-                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-focus">
+              ) : card.id === "myTasks" ? (
+                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-my-tasks">
                   <div className="analytics-crm-command-card-top">
                     <span>{card.kicker}</span>
                     <small>{card.meta}</small>
                   </div>
-                  <div className="analytics-crm-focus-main">
+                  <div className="analytics-crm-my-tasks-main">
                     <div>
                       <strong>{card.title}</strong>
                     </div>
                   </div>
-                  <div className="analytics-crm-focus-list">
-                    {focusItems.map(([label, field, value, tone]) => (
-                      <div key={label} className={`analytics-crm-focus-row is-${tone}`}>
-                        <span>{label}</span>
-                        <textarea
-                          value={value}
-                          onChange={(event) => setCrmFocus((current) => ({ ...current, [field]: event.target.value }))}
-                          rows={4}
-                          aria-label={label}
-                        />
-                      </div>
-                    ))}
+                  <div className="analytics-crm-my-tasks-list">
+                    {sortedMyTasks.map((task) => {
+                      const taskDate = formatTaskDate(task.dueDate);
+                      const isTodayTask = task.dueDate === getTodayInputDate();
+
+                      return (
+                        <div key={task.id} className={`analytics-crm-my-task-row${task.done ? " is-done" : ""}${isTodayTask ? " is-today" : ""}`}>
+                          <label className="analytics-crm-my-task-check">
+                            <input type="checkbox" checked={Boolean(task.done)} onChange={(event) => updateMyTask(task.id, { done: event.target.checked })} />
+                            <span />
+                          </label>
+                          <div className="analytics-crm-my-task-date">
+                            <b>{taskDate.day}</b>
+                            <span>{taskDate.month}</span>
+                          </div>
+                          <input
+                            className="analytics-crm-my-task-title"
+                            value={task.title}
+                            onChange={(event) => updateMyTask(task.id, { title: event.target.value })}
+                            aria-label="Название задачи"
+                          />
+                          <input
+                            className="analytics-crm-my-task-date-input"
+                            type="date"
+                            value={task.dueDate || ""}
+                            onChange={(event) => updateMyTask(task.id, { dueDate: event.target.value })}
+                            aria-label="Дата задачи"
+                          />
+                          <button type="button" className="analytics-crm-my-task-delete" onClick={() => deleteMyTask(task.id)} aria-label="Удалить задачу">
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {!sortedMyTasks.length ? <div className="analytics-crm-my-tasks-empty">Добавь ближайшие задачи на май-июнь.</div> : null}
+                  </div>
+                  <div className="analytics-crm-my-task-add">
+                    <input
+                      value={newMyTask.title}
+                      onChange={(event) => setNewMyTask((current) => ({ ...current, title: event.target.value }))}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") handleAddMyTask();
+                      }}
+                      placeholder="Новая задача"
+                      aria-label="Новая задача"
+                    />
+                    <input
+                      type="date"
+                      value={newMyTask.dueDate}
+                      onChange={(event) => setNewMyTask((current) => ({ ...current, dueDate: event.target.value }))}
+                      aria-label="Дата новой задачи"
+                    />
+                    <button type="button" onClick={handleAddMyTask}>
+                      Добавить
+                    </button>
                   </div>
                 </article>
               ) : (
@@ -1194,35 +1268,6 @@ function AnalyticsPage() {
           </div>
         </section>
 
-        <section className="row g-3 mt-1">
-          <div className="col-12 col-xl-4">
-            <DashboardBlock title="Сегодня">
-              <DashboardList>
-                <DashboardListRow label="Входящий поток" value={formatCurrency(incomingToday)} tone="success" />
-                <DashboardListRow label="Выплаты" value={formatCurrency(outgoingToday)} />
-                <DashboardListRow label="Чистый поток" value={formatCurrency(contractNetFlowToday)} tone={contractNetFlowToday >= 0 ? "success" : "danger"} />
-              </DashboardList>
-            </DashboardBlock>
-          </div>
-          <div className="col-12 col-xl-4">
-            <DashboardBlock title="Фокус">
-              <DashboardList>
-                <DashboardListRow label="Первая дата риска" value={data.kpis.firstRiskDate} tone={riskTone} />
-                <DashboardListRow label="Запас контракта" value={formatDays(runwayDays)} />
-                <DashboardListRow label="Покрытие выплат" value={formatPercent(outgoingCoverage)} />
-              </DashboardList>
-            </DashboardBlock>
-          </div>
-          <div className="col-12 col-xl-4">
-            <DashboardBlock title="Быстрые действия">
-              <DashboardList>
-                <button type="button" className="analytics-dashboard-link-btn" onClick={() => setActiveTab("tasks")}>Открыть задачи</button>
-                <button type="button" className="analytics-dashboard-link-btn" onClick={() => setActiveTab("content")}>Открыть контент</button>
-                <button type="button" className="analytics-dashboard-link-btn" onClick={() => setActiveTab("crmBoard")}>Открыть CRM-доску</button>
-              </DashboardList>
-            </DashboardBlock>
-          </div>
-        </section>
       </>
     );
   }
@@ -2109,11 +2154,13 @@ function AnalyticsPage() {
 
       {renderActiveTab()}
 
-      <section className="analytics-footer-actions mt-4">
-        <button type="button" className="btn analytics-export-btn analytics-export-btn-bottom" onClick={() => downloadCsv(exportAnalyticsCsv(data.table))}>
-          Экспорт CSV
-        </button>
-      </section>
+      {activeTab === "analytics" ? (
+        <section className="analytics-footer-actions mt-4">
+          <button type="button" className="btn analytics-export-btn analytics-export-btn-bottom" onClick={() => downloadCsv(exportAnalyticsCsv(data.table))}>
+            Экспорт CSV
+          </button>
+        </section>
+      ) : null}
     </main>
   );
 }

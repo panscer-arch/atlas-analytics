@@ -1254,6 +1254,26 @@
     radial-gradient(circle at 78% 68%, rgba(47, 217, 255, 0.12), transparent 28%);
 }
 
+.analytics-crm-command-card-my-tasks {
+  grid-column: span 2;
+  min-height: 310px;
+  border-color: rgba(255, 204, 102, 0.22);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 204, 102, 0.15), transparent 30%),
+    radial-gradient(circle at 92% 20%, rgba(120, 255, 224, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(9, 18, 31, 0.98), rgba(3, 8, 17, 0.97));
+}
+
+.analytics-crm-command-card-my-tasks::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(135deg, transparent 0 38%, rgba(255, 204, 102, 0.08) 38% 39%, transparent 39% 100%),
+    radial-gradient(circle at 78% 68%, rgba(47, 217, 255, 0.12), transparent 28%);
+}
+
 .analytics-crm-command-card::after {
   position: absolute;
   right: -34px;
@@ -1353,6 +1373,11 @@
   gap: 1rem;
 }
 
+.analytics-crm-my-tasks-main {
+  position: relative;
+  z-index: 2;
+}
+
 .analytics-crm-tasks-main strong {
   display: block;
   color: #f7fbff;
@@ -1370,6 +1395,14 @@
 }
 
 .analytics-crm-focus-main strong {
+  display: block;
+  color: #fff4cf;
+  font-size: 2.2rem;
+  letter-spacing: 0;
+  text-shadow: 0 0 24px rgba(255, 204, 102, 0.24);
+}
+
+.analytics-crm-my-tasks-main strong {
   display: block;
   color: #fff4cf;
   font-size: 2.2rem;
@@ -1850,6 +1883,156 @@
   color: #6f82a0;
 }
 
+.analytics-crm-my-tasks-list {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 0.55rem;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.analytics-crm-my-task-row {
+  display: grid;
+  grid-template-columns: 34px 72px minmax(0, 1fr) 130px 34px;
+  gap: 0.6rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.58rem;
+  border: 1px solid rgba(123, 180, 255, 0.13);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(255, 204, 102, 0.055), transparent),
+    rgba(8, 15, 29, 0.72);
+}
+
+.analytics-crm-my-task-row.is-today {
+  border-color: rgba(255, 204, 102, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 102, 0.08);
+}
+
+.analytics-crm-my-task-row.is-done {
+  opacity: 0.62;
+}
+
+.analytics-crm-my-task-check {
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.analytics-crm-my-task-check input {
+  position: absolute;
+  opacity: 0;
+}
+
+.analytics-crm-my-task-check span {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(120, 255, 224, 0.35);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.analytics-crm-my-task-check input:checked + span {
+  background:
+    linear-gradient(135deg, rgba(47, 217, 255, 0.4), rgba(120, 255, 224, 0.7)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 16px rgba(120, 255, 224, 0.24);
+}
+
+.analytics-crm-my-task-date {
+  display: grid;
+  place-items: center;
+  min-height: 58px;
+  border: 1px solid rgba(255, 204, 102, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 204, 102, 0.08);
+}
+
+.analytics-crm-my-task-date b {
+  color: #fff4cf;
+  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.analytics-crm-my-task-date span {
+  color: #9eb0ca;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-crm-my-task-title,
+.analytics-crm-my-task-date-input,
+.analytics-crm-my-task-add input {
+  min-width: 0;
+  border: 1px solid rgba(123, 180, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #f7fbff;
+  font-weight: 800;
+  outline: 0;
+}
+
+.analytics-crm-my-task-title {
+  min-height: 46px;
+  padding: 0.62rem 0.72rem;
+}
+
+.analytics-crm-my-task-date-input {
+  min-height: 42px;
+  padding: 0.48rem 0.55rem;
+  color-scheme: dark;
+}
+
+.analytics-crm-my-task-delete {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 79, 118, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 79, 118, 0.08);
+  color: #ffc6c6;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.analytics-crm-my-task-add {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  gap: 0.55rem;
+  margin-top: 0.1rem;
+}
+
+.analytics-crm-my-task-add input {
+  min-height: 44px;
+  padding: 0.58rem 0.7rem;
+  color-scheme: dark;
+}
+
+.analytics-crm-my-task-add button {
+  min-height: 44px;
+  border: 1px solid rgba(120, 255, 224, 0.2);
+  border-radius: 10px;
+  padding: 0.58rem 0.78rem;
+  background: rgba(120, 255, 224, 0.08);
+  color: #dffdf7;
+  font-weight: 900;
+}
+
+.analytics-crm-my-tasks-empty {
+  padding: 1rem;
+  border: 1px dashed rgba(123, 180, 255, 0.18);
+  border-radius: 12px;
+  color: #9eb0ca;
+  font-weight: 800;
+}
+
 .analytics-crm-tasks-focus {
   position: relative;
   z-index: 2;
@@ -1928,7 +2111,8 @@
   .analytics-crm-command-card-featured,
   .analytics-crm-command-card-tasks,
   .analytics-crm-command-card-content,
-  .analytics-crm-command-card-focus {
+  .analytics-crm-command-card-focus,
+  .analytics-crm-command-card-my-tasks {
     grid-column: span 2;
   }
 
@@ -1983,14 +2167,16 @@
   .analytics-crm-command-card-featured,
   .analytics-crm-command-card-tasks,
   .analytics-crm-command-card-content,
-  .analytics-crm-command-card-focus {
+  .analytics-crm-command-card-focus,
+  .analytics-crm-command-card-my-tasks {
     grid-column: span 1;
   }
 
   .analytics-crm-analytics-main,
   .analytics-crm-tasks-main,
   .analytics-crm-content-main,
-  .analytics-crm-focus-main {
+  .analytics-crm-focus-main,
+  .analytics-crm-my-tasks-main {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -1998,7 +2184,8 @@
   .analytics-crm-analytics-main strong,
   .analytics-crm-tasks-main strong,
   .analytics-crm-content-main strong,
-  .analytics-crm-focus-main strong {
+  .analytics-crm-focus-main strong,
+  .analytics-crm-my-tasks-main strong {
     font-size: 2rem;
   }
 
@@ -2011,6 +2198,11 @@
   }
 
   .analytics-crm-focus-row {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-crm-my-task-row,
+  .analytics-crm-my-task-add {
     grid-template-columns: 1fr;
   }
 
