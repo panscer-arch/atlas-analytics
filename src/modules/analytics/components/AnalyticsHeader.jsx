@@ -1,5 +1,4 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
-import AnalyticsActionButton from "./AnalyticsActionButton";
 
 function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) {
   return (
@@ -34,12 +33,13 @@ function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) 
       </div>
 
       <div className="analytics-header-center">
-        <AnalyticsDateTime />
         {onAiReview ? (
-          <AnalyticsActionButton variant="primary" size="sm" onClick={onAiReview}>
-            AI-разбор
-          </AnalyticsActionButton>
+          <button type="button" className="analytics-header-ai-button" onClick={onAiReview} aria-label="AI-разбор задач">
+            <span>AI</span>
+            <b>Разбор</b>
+          </button>
         ) : null}
+        <AnalyticsDateTime />
       </div>
 
       {showAdmins ? (
