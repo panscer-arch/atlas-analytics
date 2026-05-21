@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Atlas System — full landing mockup</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fffaf4;
+        --paper: #ffffff;
+        --paper-soft: #fff6ed;
+        --ink: #1d0704;
+        --muted: #756861;
+        --line: rgba(82, 35, 10, 0.12);
+        --orange: #ff6a00;
+        --orange-2: #ff9a3d;
+        --blue: #229cff;
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 72% 12%, rgba(255, 106, 0, 0.09), transparent 30%),
+          linear-gradient(180deg, #ffffff 0%, var(--bg) 50%, #ffffff 100%);
+      }
+
+      a { color: inherit; }
+
+      .page {
+        width: min(1500px, calc(100vw - 40px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        min-height: 82px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.86);
+        backdrop-filter: blur(16px);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle, var(--orange) 0 30%, transparent 31%),
+          conic-gradient(from 0deg, #ff7a18, #ffb15f, #ff6a00, #ffb15f, #ff7a18);
+        box-shadow: 0 14px 34px rgba(255, 106, 0, 0.25);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 28px;
+        color: #22120d;
+        font-size: 15px;
+      }
+
+      .nav a {
+        text-decoration: none;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 52px;
+        border: 1px solid rgba(255, 106, 0, 0.3);
+        border-radius: 14px;
+        padding: 0 22px;
+        background: #fff;
+        color: var(--ink);
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 14px 35px rgba(65, 34, 18, 0.06);
+      }
+
+      .button.primary {
+        background: linear-gradient(135deg, var(--orange), var(--orange-2));
+        color: #fff;
+        box-shadow: 0 16px 36px rgba(255, 106, 0, 0.24);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.18fr) minmax(380px, 0.82fr);
+        gap: 36px;
+        align-items: center;
+        min-height: calc(100vh - 84px);
+        padding: 48px 0 34px;
+      }
+
+      .pill {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 106, 0, 0.24);
+        border-radius: 999px;
+        padding: 11px 16px;
+        color: var(--orange);
+        background: #fff7ef;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .pill::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--orange);
+      }
+
+      h1, h2, h3, p { margin: 0; }
+
+      h1 {
+        max-width: 820px;
+        margin-top: 28px;
+        font-size: clamp(62px, 8vw, 112px);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      h1 span,
+      .orange {
+        color: var(--orange);
+      }
+
+      .lead {
+        max-width: 680px;
+        margin-top: 26px;
+        color: var(--muted);
+        font-size: 21px;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 30px;
+      }
+
+      .hero-flags {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        max-width: 560px;
+        margin-top: 34px;
+      }
+
+      .flag {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .flag-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid rgba(255, 106, 0, 0.18);
+        border-radius: 13px;
+        color: var(--orange);
+        background: #fff4e9;
+      }
+
+      .flag strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      .flag span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .visual-card {
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 30px 70px rgba(60, 28, 8, 0.1);
+      }
+
+      .video {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 24% 40%, rgba(255, 106, 0, 0.3), transparent 22%),
+          linear-gradient(135deg, #0b0d10, #17191f);
+        color: #fff;
+      }
+
+      .architect {
+        position: absolute;
+        inset: 18% 22% 0;
+        border-radius: 46% 46% 0 0;
+        background: linear-gradient(90deg, transparent 0 24%, rgba(255,255,255,0.16), transparent 76%), #06070a;
+      }
+
+      .play {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-size: 54px;
+        color: #fff;
+        text-shadow: 0 12px 28px rgba(0,0,0,0.4);
+      }
+
+      .video-label {
+        position: absolute;
+        left: 20px;
+        top: 18px;
+        font-weight: 800;
+      }
+
+      .assistant-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .assistant {
+        display: grid;
+        grid-template-columns: 58px 1fr 48px;
+        align-items: center;
+        gap: 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 13px;
+        background: #fff;
+      }
+
+      .avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 50% 30%, #ffe0c2, #b2b8bb 36%, #3b3d3f 37% 100%);
+      }
+
+      .assistant strong,
+      .assistant span {
+        display: block;
+      }
+
+      .assistant span {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .telegram {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 1px solid rgba(34, 156, 255, 0.14);
+        border-radius: 14px;
+        color: var(--blue);
+        background: #f7fbff;
+        text-decoration: none;
+        font-size: 22px;
+      }
+
+      .network-scene {
+        position: relative;
+        min-height: 430px;
+        margin-top: -74px;
+        background:
+          linear-gradient(rgba(255, 106, 0, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 106, 0, 0.1) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: linear-gradient(180deg, transparent 0%, #000 16%, #000 82%, transparent 100%);
+      }
+
+      .core {
+        position: absolute;
+        left: 50%;
+        top: 42%;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background:
+          radial-gradient(circle, rgba(255, 106, 0, 0.95) 0 35%, transparent 36%),
+          conic-gradient(from 0deg, rgba(255,106,0,0.8), rgba(255,183,99,0.45), rgba(255,106,0,0.8));
+        box-shadow: 0 20px 60px rgba(255, 106, 0, 0.26);
+      }
+
+      .node {
+        position: absolute;
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        border: 8px solid #eef1f2;
+        background: radial-gradient(circle at 50% 35%, #ffe8d2, #8e979d 42%, #2c2f33 43% 100%);
+        box-shadow: 0 18px 35px rgba(73, 38, 9, 0.16);
+      }
+
+      .node::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 74px;
+        width: 94px;
+        height: 44px;
+        transform: translateX(-50%);
+        border: 1px solid rgba(255, 106, 0, 0.2);
+        background: #fff7ef;
+      }
+
+      .node.n1 { left: 5%; top: 52%; }
+      .node.n2 { left: 16%; top: 36%; }
+      .node.n3 { left: 29%; top: 55%; }
+      .node.n4 { left: 70%; top: 34%; }
+      .node.n5 { left: 82%; top: 53%; }
+      .node.n6 { left: 60%; top: 62%; }
+
+      .section {
+        padding: 72px 0;
+      }
+
+      .section-card {
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        padding: clamp(26px, 4vw, 46px);
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: 0 24px 70px rgba(62, 30, 9, 0.07);
+      }
+
+      .section-head {
+        max-width: 840px;
+        margin: 0 auto 34px;
+        text-align: center;
+      }
+
+      .eyebrow {
+        color: var(--orange);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+
+      h2 {
+        font-size: clamp(36px, 5vw, 62px);
+        line-height: 1.02;
+      }
+
+      .section-copy {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 19px;
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 24px;
+        background: #fff;
+      }
+
+      .card h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .card p {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .step {
+        border: 1px solid rgba(255, 106, 0, 0.16);
+        border-radius: 22px;
+        padding: 24px;
+        background: linear-gradient(180deg, #fff, #fff7ef);
+      }
+
+      .step-num {
+        display: inline-grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        margin-bottom: 16px;
+        color: #fff;
+        background: var(--orange);
+        font-weight: 900;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 16px;
+        background: #f7f7f7;
+        color: #9a9a9a;
+        font-weight: 800;
+      }
+
+      .chip.active {
+        color: #fff;
+        background: var(--orange);
+        border-color: var(--orange);
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: 0.7fr 1.3fr;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .date-box {
+        border-radius: 24px;
+        padding: 30px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--orange), var(--orange-2));
+        box-shadow: 0 20px 60px rgba(255, 106, 0, 0.23);
+      }
+
+      .date-box strong {
+        display: block;
+        font-size: 54px;
+        line-height: 1;
+      }
+
+      .cta-section {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        gap: 24px;
+        align-items: center;
+      }
+
+      .disclaimer {
+        margin: 34px 0 70px;
+        border: 1px solid rgba(117, 104, 97, 0.18);
+        border-radius: 20px;
+        padding: 20px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.76);
+        line-height: 1.55;
+      }
+
+      .concept-image {
+        width: 100%;
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: 0 24px 70px rgba(62, 30, 9, 0.1);
+      }
+
+      @media (max-width: 980px) {
+        .topbar,
+        .hero,
+        .timeline,
+        .cta-section {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar {
+          position: static;
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 18px 0;
+        }
+
+        .nav {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+        }
+
+        .visual-card {
+          order: -1;
+        }
+
+        .grid,
+        .flow,
+        .hero-flags {
+          grid-template-columns: 1fr;
+        }
+
+        .network-scene {
+          min-height: 320px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand"><span class="mark"></span> Atlas System</div>
+        <nav class="nav" aria-label="Landing sections">
+          <a href="#ecosystem">Ecosystem</a>
+          <a href="#cycle">Smart Cycle</a>
+          <a href="#partners">For Partners</a>
+          <a href="#video">Video</a>
+          <a class="button primary" href="#contacts">Contact Atlas</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <div class="pill">Pre-launch · atlas-syste.io</div>
+            <h1>Atlas System</h1>
+            <p class="lead">
+              <strong>Digital <span class="orange">cooperation</span> for a new era.</strong><br>
+              Before the official launch, Atlas is forming the first international core of participants,
+              partners and architects of a transparent mutual-support ecosystem.
+            </p>
+            <div class="actions">
+              <a class="button primary" href="#contacts">Contact Atlas Assistants</a>
+              <a class="button" href="#video">Watch Architect Message</a>
+            </div>
+            <div class="hero-flags">
+              <div class="flag">
+                <div class="flag-icon">◎</div>
+                <div><strong>Global Community</strong><span>Growing international network before launch.</span></div>
+              </div>
+              <div class="flag">
+                <div class="flag-icon">✓</div>
+                <div><strong>Secure & Transparent</strong><span>Built around smart-contract logic and clear rules.</span></div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="visual-card" id="video">
+            <div class="video">
+              <div class="video-label">Architect Pre-launch Address</div>
+              <div class="architect"></div>
+              <div class="play">▶</div>
+            </div>
+            <div class="assistant-list" id="contacts">
+              <div class="assistant">
+                <div class="avatar"></div>
+                <div><strong>Atlas Assistant 01</strong><span>Support & Onboarding</span></div>
+                <a class="telegram" href="#">↗</a>
+              </div>
+              <div class="assistant">
+                <div class="avatar"></div>
+                <div><strong>Atlas Assistant 02</strong><span>Partnerships & Growth</span></div>
+                <a class="telegram" href="#">↗</a>
+              </div>
+              <div class="assistant">
+                <div class="avatar"></div>
+                <div><strong>Atlas Assistant 03</strong><span>Technical & Ecosystem</span></div>
+                <a class="telegram" href="#">↗</a>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="network-scene" aria-label="Atlas community network">
+          <div class="core"></div>
+          <div class="node n1"></div>
+          <div class="node n2"></div>
+          <div class="node n3"></div>
+          <div class="node n4"></div>
+          <div class="node n5"></div>
+          <div class="node n6"></div>
+        </section>
+
+        <section class="section" id="community">
+          <div class="section-card">
+            <div class="section-head">
+              <div class="eyebrow">Our foundation</div>
+              <h2>Why Atlas starts with community</h2>
+              <p class="section-copy">
+                Atlas is not launching as a faceless product. It starts with people:
+                leaders, teams and communities who can explain the idea and build trust before the official launch.
+              </p>
+            </div>
+            <div class="grid">
+              <article class="card">
+                <h3>People before traffic</h3>
+                <p>Pre-launch growth is based on leaders and recommendations, not anonymous paid traffic alone.</p>
+              </article>
+              <article class="card">
+                <h3>Trust through clarity</h3>
+                <p>The page should quickly explain the idea, show the Architect message and direct people to official Telegram assistants.</p>
+              </article>
+              <article class="card">
+                <h3>Prepared teams</h3>
+                <p>The goal is to let communities study Atlas early, ask questions and prepare for launch.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="ecosystem">
+          <div class="section-head">
+            <div class="eyebrow">Ecosystem</div>
+            <h2>Atlas System in one minute</h2>
+            <p class="section-copy">
+              Atlas System is a Web3-based mutual-support ecosystem built around Smart Cycle mechanics,
+              transparent smart contracts, knowledge, partner growth and future DAO infrastructure.
+            </p>
+          </div>
+          <div class="chips">
+            <span class="chip active">Smart Cycle-1 DAO</span>
+            <span class="chip">Invite & Earn MLM</span>
+            <span class="chip">Knowledge Hub</span>
+            <span class="chip">Academy</span>
+            <span class="chip">P2P Exchange</span>
+            <span class="chip">Cryptowallet</span>
+            <span class="chip">Governance</span>
+            <span class="chip">Swap DAO</span>
+            <span class="chip">Bank DAO</span>
+          </div>
+        </section>
+
+        <section class="section" id="cycle">
+          <div class="section-card">
+            <div class="section-head">
+              <div class="eyebrow">Smart Cycle</div>
+              <h2>Provide help. Complete the cycle. Request help back.</h2>
+              <p class="section-copy">
+                Smart Cycle-1 is the first core product of Atlas. The pre-launch page only gives a short explanation,
+                while deeper mechanics stay in separate educational videos and docs.
+              </p>
+            </div>
+            <div class="flow">
+              <div class="step"><div class="step-num">1</div><h3>Choose a cycle</h3><p>Select the amount and participation term.</p></div>
+              <div class="step"><div class="step-num">2</div><h3>Provide help</h3><p>Create a Smart Cycle through the platform interface.</p></div>
+              <div class="step"><div class="step-num">3</div><h3>Wait for completion</h3><p>The selected period runs according to smart-contract rules.</p></div>
+              <div class="step"><div class="step-num">4</div><h3>Request help</h3><p>After completion, request help back with the calculated delta when liquidity allows.</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="partners">
+          <div class="timeline">
+            <div class="date-box">
+              <span>Official launch</span>
+              <strong>June</strong>
+              <p>Pre-launch access is open before the first public stage.</p>
+            </div>
+            <div class="section-card">
+              <div class="eyebrow">For partners</div>
+              <h2>Who should contact Atlas now</h2>
+              <p class="section-copy">
+                This page is for network leaders, communities and teams who want to study Atlas before launch,
+                understand the mechanics and prepare their structure in advance.
+              </p>
+              <div class="grid" style="margin-top: 24px;">
+                <article class="card"><h3>Network leaders</h3><p>People who can build teams and explain the system responsibly.</p></article>
+                <article class="card"><h3>Communities</h3><p>Groups looking for a transparent digital mutual-support model.</p></article>
+                <article class="card"><h3>Early participants</h3><p>People who want to study Atlas before the official launch.</p></article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div class="eyebrow">Visual reference</div>
+            <h2>Generated first-screen concept</h2>
+            <p class="section-copy">
+              This is the one-screen concept image that inspired the full mockup structure.
+              It is kept here as a reference for designer direction.
+            </p>
+          </div>
+          <img class="concept-image" src="./hero-concept.png" alt="Atlas System first screen concept" />
+        </section>
+
+        <section class="section">
+          <div class="section-card cta-section">
+            <div>
+              <div class="eyebrow">Next action</div>
+              <h2>Get pre-launch information</h2>
+              <p class="section-copy">
+                Contact Atlas assistants on Telegram to ask questions, receive more information and prepare your team before launch.
+              </p>
+            </div>
+            <div class="assistant-list">
+              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 01</strong><span>General questions</span></div><a class="telegram" href="#">↗</a></div>
+              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 02</strong><span>Leaders and partners</span></div><a class="telegram" href="#">↗</a></div>
+              <div class="assistant"><div class="avatar"></div><div><strong>Atlas Assistant 03</strong><span>Launch preparation</span></div><a class="telegram" href="#">↗</a></div>
+            </div>
+          </div>
+        </section>
+
+        <p class="disclaimer">
+          Atlas does not promise guaranteed income. Participation results depend on community activity,
+          smart contract liquidity and the current stage of the Smart Cycle. This mockup is a design and structure draft for the pre-launch landing page.
+        </p>
+      </main>
+    </div>
+  </body>
+</html>
