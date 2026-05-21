@@ -7,6 +7,7 @@ import AtlasPresentationBoard from "./AtlasPresentationBoard";
 import LaunchProgressBar from "./LaunchProgressBar";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
 const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
@@ -615,6 +616,7 @@ function readStoredCustomChecklists() {
 function persistChecklistTasks(storageKey, nextTasks) {
   try {
     window.localStorage.setItem(storageKey, JSON.stringify(nextTasks));
+    saveServerContent(storageKey, nextTasks);
   } catch {
     // Если storage недоступен, чеклист всё равно работает до перезагрузки страницы.
   }
@@ -645,6 +647,31 @@ function LaunchChecklistSection() {
   const [newChecklistName, setNewChecklistName] = useState("");
   const [isCreatingChecklist, setIsCreatingChecklist] = useState(false);
   const [editingCell, setEditingCell] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(LAUNCH_CHECKLIST_STORAGE_KEY).then((tasks) => {
+      if (isMounted && tasks) setLaunchTasks(normalizeChecklistTasks(tasks));
+    });
+    loadServerContent(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY).then((tasks) => {
+      if (isMounted && tasks) setKnowledgeBaseTasks(normalizeChecklistTasks(tasks));
+    });
+    loadServerContent(IDEAS_CHECKLIST_STORAGE_KEY).then((tasks) => {
+      if (isMounted && tasks) setIdeaTasks(normalizeChecklistTasks(tasks));
+    });
+    loadServerContent(MARKETING_CHECKLIST_STORAGE_KEY).then((tasks) => {
+      if (isMounted && tasks) setMarketingTasks(normalizeChecklistTasks(tasks));
+    });
+    loadServerContent(CUSTOM_CHECKLISTS_STORAGE_KEY).then((checklists) => {
+      if (!isMounted || !Array.isArray(checklists)) return;
+      setCustomChecklists(checklists.map((checklist) => ({ ...checklist, tasks: normalizeChecklistTasks(checklist.tasks || []) })));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const isKnowledgeBaseBoard = activeBoard === "knowledgeBase";
   const isIdeasBoard = activeBoard === "ideas";

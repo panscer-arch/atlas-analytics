@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const AGENT_FAQ_STORAGE_KEY = "atlas.analytics.agentFaqTemplate.v1";
 
@@ -258,6 +259,7 @@ function readStoredFaq() {
 function persistFaq(template) {
   try {
     window.localStorage.setItem(AGENT_FAQ_STORAGE_KEY, JSON.stringify(template));
+    saveServerContent(AGENT_FAQ_STORAGE_KEY, template);
   } catch {
     // FAQ останется доступен до перезагрузки даже без localStorage.
   }
@@ -280,6 +282,19 @@ function AgentFaqTemplate() {
     const url = new URL(window.location.href);
     return url.searchParams.get("faq") || defaultFaqTemplate.sections[0]?.id || "start";
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(AGENT_FAQ_STORAGE_KEY).then((savedTemplate) => {
+      if (!isMounted || !savedTemplate) return;
+      setTemplate(hydrateTemplate(savedTemplate));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function updateTemplate(updater) {
     setTemplate((current) => {

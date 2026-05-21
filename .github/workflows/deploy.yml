@@ -36,3 +36,82 @@ jobs:
             -o IdentitiesOnly=yes \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             "/opt/atlas-analytics/deploy.sh"
+
+      - name: Deploy content API
+        shell: bash
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            server/content-api.mjs \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-api.mjs"
+
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content
+          sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo chown -R root:root /opt/atlas-content-api
+          sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
+
+          sudo tee /etc/systemd/system/atlas-content-api.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Atlas Analytics Content API
+          After=network.target
+
+          [Service]
+          Type=simple
+          Environment=ATLAS_CONTENT_API_PORT=8787
+          Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
+          ExecStart=/usr/bin/node /opt/atlas-content-api/content-api.mjs
+          Restart=always
+          RestartSec=3
+          User=www-data
+          Group=www-data
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now atlas-content-api.service
+          sudo systemctl restart atlas-content-api.service
+
+          NGINX_FILE="$(sudo grep -rl 'analytics.pupanel.cc' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -n 1 || true)"
+          if [ -z "$NGINX_FILE" ]; then
+            NGINX_FILE="$(sudo find /etc/nginx/sites-enabled /etc/nginx/conf.d -type f 2>/dev/null | head -n 1 || true)"
+          fi
+
+          if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/content/' "$NGINX_FILE"; then
+            sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          snippet = """
+
+              location /api/content/ {
+                  proxy_pass http://127.0.0.1:8787/api/content/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 10m;
+              }
+          """
+          marker = "location /api/content/"
+          if marker not in text:
+              index = text.find("location /")
+              if index != -1:
+                  line_start = text.rfind("\n", 0, index) + 1
+                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+              else:
+                  index = text.rfind("}")
+                  text = text[:index] + snippet + "\n" + text[index:]
+              open(path, "w", encoding="utf-8").write(text)
+          PY
+          fi
+
+          sudo nginx -t
+          sudo systemctl reload nginx
+          REMOTE

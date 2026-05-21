@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const PRESENTATION_SCRIPT_DRAFTS_STORAGE_KEY = "atlas.analytics.ceoPresentation.scriptDrafts.v1";
+const PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY = "atlas.analytics.ceoPresentation.visualDrafts.v1";
 const PRESENTATION_PREVIEW_MODES = [
   { id: "architect", label: "Архитектор", hint: "говорящая голова" },
   { id: "transition", label: "Переход", hint: "мягкая склейка" },
@@ -152,14 +154,31 @@ function readStoredScriptDrafts() {
   }
 }
 
+function readStoredVisualDrafts() {
+  if (typeof window === "undefined") return {};
+
+  try {
+    return JSON.parse(window.localStorage.getItem(PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 function persistScriptDrafts(nextDrafts) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(PRESENTATION_SCRIPT_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
+  saveServerContent(PRESENTATION_SCRIPT_DRAFTS_STORAGE_KEY, nextDrafts);
+}
+
+function persistVisualDrafts(nextDrafts) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
+  saveServerContent(PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY, nextDrafts);
 }
 
 function AtlasPresentationBoard() {
   const [activeSlideId, setActiveSlideId] = useState(PRESENTATION_SLIDES[0].id);
-  const [visualDrafts, setVisualDrafts] = useState({});
+  const [visualDrafts, setVisualDrafts] = useState(readStoredVisualDrafts);
   const [scriptDrafts, setScriptDrafts] = useState(readStoredScriptDrafts);
   const [scriptEditMode, setScriptEditMode] = useState({});
   const [visualEditMode, setVisualEditMode] = useState({});
@@ -200,6 +219,23 @@ function AtlasPresentationBoard() {
   ].filter(Boolean).join(" ");
 
   useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(PRESENTATION_SCRIPT_DRAFTS_STORAGE_KEY).then((savedDrafts) => {
+      if (!isMounted || !savedDrafts || typeof savedDrafts !== "object") return;
+      setScriptDrafts(savedDrafts);
+    });
+    loadServerContent(PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY).then((savedDrafts) => {
+      if (!isMounted || !savedDrafts || typeof savedDrafts !== "object") return;
+      setVisualDrafts(savedDrafts);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     setDraftSeed(1);
     setDraftNotes("");
     setCopiedPrompt(false);
@@ -216,6 +252,7 @@ function AtlasPresentationBoard() {
     setVisualDrafts((current) => {
       const next = { ...current, [activeSlide.id]: value };
       if (value === activeSlide.visual) delete next[activeSlide.id];
+      persistVisualDrafts(next);
       return next;
     });
     setCopiedPrompt(false);
@@ -225,6 +262,7 @@ function AtlasPresentationBoard() {
     setVisualDrafts((current) => {
       const next = { ...current };
       delete next[activeSlide.id];
+      persistVisualDrafts(next);
       return next;
     });
     setDraftSeed((current) => current + 1);

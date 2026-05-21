@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const MATERIALS_STORAGE_KEY = "atlas.analytics.materialLinks.v1";
 
@@ -376,6 +377,7 @@ function readStoredMaterials() {
 function persistMaterials(nextItems) {
   try {
     window.localStorage.setItem(MATERIALS_STORAGE_KEY, JSON.stringify(nextItems));
+    saveServerContent(MATERIALS_STORAGE_KEY, nextItems);
   } catch {
     // Таблица продолжит работать до перезагрузки, даже если localStorage недоступен.
   }
@@ -579,6 +581,19 @@ function MaterialsLinksBoard() {
   const [editingItemId, setEditingItemId] = useState(null);
   const [sheetUrl, setSheetUrl] = useState("");
   const [importState, setImportState] = useState({ status: "idle", message: "" });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(MATERIALS_STORAGE_KEY).then((savedItems) => {
+      if (!isMounted || !savedItems) return;
+      setItems(hydrateMaterialItems(savedItems));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const groupedItems = MATERIAL_CATEGORIES.map((category) => ({
     ...category,

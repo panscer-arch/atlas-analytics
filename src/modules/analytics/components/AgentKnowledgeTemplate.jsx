@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const AGENT_KNOWLEDGE_STORAGE_KEY = "atlas.analytics.agentKnowledgeTemplate.v1";
 
@@ -391,6 +392,7 @@ function readStoredTemplate() {
 function persistTemplate(template) {
   try {
     window.localStorage.setItem(AGENT_KNOWLEDGE_STORAGE_KEY, JSON.stringify(template));
+    saveServerContent(AGENT_KNOWLEDGE_STORAGE_KEY, template);
   } catch {
     // Документ продолжит работать до перезагрузки страницы, даже если localStorage недоступен.
   }
@@ -415,6 +417,19 @@ function createNote() {
 
 function AgentKnowledgeTemplate() {
   const [template, setTemplate] = useState(readStoredTemplate);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(AGENT_KNOWLEDGE_STORAGE_KEY).then((savedTemplate) => {
+      if (!isMounted || !savedTemplate) return;
+      setTemplate(hydrateTemplate(savedTemplate));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function updateTemplate(updater) {
     setTemplate((current) => {

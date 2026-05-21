@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const VIDEO_SCRIPTS_STORAGE_KEY = "atlas.analytics.videoScripts.v2";
 
@@ -581,6 +582,7 @@ function readStoredVideos() {
 function persistVideos(videos) {
   try {
     window.localStorage.setItem(VIDEO_SCRIPTS_STORAGE_KEY, JSON.stringify(videos));
+    saveServerContent(VIDEO_SCRIPTS_STORAGE_KEY, videos);
   } catch {
     // Сценарии останутся доступны до перезагрузки даже без localStorage.
   }
@@ -609,6 +611,19 @@ function VideoScriptsBoard() {
 
   const activeVideo = videos.find((video) => video.id === activeVideoId) || videos[0] || null;
   const isActiveVideoEditing = Boolean(activeVideo && editableVideoIds[activeVideo.id]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(VIDEO_SCRIPTS_STORAGE_KEY).then((savedVideos) => {
+      if (!isMounted || !savedVideos) return;
+      setVideos(hydrateVideos(savedVideos));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function updateVideos(updater) {
     setVideos((current) => {
