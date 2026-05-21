@@ -4,6 +4,7 @@ import path from "node:path";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
+const BACKUP_DIR = path.join(STORE_DIR, "_backups");
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
 
 function sendJson(response, statusCode, payload) {
@@ -36,6 +37,19 @@ async function readBody(request) {
 
 function filePathForKey(key) {
   return path.join(STORE_DIR, `${key}.json`);
+}
+
+async function backupExistingContent(key, targetPath) {
+  try {
+    const raw = await readFile(targetPath, "utf8");
+    const keyBackupDir = path.join(BACKUP_DIR, key);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    await mkdir(keyBackupDir, { recursive: true });
+    await writeFile(path.join(keyBackupDir, `${timestamp}.json`), raw, "utf8");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
 }
 
 await mkdir(STORE_DIR, { recursive: true });
@@ -76,6 +90,7 @@ const server = http.createServer(async (request, response) => {
       const targetPath = filePathForKey(key);
       const tempPath = `${targetPath}.${Date.now()}.tmp`;
 
+      await backupExistingContent(key, targetPath);
       await writeFile(tempPath, JSON.stringify(value, null, 2), "utf8");
       await rename(tempPath, targetPath);
       sendJson(response, 200, { ok: true, exists: true });

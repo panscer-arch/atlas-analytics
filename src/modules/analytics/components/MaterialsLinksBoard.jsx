@@ -625,11 +625,6 @@ function MaterialsLinksBoard() {
     if (editingItemId === itemId) setEditingItemId(null);
   }
 
-  function resetItems() {
-    updateItems(() => defaultMaterialItems);
-    setEditingItemId(null);
-  }
-
   async function importFromGoogleSheet() {
     const csvUrl = buildGoogleSheetCsvUrl(sheetUrl);
     if (!csvUrl) {
@@ -740,9 +735,6 @@ function MaterialsLinksBoard() {
           <div>
             <span className="analytics-kicker">Материалы</span>
           </div>
-          <AnalyticsActionButton variant="secondary" size="sm" onClick={resetItems}>
-            Сбросить к шаблону
-          </AnalyticsActionButton>
         </div>
         <div className="analytics-materials-add-grid">
           <label>

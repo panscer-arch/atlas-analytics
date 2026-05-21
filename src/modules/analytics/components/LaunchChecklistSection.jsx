@@ -860,25 +860,6 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     updateTasks(storageKey, setTasks, (current) => current.filter((task) => task.id !== taskId));
   }
 
-  function resetTasks() {
-    if (isCustomBoard) {
-      setCustomChecklists((current) => {
-        const next = current.map((checklist) => (checklist.id === activeBoard ? { ...checklist, tasks: [] } : checklist));
-        persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
-        return next;
-      });
-    } else if (isIdeasBoard) {
-      updateTasks(IDEAS_CHECKLIST_STORAGE_KEY, setIdeaTasks, () => defaultIdeasChecklistTasks);
-    } else if (isMarketingBoard) {
-      updateTasks(MARKETING_CHECKLIST_STORAGE_KEY, setMarketingTasks, () => defaultMarketingChecklistTasks);
-    } else if (isKnowledgeBaseBoard) {
-      updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, () => defaultKnowledgeBaseChecklistTasks);
-    } else {
-      updateTasks(LAUNCH_CHECKLIST_STORAGE_KEY, setLaunchTasks, () => defaultLaunchChecklistTasks);
-    }
-    setEditingCell(null);
-  }
-
   function addChecklist() {
     const title = newChecklistName.trim();
     if (!title) return;
@@ -1060,9 +1041,6 @@ function LaunchChecklistSection({ mode = "tasks" }) {
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
           </div>
-          <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTasks}>
-            Сбросить к шаблону
-          </AnalyticsActionButton>
         </div>
         <div className="analytics-launch-form-grid">
           <label>
