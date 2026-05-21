@@ -49,12 +49,17 @@ import RetentionChart from "./charts/RetentionChart";
 import CampaignPerformanceChart from "./charts/CampaignPerformanceChart";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
-import { loadServerContent } from "./services/contentStore";
+import { loadServerContent, saveServerContent } from "./services/contentStore";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
 import { useEffect, useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
+const CRM_FOCUS_STORAGE_KEY = "atlas.analytics.crmFocus.v1";
+const DEFAULT_CRM_FOCUS = {
+  priority: "Сформулировать главный приоритет дня",
+  nextStep: "Записать следующий конкретный шаг",
+};
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -287,6 +292,8 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
+  const [crmFocus, setCrmFocus] = useState(DEFAULT_CRM_FOCUS);
+  const [isCrmFocusLoaded, setIsCrmFocusLoaded] = useState(false);
   const [crmTaskStats, setCrmTaskStats] = useState(() => buildCrmTaskStats({
     launch: defaultLaunchChecklistTasks,
     marketing: defaultMarketingChecklistTasks,
@@ -295,6 +302,35 @@ function AnalyticsPage() {
   }));
   const [crmContentStats, setCrmContentStats] = useState(() => buildCrmContentStats());
   const { data, isLoading } = useAnalyticsData();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(CRM_FOCUS_STORAGE_KEY).then((savedFocus) => {
+      if (!isMounted) return;
+      if (savedFocus && typeof savedFocus === "object") {
+        setCrmFocus({
+          priority: savedFocus.priority || DEFAULT_CRM_FOCUS.priority,
+          nextStep: savedFocus.nextStep || DEFAULT_CRM_FOCUS.nextStep,
+        });
+      }
+      setIsCrmFocusLoaded(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isCrmFocusLoaded) return undefined;
+
+    const saveTimer = window.setTimeout(() => {
+      saveServerContent(CRM_FOCUS_STORAGE_KEY, crmFocus);
+    }, 450);
+
+    return () => window.clearTimeout(saveTimer);
+  }, [crmFocus, isCrmFocusLoaded]);
 
   useEffect(() => {
     let isMounted = true;
@@ -956,10 +992,8 @@ function AnalyticsPage() {
     ];
     const taskDoneWidth = `${taskTotals.total ? Math.min((taskTotals.done / taskTotals.total) * 100, 100) : 0}%`;
     const focusItems = [
-      ["Главный приоритет", dashboardTasks[0]?.title || "Держать запуск Atlas в рабочем ритме", "success"],
-      ["Следующий шаг", dashboardTasks[1]?.title || "Закрыть ближайшие задачи запуска и контента", "accent"],
-      ["Риск", data.kpis.firstRiskDate === "без риска" ? "Критических рисков сейчас не видно" : `Первая дата риска: ${data.kpis.firstRiskDate}`, riskTone],
-      ["Решение", taskTotals.left > 0 ? `Осталось закрыть ${taskTotals.left} задач` : "Основные задачи закрыты", taskTotals.left > 0 ? "accent" : "success"],
+      ["Главный приоритет", "priority", crmFocus.priority, "success"],
+      ["Следующий шаг", "nextStep", crmFocus.nextStep, "accent"],
     ];
     const dashboardCards = [
       {
@@ -1149,20 +1183,17 @@ function AnalyticsPage() {
                     </div>
                   </div>
                   <div className="analytics-crm-focus-list">
-                    {focusItems.map(([label, value, tone]) => (
+                    {focusItems.map(([label, field, value, tone]) => (
                       <div key={label} className={`analytics-crm-focus-row is-${tone}`}>
                         <span>{label}</span>
-                        <b>{value}</b>
+                        <textarea
+                          value={value}
+                          onChange={(event) => setCrmFocus((current) => ({ ...current, [field]: event.target.value }))}
+                          rows={4}
+                          aria-label={label}
+                        />
                       </div>
                     ))}
-                  </div>
-                  <div className="analytics-crm-focus-actions">
-                    <button type="button" onClick={() => setActiveTab("tasks")}>
-                      {card.action}
-                    </button>
-                    <button type="button" onClick={() => setIsQuickNotesOpen(true)}>
-                      Заметки
-                    </button>
                   </div>
                 </article>
               ) : (
