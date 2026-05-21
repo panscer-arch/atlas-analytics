@@ -955,10 +955,11 @@ function AnalyticsPage() {
       ["Всего", taskTotals.total, "default"],
     ];
     const taskDoneWidth = `${taskTotals.total ? Math.min((taskTotals.done / taskTotals.total) * 100, 100) : 0}%`;
-    const boardSignals = [
-      ["Колонки", "CRM"],
-      ["Режим", "задачи"],
-      ["Статус", "рабочая"],
+    const focusItems = [
+      ["Главный приоритет", dashboardTasks[0]?.title || "Держать запуск Atlas в рабочем ритме", "success"],
+      ["Следующий шаг", dashboardTasks[1]?.title || "Закрыть ближайшие задачи запуска и контента", "accent"],
+      ["Риск", data.kpis.firstRiskDate === "без риска" ? "Критических рисков сейчас не видно" : `Первая дата риска: ${data.kpis.firstRiskDate}`, riskTone],
+      ["Решение", taskTotals.left > 0 ? `Осталось закрыть ${taskTotals.left} задач` : "Основные задачи закрыты", taskTotals.left > 0 ? "accent" : "success"],
     ];
     const dashboardCards = [
       {
@@ -986,12 +987,12 @@ function AnalyticsPage() {
         action: "Открыть контент",
       },
       {
-        id: "crmBoard",
-        kicker: "Доска задач",
-        title: "Task board",
-        text: "Рабочая доска с планом, прогрессом и готовыми блоками.",
-        meta: "CRM board",
-        action: "Открыть доску",
+        id: "focus",
+        kicker: "Фокус дня",
+        title: "Операционный статус",
+        text: "Короткая выжимка того, что сейчас требует внимания.",
+        meta: "Сегодня",
+        action: "Открыть задачи",
       },
     ];
 
@@ -1136,29 +1137,33 @@ function AnalyticsPage() {
                     <span>Единое хранилище текстов, материалов и production-базы</span>
                   </div>
                 </article>
-              ) : card.id === "crmBoard" ? (
-                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-board">
+              ) : card.id === "focus" ? (
+                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-focus">
                   <div className="analytics-crm-command-card-top">
                     <span>{card.kicker}</span>
                     <small>{card.meta}</small>
                   </div>
-                  <div className="analytics-crm-board-main">
+                  <div className="analytics-crm-focus-main">
                     <div>
-                      <strong>Доска задач</strong>
+                      <strong>{card.title}</strong>
                     </div>
-                    <button type="button" onClick={() => setActiveTab("crmBoard")}>
-                      {card.action}
-                    </button>
                   </div>
-                  <div className="analytics-crm-board-lanes">
-                    {boardSignals.map(([label, value]) => (
-                      <div key={label}>
+                  <div className="analytics-crm-focus-list">
+                    {focusItems.map(([label, value, tone]) => (
+                      <div key={label} className={`analytics-crm-focus-row is-${tone}`}>
                         <span>{label}</span>
                         <b>{value}</b>
                       </div>
                     ))}
                   </div>
-                  <p>{card.text}</p>
+                  <div className="analytics-crm-focus-actions">
+                    <button type="button" onClick={() => setActiveTab("tasks")}>
+                      {card.action}
+                    </button>
+                    <button type="button" onClick={() => setIsQuickNotesOpen(true)}>
+                      Заметки
+                    </button>
+                  </div>
                 </article>
               ) : (
                 <article key={card.id} className="analytics-crm-command-card">
