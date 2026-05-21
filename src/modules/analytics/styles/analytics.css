@@ -2136,13 +2136,25 @@
   margin-top: 1rem;
 }
 
-.analytics-board-embed {
-  display: grid;
-  gap: 1rem;
+.analytics-board-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(3, 6, 14, 0.72);
+  backdrop-filter: blur(12px);
 }
 
 .analytics-board-embed-panel {
-  padding: 1.25rem;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1500px, 100%);
+  max-height: calc(100vh - 2rem);
+  padding: 1.1rem;
+  overflow: hidden;
 }
 
 .analytics-board-embed-head {
@@ -2152,18 +2164,40 @@
   align-items: flex-start;
 }
 
+.analytics-board-embed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.analytics-board-close-btn {
+  border: 1px solid rgba(157, 178, 255, 0.16) !important;
+  background: rgba(12, 18, 31, 0.78) !important;
+  color: #dbe7fa !important;
+  box-shadow: none !important;
+}
+
+.analytics-board-close-btn:hover,
+.analytics-board-close-btn:focus-visible {
+  border-color: rgba(255, 216, 161, 0.32) !important;
+  color: #fff0d2 !important;
+}
+
 .analytics-board-frame-wrap {
   margin-top: 1rem;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(157, 178, 255, 0.12);
   background: rgba(8, 13, 24, 0.9);
+  min-height: 0;
 }
 
 .analytics-board-frame {
   display: block;
   width: 100%;
-  min-height: 820px;
+  height: 100%;
+  min-height: 0;
   border: 0;
   background: #0d1117;
 }
@@ -5151,12 +5185,21 @@
 }
 
 @media (max-width: 767px) {
+  .analytics-board-overlay {
+    padding: 0.5rem;
+  }
+
   .analytics-board-embed-head {
     flex-direction: column;
   }
 
-  .analytics-board-frame {
-    min-height: 680px;
+  .analytics-board-embed-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .analytics-board-embed-actions .btn {
+    flex: 1 1 140px;
   }
 
   .analytics-header,

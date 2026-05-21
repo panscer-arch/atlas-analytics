@@ -36,7 +36,7 @@ import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
 
@@ -221,6 +221,26 @@ function AnalyticsPage() {
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
   const { data, isLoading } = useAnalyticsData();
 
+  useEffect(() => {
+    if (!isBoardOpen || typeof document === "undefined") return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsBoardOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isBoardOpen]);
+
   if (isLoading) {
     return <LoadingState />;
   }
@@ -293,6 +313,10 @@ function AnalyticsPage() {
     setActiveTab("overview");
     setGraphsOpenSignal((current) => current + 1);
     window.setTimeout(() => scrollToSection("overview-graphs"), 60);
+  }
+
+  function handleToggleBoard() {
+    setIsBoardOpen((current) => !current);
   }
 
   const primaryKpis = [
@@ -776,7 +800,7 @@ function AnalyticsPage() {
         onOpenCharts={handleOpenCharts}
         onOpenNotes={() => setIsQuickNotesOpen(true)}
         onOpenTasks={() => setActiveTab("launch")}
-        onToggleBoard={() => setIsBoardOpen((current) => !current)}
+        onToggleBoard={handleToggleBoard}
         isBoardOpen={isBoardOpen}
       />
     );
@@ -1621,7 +1645,7 @@ function AnalyticsPage() {
 
       <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} />
 
-      {isBoardOpen ? <AnalyticsBoardEmbed activeTab={activeTab} boardUrl={ANALYTICS_BOARD_URL} /> : null}
+      {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
 
       <AnalyticsTabs tabs={analyticsTabs} activeTab={activeTab} onChange={setActiveTab} />
 
