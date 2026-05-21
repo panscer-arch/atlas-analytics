@@ -689,7 +689,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const visibleTasks = isStaticContentBoard ? [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
   const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
   const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
-  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isMarketingBoard ? "Маркетинг" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isMarketingBoard ? "Задачи маркетинга" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
   const boardSubtitle = isCustomBoard
     ? "Пользовательский чек-лист с собственным набором задач."
     : isIdeasBoard
@@ -735,7 +735,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const taskBoardTabs = [
     { id: "launch", label: "Задачи запуска" },
     { id: "ideas", label: "Идеи" },
-    { id: "marketing", label: "Маркетинг" },
+    { id: "marketing", label: "Задачи маркетинга" },
+    { id: "knowledgeBase", label: "Задачи по базе знаний" },
   ];
   const contentBoardTabs = [
     { id: "materials", label: "Материалы" },
@@ -744,7 +745,6 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "ceoPresentation", label: "CEO-презентация" },
     { id: "videoScripts", label: "Ролики" },
     { id: "terminology", label: "Терминология" },
-    { id: "knowledgeBase", label: "База знаний" },
   ];
   const visibleBoardTabs = mode === "content" ? contentBoardTabs : taskBoardTabs;
   useEffect(() => {

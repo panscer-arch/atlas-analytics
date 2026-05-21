@@ -738,11 +738,7 @@ function MaterialsLinksBoard() {
       <section className="analytics-surface analytics-materials-form mt-4">
         <div className="analytics-data-table-head">
           <div>
-            <span className="analytics-kicker">Google Docs / Drive</span>
-            <h3 className="analytics-section-title">Реестр материалов</h3>
-            <p className="analytics-page-subtitle mb-0">
-              Сохраняем привычный формат: документ остается в Google Docs, а здесь лежит карта ссылок по разделам.
-            </p>
+            <span className="analytics-kicker">Материалы</span>
           </div>
           <AnalyticsActionButton variant="secondary" size="sm" onClick={resetItems}>
             Сбросить к шаблону
@@ -785,7 +781,7 @@ function MaterialsLinksBoard() {
             Добавить ссылку
           </AnalyticsActionButton>
         </div>
-        <div className="analytics-materials-import">
+        <div className="analytics-materials-import analytics-materials-import-hidden">
           <label>
             <span>Импорт из Google Sheets</span>
             <input
@@ -806,19 +802,16 @@ function MaterialsLinksBoard() {
         </div>
         <div className="analytics-materials-paste-import">
           <label>
-            <span>Вставить таблицу с живыми ссылками</span>
+            <span>Вставить таблицу</span>
             <textarea
               className="form-control analytics-launch-input"
               rows="3"
               onPaste={handleTablePaste}
-              placeholder="Выдели таблицу в Google Sheets вместе с шапкой, нажми Cmd+C и вставь сюда. Скрытые ссылки из ячеек подтянутся автоматически."
+              placeholder="Вставь таблицу с названиями и ссылками"
             />
           </label>
-          <div className="analytics-materials-helper">
-            Если после экспорта в JSON у всех строк `url: ""`, значит в таблицу попали только названия. Нужно скопировать диапазон из Google Sheets именно через `Cmd+C`, не через CSV.
-          </div>
         </div>
-        <div className="analytics-materials-export">
+        <div className="analytics-materials-export analytics-materials-export-hidden">
           <button type="button" className="btn analytics-board-btn" onClick={copyMaterialsJson}>
             Скопировать все материалы JSON
           </button>
