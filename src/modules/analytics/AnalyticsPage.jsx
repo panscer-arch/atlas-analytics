@@ -9,7 +9,16 @@ import AnalyticsScenarios from "./components/AnalyticsScenarios";
 import AnalyticsPriorityActions from "./components/AnalyticsPriorityActions";
 import AnalyticsCollapsibleSection from "./components/AnalyticsCollapsibleSection";
 import AnalyticsBoardEmbed from "./components/AnalyticsBoardEmbed";
-import LaunchChecklistSection from "./components/LaunchChecklistSection";
+import LaunchChecklistSection, {
+  IDEAS_CHECKLIST_STORAGE_KEY,
+  KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY,
+  LAUNCH_CHECKLIST_STORAGE_KEY,
+  MARKETING_CHECKLIST_STORAGE_KEY,
+  defaultIdeasChecklistTasks,
+  defaultKnowledgeBaseChecklistTasks,
+  defaultLaunchChecklistTasks,
+  defaultMarketingChecklistTasks,
+} from "./components/LaunchChecklistSection";
 import ActivationSection from "./components/ActivationSection";
 import TabSummary from "./components/TabSummary";
 import SectionHeading from "./components/SectionHeading";
@@ -34,6 +43,7 @@ import RetentionChart from "./charts/RetentionChart";
 import CampaignPerformanceChart from "./charts/CampaignPerformanceChart";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
+import { loadServerContent } from "./services/contentStore";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
 import { useEffect, useState } from "react";
@@ -65,6 +75,25 @@ function formatDays(value) {
 
 function getMetricValue(metrics = [], title) {
   return metrics.find((item) => item.title === title)?.value ?? 0;
+}
+
+function getDoneTaskCount(tasks = []) {
+  return tasks.filter((task) => task?.status === "Готово" || task?.done === true).length;
+}
+
+function buildCrmTaskStats(source) {
+  const boards = [
+    ["Запуск", source.launch],
+    ["Маркетинг", source.marketing],
+    ["Идеи", source.ideas],
+    ["База знаний", source.knowledgeBase],
+  ];
+
+  return boards.map(([label, tasks]) => ({
+    label,
+    total: tasks.length,
+    done: getDoneTaskCount(tasks),
+  }));
 }
 
 function buildDashboardLiveFeed(cycleTypes = [], direction = "incoming") {
@@ -231,7 +260,37 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
+  const [crmTaskStats, setCrmTaskStats] = useState(() => buildCrmTaskStats({
+    launch: defaultLaunchChecklistTasks,
+    marketing: defaultMarketingChecklistTasks,
+    ideas: defaultIdeasChecklistTasks,
+    knowledgeBase: defaultKnowledgeBaseChecklistTasks,
+  }));
   const { data, isLoading } = useAnalyticsData();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([
+      loadServerContent(LAUNCH_CHECKLIST_STORAGE_KEY),
+      loadServerContent(MARKETING_CHECKLIST_STORAGE_KEY),
+      loadServerContent(IDEAS_CHECKLIST_STORAGE_KEY),
+      loadServerContent(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY),
+    ]).then(([launch, marketing, ideas, knowledgeBase]) => {
+      if (!isMounted) return;
+
+      setCrmTaskStats(buildCrmTaskStats({
+        launch: Array.isArray(launch) ? launch : defaultLaunchChecklistTasks,
+        marketing: Array.isArray(marketing) ? marketing : defaultMarketingChecklistTasks,
+        ideas: Array.isArray(ideas) ? ideas : defaultIdeasChecklistTasks,
+        knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : defaultKnowledgeBaseChecklistTasks,
+      }));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isBoardOpen || typeof document === "undefined") return undefined;
@@ -832,13 +891,14 @@ function AnalyticsPage() {
       ["Кошельки", walletConnections, "success"],
       ["Активации", cycleActivations, "success"],
     ];
-    const taskBoardSignals = [
-      ["Запуск", "контроль", "success"],
-      ["Идеи", "сбор", "accent"],
-      ["Маркетинг", "рост", "accent"],
-      ["База знаний", "структура", "success"],
+    const contentStorageSignals = [
+      ["Материалы", "links", "success"],
+      ["Параметры", "facts", "accent"],
+      ["FAQ", "support", "success"],
+      ["CEO", "9 слайдов", "accent"],
+      ["Ролики", "scripts", "success"],
+      ["Термины", "glossary", "accent"],
     ];
-    const taskFocusItems = dashboardTasks.slice(0, 3);
     const dashboardCards = [
       {
         id: "analytics",
@@ -894,6 +954,11 @@ function AnalyticsPage() {
                   <div className="analytics-crm-command-card-top">
                     <span>{card.kicker}</span>
                     <small>{card.meta}</small>
+                  </div>
+                  <div className="analytics-crm-orb analytics-crm-orb-analytics" aria-hidden="true">
+                    <span />
+                    <i />
+                    <b />
                   </div>
                   <div className="analytics-crm-analytics-main">
                     <div>
@@ -957,20 +1022,48 @@ function AnalyticsPage() {
                     <b />
                   </div>
                   <div className="analytics-crm-tasks-board">
-                    {taskBoardSignals.map(([label, value, tone]) => (
-                      <div key={label} className={`analytics-crm-tasks-chip is-${tone}`}>
+                    {crmTaskStats.map((item) => (
+                      <div key={item.label} className={`analytics-crm-tasks-chip ${item.done === item.total && item.total > 0 ? "is-success" : "is-accent"}`}>
+                        <span>{item.label}</span>
+                        <b>{item.done}/{item.total}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="analytics-crm-tasks-summary">
+                    <span>Готово по всем разделам</span>
+                    <b>{crmTaskStats.reduce((sum, item) => sum + item.done, 0)}/{crmTaskStats.reduce((sum, item) => sum + item.total, 0)}</b>
+                  </div>
+                </article>
+              ) : card.id === "content" ? (
+                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-content">
+                  <div className="analytics-crm-command-card-top">
+                    <span>{card.kicker}</span>
+                    <small>{card.meta}</small>
+                  </div>
+                  <div className="analytics-crm-content-main">
+                    <div>
+                      <span className="analytics-crm-analytics-label">Storage core</span>
+                      <strong>{card.title}</strong>
+                    </div>
+                    <button type="button" onClick={() => setActiveTab("content")}>
+                      {card.action}
+                    </button>
+                  </div>
+                  <div className="analytics-crm-orb analytics-crm-orb-content" aria-hidden="true">
+                    <span />
+                    <i />
+                    <b />
+                  </div>
+                  <div className="analytics-crm-content-grid">
+                    {contentStorageSignals.map(([label, value, tone]) => (
+                      <div key={label} className={`analytics-crm-content-cell is-${tone}`}>
                         <span>{label}</span>
                         <b>{value}</b>
                       </div>
                     ))}
                   </div>
-                  <div className="analytics-crm-tasks-focus">
-                    {taskFocusItems.map((item) => (
-                      <div key={item.id} className="analytics-crm-tasks-focus-row">
-                        <span>{item.meta}</span>
-                        <b>{item.title}</b>
-                      </div>
-                    ))}
+                  <div className="analytics-crm-content-footer">
+                    <span>Единое хранилище текстов, материалов и production-базы</span>
                   </div>
                 </article>
               ) : (

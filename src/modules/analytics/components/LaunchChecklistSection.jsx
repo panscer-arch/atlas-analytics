@@ -9,10 +9,10 @@ import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
-const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
-const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
-const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
+export const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tasks.v3";
+export const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
+export const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
+export const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
@@ -62,7 +62,7 @@ const STATIC_BOARD_META = {
   },
 };
 
-const defaultLaunchChecklistTasks = [
+export const defaultLaunchChecklistTasks = [
   {
     id: "github-audit",
     title: "Самостоятельный аудит с помощью GitHub",
@@ -129,7 +129,7 @@ const defaultLaunchChecklistTasks = [
   },
 ];
 
-const defaultKnowledgeBaseChecklistTasks = [
+export const defaultKnowledgeBaseChecklistTasks = [
   {
     id: "kb-presentation",
     title: "Презентация",
@@ -195,7 +195,7 @@ const defaultKnowledgeBaseChecklistTasks = [
   },
 ];
 
-const defaultIdeasChecklistTasks = [
+export const defaultIdeasChecklistTasks = [
   {
     id: "ideas-unity-proverb",
     title: "Ежедневная пословица про силу единства",
@@ -432,7 +432,7 @@ const defaultIdeasChecklistTasks = [
   },
 ];
 
-const defaultMarketingChecklistTasks = [
+export const defaultMarketingChecklistTasks = [
   {
     id: "marketing-youtube-parser",
     title: "Парсер YouTube с рассылкой",
