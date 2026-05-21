@@ -631,12 +631,13 @@ function patchChecklistTask(task, patch) {
   return next;
 }
 
-function LaunchChecklistSection() {
+function LaunchChecklistSection({ mode = "tasks" }) {
   const [activeBoard, setActiveBoard] = useState(() => {
-    if (typeof window === "undefined") return DEFAULT_BOARD_ID;
+    const fallbackBoard = mode === "content" ? "materials" : DEFAULT_BOARD_ID;
+    if (typeof window === "undefined") return fallbackBoard;
 
     const url = new URL(window.location.href);
-    return url.searchParams.get("board") || DEFAULT_BOARD_ID;
+    return url.searchParams.get("board") || fallbackBoard;
   });
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
@@ -731,11 +732,28 @@ function LaunchChecklistSection() {
     : isKnowledgeBaseBoard
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
+  const taskBoardTabs = [
+    { id: "launch", label: "Задачи запуска" },
+    { id: "ideas", label: "Идеи" },
+    { id: "marketing", label: "Маркетинг" },
+  ];
+  const contentBoardTabs = [
+    { id: "materials", label: "Материалы" },
+    { id: "agentTasks", label: "Параметры" },
+    { id: "agentFaq", label: "FAQ" },
+    { id: "ceoPresentation", label: "CEO-презентация" },
+    { id: "videoScripts", label: "Ролики" },
+    { id: "terminology", label: "Терминология" },
+    { id: "knowledgeBase", label: "База знаний" },
+  ];
+  const visibleBoardTabs = mode === "content" ? contentBoardTabs : taskBoardTabs;
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const isKnownBoard = STATIC_BOARD_IDS.includes(activeBoard) || customChecklists.some((checklist) => checklist.id === activeBoard);
-    const nextBoard = isKnownBoard ? activeBoard : DEFAULT_BOARD_ID;
+    const visibleBoardIds = visibleBoardTabs.map((tab) => tab.id);
+    const fallbackBoard = mode === "content" ? "materials" : DEFAULT_BOARD_ID;
+    const isKnownBoard = visibleBoardIds.includes(activeBoard) || (mode === "tasks" && customChecklists.some((checklist) => checklist.id === activeBoard));
+    const nextBoard = isKnownBoard ? activeBoard : fallbackBoard;
 
     if (nextBoard !== activeBoard) {
       setActiveBoard(nextBoard);
@@ -743,13 +761,13 @@ function LaunchChecklistSection() {
     }
 
     const url = new URL(window.location.href);
-    if (nextBoard === DEFAULT_BOARD_ID) {
+    if (nextBoard === fallbackBoard) {
       url.searchParams.delete("board");
     } else {
       url.searchParams.set("board", nextBoard);
     }
     window.history.replaceState({}, "", url.toString());
-  }, [activeBoard, customChecklists]);
+  }, [activeBoard, customChecklists, mode]);
 
   function updateTasks(storageKey, setTasks, updater) {
     setTasks((current) => {
@@ -946,111 +964,24 @@ function LaunchChecklistSection() {
   return (
     <>
       <section className="analytics-surface analytics-tab-summary mt-4">
-        <span className="analytics-kicker">Задачи</span>
-        <h2 className="analytics-tab-summary-title">Чек-листы команды</h2>
+        <span className="analytics-kicker">{mode === "content" ? "Контент" : "Задачи"}</span>
+        <h2 className="analytics-tab-summary-title">{mode === "content" ? "Контентная база Atlas" : "Чек-листы команды"}</h2>
         <p className="analytics-tab-summary-copy">{boardDescription}</p>
         <div className="analytics-launch-browser-tabs" role="tablist" aria-label="Разделы чеклиста запуска">
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "launch" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("launch");
-              setEditingCell(null);
-            }}
-          >
-            Задачи запуска
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "knowledgeBase" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("knowledgeBase");
-              setEditingCell(null);
-            }}
-          >
-            База знаний
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "ideas" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("ideas");
-              setEditingCell(null);
-            }}
-          >
-            Идеи
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "videoScripts" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("videoScripts");
-              setEditingCell(null);
-            }}
-          >
-            Ролики
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "materials" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("materials");
-              setEditingCell(null);
-            }}
-          >
-            Материалы
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "agentTasks" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("agentTasks");
-              setEditingCell(null);
-            }}
-          >
-            Параметры
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "agentFaq" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("agentFaq");
-              setEditingCell(null);
-            }}
-          >
-            FAQ
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "ceoPresentation" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("ceoPresentation");
-              setEditingCell(null);
-            }}
-          >
-            CEO-презентация
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "terminology" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("terminology");
-              setEditingCell(null);
-            }}
-          >
-            Терминология
-          </button>
-          <button
-            type="button"
-            className={`analytics-launch-browser-tab${activeBoard === "marketing" ? " analytics-launch-browser-tab-active" : ""}`}
-            onClick={() => {
-              setActiveBoard("marketing");
-              setEditingCell(null);
-            }}
-          >
-            Маркетинг
-          </button>
-          {customChecklists.map((checklist) => (
+          {visibleBoardTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`analytics-launch-browser-tab${activeBoard === tab.id ? " analytics-launch-browser-tab-active" : ""}`}
+              onClick={() => {
+                setActiveBoard(tab.id);
+                setEditingCell(null);
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+          {mode === "tasks" ? customChecklists.map((checklist) => (
             <button
               key={checklist.id}
               type="button"
@@ -1062,8 +993,8 @@ function LaunchChecklistSection() {
             >
               {checklist.title}
             </button>
-          ))}
-          {isCreatingChecklist ? (
+          )) : null}
+          {mode === "tasks" && isCreatingChecklist ? (
             <form
               className="analytics-launch-new-checklist"
               onSubmit={(event) => {
@@ -1082,11 +1013,11 @@ function LaunchChecklistSection() {
                 +
               </button>
             </form>
-          ) : (
+          ) : mode === "tasks" ? (
             <button type="button" className="analytics-launch-browser-tab analytics-launch-browser-tab-add" onClick={() => setIsCreatingChecklist(true)}>
               +
             </button>
-          )}
+          ) : null}
         </div>
         {!isStaticContentBoard ? (
           <div className="analytics-tab-summary-points">

@@ -206,14 +206,26 @@ function scrollToSection(sectionId) {
 }
 
 function getInitialAnalyticsTab() {
-  if (typeof window === "undefined") return "dashboard";
+  if (typeof window === "undefined") return "analytics";
 
   const url = new URL(window.location.href);
-  return url.searchParams.has("board") ? "launch" : "dashboard";
+  const board = url.searchParams.get("board");
+  const contentBoards = new Set(["materials", "agentTasks", "agentFaq", "ceoPresentation", "videoScripts", "terminology", "knowledgeBase"]);
+  const taskBoards = new Set(["launch", "ideas", "marketing"]);
+
+  if (contentBoards.has(board)) return "content";
+  if (taskBoards.has(board)) return "tasks";
+  if (board) return "tasks";
+  return "analytics";
+}
+
+function getInitialAnalyticsSectionTab() {
+  return "dashboard";
 }
 
 function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState(getInitialAnalyticsTab);
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState(getInitialAnalyticsSectionTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const [activationPeriod, setActivationPeriod] = useState("30d");
@@ -310,7 +322,8 @@ function AnalyticsPage() {
   const dashboardPoolValue = cashPosition.closingBalance ?? cashPosition.availableCash ?? 0;
 
   function handleOpenCharts() {
-    setActiveTab("overview");
+    setActiveTab("analytics");
+    setActiveAnalyticsTab("overview");
     setGraphsOpenSignal((current) => current + 1);
     window.setTimeout(() => scrollToSection("overview-graphs"), 60);
   }
@@ -526,7 +539,14 @@ function AnalyticsPage() {
     { title: "Топ-сеть", value: data.kpis.topNetwork, icon: "top-network", statusLabel: "лидер", description: "Самая активная сеть." },
   ];
 
-  const analyticsTabs = [
+  const mainTabs = [
+    { id: "analytics", label: "Аналитика", hint: "BI" },
+    { id: "tasks", label: "Задачи", hint: "запуск" },
+    { id: "content", label: "Контент", hint: "база" },
+    { id: "crmBoard", label: "CRM-доска", hint: "kanban" },
+  ];
+
+  const analyticsSectionTabs = [
     { id: "dashboard", label: "Дашборд", hint: "центр" },
     { id: "overview", label: "Обзор", hint: "день" },
     { id: "traffic", label: "Трафик / Онлайн", hint: "онлайн" },
@@ -537,8 +557,6 @@ function AnalyticsPage() {
     { id: "geography", label: "География", hint: "страны" },
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
-    { id: "launch", label: "Задачи", hint: "чеклисты" },
-    { id: "crmBoard", label: "CRM-доска", hint: "kanban" },
   ];
 
   function renderDashboard() {
@@ -800,7 +818,7 @@ function AnalyticsPage() {
       <AnalyticsHeader
         onOpenCharts={handleOpenCharts}
         onOpenNotes={() => setIsQuickNotesOpen(true)}
-        onOpenTasks={() => setActiveTab("launch")}
+        onOpenTasks={() => setActiveTab("tasks")}
         onToggleBoard={handleToggleBoard}
         isBoardOpen={isBoardOpen}
       />
@@ -1622,27 +1640,45 @@ function AnalyticsPage() {
     );
   }
 
-  function renderLaunchTab() {
-    return <LaunchChecklistSection />;
+  function renderTasksTab() {
+    return <LaunchChecklistSection mode="tasks" />;
+  }
+
+  function renderContentTab() {
+    return <LaunchChecklistSection mode="content" />;
   }
 
   function renderCrmBoardTab() {
     return <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} variant="inline" />;
   }
 
-  function renderActiveTab() {
-    if (activeTab === "dashboard") return renderDashboard();
-    if (activeTab === "traffic") return renderTrafficTab();
-    if (activeTab === "products") return renderProductsTab();
-    if (activeTab === "reinvest") return renderReinvestTab();
-    if (activeTab === "base") return renderBaseCompositionTab();
-    if (activeTab === "leaders") return renderLeadersTab();
-    if (activeTab === "geography") return renderGeographyTab();
-    if (activeTab === "partner") return renderPartnerTab();
-    if (activeTab === "wallets") return renderWalletsTab();
-    if (activeTab === "launch") return renderLaunchTab();
-    if (activeTab === "crmBoard") return renderCrmBoardTab();
+  function renderActiveAnalyticsTab() {
+    if (activeAnalyticsTab === "dashboard") return renderDashboard();
+    if (activeAnalyticsTab === "traffic") return renderTrafficTab();
+    if (activeAnalyticsTab === "products") return renderProductsTab();
+    if (activeAnalyticsTab === "reinvest") return renderReinvestTab();
+    if (activeAnalyticsTab === "base") return renderBaseCompositionTab();
+    if (activeAnalyticsTab === "leaders") return renderLeadersTab();
+    if (activeAnalyticsTab === "geography") return renderGeographyTab();
+    if (activeAnalyticsTab === "partner") return renderPartnerTab();
+    if (activeAnalyticsTab === "wallets") return renderWalletsTab();
     return renderOverview();
+  }
+
+  function renderAnalyticsTab() {
+    return (
+      <>
+        <AnalyticsTabs tabs={analyticsSectionTabs} activeTab={activeAnalyticsTab} onChange={setActiveAnalyticsTab} />
+        {renderActiveAnalyticsTab()}
+      </>
+    );
+  }
+
+  function renderActiveTab() {
+    if (activeTab === "tasks") return renderTasksTab();
+    if (activeTab === "content") return renderContentTab();
+    if (activeTab === "crmBoard") return renderCrmBoardTab();
+    return renderAnalyticsTab();
   }
 
   return (
@@ -1653,7 +1689,7 @@ function AnalyticsPage() {
 
       {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
 
-      <AnalyticsTabs tabs={analyticsTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AnalyticsTabs tabs={mainTabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {renderActiveTab()}
 
