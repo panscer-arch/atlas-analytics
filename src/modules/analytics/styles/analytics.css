@@ -249,13 +249,13 @@
 }
 
 .analytics-header-logo {
-  width: 4.15rem;
-  height: 4.15rem;
+  width: 4.8rem;
+  height: 4.8rem;
   flex: 0 0 auto;
-  border: 1px solid rgba(157, 178, 255, 0.18);
-  border-radius: 18px;
-  object-fit: cover;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.34);
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  box-shadow: none;
 }
 
 .analytics-page-title-animated {
