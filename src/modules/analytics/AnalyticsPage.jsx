@@ -683,12 +683,12 @@ function AnalyticsPage() {
   ];
 
   const mainTabs = [
-    { id: "dashboard", label: "Дашборд", hint: "CRM" },
-    { id: "analytics", label: "Аналитика", hint: "BI" },
-    { id: "tasks", label: "Задачи", hint: "запуск" },
-    { id: "content", label: "Контент", hint: "база" },
-    { id: "crmBoard", label: "CRM-доска", hint: "доска" },
-    { id: "quickNotes", label: "Заметки", hint: "быстро" },
+    { id: "dashboard", label: "Дашборд" },
+    { id: "analytics", label: "Аналитика" },
+    { id: "tasks", label: "Задачи" },
+    { id: "content", label: "Контент" },
+    { id: "crmBoard", label: "CRM-доска" },
+    { id: "quickNotes", label: "Заметки" },
   ];
 
   const analyticsSectionTabs = [
@@ -1036,7 +1036,7 @@ function AnalyticsPage() {
           <div className="analytics-crm-command-head">
             <div>
               <span className="analytics-kicker">Command center</span>
-              <h2>Панель управления CRM</h2>
+              <h2>Командный центр</h2>
             </div>
             <button type="button" className="btn analytics-notes-btn analytics-crm-notes-btn" onClick={() => setIsQuickNotesOpen(true)}>
               Заметки

@@ -254,7 +254,6 @@
   width: 4.8rem;
   height: 4.8rem;
   flex: 0 0 auto;
-  animation: analytics-logo-alive 5.8s ease-in-out infinite;
 }
 
 .analytics-header-logo {
@@ -300,19 +299,6 @@
   border-radius: 999px;
   opacity: 0.55;
   animation: analytics-logo-mouth 6.4s ease-in-out infinite;
-}
-
-@keyframes analytics-logo-alive {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  42% {
-    transform: translateY(-1px) rotate(0.7deg);
-  }
-  58% {
-    transform: translateY(1px) rotate(-0.5deg);
-  }
 }
 
 @keyframes analytics-logo-blink {
