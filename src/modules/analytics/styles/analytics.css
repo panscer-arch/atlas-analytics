@@ -3793,87 +3793,6 @@
   display: block;
 }
 
-.analytics-site-task-materials {
-  padding: 1.1rem;
-}
-
-.analytics-site-task-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.analytics-site-task-status {
-  flex: 0 0 auto;
-  border: 1px solid rgba(255, 216, 161, 0.28);
-  border-radius: 999px;
-  padding: 0.55rem 0.8rem;
-  background: rgba(255, 180, 74, 0.1);
-  color: #ffe0a8;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.76rem;
-}
-
-.analytics-site-task-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.analytics-site-task-card {
-  min-height: 132px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.65rem;
-  border: 1px solid rgba(157, 178, 255, 0.14);
-  border-radius: 18px;
-  padding: 1rem;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
-    rgba(10, 16, 29, 0.72);
-  color: #eef5ff;
-  text-decoration: none;
-}
-
-.analytics-site-task-card:hover,
-.analytics-site-task-card:focus-visible {
-  border-color: rgba(255, 180, 74, 0.34);
-  color: #fff7e8;
-  transform: translateY(-1px);
-}
-
-.analytics-site-task-card span {
-  color: #8ab8ff;
-  font-size: 0.75rem;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.analytics-site-task-card strong {
-  display: block;
-  font-size: 1.05rem;
-  line-height: 1.16;
-}
-
-.analytics-site-task-card small {
-  color: #9fb0c9;
-  line-height: 1.35;
-}
-
-.analytics-site-task-card-primary {
-  border-color: rgba(255, 180, 74, 0.34);
-  background:
-    radial-gradient(circle at 15% 12%, rgba(255, 180, 74, 0.18), transparent 40%),
-    linear-gradient(145deg, rgba(255, 122, 24, 0.14), rgba(84, 216, 255, 0.045)),
-    rgba(10, 16, 29, 0.82);
-}
-
 .analytics-board-embed-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -7004,14 +6923,6 @@
 
   .analytics-board-embed-actions .btn {
     flex: 1 1 140px;
-  }
-
-  .analytics-site-task-head {
-    flex-direction: column;
-  }
-
-  .analytics-site-task-grid {
-    grid-template-columns: 1fr;
   }
 
   .analytics-header,
