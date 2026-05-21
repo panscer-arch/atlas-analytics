@@ -331,11 +331,6 @@ function AgentFaqTemplate() {
     }));
   }
 
-  function resetTemplate() {
-    updateTemplate(() => defaultFaqTemplate);
-    setActiveSectionId(defaultFaqTemplate.sections[0]?.id || "start");
-  }
-
   const totalQuestions = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
   const activeSection =
     template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
@@ -376,9 +371,6 @@ function AgentFaqTemplate() {
             Стартовая база вопросов участников по категориям. Сейчас в шаблоне {totalQuestions} вопросов; ответы, ссылки и комментарии можно редактировать прямо в таблицах.
           </p>
         </div>
-        <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTemplate}>
-          Сбросить FAQ
-        </AnalyticsActionButton>
       </div>
 
       <div className="analytics-agent-template-tabs" role="tablist" aria-label="Категории FAQ">

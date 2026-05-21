@@ -482,10 +482,6 @@ function AgentKnowledgeTemplate() {
     updateTemplate((current) => ({ ...current, notes: current.notes.filter((note) => note.id !== noteId) }));
   }
 
-  function resetTemplate() {
-    updateTemplate(() => defaultTemplate);
-  }
-
   return (
     <section className="analytics-surface analytics-agent-template mt-4">
       <div className="analytics-data-table-head">
@@ -496,9 +492,6 @@ function AgentKnowledgeTemplate() {
             Русскоязычная база параметров для обучения AI-агента Atlas System. В третьем столбике можно хранить ссылку на документ, источник или короткое описание.
           </p>
         </div>
-        <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTemplate}>
-          Сбросить шаблон
-        </AnalyticsActionButton>
       </div>
 
       <div className="analytics-agent-template-grid">

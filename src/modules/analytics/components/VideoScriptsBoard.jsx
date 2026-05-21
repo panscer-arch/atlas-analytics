@@ -657,12 +657,6 @@ function VideoScriptsBoard() {
     });
   }
 
-  function resetVideos() {
-    updateVideos(() => defaultVideoScripts);
-    setActiveVideoId(defaultVideoScripts[0]?.id || "");
-    setEditableVideoIds({});
-  }
-
   function toggleVideoEditing(videoId) {
     setEditableVideoIds((current) => ({ ...current, [videoId]: !current[videoId] }));
   }
@@ -688,9 +682,6 @@ function VideoScriptsBoard() {
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
-          <AnalyticsActionButton variant="secondary" size="sm" onClick={resetVideos}>
-            Сбросить шаблон
-          </AnalyticsActionButton>
           <AnalyticsActionButton variant="primary" size="sm" onClick={addVideo}>
             + ролик
           </AnalyticsActionButton>

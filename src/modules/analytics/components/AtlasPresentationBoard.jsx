@@ -258,30 +258,10 @@ function AtlasPresentationBoard() {
     setCopiedPrompt(false);
   }
 
-  function resetVisual() {
-    setVisualDrafts((current) => {
-      const next = { ...current };
-      delete next[activeSlide.id];
-      persistVisualDrafts(next);
-      return next;
-    });
-    setDraftSeed((current) => current + 1);
-    setCopiedPrompt(false);
-  }
-
   function updateScript(value) {
     setScriptDrafts((current) => {
       const next = { ...current, [activeSlide.id]: value };
       if (value === activeSlide.script) delete next[activeSlide.id];
-      persistScriptDrafts(next);
-      return next;
-    });
-  }
-
-  function resetScript() {
-    setScriptDrafts((current) => {
-      const next = { ...current };
-      delete next[activeSlide.id];
       persistScriptDrafts(next);
       return next;
     });
@@ -398,9 +378,6 @@ function AtlasPresentationBoard() {
                 <button type="button" onClick={() => copyText(activeScript, setCopiedScript)}>
                   {copiedScript ? "Скопировано" : "Скопировать"}
                 </button>
-                <button type="button" onClick={resetScript} disabled={!isScriptChanged}>
-                  Сбросить
-                </button>
               </div>
             </div>
             <textarea
@@ -423,9 +400,6 @@ function AtlasPresentationBoard() {
                   </button>
                   <button type="button" onClick={() => copyText(activeVisual, setCopiedBrief)}>
                     {copiedBrief ? "Скопировано" : "Скопировать"}
-                  </button>
-                  <button type="button" onClick={resetVisual} disabled={!isVisualChanged}>
-                    Сбросить
                   </button>
                 </div>
               </div>

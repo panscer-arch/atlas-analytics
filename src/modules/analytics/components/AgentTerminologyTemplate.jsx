@@ -247,11 +247,6 @@ function AgentTerminologyTemplate() {
     }));
   }
 
-  function resetTemplate() {
-    updateTemplate(() => defaultTerminologyTemplate);
-    setActiveSectionId(defaultTerminologyTemplate.sections[0]?.id || "core");
-  }
-
   const totalTerms = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
   const activeSection = template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
   const activeSectionDescription = activeSection ? TERMINOLOGY_SECTION_DESCRIPTIONS[activeSection.id] : "";
@@ -283,9 +278,6 @@ function AgentTerminologyTemplate() {
             Editable-база терминов для команды и AI-агента. Сейчас в шаблоне {totalTerms} терминов; описание, комментарий и ссылки можно редактировать прямо в таблице.
           </p>
         </div>
-        <AnalyticsActionButton variant="secondary" size="sm" onClick={resetTemplate}>
-          Сбросить терминологию
-        </AnalyticsActionButton>
       </div>
 
       <div className="analytics-agent-template-tabs" role="tablist" aria-label="Категории терминологии">

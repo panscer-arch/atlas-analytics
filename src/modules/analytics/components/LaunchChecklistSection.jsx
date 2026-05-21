@@ -734,9 +734,9 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
   const taskBoardTabs = [
     { id: "launch", label: "Задачи запуска" },
-    { id: "ideas", label: "Идеи" },
     { id: "marketing", label: "Задачи маркетинга" },
     { id: "knowledgeBase", label: "Задачи по базе знаний" },
+    { id: "ideas", label: "Идеи" },
   ];
   const contentBoardTabs = [
     { id: "materials", label: "Материалы" },
