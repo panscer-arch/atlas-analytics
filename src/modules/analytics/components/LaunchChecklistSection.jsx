@@ -13,6 +13,8 @@ export const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tas
 export const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
 export const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
 export const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
+export const TASK_ARCHIVE_STORAGE_KEY = "atlas.analytics.taskArchive.v1";
+export const TASK_HISTORY_STORAGE_KEY = "atlas.analytics.taskHistory.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
@@ -583,8 +585,13 @@ function normalizeChecklistTasks(tasks) {
     priority: "Средний",
     assignee: "",
     done: false,
+    focus: false,
     ...task,
   }));
+}
+
+function normalizeArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function readStoredTasks(storageKey, fallbackTasks) {
@@ -631,6 +638,55 @@ function patchChecklistTask(task, patch) {
   return next;
 }
 
+function parseTaskDueDate(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const ruMatch = normalized.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+
+  if (isoMatch) {
+    const date = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  if (ruMatch) {
+    const date = new Date(Number(ruMatch[3]), Number(ruMatch[2]) - 1, Number(ruMatch[1]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  return null;
+}
+
+function getStartOfDay(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getTaskTiming(task) {
+  if (task.done || task.status === "Готово") return "done";
+  const dueDate = parseTaskDueDate(task.dueDate);
+  if (!dueDate) return "no-date";
+
+  const today = getStartOfDay();
+  const weekEnd = new Date(today);
+  weekEnd.setDate(today.getDate() + 7);
+
+  if (dueDate < today) return "overdue";
+  if (dueDate.getTime() === today.getTime()) return "today";
+  if (dueDate <= weekEnd) return "week";
+  return "later";
+}
+
+function formatHistoryDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function shouldLogTaskPatch(patch) {
+  return Object.keys(patch).some((key) => ["assignee", "status", "done", "priority", "focus"].includes(key));
+}
+
 function LaunchChecklistSection({ mode = "tasks" }) {
   const [activeBoard, setActiveBoard] = useState(() => {
     const fallbackBoard = mode === "content" ? "materials" : DEFAULT_BOARD_ID;
@@ -648,6 +704,9 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const [newChecklistName, setNewChecklistName] = useState("");
   const [isCreatingChecklist, setIsCreatingChecklist] = useState(false);
   const [editingCell, setEditingCell] = useState(null);
+  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [taskArchive, setTaskArchive] = useState([]);
+  const [taskHistory, setTaskHistory] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -668,6 +727,12 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       if (!isMounted || !Array.isArray(checklists)) return;
       setCustomChecklists(checklists.map((checklist) => ({ ...checklist, tasks: normalizeChecklistTasks(checklist.tasks || []) })));
     });
+    loadServerContent(TASK_ARCHIVE_STORAGE_KEY).then((items) => {
+      if (isMounted) setTaskArchive(normalizeArray(items));
+    });
+    loadServerContent(TASK_HISTORY_STORAGE_KEY).then((items) => {
+      if (isMounted) setTaskHistory(normalizeArray(items));
+    });
 
     return () => {
       isMounted = false;
@@ -687,8 +752,23 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isStaticContentBoard ? [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
+  const filteredVisibleTasks = assigneeFilter ? visibleTasks.filter((task) => (task.assignee || "Не назначен") === assigneeFilter) : visibleTasks;
   const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
   const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
+  const boardArchive = taskArchive.filter((item) => item.boardId === activeBoard).slice(0, 8);
+  const boardHistory = taskHistory.filter((item) => item.boardId === activeBoard).slice(0, 6);
+  const activeAssignees = Array.from(new Set([...TASK_ASSIGNEES.filter(Boolean), ...visibleTasks.map((task) => task.assignee).filter(Boolean)])).sort((first, second) => first.localeCompare(second, "ru"));
+  const activeTimingStats = visibleTasks.reduce(
+    (result, task) => {
+      const timing = getTaskTiming(task);
+      if (timing === "overdue") result.overdue += 1;
+      if (timing === "today") result.today += 1;
+      if (timing === "week") result.week += 1;
+      if (task.focus && !(task.done || task.status === "Готово")) result.focus += 1;
+      return result;
+    },
+    { overdue: 0, today: 0, week: 0, focus: 0 },
+  );
   const boardTitle = isCustomBoard ? activeCustomChecklist.title : isMarketingBoard ? "Задачи маркетинга" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
   const boardSubtitle = isCustomBoard
     ? "Пользовательский чек-лист с собственным набором задач."
@@ -769,6 +849,50 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     window.history.replaceState({}, "", url.toString());
   }, [activeBoard, customChecklists, mode]);
 
+  function persistArchive(nextArchive) {
+    try {
+      window.localStorage.setItem(TASK_ARCHIVE_STORAGE_KEY, JSON.stringify(nextArchive));
+      saveServerContent(TASK_ARCHIVE_STORAGE_KEY, nextArchive);
+    } catch {
+      // Архив остаётся в состоянии страницы, если storage временно недоступен.
+    }
+  }
+
+  function persistHistory(nextHistory) {
+    try {
+      window.localStorage.setItem(TASK_HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+      saveServerContent(TASK_HISTORY_STORAGE_KEY, nextHistory);
+    } catch {
+      // История не должна блокировать работу с задачами.
+    }
+  }
+
+  function pushTaskHistory(action, task, details = "") {
+    const entry = {
+      id: `history-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      boardId: activeBoard,
+      boardTitle,
+      taskId: task.id,
+      taskTitle: task.title || "Без названия",
+      action,
+      details,
+      createdAt: new Date().toISOString(),
+    };
+
+    setTaskHistory((current) => {
+      const next = [entry, ...current].slice(0, 240);
+      persistHistory(next);
+      return next;
+    });
+  }
+
+  function getBoardUpdater() {
+    if (isMarketingBoard) return { storageKey: MARKETING_CHECKLIST_STORAGE_KEY, setTasks: setMarketingTasks };
+    if (isIdeasBoard) return { storageKey: IDEAS_CHECKLIST_STORAGE_KEY, setTasks: setIdeaTasks };
+    if (isKnowledgeBaseBoard) return { storageKey: KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setTasks: setKnowledgeBaseTasks };
+    return { storageKey: LAUNCH_CHECKLIST_STORAGE_KEY, setTasks: setLaunchTasks };
+  }
+
   function updateTasks(storageKey, setTasks, updater) {
     setTasks((current) => {
       const next = updater(current);
@@ -778,6 +902,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   }
 
   function updateTask(taskId, patch) {
+    const taskBefore = visibleTasks.find((task) => task.id === taskId);
+
     if (isCustomBoard) {
       setCustomChecklists((current) => {
         const next = current.map((checklist) => {
@@ -790,12 +916,13 @@ function LaunchChecklistSection({ mode = "tasks" }) {
         persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
         return next;
       });
+      if (taskBefore && shouldLogTaskPatch(patch)) pushTaskHistory("Обновление", taskBefore, Object.keys(patch).join(", "));
       return;
     }
 
-    const storageKey = isMarketingBoard ? MARKETING_CHECKLIST_STORAGE_KEY : isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
-    const setTasks = isMarketingBoard ? setMarketingTasks : isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
+    const { storageKey, setTasks } = getBoardUpdater();
     updateTasks(storageKey, setTasks, (current) => current.map((task) => (task.id === taskId ? patchChecklistTask(task, patch) : task)));
+    if (taskBefore && shouldLogTaskPatch(patch)) pushTaskHistory("Обновление", taskBefore, Object.keys(patch).join(", "));
   }
 
   function addTask() {
@@ -819,45 +946,102 @@ function LaunchChecklistSection({ mode = "tasks" }) {
         persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
         return next;
       });
+      pushTaskHistory("Создание", task, "Добавлена новая задача");
       setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
 
     if (isIdeasBoard) {
       updateTasks(IDEAS_CHECKLIST_STORAGE_KEY, setIdeaTasks, (current) => [task, ...current]);
+      pushTaskHistory("Создание", task, "Добавлена новая идея");
       setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
 
     if (isMarketingBoard) {
       updateTasks(MARKETING_CHECKLIST_STORAGE_KEY, setMarketingTasks, (current) => [task, ...current]);
+      pushTaskHistory("Создание", task, "Добавлена маркетинговая задача");
       setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
 
     if (isKnowledgeBaseBoard) {
       updateTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setKnowledgeBaseTasks, (current) => [task, ...current]);
+      pushTaskHistory("Создание", task, "Добавлена задача базы знаний");
       setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
 
     updateTasks(LAUNCH_CHECKLIST_STORAGE_KEY, setLaunchTasks, (current) => [task, ...current]);
+    pushTaskHistory("Создание", task, "Добавлена задача запуска");
     setNewTask(createLaunchTask({ status: "В работе" }));
   }
 
   function removeTask(taskId) {
+    const taskToArchive = visibleTasks.find((task) => task.id === taskId);
+    if (!taskToArchive) return;
+
+    const archiveItem = {
+      ...taskToArchive,
+      archiveId: `archive-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      boardId: activeBoard,
+      boardTitle,
+      archivedAt: new Date().toISOString(),
+    };
+
+    setTaskArchive((current) => {
+      const next = [archiveItem, ...current].slice(0, 240);
+      persistArchive(next);
+      return next;
+    });
+
     if (isCustomBoard) {
       setCustomChecklists((current) => {
         const next = current.map((checklist) => (checklist.id === activeBoard ? { ...checklist, tasks: checklist.tasks.filter((task) => task.id !== taskId) } : checklist));
         persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
         return next;
       });
+      pushTaskHistory("Архив", taskToArchive, "Задача перенесена в архив");
       return;
     }
 
-    const storageKey = isMarketingBoard ? MARKETING_CHECKLIST_STORAGE_KEY : isIdeasBoard ? IDEAS_CHECKLIST_STORAGE_KEY : isKnowledgeBaseBoard ? KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY : LAUNCH_CHECKLIST_STORAGE_KEY;
-    const setTasks = isMarketingBoard ? setMarketingTasks : isIdeasBoard ? setIdeaTasks : isKnowledgeBaseBoard ? setKnowledgeBaseTasks : setLaunchTasks;
+    const { storageKey, setTasks } = getBoardUpdater();
     updateTasks(storageKey, setTasks, (current) => current.filter((task) => task.id !== taskId));
+    pushTaskHistory("Архив", taskToArchive, "Задача перенесена в архив");
+  }
+
+  function restoreArchivedTask(archiveId) {
+    const archivedTask = taskArchive.find((task) => task.archiveId === archiveId);
+    if (!archivedTask) return;
+
+    const restoredTask = {
+      ...archivedTask,
+      id: archivedTask.id || `restored-${Date.now()}`,
+      status: archivedTask.status || "В работе",
+    };
+    delete restoredTask.archiveId;
+    delete restoredTask.boardId;
+    delete restoredTask.boardTitle;
+    delete restoredTask.archivedAt;
+
+    setTaskArchive((current) => {
+      const next = current.filter((task) => task.archiveId !== archiveId);
+      persistArchive(next);
+      return next;
+    });
+
+    if (isCustomBoard) {
+      setCustomChecklists((current) => {
+        const next = current.map((checklist) => (checklist.id === activeBoard ? { ...checklist, tasks: [restoredTask, ...checklist.tasks] } : checklist));
+        persistChecklistTasks(CUSTOM_CHECKLISTS_STORAGE_KEY, next);
+        return next;
+      });
+    } else {
+      const { storageKey, setTasks } = getBoardUpdater();
+      updateTasks(storageKey, setTasks, (current) => [restoredTask, ...current]);
+    }
+
+    pushTaskHistory("Восстановление", restoredTask, "Задача возвращена из архива");
   }
 
   function addChecklist() {
@@ -954,6 +1138,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
               onClick={() => {
                 setActiveBoard(tab.id);
                 setEditingCell(null);
+                setAssigneeFilter("");
               }}
             >
               {tab.label}
@@ -967,6 +1152,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
               onClick={() => {
                 setActiveBoard(checklist.id);
                 setEditingCell(null);
+                setAssigneeFilter("");
               }}
             >
               {checklist.title}
@@ -1030,6 +1216,43 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           </div>
         </div>
         <LaunchProgressBar value={progress} />
+      </section>
+
+      <section className="analytics-surface analytics-task-control-panel mt-4">
+        <div className="analytics-task-control-grid">
+          <div className="analytics-task-signal is-danger">
+            <span>Просрочено</span>
+            <strong>{activeTimingStats.overdue}</strong>
+          </div>
+          <div className="analytics-task-signal is-accent">
+            <span>Сегодня</span>
+            <strong>{activeTimingStats.today}</strong>
+          </div>
+          <div className="analytics-task-signal is-success">
+            <span>7 дней</span>
+            <strong>{activeTimingStats.week}</strong>
+          </div>
+          <div className="analytics-task-signal is-focus">
+            <span>Фокус</span>
+            <strong>{activeTimingStats.focus}</strong>
+          </div>
+          <label className="analytics-task-assignee-filter">
+            <span>Исполнитель</span>
+            <select
+              className="form-select analytics-launch-input"
+              value={assigneeFilter}
+              onChange={(event) => setAssigneeFilter(event.target.value)}
+            >
+              <option value="">Все</option>
+              <option value="Не назначен">Не назначен</option>
+              {activeAssignees.map((assignee) => (
+                <option key={assignee} value={assignee}>
+                  {assignee}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </section>
 
       <section className="analytics-surface analytics-launch-form mt-4">
@@ -1155,14 +1378,15 @@ function LaunchChecklistSection({ mode = "tasks" }) {
               </tr>
             </thead>
             <tbody>
-              {visibleTasks.map((task) => {
+              {filteredVisibleTasks.map((task) => {
                 const completed = task.done || task.status === "Готово";
                 const statusTone = getLaunchStatusTone(task.status);
                 const priority = task.priority || "Средний";
                 const priorityTone = getLaunchPriorityTone(priority);
+                const timing = getTaskTiming(task);
 
                 return (
-                  <tr key={task.id} className={completed ? "analytics-launch-task-done" : undefined}>
+                  <tr key={task.id} className={`${completed ? "analytics-launch-task-done" : ""} analytics-launch-task-${timing}${task.focus ? " analytics-launch-task-focus" : ""}`.trim()}>
                     <td>
                       <input
                         type="checkbox"
@@ -1211,6 +1435,15 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                     <td>
                       <div className="analytics-launch-actions">
                         <AnalyticsActionButton
+                          variant={task.focus ? "primary" : "secondary"}
+                          size="icon"
+                          onClick={() => updateTask(task.id, { focus: !task.focus })}
+                          title={task.focus ? "Убрать из фокуса" : "В фокус недели"}
+                          aria-label={`${task.focus ? "Убрать из фокуса" : "Добавить в фокус"} задачу ${task.title}`}
+                        >
+                          ★
+                        </AnalyticsActionButton>
+                        <AnalyticsActionButton
                           variant="success"
                           size="icon"
                           onClick={() => updateTask(task.id, { status: "Готово", done: true })}
@@ -1232,8 +1465,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                           variant="danger"
                           size="icon"
                           onClick={() => removeTask(task.id)}
-                          title="Удалить"
-                          aria-label={`Удалить задачу ${task.title}`}
+                          title="В архив"
+                          aria-label={`Перенести задачу ${task.title} в архив`}
                         >
                           ×
                         </AnalyticsActionButton>
@@ -1242,9 +1475,60 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                   </tr>
                 );
               })}
+              {!filteredVisibleTasks.length ? (
+                <tr>
+                  <td colSpan="9">
+                    <div className="analytics-task-empty-row">По текущему фильтру задач нет.</div>
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="analytics-task-lower-grid mt-4">
+        <article className="analytics-surface analytics-task-history-card">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">История изменений</span>
+              <h3 className="analytics-section-title">Последние действия</h3>
+            </div>
+          </div>
+          <div className="analytics-task-history-list">
+            {boardHistory.map((item) => (
+              <div key={item.id} className="analytics-task-history-row">
+                <span>{formatHistoryDate(item.createdAt)}</span>
+                <strong>{item.action}</strong>
+                <p>{item.taskTitle}</p>
+                {item.details ? <small>{item.details}</small> : null}
+              </div>
+            ))}
+            {!boardHistory.length ? <div className="analytics-crm-my-tasks-empty">История появится после изменений статусов, исполнителей и архива.</div> : null}
+          </div>
+        </article>
+
+        <article className="analytics-surface analytics-task-history-card">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">Архив</span>
+              <h3 className="analytics-section-title">Можно восстановить</h3>
+            </div>
+          </div>
+          <div className="analytics-task-history-list">
+            {boardArchive.map((item) => (
+              <div key={item.archiveId} className="analytics-task-history-row analytics-task-archive-row">
+                <span>{formatHistoryDate(item.archivedAt)}</span>
+                <strong>{item.title}</strong>
+                <p>{item.assignee || "Не назначен"} · {item.status || "В работе"}</p>
+                <button type="button" onClick={() => restoreArchivedTask(item.archiveId)}>
+                  Вернуть
+                </button>
+              </div>
+            ))}
+            {!boardArchive.length ? <div className="analytics-crm-my-tasks-empty">Архив пуст. Удалённые задачи будут попадать сюда.</div> : null}
+          </div>
+        </article>
       </section>
         </>
       ) : null}

@@ -257,7 +257,10 @@
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
   justify-content: flex-end;
+  align-items: flex-end;
   align-self: start;
 }
 
@@ -2072,6 +2075,200 @@
   font-weight: 800;
 }
 
+.analytics-crm-ai-review {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.28fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(47, 217, 255, 0.22);
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(47, 217, 255, 0.16), transparent 38%),
+    linear-gradient(135deg, rgba(120, 255, 224, 0.08), rgba(255, 204, 102, 0.045)),
+    rgba(6, 12, 24, 0.76);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+.analytics-crm-ai-score {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 204, 102, 0.22);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: rgba(255, 204, 102, 0.07);
+  text-align: center;
+}
+
+.analytics-crm-ai-score span,
+.analytics-crm-ai-score small {
+  color: #9fb0cb;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-crm-ai-score strong {
+  color: #fff3c8;
+  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 0.98;
+}
+
+.analytics-crm-ai-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.analytics-crm-ai-list p {
+  margin: 0;
+  border: 1px solid rgba(123, 180, 255, 0.13);
+  border-radius: 12px;
+  padding: 0.72rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #dce8fa;
+  font-weight: 780;
+}
+
+.analytics-crm-ai-list small {
+  color: #86d7ff;
+  font-weight: 850;
+}
+
+.analytics-task-control-panel {
+  padding: 1rem;
+}
+
+.analytics-task-control-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(110px, 0.7fr)) minmax(180px, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.analytics-task-signal,
+.analytics-task-assignee-filter {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  border: 1px solid rgba(123, 180, 255, 0.13);
+  border-radius: 14px;
+  padding: 0.76rem 0.85rem;
+  background: rgba(7, 14, 27, 0.68);
+}
+
+.analytics-task-signal span,
+.analytics-task-assignee-filter span {
+  color: #93a7c5;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-task-signal strong {
+  color: #f6fbff;
+  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.analytics-task-signal.is-danger {
+  border-color: rgba(255, 79, 118, 0.28);
+  background: rgba(255, 79, 118, 0.07);
+}
+
+.analytics-task-signal.is-accent {
+  border-color: rgba(255, 204, 102, 0.26);
+  background: rgba(255, 204, 102, 0.07);
+}
+
+.analytics-task-signal.is-success,
+.analytics-task-signal.is-focus {
+  border-color: rgba(120, 255, 224, 0.24);
+  background: rgba(120, 255, 224, 0.06);
+}
+
+.analytics-launch-task-overdue {
+  box-shadow: inset 3px 0 0 rgba(255, 79, 118, 0.8);
+}
+
+.analytics-launch-task-today {
+  box-shadow: inset 3px 0 0 rgba(255, 204, 102, 0.8);
+}
+
+.analytics-launch-task-focus {
+  background: linear-gradient(90deg, rgba(120, 255, 224, 0.055), transparent);
+}
+
+.analytics-task-empty-row {
+  border: 1px dashed rgba(123, 180, 255, 0.18);
+  border-radius: 12px;
+  padding: 1rem;
+  color: #93a7c5;
+  text-align: center;
+  font-weight: 800;
+}
+
+.analytics-task-lower-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.analytics-task-history-card {
+  padding: 1rem;
+}
+
+.analytics-task-history-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.analytics-task-history-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 0.42fr) minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  border: 1px solid rgba(123, 180, 255, 0.13);
+  border-radius: 12px;
+  padding: 0.68rem 0.78rem;
+  background: rgba(8, 15, 29, 0.72);
+}
+
+.analytics-task-history-row span,
+.analytics-task-history-row small {
+  color: #8fa3c0;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.analytics-task-history-row strong {
+  color: #f7fbff;
+  font-weight: 900;
+}
+
+.analytics-task-history-row p {
+  margin: 0;
+  min-width: 0;
+  color: #cdd9ea;
+  font-weight: 760;
+}
+
+.analytics-task-archive-row {
+  grid-template-columns: 84px minmax(0, 1fr) minmax(0, 0.55fr) auto;
+}
+
+.analytics-task-archive-row button {
+  border: 1px solid rgba(120, 255, 224, 0.24);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  background: rgba(120, 255, 224, 0.08);
+  color: #dffdf7;
+  font-weight: 900;
+}
+
 .analytics-crm-tasks-focus {
   position: relative;
   z-index: 2;
@@ -2107,6 +2304,7 @@
 
   .analytics-header-center {
     justify-content: stretch;
+    align-items: stretch;
   }
 
   .analytics-datetime {

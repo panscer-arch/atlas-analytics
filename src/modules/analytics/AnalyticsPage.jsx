@@ -18,6 +18,8 @@ import LaunchChecklistSection, {
   KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY,
   LAUNCH_CHECKLIST_STORAGE_KEY,
   MARKETING_CHECKLIST_STORAGE_KEY,
+  TASK_ARCHIVE_STORAGE_KEY,
+  TASK_HISTORY_STORAGE_KEY,
   defaultIdeasChecklistTasks,
   defaultKnowledgeBaseChecklistTasks,
   defaultLaunchChecklistTasks,
@@ -92,8 +94,8 @@ function buildCrmTaskStats(source) {
   const boards = [
     ["Запуск", source.launch],
     ["Маркетинг", source.marketing],
-    ["Идеи", source.ideas],
     ["База знаний", source.knowledgeBase],
+    ["Идеи", source.ideas],
   ];
 
   return boards.map(([label, tasks]) => ({
@@ -102,7 +104,74 @@ function buildCrmTaskStats(source) {
     done: getDoneTaskCount(tasks),
     inWork: tasks.filter((task) => task?.status === "В работе").length,
     left: Math.max(tasks.length - getDoneTaskCount(tasks), 0),
+    focus: tasks.filter((task) => task?.focus && task?.status !== "Готово" && task?.done !== true).length,
   }));
+}
+
+function parseCrmTaskDate(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const ruMatch = normalized.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+
+  if (isoMatch) return new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+  if (ruMatch) return new Date(Number(ruMatch[3]), Number(ruMatch[2]) - 1, Number(ruMatch[1]));
+  return null;
+}
+
+function getCrmTaskTiming(task) {
+  if (task?.done || task?.status === "Готово") return "done";
+  const dueDate = parseCrmTaskDate(task?.dueDate);
+  if (!dueDate || Number.isNaN(dueDate.getTime())) return "no-date";
+  const today = new Date();
+  const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const weekEnd = new Date(startToday);
+  weekEnd.setDate(startToday.getDate() + 7);
+
+  if (dueDate < startToday) return "overdue";
+  if (dueDate.getTime() === startToday.getTime()) return "today";
+  if (dueDate <= weekEnd) return "week";
+  return "later";
+}
+
+function buildCrmTaskOverview(source) {
+  const allTasks = [
+    ...(source.launch || []),
+    ...(source.marketing || []),
+    ...(source.knowledgeBase || []),
+    ...(source.ideas || []),
+  ];
+
+  return allTasks.reduce(
+    (result, task) => {
+      const timing = getCrmTaskTiming(task);
+      if (timing === "overdue") result.overdue += 1;
+      if (timing === "today") result.today += 1;
+      if (timing === "week") result.week += 1;
+      if (task?.focus && timing !== "done") result.focus += 1;
+      if (!task?.assignee && timing !== "done") result.unassigned += 1;
+      return result;
+    },
+    { overdue: 0, today: 0, week: 0, focus: 0, unassigned: 0, total: allTasks.length, done: getDoneTaskCount(allTasks) },
+  );
+}
+
+function buildAiTaskSummary(overview, taskTotals, archive = [], history = []) {
+  const alerts = [];
+
+  if (overview.overdue) alerts.push(`${overview.overdue} задач просрочено. Их лучше разобрать первыми: либо закрыть, либо перенести дату.`);
+  if (overview.unassigned) alerts.push(`${overview.unassigned} активных задач без исполнителя. Это главная зона расплывания ответственности.`);
+  if (overview.focus > 5) alerts.push(`В фокусе ${overview.focus} задач. Для недели лучше оставить 3-5, иначе фокус превращается в обычный список.`);
+  if (!overview.focus) alerts.push("Фокус недели пуст. Стоит закрепить несколько задач звёздочкой в разделе задач.");
+  if (taskTotals.left > 0 && taskTotals.inWork === 0) alerts.push("Есть незакрытые задачи, но нет задач в статусе «В работе». Нужно оживить статусы.");
+  if (!alerts.length) alerts.push("Критичных провалов не видно: задачи распределены, фокус есть, просрочки нет.");
+
+  return {
+    score: Math.max(0, 100 - overview.overdue * 12 - overview.unassigned * 6 - Math.max(overview.focus - 5, 0) * 4),
+    alerts,
+    archiveCount: archive.length,
+    historyCount: history.length,
+  };
 }
 
 function countTemplateRows(template, fallbackTemplate) {
@@ -310,11 +379,20 @@ function AnalyticsPage() {
   const [crmMyTasks, setCrmMyTasks] = useState([]);
   const [isCrmMyTasksLoaded, setIsCrmMyTasksLoaded] = useState(false);
   const [newMyTask, setNewMyTask] = useState({ title: "", dueDate: getTodayInputDate() });
+  const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+  const [crmTaskSource, setCrmTaskSource] = useState({
+    launch: defaultLaunchChecklistTasks,
+    marketing: defaultMarketingChecklistTasks,
+    knowledgeBase: defaultKnowledgeBaseChecklistTasks,
+    ideas: defaultIdeasChecklistTasks,
+  });
+  const [crmTaskArchive, setCrmTaskArchive] = useState([]);
+  const [crmTaskHistory, setCrmTaskHistory] = useState([]);
   const [crmTaskStats, setCrmTaskStats] = useState(() => buildCrmTaskStats({
     launch: defaultLaunchChecklistTasks,
     marketing: defaultMarketingChecklistTasks,
-    ideas: defaultIdeasChecklistTasks,
     knowledgeBase: defaultKnowledgeBaseChecklistTasks,
+    ideas: defaultIdeasChecklistTasks,
   }));
   const [crmContentStats, setCrmContentStats] = useState(() => buildCrmContentStats());
   const { data, isLoading } = useAnalyticsData();
@@ -351,21 +429,28 @@ function AnalyticsPage() {
       loadServerContent(MARKETING_CHECKLIST_STORAGE_KEY),
       loadServerContent(IDEAS_CHECKLIST_STORAGE_KEY),
       loadServerContent(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY),
-    ]).then(([launch, marketing, ideas, knowledgeBase]) => {
+      loadServerContent(TASK_ARCHIVE_STORAGE_KEY),
+      loadServerContent(TASK_HISTORY_STORAGE_KEY),
+    ]).then(([launch, marketing, ideas, knowledgeBase, archive, history]) => {
       if (!isMounted) return;
 
-      setCrmTaskStats(buildCrmTaskStats({
+      const taskSource = {
         launch: Array.isArray(launch) ? launch : defaultLaunchChecklistTasks,
         marketing: Array.isArray(marketing) ? marketing : defaultMarketingChecklistTasks,
-        ideas: Array.isArray(ideas) ? ideas : defaultIdeasChecklistTasks,
         knowledgeBase: Array.isArray(knowledgeBase) ? knowledgeBase : defaultKnowledgeBaseChecklistTasks,
-      }));
+        ideas: Array.isArray(ideas) ? ideas : defaultIdeasChecklistTasks,
+      };
+
+      setCrmTaskSource(taskSource);
+      setCrmTaskStats(buildCrmTaskStats(taskSource));
+      setCrmTaskArchive(Array.isArray(archive) ? archive : []);
+      setCrmTaskHistory(Array.isArray(history) ? history : []);
     });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1019,11 +1104,15 @@ function AnalyticsPage() {
       }),
       { total: 0, done: 0, inWork: 0, left: 0 },
     );
+    const taskOverview = buildCrmTaskOverview(crmTaskSource);
+    const aiTaskSummary = buildAiTaskSummary(taskOverview, taskTotals, crmTaskArchive, crmTaskHistory);
     const taskWidgets = [
       ["В работе", taskTotals.inWork, "accent"],
       ["Осталось", taskTotals.left, taskTotals.left > 0 ? "danger" : "success"],
       ["Сделано", taskTotals.done, "success"],
-      ["Всего", taskTotals.total, "default"],
+      ["Просрочено", taskOverview.overdue, taskOverview.overdue ? "danger" : "success"],
+      ["Сегодня", taskOverview.today, "accent"],
+      ["Фокус", taskOverview.focus, taskOverview.focus ? "success" : "danger"],
     ];
     const taskDoneWidth = `${taskTotals.total ? Math.min((taskTotals.done / taskTotals.total) * 100, 100) : 0}%`;
     const sortedMyTasks = [...crmMyTasks].sort((first, second) => String(first.dueDate || "").localeCompare(String(second.dueDate || "")));
@@ -1069,6 +1158,22 @@ function AnalyticsPage() {
               <span className="analytics-kicker">Command center</span>
             </div>
           </div>
+
+          {isAiReviewOpen ? (
+            <div className="analytics-crm-ai-review">
+              <div className="analytics-crm-ai-score">
+                <span>AI-аудит задач</span>
+                <strong>{aiTaskSummary.score}</strong>
+                <small>операционный балл</small>
+              </div>
+              <div className="analytics-crm-ai-list">
+                {aiTaskSummary.alerts.map((alert) => (
+                  <p key={alert}>{alert}</p>
+                ))}
+                <small>Архив: {aiTaskSummary.archiveCount} · История: {aiTaskSummary.historyCount} записей</small>
+              </div>
+            </div>
+          ) : null}
 
           <div className="analytics-crm-command-grid">
             {dashboardCards.map((card) => (
@@ -1273,7 +1378,10 @@ function AnalyticsPage() {
   }
 
   function renderPageHeader() {
-    return <AnalyticsHeader />;
+    return <AnalyticsHeader onAiReview={() => {
+      setActiveTab("dashboard");
+      setIsAiReviewOpen((current) => !current);
+    }} />;
   }
 
   function handleMainTabChange(nextTab) {

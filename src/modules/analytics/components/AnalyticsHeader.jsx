@@ -1,6 +1,7 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
+import AnalyticsActionButton from "./AnalyticsActionButton";
 
-function AnalyticsHeader({ showAdmins = false, showMotion = true }) {
+function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) {
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
@@ -34,6 +35,11 @@ function AnalyticsHeader({ showAdmins = false, showMotion = true }) {
 
       <div className="analytics-header-center">
         <AnalyticsDateTime />
+        {onAiReview ? (
+          <AnalyticsActionButton variant="primary" size="sm" onClick={onAiReview}>
+            AI-разбор
+          </AnalyticsActionButton>
+        ) : null}
       </div>
 
       {showAdmins ? (
