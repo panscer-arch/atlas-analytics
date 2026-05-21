@@ -3411,6 +3411,13 @@
   letter-spacing: 0.04em;
 }
 
+.analytics-video-edit-hint {
+  margin: -0.15rem 0 1rem;
+  color: #9fb2cf;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .analytics-agent-template-table {
   min-width: 860px;
 }
@@ -3453,6 +3460,13 @@
   border-color: rgba(123, 180, 255, 0.42);
   box-shadow: 0 0 0 0.2rem rgba(123, 180, 255, 0.1);
   outline: none;
+}
+
+.analytics-agent-template-input[readonly],
+.analytics-launch-input[readonly] {
+  cursor: default;
+  background-color: rgba(7, 12, 22, 0.36) !important;
+  color: #c8d5ea !important;
 }
 
 .analytics-presentation-board {
