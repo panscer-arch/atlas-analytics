@@ -112,6 +112,61 @@
         letter-spacing: -0.04em;
       }
       .filters { margin-bottom: 12px; }
+      .board-switcher {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .board-tab {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.035);
+        color: var(--text);
+        padding: 16px 18px;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      }
+      .board-tab::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(110deg, rgba(102, 214, 191, 0.16), transparent 44%, rgba(116, 167, 255, 0.14));
+        opacity: 0;
+        transition: opacity 160ms ease;
+      }
+      .board-tab strong,
+      .board-tab span {
+        position: relative;
+        z-index: 1;
+        display: block;
+      }
+      .board-tab strong {
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+      .board-tab span {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .board-tab.active {
+        border-color: rgba(102, 214, 191, 0.42);
+        background: rgba(102, 214, 191, 0.08);
+        box-shadow: 0 0 24px rgba(102, 214, 191, 0.08);
+      }
+      .board-tab.active::before,
+      .board-tab:hover::before {
+        opacity: 1;
+      }
+      .board-tab:hover {
+        transform: translateY(-1px);
+      }
       .tabs-shell {
         display: flex;
         align-items: center;
@@ -328,6 +383,7 @@
         color: var(--warn);
       }
       @media (max-width: 980px) {
+        .board-switcher,
         .hero-grid,
         .kanban-grid {
           grid-template-columns: 1fr;
@@ -341,6 +397,7 @@
       </section>
 
       <section class="filters">
+        <div class="board-switcher" id="board-switcher"></div>
         <div class="tabs-shell">
           <div class="tabs-label">Флаг по этапам</div>
           <div class="chips" id="filter-chips"></div>
@@ -370,8 +427,9 @@
       const STORAGE_KEY = "web3-analytics-board-status-v1";
       const SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
       const MIGRATION_KEY = "web3-analytics-board-migration-v19";
+      const ACTIVE_BOARD_KEY = "web3-analytics-board-active-view-v1";
 
-      const TASKS = [
+      const ANALYTICS_TASKS = [
         {
           id: "analytics-foundation",
           title: "Собрать базу аналитического модуля",
@@ -697,7 +755,149 @@
         }
       ];
 
+      const SITE_UPLOAD_TASKS = [
+        {
+          id: "site-upload-orchestrator",
+          title: "Заглушка на сайт — оркестратор задачи",
+          copy: "Собрать задачу в один управляемый поток: кто за что отвечает, в каком порядке идём и где смотреть локальный результат.",
+          plain: "Локальный preview: /atlas-site-preview/index.html. Полная ссылка появится после запуска локального сервера. Старший по задаче держит последовательность: бриф → текст → дизайн → ассеты → фронтенд → QA.",
+          previewPath: "/atlas-site-preview/index.html",
+          priority: "P0",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Orchestrator / Senior lead",
+          estimate: "1–2 часа",
+          tags: ["site", "orchestrator", "local-preview"],
+          subtasks: [
+            { id: "site-orchestrator-owner", label: "Назначить старшего: Orchestrator / Senior lead отвечает за итоговый результат", done: true },
+            { id: "site-orchestrator-sequence", label: "Зафиксировать порядок работ и зависимости между ролями", done: true },
+            { id: "site-orchestrator-preview-link", label: "Добавить локальную ссылку на preview: /atlas-site-preview/", done: true }
+          ]
+        },
+        {
+          id: "site-upload-product-brief",
+          title: "Продуктовый бриф и цель страницы",
+          copy: "Нужно определить, что именно должна делать заглушка сайта до запуска Atlas: собирать интерес, объяснять идею и вести людей к контакту.",
+          plain: "Product-manager фиксирует MVP: первый экран, короткая идея Atlas, почему сейчас, что будет на запуске, CTA на помощников и аккуратный дисклеймер без обещаний гарантированного дохода.",
+          priority: "P0",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Product-manager",
+          estimate: "2–3 часа",
+          tags: ["site", "product", "brief"],
+          subtasks: [
+            { id: "site-brief-goal", label: "Сформулировать главную цель страницы и главный CTA", done: false },
+            { id: "site-brief-audience", label: "Разделить аудитории: сетевые лидеры, команды, первые участники", done: false },
+            { id: "site-brief-questions", label: "Собрать вопросы к владельцу: домен, контакты, языки, форма заявки, сроки запуска", done: false }
+          ]
+        },
+        {
+          id: "site-upload-copy",
+          title: "Тексты страницы и дисклеймеры",
+          copy: "Нужен сильный, но спокойный текст: Atlas на старте, международное ядро, прозрачная взаимопомощь, без крика и обещаний лёгких денег.",
+          plain: "Copywriter готовит hero, 3–5 смысловых блоков, CTA, короткий текст для формы/контактов и юридически аккуратный дисклеймер про риски Smart Cycle.",
+          priority: "P0",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Copywriter / Content architect",
+          estimate: "3–5 часов",
+          tags: ["site", "copy", "legal"],
+          subtasks: [
+            { id: "site-copy-hero", label: "Написать hero: Atlas System, предстарт, международное ядро", done: false },
+            { id: "site-copy-blocks", label: "Собрать блоки: идея, Smart Cycle простыми словами, партнёрское ядро, контакты", done: false },
+            { id: "site-copy-disclaimer", label: "Добавить один спокойный дисклеймер без перегруза и без обещаний дохода", done: false }
+          ]
+        },
+        {
+          id: "site-upload-design",
+          title: "Дизайн hero и визуальная система",
+          copy: "Страница должна выглядеть как Atlas: премиально, технологично, с тёмной глубиной, оранжевым ядром и без дешёвого крипто-шаблона.",
+          plain: "UI-designer собирает визуальный язык: hero, сетка, CTA, карточки, motion-состояния, адаптив. Образ Архитектора можно использовать как атмосферу, но без криминального вайба.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "UX-architect / UI-designer",
+          estimate: "4–8 часов",
+          tags: ["site", "design", "ui"],
+          subtasks: [
+            { id: "site-design-hero", label: "Собрать первый экран: логотип, манифест, CTA, visual core", done: false },
+            { id: "site-design-system", label: "Зафиксировать цвета, типографику, состояния кнопок и карточек", done: false },
+            { id: "site-design-mobile", label: "Проверить мобильный вид без налезаний текста и кнопок", done: false }
+          ]
+        },
+        {
+          id: "site-upload-assets",
+          title: "Ассеты, ссылки и контакты",
+          copy: "Чтобы заглушка была не пустой, нужно подготовить логотип, видео/кадр Архитектора, контакты помощников и ссылки для CTA.",
+          plain: "Ответственный собирает все материалы в одном месте: финальный логотип, hero-изображение или видео, Telegram/почта помощников, YouTube, ссылки на презентацию и ролики.",
+          priority: "P1",
+          importance: "Средняя",
+          difficulty: "Средняя",
+          scope: "Content ops / Assets",
+          estimate: "2–4 часа",
+          tags: ["site", "assets", "contacts"],
+          subtasks: [
+            { id: "site-assets-logo", label: "Подготовить финальный логотип и hero-визуал", done: false },
+            { id: "site-assets-contacts", label: "Вписать контакты помощников под роликом и на сайте", done: false },
+            { id: "site-assets-links", label: "Подготовить ссылки: YouTube, презентация, канал/чат, форма", done: false }
+          ]
+        },
+        {
+          id: "site-upload-frontend",
+          title: "Frontend-прототип и публикация",
+          copy: "Собрать кликабельную заглушку на локалке, проверить адаптив и подготовить её к загрузке на домен.",
+          plain: "Frontend-developer собирает static/Vite preview, подключает стили, CTA, адаптив, затем готовит путь к публикации. Локально смотреть: /atlas-site-preview/index.html.",
+          previewPath: "/atlas-site-preview/index.html",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Высокая",
+          scope: "Frontend-developer",
+          estimate: "1 день",
+          tags: ["site", "frontend", "deploy"],
+          subtasks: [
+            { id: "site-front-preview", label: "Собрать локальный preview страницы", done: false },
+            { id: "site-front-responsive", label: "Проверить desktop/mobile и длинные тексты", done: false },
+            { id: "site-front-domain", label: "Подготовить публикацию на нужный домен/путь", done: false }
+          ]
+        },
+        {
+          id: "site-upload-qa",
+          title: "QA и финальная проверка",
+          copy: "Перед публикацией нужно пройти страницу глазами: текст, смыслы, CTA, мобильный вид, отсутствие опасных обещаний.",
+          plain: "Reality-checker проверяет, что страница реально готова: понятно что такое Atlas, куда нажимать, нет обещаний гарантированного дохода, всё выглядит дорого и не ломается.",
+          priority: "P1",
+          importance: "Высокая",
+          difficulty: "Средняя",
+          scope: "Reality-checker / QA",
+          estimate: "2–4 часа",
+          tags: ["site", "qa", "release"],
+          subtasks: [
+            { id: "site-qa-copy", label: "Проверить текст на ясность, тон и рисковые формулировки", done: false },
+            { id: "site-qa-ui", label: "Проверить визуал и адаптив на основных размерах", done: false },
+            { id: "site-qa-cta", label: "Проверить все CTA, ссылки и контакты", done: false }
+          ]
+        }
+      ];
+
+      const BOARDS = {
+        analytics: {
+          label: "Аналитика",
+          hint: "Недоделанные задачи по аналитическому модулю",
+          storageKey: STORAGE_KEY,
+          tasks: ANALYTICS_TASKS,
+          useSignals: true
+        },
+        siteUpload: {
+          label: "Загрузка на сайт",
+          hint: "Заглушка сайта Atlas: роли, этапы, локальный preview",
+          storageKey: "web3-site-upload-board-status-v1",
+          tasks: SITE_UPLOAD_TASKS,
+          useSignals: false
+        }
+      };
+
       const state = {
+        activeBoard: localStorage.getItem(ACTIVE_BOARD_KEY) || "analytics",
         filter: "all",
         statuses: {},
         signals: [],
@@ -712,10 +912,23 @@
       ];
 
       const filterChips = document.getElementById("filter-chips");
+      const boardSwitcher = document.getElementById("board-switcher");
       const todoCol = document.getElementById("todo-col");
       const inprogressCol = document.getElementById("inprogress-col");
       const doneCol = document.getElementById("done-col");
       const ideasCol = document.getElementById("ideas-col");
+
+      function getActiveBoard() {
+        return BOARDS[state.activeBoard] || BOARDS.analytics;
+      }
+
+      function getActiveTasks() {
+        return getActiveBoard().tasks;
+      }
+
+      function getActiveStorageKey() {
+        return getActiveBoard().storageKey;
+      }
 
       function inferCategoryFromText(text) {
         const source = String(text || "").toLowerCase();
@@ -768,8 +981,10 @@
       }
 
       function getFilterCount(filterId) {
-        const tasksCount = TASKS.filter((task) => filterId === "all" || getTaskCategory(task) === filterId).length;
-        const ideasCount = (state.signals || []).filter((signal) => signal.type === "analytics-idea").filter((idea) => filterId === "all" || getIdeaCategory(idea) === filterId).length;
+        const tasksCount = getActiveTasks().filter((task) => filterId === "all" || getTaskCategory(task) === filterId).length;
+        const ideasCount = getActiveBoard().useSignals
+          ? (state.signals || []).filter((signal) => signal.type === "analytics-idea").filter((idea) => filterId === "all" || getIdeaCategory(idea) === filterId).length
+          : 0;
         return tasksCount + ideasCount;
       }
 
@@ -792,7 +1007,7 @@
 
       function persistLocalStatuses() {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.statuses));
+          localStorage.setItem(getActiveStorageKey(), JSON.stringify(state.statuses));
         } catch (error) {
           console.error("Failed to persist local board state", error);
         }
@@ -800,7 +1015,7 @@
 
       function loadLocalStatuses() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
+          const raw = localStorage.getItem(getActiveStorageKey());
           if (!raw) return {};
           const parsed = JSON.parse(raw);
           return parsed && typeof parsed === "object" ? parsed : {};
@@ -844,6 +1059,7 @@
       }
 
       function migrateBoardState() {
+        if (state.activeBoard !== "analytics") return;
         try {
           const currentMigration = localStorage.getItem(MIGRATION_KEY);
           if (currentMigration === "task-18-partner-structure-in-progress") {
@@ -997,6 +1213,28 @@
         persistLocalStatuses();
       }
 
+      function renderBoardSwitcher() {
+        boardSwitcher.innerHTML = "";
+        Object.entries(BOARDS).forEach(([boardId, board]) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `board-tab ${state.activeBoard === boardId ? "active" : ""}`;
+          button.innerHTML = `<strong>${board.label}</strong><span>${board.hint}</span>`;
+          button.onclick = async () => {
+            if (state.activeBoard === boardId) return;
+            state.activeBoard = boardId;
+            state.filter = "all";
+            localStorage.setItem(ACTIVE_BOARD_KEY, boardId);
+            await hydrateStatuses();
+            renderBoardSwitcher();
+            renderFilters();
+            renderIdeas();
+            renderTasks();
+          };
+          boardSwitcher.appendChild(button);
+        });
+      }
+
       async function deleteIdea(signalId) {
         state.signals = (state.signals || []).filter((signal) => signal.id !== signalId);
         persistLocalSignals();
@@ -1026,7 +1264,7 @@
 
         const status = getTaskStatus(task);
         const progress = getProgress(task);
-        const taskNumber = TASKS.findIndex((item) => item.id === task.id) + 1;
+        const taskNumber = getActiveTasks().findIndex((item) => item.id === task.id) + 1;
 
         wrapper.innerHTML = `
           <div class="task-title">
@@ -1044,6 +1282,7 @@
           <div class="actions">
             <button class="plain-toggle" type="button">Простыми словами</button>
             <button class="subtasks-toggle" type="button">Подзадачи</button>
+            ${task.previewPath ? `<a class="open-link" href="${task.previewPath}" target="_blank" rel="noreferrer">Открыть локальный preview</a>` : ""}
             <button class="do-btn" type="button">Сделать</button>
           </div>
           <div class="plain">${task.plain}</div>
@@ -1140,7 +1379,9 @@
         inprogressCol.innerHTML = "";
         doneCol.innerHTML = "";
 
-        const ideaSignals = (state.signals || []).filter((signal) => signal.type === "analytics-idea").filter(matchesIdeaFilter);
+        const ideaSignals = getActiveBoard().useSignals
+          ? (state.signals || []).filter((signal) => signal.type === "analytics-idea").filter(matchesIdeaFilter)
+          : [];
         ideaSignals.forEach((idea) => {
           const status = getTaskStatus(idea);
           const card = createIdeaTaskCard(idea);
@@ -1154,7 +1395,7 @@
           }
         });
 
-        TASKS.filter(matchesFilter).forEach((task) => {
+        getActiveTasks().filter(matchesFilter).forEach((task) => {
           const status = getTaskStatus(task);
           const card = createCard(task);
 
@@ -1170,10 +1411,10 @@
 
       async function hydrateStatuses() {
         state.statuses = loadLocalStatuses();
-        state.signals = loadLocalSignals();
+        state.signals = getActiveBoard().useSignals ? loadLocalSignals() : [];
         migrateBoardState();
 
-        if (window.location.protocol === "file:") {
+        if (window.location.protocol === "file:" || state.activeBoard !== "analytics") {
           return;
         }
 
@@ -1198,6 +1439,10 @@
       function renderIdeas() {
         if (!ideasCol) return;
         ideasCol.innerHTML = "";
+        if (!getActiveBoard().useSignals) {
+          ideasCol.innerHTML = '<div class="idea-card"><h3>Идеи скрыты</h3><p>На этой доске показываются только задачи загрузки сайта.</p></div>';
+          return;
+        }
         const ideaSignals = (state.signals || [])
           .filter((signal) => signal.type === "analytics-idea")
           .filter(matchesIdeaFilter)
@@ -1228,6 +1473,7 @@
 
       async function boot() {
         await hydrateStatuses();
+        renderBoardSwitcher();
         renderFilters();
         renderIdeas();
         renderTasks();
