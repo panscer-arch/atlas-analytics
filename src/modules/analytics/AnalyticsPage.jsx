@@ -93,6 +93,8 @@ function buildCrmTaskStats(source) {
     label,
     total: tasks.length,
     done: getDoneTaskCount(tasks),
+    inWork: tasks.filter((task) => task?.status === "В работе").length,
+    left: Math.max(tasks.length - getDoneTaskCount(tasks), 0),
   }));
 }
 
@@ -899,6 +901,27 @@ function AnalyticsPage() {
       ["Ролики", "scripts", "success"],
       ["Термины", "glossary", "accent"],
     ];
+    const taskTotals = crmTaskStats.reduce(
+      (accumulator, item) => ({
+        total: accumulator.total + item.total,
+        done: accumulator.done + item.done,
+        inWork: accumulator.inWork + item.inWork,
+        left: accumulator.left + item.left,
+      }),
+      { total: 0, done: 0, inWork: 0, left: 0 },
+    );
+    const taskWidgets = [
+      ["В работе", taskTotals.inWork, "accent"],
+      ["Осталось", taskTotals.left, taskTotals.left > 0 ? "danger" : "success"],
+      ["Сделано", taskTotals.done, "success"],
+      ["Всего", taskTotals.total, "default"],
+    ];
+    const taskDoneWidth = `${taskTotals.total ? Math.min((taskTotals.done / taskTotals.total) * 100, 100) : 0}%`;
+    const boardSignals = [
+      ["Колонки", "CRM"],
+      ["Режим", "задачи"],
+      ["Статус", "рабочая"],
+    ];
     const dashboardCards = [
       {
         id: "analytics",
@@ -926,10 +949,10 @@ function AnalyticsPage() {
       },
       {
         id: "crmBoard",
-        kicker: "CRM-доска",
-        title: "Kanban",
+        kicker: "Доска задач",
+        title: "Task board",
         text: "Рабочая доска с планом, прогрессом и готовыми блоками.",
-        meta: "Trello-режим",
+        meta: "CRM board",
         action: "Открыть доску",
       },
     ];
@@ -1010,7 +1033,7 @@ function AnalyticsPage() {
                   <div className="analytics-crm-tasks-main">
                     <div>
                       <span className="analytics-crm-analytics-label">Task control</span>
-                      <strong>{card.title}</strong>
+                      <strong>{taskTotals.inWork} в работе</strong>
                     </div>
                     <button type="button" onClick={() => setActiveTab("tasks")}>
                       {card.action}
@@ -1021,17 +1044,27 @@ function AnalyticsPage() {
                     <i />
                     <b />
                   </div>
+                  <div className="analytics-crm-task-widgets">
+                    {taskWidgets.map(([label, value, tone]) => (
+                      <div key={label} className={`analytics-crm-task-widget is-${tone}`}>
+                        <span>{label}</span>
+                        <b>{value}</b>
+                      </div>
+                    ))}
+                  </div>
                   <div className="analytics-crm-tasks-board">
                     {crmTaskStats.map((item) => (
                       <div key={item.label} className={`analytics-crm-tasks-chip ${item.done === item.total && item.total > 0 ? "is-success" : "is-accent"}`}>
                         <span>{item.label}</span>
                         <b>{item.done}/{item.total}</b>
+                        <small>{item.inWork} в работе · {item.left} осталось</small>
                       </div>
                     ))}
                   </div>
                   <div className="analytics-crm-tasks-summary">
-                    <span>Готово по всем разделам</span>
+                    <span>Прогресс закрытия задач</span>
                     <b>{crmTaskStats.reduce((sum, item) => sum + item.done, 0)}/{crmTaskStats.reduce((sum, item) => sum + item.total, 0)}</b>
+                    <i style={{ width: taskDoneWidth }} aria-hidden="true" />
                   </div>
                 </article>
               ) : card.id === "content" ? (
@@ -1065,6 +1098,31 @@ function AnalyticsPage() {
                   <div className="analytics-crm-content-footer">
                     <span>Единое хранилище текстов, материалов и production-базы</span>
                   </div>
+                </article>
+              ) : card.id === "crmBoard" ? (
+                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-board">
+                  <div className="analytics-crm-command-card-top">
+                    <span>{card.kicker}</span>
+                    <small>{card.meta}</small>
+                  </div>
+                  <div className="analytics-crm-board-main">
+                    <div>
+                      <span className="analytics-crm-analytics-label">Board control</span>
+                      <strong>Доска задач</strong>
+                    </div>
+                    <button type="button" onClick={() => setActiveTab("crmBoard")}>
+                      {card.action}
+                    </button>
+                  </div>
+                  <div className="analytics-crm-board-lanes">
+                    {boardSignals.map(([label, value]) => (
+                      <div key={label}>
+                        <span>{label}</span>
+                        <b>{value}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <p>{card.text}</p>
                 </article>
               ) : (
                 <article key={card.id} className="analytics-crm-command-card">
