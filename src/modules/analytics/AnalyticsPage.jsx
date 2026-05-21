@@ -544,6 +544,7 @@ function AnalyticsPage() {
     { id: "tasks", label: "Задачи", hint: "запуск" },
     { id: "content", label: "Контент", hint: "база" },
     { id: "crmBoard", label: "CRM-доска", hint: "kanban" },
+    { id: "quickNotes", label: "Заметки", hint: "быстро" },
   ];
 
   const analyticsSectionTabs = [
@@ -814,15 +815,16 @@ function AnalyticsPage() {
   }
 
   function renderPageHeader() {
-    return (
-      <AnalyticsHeader
-        onOpenCharts={handleOpenCharts}
-        onOpenNotes={() => setIsQuickNotesOpen(true)}
-        onOpenTasks={() => setActiveTab("tasks")}
-        onToggleBoard={handleToggleBoard}
-        isBoardOpen={isBoardOpen}
-      />
-    );
+    return <AnalyticsHeader />;
+  }
+
+  function handleMainTabChange(nextTab) {
+    if (nextTab === "quickNotes") {
+      setIsQuickNotesOpen(true);
+      return;
+    }
+
+    setActiveTab(nextTab);
   }
 
   function renderOverview() {
@@ -1689,7 +1691,7 @@ function AnalyticsPage() {
 
       {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
 
-      <AnalyticsTabs tabs={mainTabs} activeTab={activeTab} onChange={setActiveTab} />
+      <AnalyticsTabs tabs={mainTabs} activeTab={activeTab} onChange={handleMainTabChange} />
 
       {renderActiveTab()}
 

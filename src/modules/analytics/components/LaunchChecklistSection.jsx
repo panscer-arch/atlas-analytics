@@ -963,10 +963,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
 
   return (
     <>
-      <section className="analytics-surface analytics-tab-summary mt-4">
-        <span className="analytics-kicker">{mode === "content" ? "Контент" : "Задачи"}</span>
-        <h2 className="analytics-tab-summary-title">{mode === "content" ? "Контентная база Atlas" : "Чек-листы команды"}</h2>
-        <p className="analytics-tab-summary-copy">{boardDescription}</p>
+      <section className="analytics-surface analytics-tab-summary analytics-launch-nav mt-4">
         <div className="analytics-launch-browser-tabs" role="tablist" aria-label="Разделы чеклиста запуска">
           {visibleBoardTabs.map((tab) => (
             <button
@@ -1019,19 +1016,6 @@ function LaunchChecklistSection({ mode = "tasks" }) {
             </button>
           ) : null}
         </div>
-        {!isStaticContentBoard ? (
-          <div className="analytics-tab-summary-points">
-            <div className="analytics-tab-summary-point">
-              <span>Всего задач: {visibleTasks.length}</span>
-            </div>
-            <div className="analytics-tab-summary-point">
-              <span>Готово: {completedCount}</span>
-            </div>
-            <div className="analytics-tab-summary-point">
-              <span>Прогресс запуска: {formatPercent(progress)}</span>
-            </div>
-          </div>
-        ) : null}
       </section>
 
       {isMaterialsBoard ? <MaterialsLinksBoard /> : null}
