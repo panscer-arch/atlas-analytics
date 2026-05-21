@@ -5,7 +5,12 @@ function AnalyticsHeader({ showAdmins = false, showMotion = true }) {
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
         <div className="analytics-header-title-row">
-          <img className="analytics-header-logo" src="/generated/analytics-character-logo.png" alt="" aria-hidden="true" />
+          <span className="analytics-header-logo-wrap" aria-hidden="true">
+            <img className="analytics-header-logo" src="/generated/analytics-character-logo.png" alt="" />
+            <span className="analytics-header-logo-eye analytics-header-logo-eye-left" />
+            <span className="analytics-header-logo-eye analytics-header-logo-eye-right" />
+            <span className="analytics-header-logo-mouth" />
+          </span>
           <h1 className="analytics-page-title analytics-page-title-animated mb-0">Аналитика</h1>
           {showMotion ? (
             <div className="analytics-header-motion analytics-header-motion-inline" aria-hidden="true">

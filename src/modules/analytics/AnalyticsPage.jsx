@@ -687,7 +687,7 @@ function AnalyticsPage() {
     { id: "analytics", label: "Аналитика", hint: "BI" },
     { id: "tasks", label: "Задачи", hint: "запуск" },
     { id: "content", label: "Контент", hint: "база" },
-    { id: "crmBoard", label: "CRM-доска", hint: "kanban" },
+    { id: "crmBoard", label: "CRM-доска", hint: "доска" },
     { id: "quickNotes", label: "Заметки", hint: "быстро" },
   ];
 
