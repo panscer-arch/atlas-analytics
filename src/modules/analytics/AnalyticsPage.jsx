@@ -832,6 +832,13 @@ function AnalyticsPage() {
       ["Кошельки", walletConnections, "success"],
       ["Активации", cycleActivations, "success"],
     ];
+    const taskBoardSignals = [
+      ["Запуск", "контроль", "success"],
+      ["Идеи", "сбор", "accent"],
+      ["Маркетинг", "рост", "accent"],
+      ["База знаний", "структура", "success"],
+    ];
+    const taskFocusItems = dashboardTasks.slice(0, 3);
     const dashboardCards = [
       {
         id: "analytics",
@@ -925,6 +932,43 @@ function AnalyticsPage() {
                       <div key={label} className={`analytics-crm-analytics-pulse-row is-${tone}`}>
                         <span>{label}</span>
                         <b>{value}</b>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ) : card.id === "tasks" ? (
+                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-tasks">
+                  <div className="analytics-crm-command-card-top">
+                    <span>{card.kicker}</span>
+                    <small>{card.meta}</small>
+                  </div>
+                  <div className="analytics-crm-tasks-main">
+                    <div>
+                      <span className="analytics-crm-analytics-label">Task control</span>
+                      <strong>{card.title}</strong>
+                    </div>
+                    <button type="button" onClick={() => setActiveTab("tasks")}>
+                      {card.action}
+                    </button>
+                  </div>
+                  <div className="analytics-crm-tasks-radar" aria-hidden="true">
+                    <span />
+                    <i />
+                    <b />
+                  </div>
+                  <div className="analytics-crm-tasks-board">
+                    {taskBoardSignals.map(([label, value, tone]) => (
+                      <div key={label} className={`analytics-crm-tasks-chip is-${tone}`}>
+                        <span>{label}</span>
+                        <b>{value}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="analytics-crm-tasks-focus">
+                    {taskFocusItems.map((item) => (
+                      <div key={item.id} className="analytics-crm-tasks-focus-row">
+                        <span>{item.meta}</span>
+                        <b>{item.title}</b>
                       </div>
                     ))}
                   </div>
