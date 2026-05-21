@@ -538,6 +538,7 @@ function AnalyticsPage() {
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
     { id: "launch", label: "Задачи", hint: "чеклисты" },
+    { id: "crmBoard", label: "CRM-доска", hint: "kanban" },
   ];
 
   function renderDashboard() {
@@ -1625,6 +1626,10 @@ function AnalyticsPage() {
     return <LaunchChecklistSection />;
   }
 
+  function renderCrmBoardTab() {
+    return <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} variant="inline" />;
+  }
+
   function renderActiveTab() {
     if (activeTab === "dashboard") return renderDashboard();
     if (activeTab === "traffic") return renderTrafficTab();
@@ -1636,6 +1641,7 @@ function AnalyticsPage() {
     if (activeTab === "partner") return renderPartnerTab();
     if (activeTab === "wallets") return renderWalletsTab();
     if (activeTab === "launch") return renderLaunchTab();
+    if (activeTab === "crmBoard") return renderCrmBoardTab();
     return renderOverview();
   }
 

@@ -2263,6 +2263,10 @@
   backdrop-filter: blur(12px);
 }
 
+.analytics-board-inline {
+  display: block;
+}
+
 .analytics-board-embed-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -2270,6 +2274,12 @@
   max-height: calc(100vh - 2rem);
   padding: 1.1rem;
   overflow: hidden;
+}
+
+.analytics-board-inline .analytics-board-embed-panel {
+  width: 100%;
+  min-height: 78vh;
+  max-height: none;
 }
 
 .analytics-board-embed-head {
