@@ -1,0 +1,334 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="amberCore" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1135 306) rotate(124) scale(760 620)">
+      <stop stop-color="#ff7a00" stop-opacity=".36"/>
+      <stop offset=".46" stop-color="#ff9d24" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#05070b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueEdge" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 760) rotate(-26) scale(760 440)">
+      <stop stop-color="#2f76ff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#05070b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="figure" x1="840" y1="190" x2="1030" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2b3444"/>
+      <stop offset=".48" stop-color="#101722"/>
+      <stop offset="1" stop-color="#05070b"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="145%">
+      <feDropShadow dx="0" dy="26" stdDeviation="32" flood-color="#000" flood-opacity=".62"/>
+    </filter>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1600" height="900" fill="#05070b"/>
+  <rect width="1600" height="900" fill="url(#amberCore)"/>
+  <rect width="1600" height="900" fill="url(#blueEdge)"/>
+  <g opacity=".17" stroke="#91a9c8" stroke-width="1">
+    <path d="M94 178H1512M94 282H1512M94 386H1512M94 490H1512M94 594H1512M94 698H1512"/>
+    <path d="M188 108V786M376 108V786M564 108V786M752 108V786M940 108V786M1128 108V786M1316 108V786"/>
+    <path d="M72 664C236 596 398 592 560 642C742 699 922 670 1098 572C1246 489 1396 463 1532 512"/>
+    <path d="M92 234C260 308 426 313 596 250C798 176 1010 164 1187 239C1325 297 1432 300 1534 265"/>
+  </g>
+  <g opacity=".72" stroke="#ff7a00" stroke-width="2">
+    <path d="M180 656C326 582 470 561 617 603C748 640 856 626 978 560C1129 479 1296 444 1446 504"/>
+    <path d="M216 273C368 333 515 322 676 264C852 201 1048 205 1205 279C1309 328 1406 340 1490 315"/>
+  </g>
+  <g filter="url(#glow)">
+    <circle cx="180" cy="656" r="5" fill="#ff7a00"/>
+    <circle cx="426" cy="568" r="4" fill="#ffb547"/>
+    <circle cx="617" cy="603" r="5" fill="#ff8a1f"/>
+    <circle cx="978" cy="560" r="5" fill="#ffb547"/>
+    <circle cx="1192" cy="470" r="5" fill="#ff7a00"/>
+    <circle cx="1446" cy="504" r="5" fill="#ffb547"/>
+    <circle cx="216" cy="273" r="4" fill="#ff8a1f"/>
+    <circle cx="676" cy="264" r="5" fill="#ffb547"/>
+    <circle cx="1205" cy="279" r="5" fill="#ff7a00"/>
+    <circle cx="1490" cy="315" r="4" fill="#ffb547"/>
+  </g>
+  <foreignObject x="58" y="55" width="1484" height="792" filter="url(#cardShadow)">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="slide">
+      <style>
+        .slide {
+          box-sizing: border-box;
+          position: relative;
+          width: 1484px;
+          height: 792px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 122, 0, .28);
+          border-radius: 34px;
+          padding: 42px 46px;
+          color: #f5f8ff;
+          font-family: Inter, Arial, Helvetica, sans-serif;
+          background:
+            radial-gradient(circle at 70% 42%, rgba(255, 122, 0, .16), transparent 34%),
+            linear-gradient(135deg, rgba(18, 27, 42, .90), rgba(6, 9, 14, .78) 48%, rgba(15, 11, 9, .94));
+        }
+        .top {
+          position: relative;
+          z-index: 4;
+          display: flex;
+          justify-content: space-between;
+          gap: 32px;
+          align-items: flex-start;
+        }
+        .kicker {
+          display: block;
+          color: #ff8a1f;
+          font-size: 24px;
+          font-weight: 950;
+          letter-spacing: 9px;
+          text-transform: uppercase;
+        }
+        h1 {
+          margin: 16px 0 0;
+          max-width: 670px;
+          font-size: 75px;
+          line-height: .94;
+          letter-spacing: 0;
+          font-weight: 950;
+        }
+        .subtitle {
+          max-width: 690px;
+          margin-top: 20px;
+          color: #cfd9e8;
+          font-size: 30px;
+          line-height: 1.18;
+          font-weight: 760;
+        }
+        .badge {
+          min-width: 150px;
+          border: 1px solid rgba(255, 122, 0, .34);
+          border-radius: 24px;
+          padding: 18px 22px;
+          background: rgba(255, 122, 0, .10);
+          color: #ffd3a0;
+          text-align: center;
+          font-size: 24px;
+          font-weight: 900;
+        }
+        .architect {
+          position: absolute;
+          z-index: 3;
+          left: 590px;
+          bottom: 0;
+          width: 430px;
+          height: 700px;
+          opacity: .99;
+        }
+        .head {
+          position: absolute;
+          left: 150px;
+          top: 46px;
+          width: 128px;
+          height: 154px;
+          border-radius: 52% 48% 46% 54%;
+          background:
+            radial-gradient(circle at 52% 16%, rgba(255, 221, 176, .24), transparent 22%),
+            linear-gradient(145deg, #151c25, #05080d 64%, #010204);
+          box-shadow: inset 0 -26px 38px rgba(0, 0, 0, .92), 0 0 46px rgba(255, 122, 0, .18);
+        }
+        .hair {
+          position: absolute;
+          left: 132px;
+          top: 22px;
+          width: 165px;
+          height: 74px;
+          border-radius: 56% 44% 45% 55%;
+          background: linear-gradient(145deg, #2d251e, #090807 60%, #020202);
+          box-shadow: 0 0 22px rgba(255, 156, 56, .10);
+        }
+        .face-light {
+          position: absolute;
+          left: 207px;
+          top: 63px;
+          width: 24px;
+          height: 128px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, rgba(255, 204, 148, .28), rgba(255, 122, 0, .02));
+          filter: blur(5px);
+        }
+        .body {
+          position: absolute;
+          left: 82px;
+          top: 196px;
+          width: 268px;
+          height: 470px;
+          border-radius: 108px 108px 28px 28px;
+          background:
+            linear-gradient(90deg, rgba(255,255,255,.72), rgba(214,207,194,.92) 32%, rgba(50,50,47,.84) 50%, rgba(220,213,198,.88) 68%, rgba(255,255,255,.68)),
+            linear-gradient(145deg, #f4eee4, #7c776f 56%, #151514);
+          box-shadow: inset 0 -54px 72px rgba(0, 0, 0, .78), 0 34px 64px rgba(0, 0, 0, .52);
+        }
+        .shoulder {
+          position: absolute;
+          left: 2px;
+          top: 330px;
+          width: 426px;
+          height: 282px;
+          border-radius: 48% 52% 18% 18%;
+          background:
+            linear-gradient(90deg, rgba(245,239,226,.92), rgba(190,182,168,.92) 24%, rgba(33,32,30,.92) 50%, rgba(192,184,170,.92) 76%, rgba(250,244,232,.9)),
+            linear-gradient(135deg, #f3eadb, #514d46);
+          box-shadow: inset 0 -42px 72px rgba(0,0,0,.78), 0 38px 70px rgba(0,0,0,.5);
+        }
+        .turtleneck {
+          position: absolute;
+          left: 164px;
+          top: 204px;
+          width: 104px;
+          height: 300px;
+          border-radius: 48px 48px 18px 18px;
+          background: linear-gradient(180deg, rgba(235,229,218,.34), rgba(21,20,19,.92));
+          box-shadow: inset 0 0 36px rgba(0,0,0,.7);
+        }
+        .lapel-left,
+        .lapel-right {
+          position: absolute;
+          top: 262px;
+          width: 102px;
+          height: 285px;
+          background: rgba(255,255,255,.18);
+          border: 1px solid rgba(255,255,255,.22);
+          box-shadow: inset 0 0 28px rgba(255,255,255,.08);
+        }
+        .lapel-left {
+          left: 92px;
+          transform: skewX(-12deg);
+          border-radius: 22px 6px 18px 28px;
+        }
+        .lapel-right {
+          right: 92px;
+          transform: skewX(12deg);
+          border-radius: 6px 22px 28px 18px;
+        }
+        .glass {
+          position: absolute;
+          left: 70px;
+          top: 20px;
+          width: 288px;
+          height: 646px;
+          border: 1px solid rgba(255, 168, 70, .22);
+          border-radius: 28px;
+          background: linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,122,0,.06), rgba(255,255,255,.01));
+          backdrop-filter: blur(1px);
+        }
+        .code-panel {
+          position: absolute;
+          z-index: 2;
+          right: 55px;
+          top: 170px;
+          width: 385px;
+          min-height: 260px;
+          border: 1px solid rgba(255, 122, 0, .24);
+          border-radius: 26px;
+          padding: 24px;
+          background: rgba(5, 9, 15, .72);
+          box-shadow: inset 0 0 42px rgba(255, 122, 0, .06);
+        }
+        .code-title {
+          color: #ff9c38;
+          font-size: 18px;
+          font-weight: 950;
+          letter-spacing: 5px;
+          text-transform: uppercase;
+        }
+        .code-line {
+          height: 14px;
+          margin-top: 18px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(255, 122, 0, .86), rgba(255, 181, 71, .26), transparent);
+        }
+        .code-line:nth-child(3) { width: 82%; }
+        .code-line:nth-child(4) { width: 67%; }
+        .code-line:nth-child(5) { width: 90%; }
+        .code-line:nth-child(6) { width: 56%; }
+        .principles {
+          position: absolute;
+          z-index: 4;
+          left: 46px;
+          bottom: 42px;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 15px;
+          width: 890px;
+        }
+        .principle {
+          min-height: 118px;
+          border: 1px solid rgba(255,255,255,.13);
+          border-radius: 22px;
+          padding: 18px;
+          background: rgba(255,255,255,.05);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+        }
+        .principle span {
+          color: #ff9c38;
+          font-size: 17px;
+          font-weight: 950;
+          letter-spacing: 5px;
+          text-transform: uppercase;
+        }
+        .principle strong {
+          display: block;
+          margin-top: 10px;
+          color: #f6f8ff;
+          font-size: 29px;
+          line-height: 1;
+          font-weight: 950;
+        }
+        .quote {
+          position: absolute;
+          z-index: 5;
+          left: 46px;
+          top: 330px;
+          width: 560px;
+          color: #f6f8ff;
+          font-size: 43px;
+          line-height: 1.03;
+          font-weight: 950;
+        }
+        .quote b {
+          color: #ff8a1f;
+        }
+      </style>
+      <div class="top">
+        <div>
+          <span class="kicker">Atlas System</span>
+          <h1>Почему я скрываю своё лицо</h1>
+          <div class="subtitle">Atlas — это система, а не культ личности</div>
+        </div>
+        <div class="badge">Slide 08</div>
+      </div>
+      <div class="quote">Система должна быть <b>сильнее</b> личности</div>
+      <div class="architect" aria-hidden="true">
+        <div class="shoulder"></div>
+        <div class="body"></div>
+        <div class="turtleneck"></div>
+        <div class="lapel-left"></div>
+        <div class="lapel-right"></div>
+        <div class="hair"></div>
+        <div class="head"></div>
+        <div class="face-light"></div>
+        <div class="glass"></div>
+      </div>
+      <div class="code-panel" aria-hidden="true">
+        <div class="code-title">Smart Contract / Rules</div>
+        <div class="code-line"></div>
+        <div class="code-line"></div>
+        <div class="code-line"></div>
+        <div class="code-line"></div>
+        <div class="code-line"></div>
+      </div>
+      <div class="principles">
+        <div class="principle"><span>01</span><strong>Код</strong></div>
+        <div class="principle"><span>02</span><strong>Правила</strong></div>
+        <div class="principle"><span>03</span><strong>Механика</strong></div>
+        <div class="principle"><span>04</span><strong>Сообщество</strong></div>
+      </div>
+    </div>
+  </foreignObject>
+</svg>
