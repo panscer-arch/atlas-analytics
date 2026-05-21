@@ -1036,11 +1036,7 @@ function AnalyticsPage() {
           <div className="analytics-crm-command-head">
             <div>
               <span className="analytics-kicker">Command center</span>
-              <h2>Командный центр</h2>
             </div>
-            <button type="button" className="btn analytics-notes-btn analytics-crm-notes-btn" onClick={() => setIsQuickNotesOpen(true)}>
-              Заметки
-            </button>
           </div>
 
           <div className="analytics-crm-command-grid">
@@ -1061,15 +1057,6 @@ function AnalyticsPage() {
                       <span className="analytics-crm-analytics-label">Пул системы</span>
                       <strong className={contractNetFlowToday >= 0 ? "is-positive" : "is-negative"}>{card.title}</strong>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTab("analytics");
-                        setActiveAnalyticsTab("dashboard");
-                      }}
-                    >
-                      {card.action}
-                    </button>
                   </div>
                   <div className="analytics-crm-analytics-gauge">
                     <div>
@@ -1107,9 +1094,6 @@ function AnalyticsPage() {
                     <div>
                       <strong>{taskTotals.inWork} в работе</strong>
                     </div>
-                    <button type="button" onClick={() => setActiveTab("tasks")}>
-                      {card.action}
-                    </button>
                   </div>
                   <div className="analytics-crm-tasks-radar" aria-hidden="true">
                     <span />
@@ -1149,9 +1133,6 @@ function AnalyticsPage() {
                     <div>
                       <strong>{card.title}</strong>
                     </div>
-                    <button type="button" onClick={() => setActiveTab("content")}>
-                      {card.action}
-                    </button>
                   </div>
                   <div className="analytics-crm-orb analytics-crm-orb-content" aria-hidden="true">
                     <span />
