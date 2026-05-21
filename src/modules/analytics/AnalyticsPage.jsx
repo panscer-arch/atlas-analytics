@@ -816,6 +816,22 @@ function AnalyticsPage() {
   }
 
   function renderCrmDashboard() {
+    const analyticsCoverageWidth = `${Math.min(Math.max(outgoingCoverage, 0), 100)}%`;
+    const registrationsToday = trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0;
+    const walletConnections = trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0;
+    const cycleActivations = trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || todaySnapshot?.cycleActivations || 0;
+    const analyticsSignals = [
+      ["Входящие", formatCurrency(incomingToday), "success"],
+      ["Выплаты", formatCurrency(outgoingToday), "default"],
+      ["Покрытие", formatPercent(outgoingCoverage), outgoingCoverage >= 100 ? "success" : "danger"],
+      ["Запас", formatDays(runwayDays), runwayDays >= 7 ? "success" : runwayDays >= 3 ? "accent" : "danger"],
+    ];
+    const analyticsPulseRows = [
+      ["Риск", data.kpis.firstRiskDate, riskTone],
+      ["Регистрации", registrationsToday, "accent"],
+      ["Кошельки", walletConnections, "success"],
+      ["Активации", cycleActivations, "success"],
+    ];
     const dashboardCards = [
       {
         id: "analytics",
@@ -866,17 +882,66 @@ function AnalyticsPage() {
 
           <div className="analytics-crm-command-grid">
             {dashboardCards.map((card) => (
-              <article key={card.id} className="analytics-crm-command-card">
-                <div className="analytics-crm-command-card-top">
-                  <span>{card.kicker}</span>
-                  <small>{card.meta}</small>
-                </div>
-                <strong>{card.title}</strong>
-                <p>{card.text}</p>
-                <button type="button" onClick={() => setActiveTab(card.id)}>
-                  {card.action}
-                </button>
-              </article>
+              card.id === "analytics" ? (
+                <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-featured">
+                  <div className="analytics-crm-command-card-top">
+                    <span>{card.kicker}</span>
+                    <small>{card.meta}</small>
+                  </div>
+                  <div className="analytics-crm-analytics-main">
+                    <div>
+                      <span className="analytics-crm-analytics-label">Чистый поток дня</span>
+                      <strong className={contractNetFlowToday >= 0 ? "is-positive" : "is-negative"}>{card.title}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("analytics");
+                        setActiveAnalyticsTab("dashboard");
+                      }}
+                    >
+                      {card.action}
+                    </button>
+                  </div>
+                  <div className="analytics-crm-analytics-gauge">
+                    <div>
+                      <span>Покрытие выплат</span>
+                      <b>{formatPercent(outgoingCoverage)}</b>
+                    </div>
+                    <div className="analytics-crm-analytics-track" aria-hidden="true">
+                      <i style={{ width: analyticsCoverageWidth }} />
+                    </div>
+                  </div>
+                  <div className="analytics-crm-analytics-metrics">
+                    {analyticsSignals.map(([label, value, tone]) => (
+                      <div key={label} className={`analytics-crm-analytics-metric is-${tone}`}>
+                        <span>{label}</span>
+                        <b>{value}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="analytics-crm-analytics-pulse">
+                    {analyticsPulseRows.map(([label, value, tone]) => (
+                      <div key={label} className={`analytics-crm-analytics-pulse-row is-${tone}`}>
+                        <span>{label}</span>
+                        <b>{value}</b>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ) : (
+                <article key={card.id} className="analytics-crm-command-card">
+                  <div className="analytics-crm-command-card-top">
+                    <span>{card.kicker}</span>
+                    <small>{card.meta}</small>
+                  </div>
+                  <strong>{card.title}</strong>
+                  <p>{card.text}</p>
+                  <button type="button" onClick={() => setActiveTab(card.id)}>
+                    {card.action}
+                  </button>
+                </article>
+              )
             ))}
           </div>
         </section>
