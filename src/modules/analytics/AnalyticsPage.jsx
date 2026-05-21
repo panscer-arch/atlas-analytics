@@ -57,6 +57,7 @@ import "./styles/analytics.css";
 import { useEffect, useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
+const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
 const CRM_MY_TASKS_STORAGE_KEY = "atlas.analytics.crmMyTasks.v1";
 
 function downloadCsv(csvContent) {
@@ -808,6 +809,7 @@ function AnalyticsPage() {
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
     { id: "crmBoard", label: "CRM-доска" },
+    { id: "siteDesign", label: "Дизайн сайта" },
     { id: "quickNotes", label: "Заметки" },
   ];
 
@@ -2220,6 +2222,20 @@ function AnalyticsPage() {
     return <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} variant="inline" />;
   }
 
+  function renderSiteDesignTab() {
+    return (
+      <AnalyticsBoardEmbed
+        boardUrl={ATLAS_SITE_PREVIEW_URL}
+        variant="inline"
+        kicker="Дизайн сайта"
+        title="Pre-launch лендинг Atlas System"
+        subtitle="Окно просмотра макета: можно скроллить всю страницу внутри CRM или открыть отдельно."
+        frameTitle="Pre-launch лендинг Atlas System"
+        panelId="analytics-site-design"
+      />
+    );
+  }
+
   function renderActiveAnalyticsTab() {
     if (activeAnalyticsTab === "dashboard") return renderDashboard();
     if (activeAnalyticsTab === "traffic") return renderTrafficTab();
@@ -2247,6 +2263,7 @@ function AnalyticsPage() {
     if (activeTab === "tasks") return renderTasksTab();
     if (activeTab === "content") return renderContentTab();
     if (activeTab === "crmBoard") return renderCrmBoardTab();
+    if (activeTab === "siteDesign") return renderSiteDesignTab();
     return renderAnalyticsTab();
   }
 

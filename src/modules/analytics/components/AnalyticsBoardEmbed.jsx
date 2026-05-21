@@ -1,4 +1,13 @@
-function AnalyticsBoardEmbed({ boardUrl, onClose, variant = "overlay" }) {
+function AnalyticsBoardEmbed({
+  boardUrl,
+  onClose,
+  variant = "overlay",
+  kicker = "CRM-доска",
+  title = "Вторая система задач внутри аналитики",
+  subtitle = "Backlog, статусы, входящие идеи и рабочие карточки в формате доски.",
+  frameTitle = "Доска аналитики",
+  panelId = "analytics-crm-board",
+}) {
   const isOverlay = variant === "overlay";
   const titleId = isOverlay ? "analytics-board-title" : "analytics-board-tab-title";
   const Root = isOverlay ? "div" : "section";
@@ -10,13 +19,13 @@ function AnalyticsBoardEmbed({ boardUrl, onClose, variant = "overlay" }) {
       aria-modal={isOverlay ? "true" : undefined}
       aria-labelledby={titleId}
     >
-      <section id={isOverlay ? "analytics-board" : "analytics-crm-board"} className="analytics-surface analytics-board-embed-panel">
+      <section id={isOverlay ? "analytics-board" : panelId} className="analytics-surface analytics-board-embed-panel">
         <div className="analytics-board-embed-head">
           <div>
-            <span className="analytics-kicker">CRM-доска</span>
-            <h2 id={titleId} className="analytics-idea-title">Вторая система задач внутри аналитики</h2>
+            <span className="analytics-kicker">{kicker}</span>
+            <h2 id={titleId} className="analytics-idea-title">{title}</h2>
             <p className="analytics-page-subtitle mb-0">
-              Backlog, статусы, входящие идеи и рабочие карточки в формате доски.
+              {subtitle}
             </p>
           </div>
           <div className="analytics-board-embed-actions">
@@ -31,7 +40,7 @@ function AnalyticsBoardEmbed({ boardUrl, onClose, variant = "overlay" }) {
           </div>
         </div>
         <div className="analytics-board-frame-wrap">
-          <iframe className="analytics-board-frame" src={boardUrl} title="Доска аналитики" />
+          <iframe className="analytics-board-frame" src={boardUrl} title={frameTitle} />
         </div>
       </section>
     </Root>
