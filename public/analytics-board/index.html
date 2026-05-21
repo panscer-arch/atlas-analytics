@@ -428,6 +428,7 @@
       const SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
       const MIGRATION_KEY = "web3-analytics-board-migration-v19";
       const ACTIVE_BOARD_KEY = "web3-analytics-board-active-view-v1";
+      const SITE_UPLOAD_MIGRATION_KEY = "web3-site-upload-board-migration-v1";
 
       const ANALYTICS_TASKS = [
         {
@@ -1025,6 +1026,39 @@
         }
       }
 
+      async function loadServerStatuses() {
+        if (window.location.protocol === "file:") return {};
+        try {
+          const response = await fetch(`/api/content/${encodeURIComponent(getActiveStorageKey())}`, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (!response.ok) return {};
+          const payload = await response.json();
+          const value = payload?.exists ? payload.value : null;
+          return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        } catch (error) {
+          console.error("Failed to load server board state", error);
+          return {};
+        }
+      }
+
+      async function persistServerStatuses() {
+        if (window.location.protocol === "file:") return false;
+        try {
+          const response = await fetch(`/api/content/${encodeURIComponent(getActiveStorageKey())}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value: state.statuses }),
+          });
+          return response.ok;
+        } catch (error) {
+          console.error("Failed to persist server board state", error);
+          return false;
+        }
+      }
+
       function persistLocalSignals() {
         try {
           localStorage.setItem(SIGNALS_STORAGE_KEY, JSON.stringify(state.signals || []));
@@ -1059,6 +1093,28 @@
       }
 
       function migrateBoardState() {
+        if (state.activeBoard === "siteUpload") {
+          try {
+            const currentMigration = localStorage.getItem(SITE_UPLOAD_MIGRATION_KEY);
+            if (currentMigration === "site-upload-first-task-in-progress") return;
+
+            if (!state.statuses["site-upload-orchestrator"]) {
+              state.statuses["site-upload-orchestrator"] = {
+                taskId: "site-upload-orchestrator",
+                done: false,
+                status: "in_progress",
+                progress: 35,
+              };
+            }
+
+            persistLocalStatuses();
+            localStorage.setItem(SITE_UPLOAD_MIGRATION_KEY, "site-upload-first-task-in-progress");
+          } catch (error) {
+            console.error("Failed to migrate site upload board state", error);
+          }
+          return;
+        }
+
         if (state.activeBoard !== "analytics") return;
         try {
           const currentMigration = localStorage.getItem(MIGRATION_KEY);
@@ -1211,6 +1267,7 @@
       async function saveStatus(payload) {
         state.statuses[payload.taskId] = payload;
         persistLocalStatuses();
+        await persistServerStatuses();
       }
 
       function renderBoardSwitcher() {
@@ -1410,11 +1467,15 @@
       }
 
       async function hydrateStatuses() {
-        state.statuses = loadLocalStatuses();
+        const localStatuses = loadLocalStatuses();
+        const serverStatuses = await loadServerStatuses();
+        state.statuses = { ...serverStatuses, ...localStatuses };
         state.signals = getActiveBoard().useSignals ? loadLocalSignals() : [];
         migrateBoardState();
 
         if (window.location.protocol === "file:" || state.activeBoard !== "analytics") {
+          persistLocalStatuses();
+          await persistServerStatuses();
           return;
         }
 
@@ -1430,6 +1491,7 @@
           state.statuses = { ...seededStatuses, ...state.statuses };
           state.signals = mergeSignals(state.signals, seededSignals);
           persistLocalStatuses();
+          await persistServerStatuses();
           persistLocalSignals();
         } catch (error) {
           console.error("Failed to load board state", error);
