@@ -809,7 +809,6 @@ function AnalyticsPage() {
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
     { id: "crmBoard", label: "CRM-доска" },
-    { id: "siteDesign", label: "Дизайн сайта" },
     { id: "quickNotes", label: "Заметки" },
   ];
 
@@ -2219,20 +2218,51 @@ function AnalyticsPage() {
   }
 
   function renderCrmBoardTab() {
-    return <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} variant="inline" />;
-  }
-
-  function renderSiteDesignTab() {
     return (
-      <AnalyticsBoardEmbed
-        boardUrl={ATLAS_SITE_PREVIEW_URL}
-        variant="inline"
-        kicker="Дизайн сайта"
-        title="Pre-launch лендинг Atlas System"
-        subtitle="Окно просмотра макета: можно скроллить всю страницу внутри CRM или открыть отдельно."
-        frameTitle="Pre-launch лендинг Atlas System"
-        panelId="analytics-site-design"
-      />
+      <>
+        <section className="analytics-surface analytics-site-task-materials mt-4">
+          <div className="analytics-site-task-head">
+            <div>
+              <span className="analytics-kicker">Загрузка на сайт</span>
+              <h2 className="analytics-idea-title">Материалы по задаче “Заглушка на сайт”</h2>
+              <p className="analytics-page-subtitle mb-0">
+                Всё, что относится к текущей задаче: дизайн-просмотр, локалка, прод-preview, вводные и ссылки для сборки.
+              </p>
+            </div>
+            <span className="analytics-site-task-status">В работе</span>
+          </div>
+
+          <div className="analytics-site-task-grid">
+            <a className="analytics-site-task-card analytics-site-task-card-primary" href={ATLAS_SITE_PREVIEW_URL} target="_blank" rel="noreferrer">
+              <span>Дизайн / preview</span>
+              <strong>Открыть макет страницы</strong>
+              <small>Весь pre-launch лендинг одним скроллом</small>
+            </a>
+            <a className="analytics-site-task-card" href="http://127.0.0.1:3021/atlas-site-preview/index.html" target="_blank" rel="noreferrer">
+              <span>Локалка</span>
+              <strong>127.0.0.1:3021</strong>
+              <small>Для быстрой проверки на ноутбуке</small>
+            </a>
+            <a className="analytics-site-task-card" href="https://analytics.pupanel.cc/atlas-site-preview/index.html" target="_blank" rel="noreferrer">
+              <span>Прод-preview</span>
+              <strong>analytics.pupanel.cc</strong>
+              <small>Текущая опубликованная версия</small>
+            </a>
+            <div className="analytics-site-task-card">
+              <span>Вводные</span>
+              <strong>atlas-syste.io · English only</strong>
+              <small>CTA только в Telegram, YouTube-видео Архитектора встроить после публикации</small>
+            </div>
+            <div className="analytics-site-task-card">
+              <span>Контакты</span>
+              <strong>3 Telegram assistants</strong>
+              <small>Финальное количество помощников утверждает главный координатор</small>
+            </div>
+          </div>
+        </section>
+
+        <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} variant="inline" />
+      </>
     );
   }
 
@@ -2263,7 +2293,6 @@ function AnalyticsPage() {
     if (activeTab === "tasks") return renderTasksTab();
     if (activeTab === "content") return renderContentTab();
     if (activeTab === "crmBoard") return renderCrmBoardTab();
-    if (activeTab === "siteDesign") return renderSiteDesignTab();
     return renderAnalyticsTab();
   }
 
