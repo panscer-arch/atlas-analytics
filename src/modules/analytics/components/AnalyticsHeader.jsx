@@ -4,9 +4,9 @@ function AnalyticsHeader({ onOpenCharts, onOpenNotes, onOpenTasks, onToggleBoard
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
-        <span className="analytics-kicker">Админ-панель Web3</span>
         <div className="analytics-header-title-row">
-          <h1 className="analytics-page-title mb-0">Аналитика</h1>
+          <img className="analytics-header-logo" src="/generated/analytics-character-logo.png" alt="" aria-hidden="true" />
+          <h1 className="analytics-page-title analytics-page-title-animated mb-0">Аналитика</h1>
           {showMotion ? (
             <div className="analytics-header-motion analytics-header-motion-inline" aria-hidden="true">
               <div className="analytics-header-motion-label">
@@ -25,9 +25,6 @@ function AnalyticsHeader({ onOpenCharts, onOpenNotes, onOpenTasks, onToggleBoard
             </div>
           ) : null}
         </div>
-        <p className="analytics-page-subtitle mb-0">
-          Входящий поток, выплаты, риск по обязательствам и структура кошельков в одном модуле.
-        </p>
       </div>
 
       <div className="analytics-header-center">
