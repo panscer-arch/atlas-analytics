@@ -1086,6 +1086,138 @@
   min-height: 46px;
 }
 
+.analytics-notes-btn {
+  border-color: rgba(244, 199, 106, 0.22) !important;
+  background: rgba(244, 199, 106, 0.1) !important;
+  color: #ffe8bc !important;
+}
+
+.analytics-quick-notes-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 1rem;
+  background: rgba(3, 6, 14, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+.analytics-quick-notes {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid rgba(244, 199, 106, 0.2);
+  border-radius: 20px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(244, 199, 106, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(22, 29, 43, 0.98), rgba(8, 13, 22, 0.98));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.52);
+}
+
+.analytics-quick-notes-head,
+.analytics-quick-notes-checklist-head,
+.analytics-quick-notes-add-row,
+.analytics-quick-notes-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.analytics-quick-notes-head {
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.analytics-quick-notes-head h2 {
+  margin: 0.2rem 0 0;
+  color: #f4fbff;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.analytics-quick-notes-close,
+.analytics-quick-notes-item button {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid rgba(157, 178, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(7, 12, 22, 0.54);
+  color: #eff7ff;
+  font-weight: 900;
+}
+
+.analytics-quick-notes-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.analytics-quick-notes-field span,
+.analytics-quick-notes-checklist-head span {
+  color: #9fb2cf;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-quick-notes-textarea {
+  min-height: 18rem;
+  border-color: rgba(157, 178, 255, 0.14) !important;
+  background: rgba(7, 12, 22, 0.62) !important;
+  color: #edf3ff !important;
+  resize: vertical;
+}
+
+.analytics-quick-notes-checklist {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.analytics-quick-notes-checklist-head {
+  justify-content: space-between;
+}
+
+.analytics-quick-notes-checklist-head small {
+  color: #ffe8bc;
+  font-weight: 900;
+}
+
+.analytics-quick-notes-add-row {
+  align-items: stretch;
+}
+
+.analytics-quick-notes-add-row input {
+  flex: 1;
+}
+
+.analytics-quick-notes-items {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.analytics-quick-notes-item input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #f4c76a;
+}
+
+.analytics-quick-notes-item .analytics-launch-input {
+  flex: 1;
+}
+
+.analytics-quick-notes-empty {
+  margin: 0;
+  border: 1px dashed rgba(157, 178, 255, 0.16);
+  border-radius: 14px;
+  padding: 0.85rem;
+  color: #9fb2cf;
+  font-size: 0.9rem;
+}
+
 .analytics-header-motion-label {
   display: inline-flex;
   align-items: center;

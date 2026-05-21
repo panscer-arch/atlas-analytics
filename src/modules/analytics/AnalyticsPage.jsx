@@ -24,6 +24,7 @@ import DashboardListRow from "./components/DashboardListRow";
 import DashboardMiniTable from "./components/DashboardMiniTable";
 import DashboardValue from "./components/DashboardValue";
 import Wrapper from "./components/Wrapper";
+import QuickNotesModal from "./components/QuickNotesModal";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
 import ConversionFunnelChart from "./charts/ConversionFunnelChart";
@@ -214,6 +215,7 @@ function getInitialAnalyticsTab() {
 function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState(getInitialAnalyticsTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
+  const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
@@ -772,6 +774,7 @@ function AnalyticsPage() {
     return (
       <AnalyticsHeader
         onOpenCharts={handleOpenCharts}
+        onOpenNotes={() => setIsQuickNotesOpen(true)}
         onOpenTasks={() => setActiveTab("launch")}
         onToggleBoard={() => setIsBoardOpen((current) => !current)}
         isBoardOpen={isBoardOpen}
@@ -1615,6 +1618,8 @@ function AnalyticsPage() {
   return (
     <main className="analytics-layout container-fluid py-4 px-3 px-xl-4">
       {renderPageHeader()}
+
+      <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} />
 
       {isBoardOpen ? <AnalyticsBoardEmbed activeTab={activeTab} boardUrl={ANALYTICS_BOARD_URL} /> : null}
 
