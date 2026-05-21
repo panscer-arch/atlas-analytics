@@ -206,7 +206,7 @@ function scrollToSection(sectionId) {
 }
 
 function getInitialAnalyticsTab() {
-  if (typeof window === "undefined") return "analytics";
+  if (typeof window === "undefined") return "dashboard";
 
   const url = new URL(window.location.href);
   const board = url.searchParams.get("board");
@@ -216,7 +216,7 @@ function getInitialAnalyticsTab() {
   if (contentBoards.has(board)) return "content";
   if (taskBoards.has(board)) return "tasks";
   if (board) return "tasks";
-  return "analytics";
+  return "dashboard";
 }
 
 function getInitialAnalyticsSectionTab() {
@@ -540,6 +540,7 @@ function AnalyticsPage() {
   ];
 
   const mainTabs = [
+    { id: "dashboard", label: "Дашборд", hint: "CRM" },
     { id: "analytics", label: "Аналитика", hint: "BI" },
     { id: "tasks", label: "Задачи", hint: "запуск" },
     { id: "content", label: "Контент", hint: "база" },
@@ -808,6 +809,105 @@ function AnalyticsPage() {
                 </DashboardList>
               </DashboardBlock>
             </div>
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderCrmDashboard() {
+    const dashboardCards = [
+      {
+        id: "analytics",
+        kicker: "Аналитика",
+        title: formatCurrency(contractNetFlowToday),
+        text: "Пульс денег, трафика, продуктов и структуры.",
+        meta: "BI-центр",
+        action: "Открыть аналитику",
+      },
+      {
+        id: "tasks",
+        kicker: "Задачи",
+        title: "4 раздела",
+        text: "Запуск, идеи, маркетинг и база знаний.",
+        meta: "Команда",
+        action: "Открыть задачи",
+      },
+      {
+        id: "content",
+        kicker: "Контент",
+        title: "6 баз",
+        text: "Материалы, параметры, FAQ, CEO, ролики и терминология.",
+        meta: "Хранилище",
+        action: "Открыть контент",
+      },
+      {
+        id: "crmBoard",
+        kicker: "CRM-доска",
+        title: "Kanban",
+        text: "Рабочая доска с планом, прогрессом и готовыми блоками.",
+        meta: "Trello-режим",
+        action: "Открыть доску",
+      },
+    ];
+
+    return (
+      <>
+        <section className="analytics-surface analytics-crm-command mt-4">
+          <div className="analytics-crm-command-head">
+            <div>
+              <span className="analytics-kicker">Command center</span>
+              <h2>Панель управления CRM</h2>
+            </div>
+            <button type="button" className="btn analytics-notes-btn analytics-crm-notes-btn" onClick={() => setIsQuickNotesOpen(true)}>
+              Заметки
+            </button>
+          </div>
+
+          <div className="analytics-crm-command-grid">
+            {dashboardCards.map((card) => (
+              <article key={card.id} className="analytics-crm-command-card">
+                <div className="analytics-crm-command-card-top">
+                  <span>{card.kicker}</span>
+                  <small>{card.meta}</small>
+                </div>
+                <strong>{card.title}</strong>
+                <p>{card.text}</p>
+                <button type="button" onClick={() => setActiveTab(card.id)}>
+                  {card.action}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="row g-3 mt-1">
+          <div className="col-12 col-xl-4">
+            <DashboardBlock title="Сегодня">
+              <DashboardList>
+                <DashboardListRow label="Входящий поток" value={formatCurrency(incomingToday)} tone="success" />
+                <DashboardListRow label="Выплаты" value={formatCurrency(outgoingToday)} />
+                <DashboardListRow label="Чистый поток" value={formatCurrency(contractNetFlowToday)} tone={contractNetFlowToday >= 0 ? "success" : "danger"} />
+              </DashboardList>
+            </DashboardBlock>
+          </div>
+          <div className="col-12 col-xl-4">
+            <DashboardBlock title="Фокус">
+              <DashboardList>
+                <DashboardListRow label="Первая дата риска" value={data.kpis.firstRiskDate} tone={riskTone} />
+                <DashboardListRow label="Запас контракта" value={formatDays(runwayDays)} />
+                <DashboardListRow label="Покрытие выплат" value={formatPercent(outgoingCoverage)} />
+              </DashboardList>
+            </DashboardBlock>
+          </div>
+          <div className="col-12 col-xl-4">
+            <DashboardBlock title="Быстрые действия">
+              <DashboardList>
+                <button type="button" className="analytics-dashboard-link-btn" onClick={() => setActiveTab("tasks")}>Открыть задачи</button>
+                <button type="button" className="analytics-dashboard-link-btn" onClick={() => setActiveTab("content")}>Открыть контент</button>
+                <button type="button" className="analytics-dashboard-link-btn" onClick={() => setActiveTab("crmBoard")}>Открыть CRM-доску</button>
+              </DashboardList>
+            </DashboardBlock>
           </div>
         </section>
       </>
@@ -1677,6 +1777,7 @@ function AnalyticsPage() {
   }
 
   function renderActiveTab() {
+    if (activeTab === "dashboard") return renderCrmDashboard();
     if (activeTab === "tasks") return renderTasksTab();
     if (activeTab === "content") return renderContentTab();
     if (activeTab === "crmBoard") return renderCrmBoardTab();

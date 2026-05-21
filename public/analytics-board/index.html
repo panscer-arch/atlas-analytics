@@ -28,8 +28,8 @@
           var(--bg);
       }
       .wrap {
-        width: min(1420px, calc(100vw - 32px));
-        margin: 24px auto 40px;
+        width: min(1420px, calc(100vw - 24px));
+        margin: 12px auto 28px;
       }
       .hero, .filters, .kanban {
         background: rgba(255, 255, 255, 0.025);
@@ -71,7 +71,7 @@
         flex-wrap: wrap;
         gap: 8px;
       }
-      .hero { margin-bottom: 16px; }
+      .hero { display: none; }
       .hero-grid {
         display: grid;
         grid-template-columns: 1.3fr 0.8fr;
@@ -111,7 +111,7 @@
         font-size: 24px;
         letter-spacing: -0.04em;
       }
-      .filters { margin-bottom: 16px; }
+      .filters { margin-bottom: 12px; }
       .tabs-shell {
         display: flex;
         align-items: center;
@@ -161,6 +161,9 @@
       }
       .chip.active .chip-count {
         color: rgba(239, 245, 255, 0.9);
+      }
+      .kanban {
+        padding: 14px;
       }
       .kanban-grid {
         display: grid;
@@ -335,30 +338,6 @@
   <body>
     <main class="wrap">
       <section class="hero">
-        <div class="hero-grid">
-          <div>
-            <h1>Модуль аналитики Web3 для админ-панели</h1>
-            <p class="sub">
-              Отдельная доска только под сборку вкладки аналитики. Главный фокус: входящие деньги,
-              обязательства на сегодня / 7 дней / 30 дней, требуемый новый приток, структура кошельков и
-              ежедневные алерты для оператора.
-            </p>
-          </div>
-          <div class="hero-side">
-            <div class="hero-stat">
-              <span>Главный KPI</span>
-              <strong>Входящие деньги</strong>
-            </div>
-            <div class="hero-stat">
-              <span>Критичный вопрос</span>
-              <strong>Хватает ли притока на обязательства</strong>
-            </div>
-            <div class="hero-stat">
-              <span>Подключение API</span>
-              <strong>Только после сборки основы</strong>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="filters">
@@ -366,14 +345,6 @@
           <div class="tabs-label">Флаг по этапам</div>
           <div class="chips" id="filter-chips"></div>
         </div>
-      </section>
-
-      <section class="ideas">
-        <h2>Входящие идеи из аналитики</h2>
-        <p class="sub" style="margin-top: 8px; margin-bottom: 16px; font-size: 16px;">
-          Всё, что бросаем кнопкой из аналитики, прилетает сюда как быстрый входящий backlog.
-        </p>
-        <div class="ideas-grid" id="ideas-col"></div>
       </section>
 
       <section class="kanban">
@@ -1225,6 +1196,7 @@
       }
 
       function renderIdeas() {
+        if (!ideasCol) return;
         ideasCol.innerHTML = "";
         const ideaSignals = (state.signals || [])
           .filter((signal) => signal.type === "analytics-idea")
