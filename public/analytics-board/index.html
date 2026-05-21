@@ -416,6 +416,21 @@
         background: rgba(255, 255, 255, 0.04);
       }
       .plain.open, .subtasks.open { display: block; }
+      .task-comment {
+        margin-top: 12px;
+        border: 1px solid rgba(244, 199, 106, 0.24);
+        border-radius: 18px;
+        padding: 13px 14px;
+        background: rgba(244, 199, 106, 0.08);
+        color: #ffe0a8;
+        line-height: 1.45;
+        white-space: pre-line;
+      }
+      .task-comment strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #fff0c9;
+      }
       .subtask {
         display: grid;
         grid-template-columns: 22px 52px 1fr;
@@ -506,6 +521,11 @@
               <span>Полный макет</span>
               <strong>Структура лендоса</strong>
               <small>Длинный светлый макет по последней картинке-концепту</small>
+            </a>
+            <a class="site-material-card primary" href="/atlas-site-concept/prototype-v1.html" target="_blank" rel="noreferrer">
+              <span>3-screen prototype</span>
+              <strong>B → A → C</strong>
+              <small>1 экран Архитектор, 2 экран сообщество, 3 экран экосистема</small>
             </a>
             <a class="site-material-card" href="http://127.0.0.1:3021/atlas-site-preview/index.html" target="_blank" rel="noreferrer">
               <span>Локалка</span>
@@ -945,6 +965,8 @@
           title: "Дизайн hero и визуальная система",
           copy: "Страница должна выглядеть как Atlas: премиально, технологично, с тёмной глубиной, оранжевым ядром и без дешёвого крипто-шаблона.",
           plain: "UI-designer собирает визуальный язык: hero, сетка, CTA, карточки, motion-состояния, адаптив. Образ Архитектора можно использовать как атмосферу, но без криминального вайба.",
+          comment: "ТЗ по утверждённой композиции прототипа:\n\n1 экран — Concept B / Architect First. Главный вход через Архитектора: тёмный премиальный cinematic-блок, лицо частично в тени, спокойный образ голоса системы, CTA Contact Atlas Assistants и Watch Architect Message. Цель: интрига, доверие, ощущение предстарта и правильного момента.\n\n2 экран — Concept A / Community Network. Белый премиальный экран из Figma-логики: международная сеть людей, Smart Cycle orb в центре, Atlas как движение и цифровая взаимопомощь. Цель: показать, что система строится вокруг сообщества.\n\n3 экран — Concept C / Ecosystem Map. Насыщенный Web3-экран: Smart Cycle, DAO Mechanics, Knowledge Hub, Partners, Governance, Future Modules. Цель: показать, что Atlas — больше чем один продукт, но без разговоров про завершение циклов.\n\nПараметры: English only, домен atlas-syste.io, CTA только Telegram, стартово 3 помощника, YouTube-блок Архитектора встроить после публикации, стиль премиальный Web3 без дешёвого MLM/crypto-scam вайба, не обещать гарантированный доход.",
+          previewPath: "/atlas-site-concept/prototype-v1.html",
           priority: "P1",
           importance: "Высокая",
           difficulty: "Высокая",
@@ -1478,6 +1500,7 @@
             <button class="do-btn" type="button">Сделать</button>
           </div>
           <div class="plain">${task.plain}</div>
+          ${task.comment ? `<div class="task-comment"><strong>Комментарий / ТЗ</strong>${task.comment}</div>` : ""}
           <div class="subtasks">
             ${task.subtasks.map((subtask, subtaskIndex) => `
               <div class="subtask">

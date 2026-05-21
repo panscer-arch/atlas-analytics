@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Atlas System — first screen v2</title>
+    <style>
+      :root {
+        --ink: #220905;
+        --muted: #6f625d;
+        --orange: #ff6a00;
+        --orange-2: #ff9b2f;
+        --line: rgba(255, 106, 0, 0.16);
+        --soft: #fff7ef;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      a { color: inherit; text-decoration: none; }
+
+      .screen {
+        position: relative;
+        min-height: 100vh;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 18%, rgba(255, 106, 0, 0.055), transparent 36%),
+          linear-gradient(180deg, #fff 0%, #fff 54%, #fff8f0 100%);
+      }
+
+      .screen::before {
+        content: "";
+        position: absolute;
+        inset: 82px 0 0;
+        background:
+          linear-gradient(rgba(255, 106, 0, 0.032) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 106, 0, 0.032) 1px, transparent 1px);
+        background-size: 46px 46px;
+        mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 86%, transparent 100%);
+      }
+
+      .page {
+        position: relative;
+        z-index: 2;
+        width: min(1500px, calc(100vw - 40px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 250px 1fr 180px;
+        align-items: center;
+        gap: 24px;
+        min-height: 84px;
+        border-bottom: 1px solid rgba(34, 9, 5, 0.08);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 950;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      .logo-mark {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        flex: none;
+      }
+
+      .logo-mark i {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: var(--orange);
+        transform: translate(-50%, -50%);
+        box-shadow:
+          0 -18px 0 #ff8b00,
+          16px -8px 0 #ffbd21,
+          16px 10px 0 #ff8b00,
+          0 20px 0 #ffbd21,
+          -16px 10px 0 #ff8b00,
+          -16px -8px 0 #ffbd21;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(18px, 3vw, 44px);
+        color: #2c1710;
+        font-size: 15px;
+        font-weight: 650;
+      }
+
+      .contact {
+        justify-self: end;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        border-radius: 12px;
+        padding: 0 24px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--orange), var(--orange-2));
+        font-weight: 850;
+        box-shadow: 0 18px 40px rgba(255, 106, 0, 0.22);
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        padding-top: clamp(30px, 4.8vh, 58px);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 106, 0, 0.28);
+        border-radius: 999px;
+        padding: 11px 17px;
+        color: var(--orange);
+        background: rgba(255, 247, 239, 0.76);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        backdrop-filter: blur(16px);
+      }
+
+      .badge::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--orange);
+        box-shadow: 0 0 0 6px rgba(255, 106, 0, 0.08);
+      }
+
+      h1 {
+        max-width: 1030px;
+        margin: 26px 0 0;
+        font-size: clamp(46px, 5.05vw, 76px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .accent { color: var(--orange); }
+
+      .subtitle {
+        margin: 16px 0 0;
+        color: var(--ink);
+        font-size: clamp(20px, 1.8vw, 28px);
+        line-height: 1.18;
+        font-weight: 850;
+      }
+
+      .subtitle .accent {
+        font-weight: 950;
+      }
+
+      .copy {
+        max-width: 720px;
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 50px;
+        border: 1px solid rgba(255, 106, 0, 0.26);
+        border-radius: 11px;
+        padding: 0 22px;
+        background: rgba(255, 255, 255, 0.82);
+        color: var(--ink);
+        font-weight: 850;
+        box-shadow: 0 14px 34px rgba(70, 31, 9, 0.06);
+        backdrop-filter: blur(16px);
+      }
+
+      .button.primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--orange), var(--orange-2));
+        box-shadow: 0 18px 44px rgba(255, 106, 0, 0.22);
+      }
+
+      .button .arrow {
+        font-size: 18px;
+        transform: translateY(-1px);
+      }
+
+      .stage {
+        position: relative;
+        width: min(1180px, 100%);
+        margin-top: clamp(16px, 2.8vh, 32px);
+      }
+
+      .network {
+        position: relative;
+        width: 100%;
+        display: block;
+        opacity: 0.96;
+        filter: drop-shadow(0 18px 50px rgba(255, 106, 0, 0.09));
+      }
+
+      .stage::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 30%;
+        background: linear-gradient(180deg, rgba(255,255,255,0), #fff 92%);
+        pointer-events: none;
+      }
+
+      .architect-card {
+        position: absolute;
+        right: 2.5%;
+        top: 2%;
+        width: min(320px, 30vw);
+        border: 1px solid rgba(255, 106, 0, 0.16);
+        border-radius: 18px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 24px 60px rgba(55, 26, 8, 0.1);
+        backdrop-filter: blur(18px);
+      }
+
+      .video-thumb {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-radius: 13px;
+        background:
+          linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.74)),
+          url("../generated/ceo-slide-01-v3-clean.png") center / cover;
+      }
+
+      .play {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 34px;
+        text-shadow: 0 12px 26px rgba(0,0,0,0.36);
+      }
+
+      .architect-card strong {
+        display: block;
+        margin: 10px 2px 2px;
+        font-size: 14px;
+      }
+
+      .architect-card span {
+        display: block;
+        margin: 0 2px 2px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .trust-row {
+        position: absolute;
+        left: 50%;
+        bottom: 5.5%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 106, 0, 0.18);
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.84);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+        transform: translateX(-50%);
+        box-shadow: 0 18px 42px rgba(66, 30, 8, 0.07);
+        backdrop-filter: blur(16px);
+      }
+
+      .trust-row b {
+        color: var(--ink);
+      }
+
+      @media (max-width: 980px) {
+        .topbar {
+          grid-template-columns: 1fr;
+          gap: 14px;
+          padding: 18px 0;
+        }
+
+        nav {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+          gap: 14px 22px;
+        }
+
+        .contact {
+          justify-self: start;
+        }
+
+        .hero {
+          text-align: left;
+          justify-items: start;
+          padding-top: 30px;
+        }
+
+        .actions {
+          justify-content: flex-start;
+        }
+
+        .architect-card,
+        .trust-row {
+          position: static;
+          width: 100%;
+          transform: none;
+          margin-top: 14px;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          width: min(100% - 28px, 1500px);
+        }
+
+        .topbar {
+          gap: 12px;
+          min-height: auto;
+          padding: 14px 0;
+        }
+
+        .brand {
+          font-size: 19px;
+        }
+
+        .logo-mark {
+          width: 42px;
+          height: 42px;
+        }
+
+        nav {
+          font-size: 14px;
+          gap: 12px 18px;
+        }
+
+        .hero {
+          padding-top: 22px;
+        }
+
+        .badge {
+          padding: 9px 12px;
+          font-size: 11px;
+        }
+
+        h1 {
+          margin-top: 20px;
+          font-size: 36px;
+          line-height: 1.04;
+        }
+
+        .subtitle {
+          margin-top: 14px;
+          font-size: 19px;
+          line-height: 1.2;
+        }
+
+        .copy {
+          margin-top: 12px;
+          font-size: 15px;
+          line-height: 1.48;
+        }
+
+        .actions {
+          gap: 10px;
+          margin-top: 20px;
+        }
+
+        .button,
+        .contact {
+          width: 100%;
+          min-height: 48px;
+        }
+
+        .stage {
+          width: calc(100% + 120px);
+          margin-top: 18px;
+          margin-left: -60px;
+        }
+
+        .network {
+          min-height: 270px;
+          object-fit: cover;
+          object-position: center top;
+        }
+
+        .architect-card,
+        .trust-row {
+          width: calc(100% - 120px);
+          margin-left: 60px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="screen">
+      <div class="page">
+        <header class="topbar">
+          <a class="brand" href="#">
+            <span class="logo-mark" aria-hidden="true"><i></i></span>
+            <span>Atlas System</span>
+          </a>
+
+          <nav aria-label="Primary">
+            <a href="#">Ecosystem</a>
+            <a href="#">Smart Cycle</a>
+            <a href="#">For Partners</a>
+            <a href="#">Docs</a>
+            <a href="#">FAQ</a>
+          </nav>
+
+          <a class="contact" href="#">Contact Atlas</a>
+        </header>
+
+        <section class="hero" aria-label="Atlas System pre-launch">
+          <div class="badge">Pre-launch · atlas-syste.io</div>
+          <h1>Atlas System — a digital mutual-support system for a new era</h1>
+          <p class="subtitle">Web3. Smart-contract. <span class="accent">DAO mechanics.</span> Community.</p>
+          <p class="copy">
+            Before the official launch, Atlas is forming its first international core:
+            leaders, teams and communities who want to study the system early and prepare for the start.
+          </p>
+
+          <div class="actions">
+            <a class="button primary" href="#">Contact Atlas Assistants <span class="arrow">→</span></a>
+            <a class="button" href="#">Watch Architect Message</a>
+          </div>
+
+          <div class="stage">
+            <img class="network" src="../generated/atlas-network-reference.png" alt="Atlas international community network" />
+
+            <aside class="architect-card" aria-label="Architect video preview">
+              <div class="video-thumb"><div class="play">▶</div></div>
+              <strong>Architect Pre-launch Address</strong>
+              <span>Video block for the first public message before launch.</span>
+            </aside>
+
+            <div class="trust-row">
+              <span>●</span>
+              <span><b>Official channel:</b> verify contacts through the Atlas website.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

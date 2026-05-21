@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Atlas System — 3 screen prototype</title>
+    <style>
+      :root {
+        --ink: #210905;
+        --muted: #71645f;
+        --orange: #ff6a00;
+        --orange-2: #ff9a2f;
+        --gold: #ffc46b;
+        --line: rgba(255, 106, 0, 0.16);
+        --dark: #090909;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: #fff;
+      }
+      a { color: inherit; text-decoration: none; }
+
+      .section {
+        position: relative;
+        min-height: 100vh;
+        overflow: hidden;
+        scroll-snap-align: start;
+      }
+      .page {
+        position: relative;
+        z-index: 2;
+        width: min(1480px, calc(100vw - 40px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 250px 1fr 178px;
+        align-items: center;
+        gap: 24px;
+        min-height: 84px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 22px;
+        font-weight: 950;
+      }
+      .mark {
+        position: relative;
+        width: 48px;
+        height: 48px;
+      }
+      .mark i {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: var(--orange);
+        transform: translate(-50%, -50%);
+        box-shadow:
+          0 -18px 0 #ff8a00,
+          16px -8px 0 #ffbd22,
+          16px 10px 0 #ff8a00,
+          0 20px 0 #ffbd22,
+          -16px 10px 0 #ff8a00,
+          -16px -8px 0 #ffbd22;
+      }
+      nav {
+        display: flex;
+        justify-content: center;
+        gap: clamp(18px, 3vw, 42px);
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .cta {
+        justify-self: end;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        border-radius: 12px;
+        padding: 0 23px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--orange), var(--orange-2));
+        font-weight: 900;
+        box-shadow: 0 18px 42px rgba(255, 106, 0, 0.24);
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        border: 1px solid rgba(255, 106, 0, 0.25);
+        border-radius: 12px;
+        padding: 0 22px;
+        background: rgba(255,255,255,0.82);
+        color: var(--ink);
+        font-weight: 900;
+        backdrop-filter: blur(16px);
+      }
+      .btn.primary {
+        color: #fff;
+        background: linear-gradient(135deg, var(--orange), var(--orange-2));
+        box-shadow: 0 18px 42px rgba(255, 106, 0, 0.22);
+      }
+
+      .label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 106, 0, 0.28);
+        border-radius: 999px;
+        padding: 10px 15px;
+        color: var(--orange);
+        background: rgba(255, 247, 239, 0.78);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .label::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--orange);
+      }
+
+      /* Screen 1: Concept B */
+      .architect-screen {
+        color: #fff;
+        background:
+          linear-gradient(90deg, rgba(7,7,8,0.96) 0%, rgba(12,10,9,0.82) 48%, rgba(255,255,255,0.04) 100%),
+          url("../generated/ceo-slide-01-v3-clean.png") center / cover;
+      }
+      .architect-screen::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 70% 22%, rgba(255,106,0,0.2), transparent 28%),
+          linear-gradient(rgba(255,106,0,0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,106,0,0.06) 1px, transparent 1px);
+        background-size: auto, 52px 52px, 52px 52px;
+        opacity: 0.72;
+      }
+      .architect-screen .topbar {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .architect-screen nav { color: rgba(255,255,255,0.76); }
+      .hero-b {
+        display: grid;
+        grid-template-columns: minmax(0, 0.88fr) minmax(420px, 0.72fr);
+        gap: 48px;
+        align-items: center;
+        min-height: calc(100vh - 84px);
+        padding: 38px 0 54px;
+      }
+      .hero-b h1 {
+        max-width: 760px;
+        margin: 26px 0 0;
+        font-size: clamp(54px, 6vw, 92px);
+        line-height: 0.94;
+        letter-spacing: 0;
+      }
+      .hero-b p {
+        max-width: 650px;
+        margin: 22px 0 0;
+        color: rgba(255,255,255,0.76);
+        font-size: 20px;
+        line-height: 1.55;
+      }
+      .video-panel {
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 26px;
+        padding: 16px;
+        background: rgba(0,0,0,0.34);
+        box-shadow: 0 34px 90px rgba(0,0,0,0.4);
+        backdrop-filter: blur(18px);
+      }
+      .video {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-radius: 18px;
+        background: url("../generated/ceo-slide-01-v3-clean.png") center / cover;
+      }
+      .video::after {
+        content: "▶";
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 56px;
+        background: rgba(0,0,0,0.24);
+      }
+      .assistants {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .assistant {
+        display: grid;
+        grid-template-columns: 52px 1fr 44px;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 16px;
+        padding: 12px;
+        background: rgba(255,255,255,0.06);
+      }
+      .assistant b,
+      .assistant span { display: block; }
+      .assistant span {
+        margin-top: 3px;
+        color: rgba(255,255,255,0.6);
+        font-size: 13px;
+      }
+      .num {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border: 1px solid rgba(255,106,0,0.34);
+        border-radius: 999px;
+        color: var(--orange);
+        font-weight: 950;
+        background: rgba(255,106,0,0.08);
+      }
+      .tg {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+        color: #46b7ff;
+        background: rgba(70,183,255,0.1);
+      }
+
+      /* Screen 2: Concept A */
+      .community-screen {
+        background:
+          radial-gradient(circle at 50% 16%, rgba(255,106,0,0.07), transparent 32%),
+          linear-gradient(rgba(255,106,0,0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,106,0,0.035) 1px, transparent 1px),
+          #fff;
+        background-size: auto, 46px 46px, 46px 46px, auto;
+      }
+      .center {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        padding: 54px 0 0;
+      }
+      .center h2 {
+        max-width: 970px;
+        margin: 22px 0 0;
+        font-size: clamp(44px, 5vw, 76px);
+        line-height: 1;
+      }
+      .center p {
+        max-width: 720px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 19px;
+        line-height: 1.55;
+      }
+      .network-stage {
+        position: relative;
+        width: min(1180px, 100%);
+        margin-top: 22px;
+      }
+      .network-stage img {
+        display: block;
+        width: 100%;
+        filter: drop-shadow(0 22px 54px rgba(255,106,0,0.1));
+      }
+      .floating-note {
+        position: absolute;
+        left: 50%;
+        bottom: 8%;
+        transform: translateX(-50%);
+        border: 1px solid rgba(255,106,0,0.18);
+        border-radius: 999px;
+        padding: 12px 16px;
+        background: rgba(255,255,255,0.86);
+        color: var(--muted);
+        font-weight: 800;
+        box-shadow: 0 18px 46px rgba(85,36,6,0.08);
+        backdrop-filter: blur(16px);
+      }
+      .floating-note b { color: var(--ink); }
+
+      /* Screen 3: Concept C */
+      .ecosystem-screen {
+        color: #fff;
+        background:
+          radial-gradient(circle at 50% 36%, rgba(255,106,0,0.28), transparent 30%),
+          radial-gradient(circle at 10% 12%, rgba(255,196,107,0.12), transparent 24%),
+          linear-gradient(rgba(255,106,0,0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,106,0,0.06) 1px, transparent 1px),
+          #080808;
+        background-size: auto, auto, 52px 52px, 52px 52px, auto;
+      }
+      .ecosystem-screen .topbar {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .ecosystem-screen nav { color: rgba(255,255,255,0.72); }
+      .ecosystem-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.78fr) minmax(520px, 1fr);
+        gap: 46px;
+        align-items: center;
+        min-height: calc(100vh - 84px);
+        padding: 34px 0 54px;
+      }
+      .ecosystem-grid h2 {
+        max-width: 690px;
+        margin: 24px 0 0;
+        font-size: clamp(48px, 5.2vw, 82px);
+        line-height: 0.96;
+      }
+      .ecosystem-grid p {
+        max-width: 620px;
+        margin: 20px 0 0;
+        color: rgba(255,255,255,0.7);
+        font-size: 19px;
+        line-height: 1.55;
+      }
+      .system-map {
+        position: relative;
+        min-height: 610px;
+      }
+      .orb {
+        position: absolute;
+        left: 50%;
+        top: 48%;
+        width: 184px;
+        height: 184px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background:
+          radial-gradient(circle, var(--orange) 0 26%, transparent 27%),
+          conic-gradient(from 8deg, rgba(255,106,0,0.96), rgba(255,196,107,0.54), rgba(255,106,0,0.96));
+        box-shadow: 0 0 90px rgba(255,106,0,0.34);
+      }
+      .module {
+        position: absolute;
+        width: 210px;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px;
+        padding: 16px;
+        background: rgba(255,255,255,0.06);
+        box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+        backdrop-filter: blur(16px);
+      }
+      .module b { display: block; font-size: 18px; }
+      .module span {
+        display: block;
+        margin-top: 7px;
+        color: rgba(255,255,255,0.6);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .m1 { left: 6%; top: 8%; }
+      .m2 { right: 4%; top: 10%; }
+      .m3 { left: 0; top: 48%; }
+      .m4 { right: 0; top: 47%; }
+      .m5 { left: 18%; bottom: 4%; }
+      .m6 { right: 16%; bottom: 3%; }
+
+      @media (max-width: 980px) {
+        html { scroll-snap-type: none; }
+        .topbar,
+        .hero-b,
+        .ecosystem-grid {
+          grid-template-columns: 1fr;
+        }
+        .topbar {
+          gap: 14px;
+          padding: 16px 0;
+        }
+        nav {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+        }
+        .cta { justify-self: start; }
+        .hero-b,
+        .ecosystem-grid {
+          min-height: auto;
+          padding: 34px 0 54px;
+        }
+        .video-panel {
+          max-width: 680px;
+        }
+        .center {
+          text-align: left;
+          justify-items: start;
+        }
+        .floating-note {
+          position: static;
+          transform: none;
+          border-radius: 18px;
+          margin-top: 12px;
+        }
+        .system-map {
+          min-height: 660px;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          width: min(100% - 28px, 1480px);
+        }
+        .brand { font-size: 19px; }
+        .mark { width: 42px; height: 42px; }
+        .cta,
+        .btn {
+          width: 100%;
+        }
+        .hero-b h1,
+        .center h2,
+        .ecosystem-grid h2 {
+          font-size: 39px;
+        }
+        .hero-b p,
+        .center p,
+        .ecosystem-grid p {
+          font-size: 16px;
+        }
+        .network-stage {
+          width: calc(100% + 120px);
+          margin-left: -60px;
+        }
+        .network-stage img {
+          min-height: 330px;
+          object-fit: cover;
+          object-position: center top;
+        }
+        .module {
+          position: relative;
+          left: auto;
+          right: auto;
+          top: auto;
+          bottom: auto;
+          width: 100%;
+          margin-bottom: 10px;
+        }
+        .system-map {
+          display: grid;
+          min-height: auto;
+        }
+        .orb {
+          position: relative;
+          left: auto;
+          top: auto;
+          width: 150px;
+          height: 150px;
+          margin: 10px auto 20px;
+          transform: none;
+          order: -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="section architect-screen">
+      <div class="page">
+        <header class="topbar">
+          <a class="brand" href="#"><span class="mark"><i></i></span><span>Atlas System</span></a>
+          <nav><a href="#community">Community</a><a href="#ecosystem">Ecosystem</a><a href="#">Docs</a><a href="#">FAQ</a></nav>
+          <a class="cta" href="#">Contact Atlas</a>
+        </header>
+
+        <div class="hero-b">
+          <div>
+            <div class="label">Concept B · Architect first</div>
+            <h1>The Architect invites the first Atlas core.</h1>
+            <p>
+              A cinematic pre-launch entrance: the voice of the system, the first international leaders,
+              and a clear action to contact Atlas assistants before launch.
+            </p>
+            <div class="btn-row">
+              <a class="btn primary" href="#">Contact Atlas Assistants →</a>
+              <a class="btn" href="#">Watch Architect Message</a>
+            </div>
+          </div>
+
+          <aside class="video-panel">
+            <div class="video"></div>
+            <div class="assistants">
+              <div class="assistant"><span class="num">01</span><div><b>Atlas Assistant 01</b><span>Support & onboarding</span></div><span class="tg">✈</span></div>
+              <div class="assistant"><span class="num">02</span><div><b>Atlas Assistant 02</b><span>Leaders & partnerships</span></div><span class="tg">✈</span></div>
+              <div class="assistant"><span class="num">03</span><div><b>Atlas Assistant 03</b><span>Technical & ecosystem</span></div><span class="tg">✈</span></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section community-screen" id="community">
+      <div class="page">
+        <div class="center">
+          <div class="label">Concept A · Community network</div>
+          <h2>Atlas starts with people who can move together.</h2>
+          <p>
+            The second screen explains the emotional core: Atlas is forming an international community
+            around transparent digital mutual support and the Smart Cycle center.
+          </p>
+          <div class="network-stage">
+            <img src="../generated/atlas-network-reference.png" alt="Atlas community network" />
+            <div class="floating-note"><b>International core:</b> leaders, teams and early communities before launch.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section ecosystem-screen" id="ecosystem">
+      <div class="page">
+        <header class="topbar">
+          <a class="brand" href="#"><span class="mark"><i></i></span><span>Atlas System</span></a>
+          <nav><a href="#community">Community</a><a href="#ecosystem">Ecosystem</a><a href="#">Docs</a><a href="#">FAQ</a></nav>
+          <a class="cta" href="#">Contact Atlas</a>
+        </header>
+
+        <div class="ecosystem-grid">
+          <div>
+            <div class="label">Concept C · Ecosystem map</div>
+            <h2>More than one product. A full Atlas ecosystem.</h2>
+            <p>
+              The third screen adds structure: Smart Cycle, DAO mechanics, knowledge, partners,
+              governance and future modules. First emotion, then community, then system.
+            </p>
+            <div class="btn-row">
+              <a class="btn primary" href="#">Study Atlas →</a>
+              <a class="btn" href="#">Ask assistants</a>
+            </div>
+          </div>
+
+          <div class="system-map" aria-label="Atlas ecosystem modules">
+            <div class="orb"></div>
+            <div class="module m1"><b>Smart Cycle</b><span>Provide help, complete the term, request help under rules.</span></div>
+            <div class="module m2"><b>DAO Mechanics</b><span>Transparent rules and future community governance.</span></div>
+            <div class="module m3"><b>Knowledge Hub</b><span>Education, FAQ, guides and launch materials.</span></div>
+            <div class="module m4"><b>Partners</b><span>Leaders, teams and recommendation growth.</span></div>
+            <div class="module m5"><b>Governance</b><span>Voting logic and future system decisions.</span></div>
+            <div class="module m6"><b>Future Modules</b><span>P2P, wallet, exchange and ecosystem expansion.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
