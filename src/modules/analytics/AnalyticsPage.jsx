@@ -54,11 +54,33 @@ import { exportAnalyticsCsv } from "./services/analyticsApi";
 import { loadServerContent, saveServerContent } from "./services/contentStore";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = "/analytics-board/";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
 const CRM_MY_TASKS_STORAGE_KEY = "atlas.analytics.crmMyTasks.v1";
+
+function normalizeCrmMyTasks(tasks) {
+  return Array.isArray(tasks) ? tasks.map((task) => ({
+    id: task.id || `my-task-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title: task.title || "",
+    details: task.details || "",
+    dueDate: task.dueDate || getTodayInputDate(),
+    done: Boolean(task.done),
+    updatedAt: task.updatedAt || "",
+  })) : [];
+}
+
+function readStoredCrmMyTasks() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(CRM_MY_TASKS_STORAGE_KEY);
+    return normalizeCrmMyTasks(saved ? JSON.parse(saved) : []);
+  } catch {
+    return [];
+  }
+}
 
 function downloadCsv(csvContent) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -377,10 +399,13 @@ function AnalyticsPage() {
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
-  const [crmMyTasks, setCrmMyTasks] = useState([]);
+  const [crmMyTasks, setCrmMyTasks] = useState(readStoredCrmMyTasks);
   const [isCrmMyTasksLoaded, setIsCrmMyTasksLoaded] = useState(false);
+  const [crmMyTasksSaveState, setCrmMyTasksSaveState] = useState("Сохранено");
+  const [expandedMyTaskId, setExpandedMyTaskId] = useState("");
   const [newMyTask, setNewMyTask] = useState({ title: "", dueDate: getTodayInputDate() });
   const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+  const crmMyTasksSaveRef = useRef(0);
   const [crmTaskSource, setCrmTaskSource] = useState({
     launch: defaultLaunchChecklistTasks,
     marketing: defaultMarketingChecklistTasks,
@@ -403,7 +428,15 @@ function AnalyticsPage() {
 
     loadServerContent(CRM_MY_TASKS_STORAGE_KEY).then((savedTasks) => {
       if (!isMounted) return;
-      setCrmMyTasks(Array.isArray(savedTasks) ? savedTasks : []);
+      if (Array.isArray(savedTasks)) {
+        const normalizedTasks = normalizeCrmMyTasks(savedTasks);
+        setCrmMyTasks(normalizedTasks);
+        try {
+          window.localStorage.setItem(CRM_MY_TASKS_STORAGE_KEY, JSON.stringify(normalizedTasks));
+        } catch {
+          // Серверная версия уже загружена в состояние страницы.
+        }
+      }
       setIsCrmMyTasksLoaded(true);
     });
 
@@ -416,7 +449,21 @@ function AnalyticsPage() {
     if (!isCrmMyTasksLoaded) return undefined;
 
     const saveTimer = window.setTimeout(() => {
-      saveServerContent(CRM_MY_TASKS_STORAGE_KEY, crmMyTasks);
+      const requestId = crmMyTasksSaveRef.current + 1;
+      crmMyTasksSaveRef.current = requestId;
+      const normalizedTasks = normalizeCrmMyTasks(crmMyTasks);
+      setCrmMyTasksSaveState("Сохраняю...");
+
+      try {
+        window.localStorage.setItem(CRM_MY_TASKS_STORAGE_KEY, JSON.stringify(normalizedTasks));
+      } catch {
+        // Личный блок задач продолжит работать в состоянии страницы.
+      }
+
+      saveServerContent(CRM_MY_TASKS_STORAGE_KEY, normalizedTasks).then((ok) => {
+        if (crmMyTasksSaveRef.current !== requestId) return;
+        setCrmMyTasksSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
+      });
     }, 450);
 
     return () => window.clearTimeout(saveTimer);
@@ -581,15 +628,17 @@ function AnalyticsPage() {
       {
         id: `my-task-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         title,
+        details: "",
         dueDate: newMyTask.dueDate || getTodayInputDate(),
         done: false,
+        updatedAt: new Date().toISOString(),
       },
     ]);
     setNewMyTask({ title: "", dueDate: newMyTask.dueDate || getTodayInputDate() });
   }
 
   function updateMyTask(taskId, patch) {
-    setCrmMyTasks((current) => current.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
+    setCrmMyTasks((current) => current.map((task) => (task.id === taskId ? { ...task, ...patch, updatedAt: new Date().toISOString() } : task)));
   }
 
   function deleteMyTask(taskId) {
@@ -1293,7 +1342,7 @@ function AnalyticsPage() {
                 <article key={card.id} className="analytics-crm-command-card analytics-crm-command-card-my-tasks">
                   <div className="analytics-crm-command-card-top">
                     <span>{card.kicker}</span>
-                    <small>{card.meta}</small>
+                    <small className={crmMyTasksSaveState === "Ошибка сохранения" ? "is-error" : ""}>{crmMyTasksSaveState}</small>
                   </div>
                   <div className="analytics-crm-my-tasks-main">
                     <div>
@@ -1328,9 +1377,39 @@ function AnalyticsPage() {
                             onChange={(event) => updateMyTask(task.id, { dueDate: event.target.value })}
                             aria-label="Дата задачи"
                           />
+                          <button
+                            type="button"
+                            className="analytics-crm-my-task-open"
+                            onClick={() => setExpandedMyTaskId((current) => (current === task.id ? "" : task.id))}
+                            aria-expanded={expandedMyTaskId === task.id}
+                          >
+                            {expandedMyTaskId === task.id ? "Скрыть" : "Открыть"}
+                          </button>
                           <button type="button" className="analytics-crm-my-task-delete" onClick={() => deleteMyTask(task.id)} aria-label="Удалить задачу">
                             ×
                           </button>
+                          {expandedMyTaskId === task.id ? (
+                            <div className="analytics-crm-my-task-expanded">
+                              <label>
+                                <span>Полный текст задачи</span>
+                                <textarea
+                                  value={task.title}
+                                  onChange={(event) => updateMyTask(task.id, { title: event.target.value })}
+                                  rows="4"
+                                  placeholder="Полная формулировка задачи"
+                                />
+                              </label>
+                              <label>
+                                <span>Доп. описание / ссылки</span>
+                                <textarea
+                                  value={task.details || ""}
+                                  onChange={(event) => updateMyTask(task.id, { details: event.target.value })}
+                                  rows="4"
+                                  placeholder="Ссылки, детали, комментарии, что важно не потерять"
+                                />
+                              </label>
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}

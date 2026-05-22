@@ -1442,6 +1442,10 @@
   opacity: 0.9;
 }
 
+.analytics-crm-command-card-top small.is-error {
+  color: #ffc6c6;
+}
+
 .analytics-crm-command-card strong {
   position: relative;
   z-index: 1;
@@ -2033,7 +2037,7 @@
 
 .analytics-crm-my-task-row {
   display: grid;
-  grid-template-columns: 34px 72px minmax(0, 1fr) 130px 34px;
+  grid-template-columns: 34px 72px minmax(0, 1fr) 130px 82px 34px;
   gap: 0.6rem;
   align-items: center;
   min-width: 0;
@@ -2119,6 +2123,8 @@
 .analytics-crm-my-task-title {
   min-height: 46px;
   padding: 0.62rem 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .analytics-crm-my-task-date-input {
@@ -2136,6 +2142,56 @@
   color: #ffc6c6;
   font-size: 1.25rem;
   line-height: 1;
+}
+
+.analytics-crm-my-task-open {
+  min-height: 34px;
+  border: 1px solid rgba(120, 255, 224, 0.2);
+  border-radius: 10px;
+  padding: 0.4rem 0.58rem;
+  background: rgba(120, 255, 224, 0.08);
+  color: #dffdf7;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analytics-crm-my-task-expanded {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(123, 180, 255, 0.12);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(47, 217, 255, 0.08), transparent 30%),
+    rgba(5, 12, 24, 0.62);
+}
+
+.analytics-crm-my-task-expanded label {
+  display: grid;
+  gap: 0.42rem;
+  color: #8fa3c0;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-crm-my-task-expanded textarea {
+  width: 100%;
+  min-height: 108px;
+  resize: vertical;
+  border: 1px solid rgba(123, 180, 255, 0.14);
+  border-radius: 12px;
+  padding: 0.7rem 0.78rem;
+  background: rgba(255, 255, 255, 0.035);
+  color: #f7fbff;
+  font-weight: 800;
+  line-height: 1.45;
+  outline: 0;
 }
 
 .analytics-crm-my-task-add {
@@ -2641,6 +2697,25 @@
   color: #f4fbff;
   font-size: 1.35rem;
   font-weight: 900;
+}
+
+.analytics-quick-notes-save {
+  margin-left: auto;
+  border: 1px solid rgba(120, 255, 224, 0.18);
+  border-radius: 999px;
+  padding: 0.46rem 0.7rem;
+  background: rgba(120, 255, 224, 0.07);
+  color: #dffdf7;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-quick-notes-save.is-error {
+  border-color: rgba(255, 79, 118, 0.28);
+  background: rgba(255, 79, 118, 0.08);
+  color: #ffc6c6;
 }
 
 .analytics-quick-notes-close,

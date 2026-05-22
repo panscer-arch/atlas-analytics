@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
@@ -27,23 +27,16 @@ function readStoredQuickNotes() {
   }
 }
 
-function persistQuickNotes(nextNotes) {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage.setItem(QUICK_NOTES_STORAGE_KEY, JSON.stringify(nextNotes));
-  } catch {
-    // Быстрые заметки продолжат работать до перезагрузки страницы.
-  }
-
-  saveServerContent(QUICK_NOTES_STORAGE_KEY, nextNotes);
-}
-
 function QuickNotesModal({ isOpen, onClose }) {
   const [notes, setNotes] = useState(readStoredQuickNotes);
   const [draftItem, setDraftItem] = useState("");
+  const [saveState, setSaveState] = useState("Сохранено");
+  const saveRequestRef = useRef(0);
+  const saveTimerRef = useRef(null);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
+
     let isMounted = true;
 
     loadServerContent(QUICK_NOTES_STORAGE_KEY).then((savedNotes) => {
@@ -53,19 +46,51 @@ function QuickNotesModal({ isOpen, onClose }) {
         ...savedNotes,
         checklist: Array.isArray(savedNotes.checklist) ? savedNotes.checklist : [],
       });
+      setSaveState("Сохранено");
+      try {
+        window.localStorage.setItem(QUICK_NOTES_STORAGE_KEY, JSON.stringify({
+          ...defaultQuickNotes,
+          ...savedNotes,
+          checklist: Array.isArray(savedNotes.checklist) ? savedNotes.checklist : [],
+        }));
+      } catch {
+        // Серверная версия уже загружена в состояние модального окна.
+      }
     });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isOpen]);
+
+  function scheduleQuickNotesSave(nextNotes) {
+    const requestId = saveRequestRef.current + 1;
+    saveRequestRef.current = requestId;
+    setSaveState("Сохраняю...");
+
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      saveServerContent(QUICK_NOTES_STORAGE_KEY, nextNotes).then((ok) => {
+        if (saveRequestRef.current !== requestId) return;
+        setSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
+      });
+    }, 500);
+  }
 
   if (!isOpen) return null;
 
   function updateNotes(updater) {
     setNotes((current) => {
       const next = updater(current);
-      persistQuickNotes(next);
+      setSaveState("Сохраняю...");
+
+      try {
+        window.localStorage.setItem(QUICK_NOTES_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Быстрые заметки продолжат работать до перезагрузки страницы.
+      }
+
+      scheduleQuickNotesSave(next);
       return next;
     });
   }
@@ -103,6 +128,7 @@ function QuickNotesModal({ isOpen, onClose }) {
             <span className="analytics-kicker">Быстрые заметки</span>
             <h2>Заметки на лету</h2>
           </div>
+          <span className={`analytics-quick-notes-save ${saveState === "Ошибка сохранения" ? "is-error" : ""}`}>{saveState}</span>
           <button type="button" className="analytics-quick-notes-close" onClick={onClose} aria-label="Закрыть заметки">
             x
           </button>
