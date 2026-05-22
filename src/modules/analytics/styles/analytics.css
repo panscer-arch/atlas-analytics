@@ -5059,6 +5059,19 @@
     rgba(5, 12, 24, 0.68);
 }
 
+.analytics-daily-empty {
+  border: 1px dashed rgba(123, 180, 255, 0.22);
+  border-radius: 18px;
+  padding: 1.1rem;
+  color: #8fa3c0;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(47, 217, 255, 0.1), transparent 48%),
+    rgba(5, 12, 24, 0.62);
+}
+
 .analytics-daily-card {
   position: relative;
   overflow: hidden;

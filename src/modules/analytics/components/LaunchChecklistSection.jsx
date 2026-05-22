@@ -878,6 +878,7 @@ function DailyTasksBoard() {
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
   const saveRequestRef = useRef(0);
 
   useEffect(() => {
@@ -1229,6 +1230,9 @@ function DailyTasksBoard() {
           <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
             {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
           </AnalyticsActionButton>
+          <AnalyticsActionButton variant="secondary" onClick={() => setIsDailyArchiveOpen((current) => !current)} disabled={!completedTasks.length}>
+            {isDailyArchiveOpen ? "Скрыть архив" : `Архив задач (${completedTasks.length})`}
+          </AnalyticsActionButton>
         </div>
         <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
       </section>
@@ -1291,8 +1295,13 @@ function DailyTasksBoard() {
       <section className="analytics-daily-grid mt-3">
         {activeTasks.map((task, index) => renderDailyTaskCard(task, index))}
       </section>
+      {!activeTasks.length ? (
+        <div className="analytics-daily-empty mt-3">
+          Активных задач нет. Готовые задачи лежат в архиве и не мешают рабочему экрану.
+        </div>
+      ) : null}
 
-      {completedTasks.length ? (
+      {isDailyArchiveOpen && completedTasks.length ? (
         <>
           <div className="analytics-daily-section-head analytics-daily-archive-head mt-4">
             <span className="analytics-kicker">Архив дня / выполнено</span>
