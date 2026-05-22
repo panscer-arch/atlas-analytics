@@ -826,6 +826,7 @@ function DailyTasksBoard() {
   const [chatDrafts, setChatDrafts] = useState({});
   const [copyState, setCopyState] = useState("Скопировать карточку");
   const [saveState, setSaveState] = useState("Сохранено");
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const saveRequestRef = useRef(0);
 
   useEffect(() => {
@@ -892,6 +893,7 @@ function DailyTasksBoard() {
     if (!draft.title.trim()) return;
     persist((currentTasks) => [createDailyTask({ ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() }), ...currentTasks]);
     setDraft(createDailyTask({ status: "В работе" }));
+    setIsAddTaskOpen(false);
   }
 
   function archiveTask(taskId) {
@@ -1028,58 +1030,64 @@ function DailyTasksBoard() {
           <div><span>Всего</span><strong>{tasks.length}</strong></div>
           <div><span>Готово</span><strong>{doneCount}</strong></div>
           <div><span>В работе</span><strong>{activeTasks.length}</strong></div>
+          <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
+            {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
+          </AnalyticsActionButton>
           <AnalyticsActionButton variant="primary" onClick={copyShareCard}>{copyState}</AnalyticsActionButton>
         </div>
         <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
       </section>
 
-      <section className="analytics-surface analytics-daily-add mt-4">
-        <div className="analytics-data-table-head">
-          <div>
-            <span className="analytics-kicker">Добавить на 22 мая</span>
-            <h3 className="analytics-section-title">Новая дневная задача</h3>
+      {isAddTaskOpen ? (
+        <section className="analytics-surface analytics-daily-add mt-4">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">Добавить на 22 мая</span>
+              <h3 className="analytics-section-title">Новая дневная задача</h3>
+            </div>
+            <AnalyticsActionButton variant="secondary" onClick={() => setIsAddTaskOpen(false)}>Свернуть</AnalyticsActionButton>
           </div>
-        </div>
-        <div className="analytics-daily-form">
-          <label>
-            <span>Название задачи</span>
-            <input className="form-control analytics-launch-input" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Например: согласовать первый экран сайта" />
-          </label>
-          <label>
-            <span>Приоритет</span>
-            <select className="form-select analytics-launch-input" value={draft.priority} onChange={(event) => setDraft((current) => ({ ...current, priority: event.target.value }))}>
-              {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Срок выполнения</span>
-            <input className="form-control analytics-launch-input" value={draft.duration} onChange={(event) => setDraft((current) => ({ ...current, duration: event.target.value }))} placeholder="22 мая, до 15:00" />
-          </label>
-          <label>
-            <span>Дата дедлайна</span>
-            <input className="form-control analytics-launch-input" value={draft.deadline} onChange={(event) => setDraft((current) => ({ ...current, deadline: event.target.value }))} placeholder="22.05.2026 15:00" />
-          </label>
-          <label>
-            <span>Ответственный</span>
-            <input className="form-control analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))} placeholder="Имя или роль" />
-          </label>
-          <label>
-            <span>Статус</span>
-            <select className="form-select analytics-launch-input" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
-              {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-            </select>
-          </label>
-          <label className="analytics-daily-form-wide">
-            <span>Доп. описание</span>
-            <textarea className="form-control analytics-launch-input" rows="2" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Что конкретно нужно сделать" />
-          </label>
-          <label className="analytics-daily-form-wide">
-            <span>Доп. материалы / ссылки</span>
-            <textarea className="form-control analytics-launch-input" rows="2" value={draft.materials} onChange={(event) => setDraft((current) => ({ ...current, materials: event.target.value }))} placeholder="Ссылки, документы, прототипы" />
-          </label>
-          <AnalyticsActionButton variant="primary" onClick={addTask} disabled={!draft.title.trim()}>Добавить</AnalyticsActionButton>
-        </div>
-      </section>
+          <div className="analytics-daily-form">
+            <label>
+              <span>Название задачи</span>
+              <input className="form-control analytics-launch-input" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Например: согласовать первый экран сайта" />
+            </label>
+            <label>
+              <span>Приоритет</span>
+              <select className="form-select analytics-launch-input" value={draft.priority} onChange={(event) => setDraft((current) => ({ ...current, priority: event.target.value }))}>
+                {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Срок выполнения</span>
+              <input className="form-control analytics-launch-input" value={draft.duration} onChange={(event) => setDraft((current) => ({ ...current, duration: event.target.value }))} placeholder="22 мая, до 15:00" />
+            </label>
+            <label>
+              <span>Дата дедлайна</span>
+              <input className="form-control analytics-launch-input" value={draft.deadline} onChange={(event) => setDraft((current) => ({ ...current, deadline: event.target.value }))} placeholder="22.05.2026 15:00" />
+            </label>
+            <label>
+              <span>Ответственный</span>
+              <input className="form-control analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))} placeholder="Имя или роль" />
+            </label>
+            <label>
+              <span>Статус</span>
+              <select className="form-select analytics-launch-input" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
+                {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+              </select>
+            </label>
+            <label className="analytics-daily-form-wide">
+              <span>Доп. описание</span>
+              <textarea className="form-control analytics-launch-input" rows="2" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Что конкретно нужно сделать" />
+            </label>
+            <label className="analytics-daily-form-wide">
+              <span>Доп. материалы / ссылки</span>
+              <textarea className="form-control analytics-launch-input" rows="2" value={draft.materials} onChange={(event) => setDraft((current) => ({ ...current, materials: event.target.value }))} placeholder="Ссылки, документы, прототипы" />
+            </label>
+            <AnalyticsActionButton variant="primary" onClick={addTask} disabled={!draft.title.trim()}>Добавить</AnalyticsActionButton>
+          </div>
+        </section>
+      ) : null}
 
       <div className="analytics-daily-section-head mt-4">
         <span className="analytics-kicker">Активные задачи</span>
