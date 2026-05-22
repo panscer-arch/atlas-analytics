@@ -555,13 +555,13 @@ export const defaultMarketingChecklistTasks = [
 const defaultDailyTasks = [
   {
     id: "daily-2026-05-22-prototype",
-    title: "Утвердить направление сайта: B → A → C",
+    title: "Утвердить прототип заглушки atlas-system.io",
     priority: "Срочно",
     duration: "22 мая, до 12:00",
     deadline: "22.05.2026 12:00",
     responsible: "Digitex / UI-designer / Product-manager",
-    description: "Посмотреть 3-screen prototype: 1 экран Architect, 2 экран Community, 3 экран Ecosystem. Зафиксировать, что берём в работу, а что убрать.",
-    materials: "https://analytics.pupanel.cc/atlas-site-concept/prototype-v1.html",
+    description: "Посмотреть 3-screen prototype: 1 экран Architect video + coming soon, 2 экран краткое описание Atlas + CTA, 3 экран соцсети и контакты команды. Зафиксировать, что берём в дизайн.",
+    materials: "https://analytics.pupanel.cc/atlas-site-concept/prototype-v2.html",
     status: "В работе",
     messages: [
       {
@@ -592,7 +592,7 @@ const defaultDailyTasks = [
     deadline: "22.05.2026 17:00",
     responsible: "Content ops / Assets",
     description: "Дать Telegram-ссылки помощников, финальный логотип, ссылку на YouTube-ролик Архитектора или финальный placeholder до публикации.",
-    materials: "Telegram only. Домен: atlas-syste.io. English only.",
+    materials: "Telegram, WhatsApp, Email. Домен: atlas-system.io. English only.",
     status: "Не в работе",
     messages: [],
   },
@@ -604,7 +604,7 @@ const defaultDailyTasks = [
     deadline: "22.05.2026 20:00",
     responsible: "Frontend-developer / QA",
     description: "После утверждения направления собрать первый рабочий вариант страницы, проверить desktop/mobile, CTA, ссылки, читаемость и отсутствие визуального мусора.",
-    materials: "/atlas-site-concept/prototype-v1.html и /atlas-site-preview/index.html",
+    materials: "/atlas-site-concept/prototype-v2.html и /atlas-site-preview/index.html",
     status: "Не в работе",
     messages: [],
   },
