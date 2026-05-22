@@ -842,11 +842,27 @@ function getSupportedAudioMimeType() {
   if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
 
   return [
-    "audio/mp4;codecs=mp4a.40.2",
     "audio/mp4",
+    "audio/mp4;codecs=mp4a.40.2",
     "audio/webm;codecs=opus",
     "audio/webm",
   ].find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
+function getAudioPlaybackMimeType(mimeType = "") {
+  if (mimeType.includes("mp4")) return "audio/mp4";
+  if (mimeType.includes("webm")) return "audio/webm";
+  return mimeType || "audio/webm";
+}
+
+function normalizeAudioDataUrl(dataUrl = "", mimeType = "") {
+  if (!dataUrl.startsWith("data:")) return dataUrl;
+
+  const marker = ";base64,";
+  const markerIndex = dataUrl.indexOf(marker);
+  if (markerIndex === -1) return dataUrl;
+
+  return `data:${getAudioPlaybackMimeType(mimeType)}${dataUrl.slice(markerIndex)}`;
 }
 
 function formatDailyMessageTime(value) {
@@ -1060,13 +1076,14 @@ function DailyTasksBoard() {
   }
 
   function addAudioMessage(taskId, audioDataUrl, audioMimeType) {
+    const playbackMimeType = getAudioPlaybackMimeType(audioMimeType);
     const message = {
       id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       author: chatAuthor.trim() || "Команда",
       text: "Голосовое сообщение",
       type: "audio",
-      audioDataUrl,
-      audioMimeType,
+      audioDataUrl: normalizeAudioDataUrl(audioDataUrl, playbackMimeType),
+      audioMimeType: playbackMimeType,
       createdAt: new Date().toISOString(),
     };
 
@@ -1140,6 +1157,7 @@ function DailyTasksBoard() {
 
   function stopVoiceRecording() {
     if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.requestData?.();
       mediaRecorderRef.current.stop();
     }
   }
@@ -1453,9 +1471,14 @@ function DailyTasksBoard() {
                   <>
                     {message.type === "audio" && message.audioDataUrl ? (
                       <div className="analytics-daily-audio-message">
-                        <audio controls>
-                          <source src={message.audioDataUrl} type={message.audioMimeType || "audio/webm"} />
-                        </audio>
+                        <audio
+                          controls
+                          preload="auto"
+                          src={normalizeAudioDataUrl(message.audioDataUrl, message.audioMimeType)}
+                          onCanPlay={(event) => {
+                            event.currentTarget.dataset.ready = "true";
+                          }}
+                        />
                         <small>{message.text || "Голосовое сообщение"}</small>
                       </div>
                     ) : (
