@@ -17,6 +17,7 @@ export const DAILY_TASKS_STORAGE_KEY = "atlas.analytics.dailyTasks.2026-05-22.v1
 export const TASK_ARCHIVE_STORAGE_KEY = "atlas.analytics.taskArchive.v1";
 export const TASK_HISTORY_STORAGE_KEY = "atlas.analytics.taskHistory.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
+const DAILY_CHAT_AUTHOR_STORAGE_KEY = "atlas.analytics.dailyTasks.chatAuthor.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
@@ -701,6 +702,16 @@ function readStoredDailyTasks() {
   }
 }
 
+function readStoredDailyChatAuthor() {
+  if (typeof window === "undefined") return "Digitex";
+
+  try {
+    return window.localStorage.getItem(DAILY_CHAT_AUTHOR_STORAGE_KEY) || "Digitex";
+  } catch {
+    return "Digitex";
+  }
+}
+
 function readStoredCustomChecklists() {
   if (typeof window === "undefined") return [];
 
@@ -876,6 +887,7 @@ function DailyTasksBoard() {
   const [chatDrafts, setChatDrafts] = useState({});
   const [messageEditDrafts, setMessageEditDrafts] = useState({});
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
+  const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
@@ -900,6 +912,14 @@ function DailyTasksBoard() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(DAILY_CHAT_AUTHOR_STORAGE_KEY, chatAuthor);
+    } catch {
+      // Имя автора не критично для работы доски.
+    }
+  }, [chatAuthor]);
 
   function persistDailyTasks(nextTasks) {
     const normalizedTasks = normalizeDailyTasks(nextTasks);
@@ -962,7 +982,7 @@ function DailyTasksBoard() {
 
     const message = {
       id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      author: "Команда",
+      author: chatAuthor.trim() || "Команда",
       text: value,
       createdAt: new Date().toISOString(),
     };
@@ -1157,7 +1177,13 @@ function DailyTasksBoard() {
         </div>
 
         <div className="analytics-daily-chat">
-          <div className="analytics-daily-chat-title">Чат по задаче</div>
+          <div className="analytics-daily-chat-head">
+            <div className="analytics-daily-chat-title">Чат по задаче</div>
+            <label className="analytics-daily-chat-author">
+              <span>Пишет</span>
+              <input className="form-control analytics-launch-input" value={chatAuthor} onChange={(event) => setChatAuthor(event.target.value)} placeholder="Имя" />
+            </label>
+          </div>
           <div className="analytics-daily-chat-list">
             {normalizeArray(task.messages).map((message) => (
               <div key={message.id} className="analytics-daily-message">
