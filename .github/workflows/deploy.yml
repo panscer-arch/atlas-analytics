@@ -45,16 +45,25 @@ jobs:
             server/content-api.mjs \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-api.mjs"
 
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            server/backup-content.sh \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-backup.sh"
+
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             'bash -s' <<'REMOTE'
           set -euo pipefail
 
-          sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content
+          sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
+          sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
+          sudo chown -R root:root /var/backups/atlas-analytics-content
+          sudo chmod 750 /var/backups/atlas-analytics-content
 
           sudo tee /etc/systemd/system/atlas-content-api.service >/dev/null <<'SERVICE'
           [Unit]
@@ -75,9 +84,40 @@ jobs:
           WantedBy=multi-user.target
           SERVICE
 
+          sudo tee /etc/systemd/system/atlas-content-backup.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Backup Atlas Analytics CRM content
+          After=atlas-content-api.service
+
+          [Service]
+          Type=oneshot
+          Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
+          Environment=ATLAS_CONTENT_BACKUP_DIR=/var/backups/atlas-analytics-content
+          Environment=ATLAS_CONTENT_BACKUP_RETENTION_DAYS=30
+          ExecStart=/opt/atlas-content-api/backup-content.sh
+          User=root
+          Group=root
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-content-backup.timer >/dev/null <<'TIMER'
+          [Unit]
+          Description=Daily Atlas Analytics CRM content backup
+
+          [Timer]
+          OnCalendar=*-*-* 03:20:00
+          Persistent=true
+          RandomizedDelaySec=10m
+          Unit=atlas-content-backup.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
           sudo systemctl daemon-reload
           sudo systemctl enable --now atlas-content-api.service
           sudo systemctl restart atlas-content-api.service
+          sudo systemctl enable --now atlas-content-backup.timer
+          sudo systemctl start atlas-content-backup.service
 
           NGINX_FILE="$(sudo grep -rl 'analytics.pupanel.cc' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -n 1 || true)"
           if [ -z "$NGINX_FILE" ]; then
