@@ -5275,22 +5275,25 @@
 
 .analytics-daily-responsible-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 2.35rem;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.42rem;
   align-items: stretch;
 }
 
 .analytics-daily-responsible-save {
   min-width: 0;
-  min-height: 2.65rem;
+  min-height: 2rem;
   border: 1px solid rgba(120, 255, 224, 0.24);
-  border-radius: 12px;
-  padding: 0 0.35rem;
+  border-radius: 10px;
+  padding: 0 0.55rem;
   background: rgba(120, 255, 224, 0.08);
   color: #c8fff6;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 950;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
 .analytics-daily-responsible-save:hover {
@@ -5301,6 +5304,16 @@
 .analytics-daily-responsible-save:disabled {
   cursor: not-allowed;
   opacity: 0.42;
+}
+
+.analytics-daily-responsible-save.is-saved {
+  border-color: rgba(133, 255, 198, 0.5);
+  background:
+    linear-gradient(135deg, rgba(133, 255, 198, 0.2), rgba(47, 217, 255, 0.08)),
+    rgba(8, 28, 32, 0.9);
+  color: #eafff8;
+  box-shadow: 0 0 18px rgba(80, 255, 205, 0.16);
+  opacity: 1;
 }
 
 .analytics-daily-field-wide {

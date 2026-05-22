@@ -935,6 +935,7 @@ function DailyTasksBoard() {
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
   const [questionDrafts, setQuestionDrafts] = useState({});
   const [responsibleDrafts, setResponsibleDrafts] = useState({});
+  const [responsibleSavedTaskId, setResponsibleSavedTaskId] = useState("");
   const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
   const [recordingTaskId, setRecordingTaskId] = useState("");
   const [recordingError, setRecordingError] = useState("");
@@ -1233,6 +1234,10 @@ function DailyTasksBoard() {
       : task.responsible;
 
     patchTask(taskId, { responsible: nextResponsible.trim() });
+    setResponsibleSavedTaskId(taskId);
+    window.setTimeout(() => {
+      setResponsibleSavedTaskId((current) => (current === taskId ? "" : current));
+    }, 1600);
     setResponsibleDrafts((current) => {
       const next = { ...current };
       delete next[taskId];
@@ -1320,6 +1325,10 @@ function DailyTasksBoard() {
     const questions = normalizeArray(task.questions);
     const openQuestions = questions.filter((question) => !question.answered).length;
     const deadlineMeta = getDailyDeadlineMeta(task.deadline);
+    const hasResponsibleDraft = Object.prototype.hasOwnProperty.call(responsibleDrafts, task.id);
+    const responsibleValue = hasResponsibleDraft ? responsibleDrafts[task.id] : task.responsible;
+    const isResponsibleChanged = hasResponsibleDraft && responsibleValue.trim() !== task.responsible;
+    const isResponsibleSaved = responsibleSavedTaskId === task.id && !isResponsibleChanged;
 
     return (
       <article key={task.id} className={`analytics-surface analytics-daily-card${isCompleted ? " analytics-daily-card-done" : ""}`}>
@@ -1368,19 +1377,22 @@ function DailyTasksBoard() {
               <textarea
                 className="form-control analytics-launch-input"
                 rows="2"
-                value={Object.prototype.hasOwnProperty.call(responsibleDrafts, task.id) ? responsibleDrafts[task.id] : task.responsible}
-                onChange={(event) => setResponsibleDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
+                value={responsibleValue}
+                onChange={(event) => {
+                  setResponsibleSavedTaskId((current) => (current === task.id ? "" : current));
+                  setResponsibleDrafts((current) => ({ ...current, [task.id]: event.target.value }));
+                }}
                 onKeyDown={(event) => {
                   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") commitResponsible(task.id);
                 }}
               />
               <button
                 type="button"
-                className="analytics-daily-responsible-save"
+                className={`analytics-daily-responsible-save${isResponsibleSaved ? " is-saved" : ""}`}
                 onClick={() => commitResponsible(task.id)}
-                disabled={!Object.prototype.hasOwnProperty.call(responsibleDrafts, task.id) || responsibleDrafts[task.id].trim() === task.responsible}
+                disabled={!isResponsibleChanged}
               >
-                ОК
+                {isResponsibleSaved ? "Закреплено" : "Закрепить"}
               </button>
             </div>
           </label>
