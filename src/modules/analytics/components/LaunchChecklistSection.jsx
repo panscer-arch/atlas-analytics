@@ -888,10 +888,15 @@ function DailyTasksBoard() {
   const [messageEditDrafts, setMessageEditDrafts] = useState({});
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
   const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
+  const [recordingTaskId, setRecordingTaskId] = useState("");
+  const [recordingError, setRecordingError] = useState("");
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
   const saveRequestRef = useRef(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioStreamRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -920,6 +925,10 @@ function DailyTasksBoard() {
       // Имя автора не критично для работы доски.
     }
   }, [chatAuthor]);
+
+  useEffect(() => () => {
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
 
   function persistDailyTasks(nextTasks) {
     const normalizedTasks = normalizeDailyTasks(nextTasks);
@@ -1012,6 +1021,91 @@ function DailyTasksBoard() {
       task.id === taskId ? { ...task, messages: [...normalizeArray(task.messages), message], updatedAt: new Date().toISOString() } : task
     )));
     setChatDrafts((current) => ({ ...current, [taskId]: "" }));
+  }
+
+  function addAudioMessage(taskId, audioDataUrl, audioMimeType) {
+    const message = {
+      id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      author: chatAuthor.trim() || "Команда",
+      text: "Голосовое сообщение",
+      type: "audio",
+      audioDataUrl,
+      audioMimeType,
+      createdAt: new Date().toISOString(),
+    };
+
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId ? { ...task, messages: [...normalizeArray(task.messages), message], updatedAt: new Date().toISOString() } : task
+    )));
+  }
+
+  function readBlobAsDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result || ""));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function startVoiceRecording(taskId) {
+    setRecordingError("");
+
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setRecordingError("Браузер не поддерживает запись голоса.");
+      return;
+    }
+
+    if (recordingTaskId && recordingTaskId !== taskId) {
+      setRecordingError("Сначала останови текущую запись.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+
+      audioChunksRef.current = [];
+      audioStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size) audioChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = async () => {
+        const chunks = audioChunksRef.current;
+        const type = recorder.mimeType || "audio/webm";
+
+        audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+        audioStreamRef.current = null;
+        mediaRecorderRef.current = null;
+        audioChunksRef.current = [];
+        setRecordingTaskId("");
+
+        if (!chunks.length) return;
+
+        try {
+          const blob = new Blob(chunks, { type });
+          const audioDataUrl = await readBlobAsDataUrl(blob);
+          addAudioMessage(taskId, audioDataUrl, type);
+        } catch {
+          setRecordingError("Не получилось сохранить голосовое сообщение.");
+        }
+      };
+
+      recorder.start();
+      setRecordingTaskId(taskId);
+    } catch {
+      setRecordingError("Не удалось получить доступ к микрофону.");
+    }
+  }
+
+  function stopVoiceRecording() {
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
   }
 
   function startEditMessage(taskId, message) {
@@ -1237,9 +1331,18 @@ function DailyTasksBoard() {
                   </div>
                 ) : (
                   <>
-                    <p>{message.text}</p>
+                    {message.type === "audio" && message.audioDataUrl ? (
+                      <div className="analytics-daily-audio-message">
+                        <audio controls src={message.audioDataUrl} />
+                        <small>{message.text || "Голосовое сообщение"}</small>
+                      </div>
+                    ) : (
+                      <p>{message.text}</p>
+                    )}
                     <div className="analytics-daily-message-actions">
-                      <button type="button" className="analytics-daily-message-action" onClick={() => startEditMessage(task.id, message)}>Редактировать</button>
+                      {message.type === "audio" ? null : (
+                        <button type="button" className="analytics-daily-message-action" onClick={() => startEditMessage(task.id, message)}>Редактировать</button>
+                      )}
                       <button type="button" className="analytics-daily-message-action analytics-daily-message-action-danger" onClick={() => removeMessage(task.id, message.id)}>Удалить</button>
                     </div>
                   </>
@@ -1260,6 +1363,19 @@ function DailyTasksBoard() {
             />
             <AnalyticsActionButton variant="primary" onClick={() => addMessage(task.id)} disabled={!(chatDrafts[task.id] || "").trim()}>Отправить</AnalyticsActionButton>
           </div>
+          <div className="analytics-daily-voice-row">
+            {recordingTaskId === task.id ? (
+              <button type="button" className="analytics-daily-voice analytics-daily-voice-recording" onClick={stopVoiceRecording}>
+                Остановить запись
+              </button>
+            ) : (
+              <button type="button" className="analytics-daily-voice" onClick={() => startVoiceRecording(task.id)} disabled={Boolean(recordingTaskId)}>
+                Записать голосовое
+              </button>
+            )}
+            {recordingTaskId === task.id ? <span>Идёт запись...</span> : null}
+          </div>
+          {recordingError ? <div className="analytics-daily-voice-error">{recordingError}</div> : null}
         </div>
       </article>
     );

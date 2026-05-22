@@ -5446,6 +5446,24 @@
   overflow-wrap: anywhere;
 }
 
+.analytics-daily-audio-message {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.analytics-daily-audio-message audio {
+  width: 100%;
+  min-height: 38px;
+  filter: hue-rotate(135deg) saturate(1.15);
+}
+
+.analytics-daily-audio-message small {
+  color: #8fa3c0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 .analytics-daily-message-edit {
   display: grid;
   gap: 0.55rem;
@@ -5496,6 +5514,68 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.65rem;
   align-items: center;
+}
+
+.analytics-daily-voice-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.analytics-daily-voice {
+  min-height: 2.25rem;
+  border: 1px solid rgba(47, 217, 255, 0.24);
+  border-radius: 999px;
+  padding: 0 0.82rem;
+  background:
+    radial-gradient(circle at 0 0, rgba(47, 217, 255, 0.16), transparent 42%),
+    rgba(47, 217, 255, 0.06);
+  color: #bff4ff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-daily-voice:hover {
+  border-color: rgba(47, 217, 255, 0.42);
+  background: rgba(47, 217, 255, 0.12);
+}
+
+.analytics-daily-voice:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.analytics-daily-voice-recording {
+  border-color: rgba(255, 122, 122, 0.42);
+  background:
+    radial-gradient(circle at 0 0, rgba(255, 122, 122, 0.18), transparent 42%),
+    rgba(255, 122, 122, 0.1);
+  color: #ffc1c1;
+  animation: analyticsVoicePulse 1.2s ease-in-out infinite;
+}
+
+.analytics-daily-voice-row span,
+.analytics-daily-voice-error {
+  color: #8fa3c0;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.analytics-daily-voice-error {
+  color: #ffc1c1;
+}
+
+@keyframes analyticsVoicePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(255, 122, 122, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 24px rgba(255, 122, 122, 0.22);
+  }
 }
 
 .analytics-materials-form,
