@@ -666,6 +666,11 @@ function normalizeDailyTasks(tasks) {
     status: task.status || "Не в работе",
     completedAt: task.completedAt || "",
     updatedAt: task.updatedAt || "",
+    subtasks: normalizeArray(task.subtasks).map((subtask) => ({
+      id: subtask.id || `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: subtask.title || "",
+      done: Boolean(subtask.done),
+    })),
     messages: normalizeArray(task.messages),
   }));
 }
@@ -789,8 +794,17 @@ function createDailyTask(overrides = {}) {
     description: "",
     materials: "",
     status: "Не в работе",
+    subtasks: [],
     messages: [],
     ...overrides,
+  };
+}
+
+function createDailySubtask(title = "") {
+  return {
+    id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title,
+    done: false,
   };
 }
 
@@ -816,6 +830,9 @@ function buildDailyShareText(tasks) {
       `Ответственный: ${task.responsible || "Не назначен"}`,
       `Материалы: ${task.materials || "—"}`,
       task.description ? `Описание: ${task.description}` : "",
+      normalizeArray(task.subtasks).length
+        ? `Подзадачи:\n${normalizeArray(task.subtasks).map((subtask) => `- ${subtask.done ? "[x]" : "[ ]"} ${subtask.title || "Без названия"}`).join("\n")}`
+        : "",
     ].filter(Boolean).join("\n")),
   ].join("\n\n");
 }
@@ -824,6 +841,7 @@ function DailyTasksBoard() {
   const [tasks, setTasks] = useState(readStoredDailyTasks);
   const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
   const [chatDrafts, setChatDrafts] = useState({});
+  const [subtaskDrafts, setSubtaskDrafts] = useState({});
   const [copyState, setCopyState] = useState("Скопировать карточку");
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
@@ -921,6 +939,42 @@ function DailyTasksBoard() {
     setChatDrafts((current) => ({ ...current, [taskId]: "" }));
   }
 
+  function addSubtask(taskId) {
+    const title = (subtaskDrafts[taskId] || "").trim();
+    if (!title) return;
+
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? { ...task, subtasks: [...normalizeArray(task.subtasks), createDailySubtask(title)], updatedAt: new Date().toISOString() }
+        : task
+    )));
+    setSubtaskDrafts((current) => ({ ...current, [taskId]: "" }));
+  }
+
+  function updateSubtask(taskId, subtaskId, patch) {
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          subtasks: normalizeArray(task.subtasks).map((subtask) => (subtask.id === subtaskId ? { ...subtask, ...patch } : subtask)),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+  }
+
+  function removeSubtask(taskId, subtaskId) {
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          subtasks: normalizeArray(task.subtasks).filter((subtask) => subtask.id !== subtaskId),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+  }
+
   async function copyShareCard() {
     const text = buildDailyShareText(tasks);
     try {
@@ -940,6 +994,8 @@ function DailyTasksBoard() {
   function renderDailyTaskCard(task, index, isCompleted = false) {
     const priorityTone = getLaunchPriorityTone(task.priority);
     const statusTone = getLaunchStatusTone(task.status);
+    const subtasks = normalizeArray(task.subtasks);
+    const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
 
     return (
       <article key={task.id} className={`analytics-surface analytics-daily-card${isCompleted ? " analytics-daily-card-done" : ""}`}>
@@ -986,6 +1042,45 @@ function DailyTasksBoard() {
             <span>Доп. материалы / ссылки</span>
             <textarea className="form-control analytics-launch-input" rows="2" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
           </label>
+        </div>
+
+        <div className="analytics-daily-subtasks">
+          <div className="analytics-daily-subtasks-head">
+            <span>Подзадачи</span>
+            <small>{completedSubtasks}/{subtasks.length}</small>
+          </div>
+          <div className="analytics-daily-subtasks-list">
+            {subtasks.map((subtask) => (
+              <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(subtask.done)}
+                  onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
+                  aria-label="Отметить подзадачу"
+                />
+                <input
+                  className="form-control analytics-launch-input"
+                  value={subtask.title}
+                  onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
+                  placeholder="Название подзадачи"
+                />
+                <button type="button" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
+              </div>
+            ))}
+            {!subtasks.length ? <div className="analytics-daily-chat-empty">Разбей большую задачу на конкретные шаги.</div> : null}
+          </div>
+          <div className="analytics-daily-subtask-add">
+            <input
+              className="form-control analytics-launch-input"
+              value={subtaskDrafts[task.id] || ""}
+              onChange={(event) => setSubtaskDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addSubtask(task.id);
+              }}
+              placeholder="Например: настроить парсер, добавить сотрудника, написать письма"
+            />
+            <AnalyticsActionButton variant="primary" onClick={() => addSubtask(task.id)} disabled={!(subtaskDrafts[task.id] || "").trim()}>Добавить</AnalyticsActionButton>
+          </div>
         </div>
 
         <div className="analytics-daily-chat">
