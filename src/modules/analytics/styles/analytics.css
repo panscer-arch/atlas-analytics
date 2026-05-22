@@ -5221,6 +5221,26 @@
   text-transform: uppercase;
 }
 
+.analytics-daily-delete {
+  flex: 0 0 auto;
+  min-width: 5.1rem;
+  min-height: 2.15rem;
+  border: 1px solid rgba(255, 122, 122, 0.26);
+  border-radius: 999px;
+  padding: 0 0.72rem;
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffc1c1;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-daily-delete:hover {
+  border-color: rgba(255, 122, 122, 0.44);
+  background: rgba(255, 122, 122, 0.14);
+}
+
 .analytics-daily-fields {
   display: grid;
   grid-template-columns: minmax(126px, 0.8fr) minmax(126px, 0.8fr) minmax(118px, 0.85fr) minmax(128px, 0.85fr) minmax(86px, 0.55fr);

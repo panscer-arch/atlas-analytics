@@ -976,6 +976,27 @@ function DailyTasksBoard() {
     patchTask(taskId, { status: "В работе", completedAt: "" });
   }
 
+  function deleteArchivedTask(taskId) {
+    persist((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
+    setChatDrafts((current) => {
+      const next = { ...current };
+      delete next[taskId];
+      return next;
+    });
+    setSubtaskDrafts((current) => {
+      const next = { ...current };
+      delete next[taskId];
+      return next;
+    });
+    setMessageEditDrafts((current) => {
+      const next = {};
+      Object.entries(current).forEach(([key, value]) => {
+        if (!key.startsWith(`${taskId}:`)) next[key] = value;
+      });
+      return next;
+    });
+  }
+
   function addMessage(taskId) {
     const value = (chatDrafts[taskId] || "").trim();
     if (!value) return;
@@ -1096,6 +1117,11 @@ function DailyTasksBoard() {
             <button type="button" className="analytics-daily-remove" onClick={() => (isCompleted ? restoreTask(task.id) : archiveTask(task.id))}>
               {isCompleted ? "Вернуть" : "Готово"}
             </button>
+            {isCompleted ? (
+              <button type="button" className="analytics-daily-delete" onClick={() => deleteArchivedTask(task.id)}>
+                Удалить
+              </button>
+            ) : null}
           </div>
         </div>
 
