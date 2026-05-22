@@ -4895,6 +4895,25 @@
   font-size: 1.55rem;
 }
 
+.analytics-daily-save {
+  justify-self: end;
+  grid-column: 1 / -1;
+  border: 1px solid rgba(123, 180, 255, 0.18);
+  border-radius: 999px;
+  padding: 0.48rem 0.78rem;
+  background: rgba(5, 12, 24, 0.64);
+  color: #9ff0df;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-daily-save-error {
+  border-color: rgba(255, 122, 122, 0.34);
+  color: #ffc1c1;
+}
+
 .analytics-daily-add {
   padding: 1.2rem;
 }
@@ -4928,6 +4947,38 @@
   gap: 1rem;
 }
 
+.analytics-daily-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(47, 217, 255, 0.14);
+  border-radius: 18px;
+  padding: 0.78rem 0.92rem;
+  background:
+    linear-gradient(90deg, rgba(47, 217, 255, 0.1), rgba(245, 196, 106, 0.06)),
+    rgba(5, 12, 24, 0.72);
+}
+
+.analytics-daily-section-head strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid rgba(123, 180, 255, 0.2);
+  border-radius: 999px;
+  color: #edf3ff;
+  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+}
+
+.analytics-daily-archive-head {
+  border-color: rgba(159, 240, 223, 0.16);
+  background:
+    linear-gradient(90deg, rgba(159, 240, 223, 0.09), rgba(123, 180, 255, 0.04)),
+    rgba(5, 12, 24, 0.68);
+}
+
 .analytics-daily-card {
   display: grid;
   gap: 1rem;
@@ -4936,6 +4987,18 @@
   background:
     radial-gradient(circle at 16% 0%, rgba(47, 217, 255, 0.1), transparent 32%),
     linear-gradient(180deg, rgba(8, 15, 29, 0.96), rgba(4, 9, 18, 0.98));
+}
+
+.analytics-daily-card-done {
+  border-color: rgba(159, 240, 223, 0.16);
+  opacity: 0.82;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(159, 240, 223, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(7, 18, 28, 0.92), rgba(4, 9, 18, 0.96));
+}
+
+.analytics-daily-card-done .analytics-daily-title {
+  color: #b9c6da;
 }
 
 .analytics-daily-card-head {
@@ -4963,6 +5026,7 @@
   font-size: 1.35rem;
   font-weight: 900;
   line-height: 1.12;
+  overflow-wrap: anywhere;
 }
 
 .analytics-daily-title:focus {
@@ -4974,13 +5038,17 @@
 
 .analytics-daily-remove {
   flex: 0 0 auto;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid rgba(255, 122, 122, 0.24);
+  min-width: 5.1rem;
+  min-height: 2.15rem;
+  border: 1px solid rgba(159, 240, 223, 0.24);
   border-radius: 999px;
-  background: rgba(255, 122, 122, 0.1);
-  color: #ffc1c1;
+  padding: 0 0.72rem;
+  background: rgba(159, 240, 223, 0.08);
+  color: #b9fff1;
+  font-size: 0.72rem;
   font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .analytics-daily-fields {
@@ -5046,6 +5114,7 @@
   color: #b9c6da;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .analytics-daily-chat-empty {
@@ -6898,6 +6967,10 @@
   .analytics-tab-summary-points {
     grid-template-columns: 1fr;
   }
+
+  .analytics-daily-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 991.98px) {
@@ -6908,6 +6981,12 @@
   .analytics-product-hero-caption,
   .analytics-product-tier-caption {
     min-height: 0;
+  }
+
+  .analytics-daily-hero,
+  .analytics-daily-summary,
+  .analytics-daily-grid {
+    grid-template-columns: 1fr;
   }
 }
 

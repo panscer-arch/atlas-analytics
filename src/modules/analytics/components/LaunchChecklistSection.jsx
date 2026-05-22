@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AgentFaqTemplate from "./AgentFaqTemplate";
 import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
 import AgentTerminologyTemplate from "./AgentTerminologyTemplate";
@@ -664,6 +664,8 @@ function normalizeDailyTasks(tasks) {
     description: task.description || "",
     materials: task.materials || "",
     status: task.status || "Не в работе",
+    completedAt: task.completedAt || "",
+    updatedAt: task.updatedAt || "",
     messages: normalizeArray(task.messages),
   }));
 }
@@ -680,6 +682,17 @@ function readStoredTasks(storageKey, fallbackTasks) {
     return normalizeChecklistTasks(saved ? JSON.parse(saved) : fallbackTasks);
   } catch {
     return normalizeChecklistTasks(fallbackTasks);
+  }
+}
+
+function readStoredDailyTasks() {
+  if (typeof window === "undefined") return normalizeDailyTasks(defaultDailyTasks);
+
+  try {
+    const saved = window.localStorage.getItem(DAILY_TASKS_STORAGE_KEY);
+    return normalizeDailyTasks(saved ? JSON.parse(saved) : defaultDailyTasks);
+  } catch {
+    return normalizeDailyTasks(defaultDailyTasks);
   }
 }
 
@@ -789,11 +802,14 @@ function formatDailyMessageTime(value) {
 }
 
 function buildDailyShareText(tasks) {
+  const activeTasks = normalizeArray(tasks).filter((task) => task.status !== "Готово");
+
   return [
     "Задачи на 22 мая",
     "",
-    ...tasks.map((task, index) => [
+    ...activeTasks.map((task, index) => [
       `${index + 1}. ${task.title || "Без названия"}`,
+      `Статус: ${task.status || "Не в работе"}`,
       `Приоритет: ${task.priority || "Средний"}`,
       `Срок выполнения: ${task.duration || "—"}`,
       `Дедлайн: ${task.deadline || "—"}`,
@@ -805,16 +821,26 @@ function buildDailyShareText(tasks) {
 }
 
 function DailyTasksBoard() {
-  const [tasks, setTasks] = useState(() => normalizeDailyTasks(defaultDailyTasks));
+  const [tasks, setTasks] = useState(readStoredDailyTasks);
   const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
   const [chatDrafts, setChatDrafts] = useState({});
   const [copyState, setCopyState] = useState("Скопировать карточку");
+  const [saveState, setSaveState] = useState("Сохранено");
+  const saveRequestRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
 
     loadServerContent(DAILY_TASKS_STORAGE_KEY).then((savedTasks) => {
-      if (isMounted && Array.isArray(savedTasks)) setTasks(normalizeDailyTasks(savedTasks));
+      if (!isMounted || !Array.isArray(savedTasks)) return;
+
+      const normalizedTasks = normalizeDailyTasks(savedTasks);
+      setTasks(normalizedTasks);
+      try {
+        window.localStorage.setItem(DAILY_TASKS_STORAGE_KEY, JSON.stringify(normalizedTasks));
+      } catch {
+        // Серверная версия всё равно уже загружена в состояние страницы.
+      }
     });
 
     return () => {
@@ -822,28 +848,58 @@ function DailyTasksBoard() {
     };
   }, []);
 
-  function persist(nextTasks) {
-    setTasks(nextTasks);
+  function persistDailyTasks(nextTasks) {
+    const normalizedTasks = normalizeDailyTasks(nextTasks);
+    const requestId = saveRequestRef.current + 1;
+    saveRequestRef.current = requestId;
+    setSaveState("Сохраняю...");
+
     try {
-      window.localStorage.setItem(DAILY_TASKS_STORAGE_KEY, JSON.stringify(nextTasks));
-      saveServerContent(DAILY_TASKS_STORAGE_KEY, nextTasks);
+      window.localStorage.setItem(DAILY_TASKS_STORAGE_KEY, JSON.stringify(normalizedTasks));
     } catch {
       // Дневная доска продолжит работать в состоянии страницы.
     }
+
+    saveServerContent(DAILY_TASKS_STORAGE_KEY, normalizedTasks).then((ok) => {
+      if (saveRequestRef.current !== requestId) return;
+      setSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
+    });
+  }
+
+  function persist(updater) {
+    setTasks((currentTasks) => {
+      const nextTasks = typeof updater === "function" ? updater(currentTasks) : updater;
+      persistDailyTasks(nextTasks);
+      return normalizeDailyTasks(nextTasks);
+    });
   }
 
   function patchTask(taskId, patch) {
-    persist(tasks.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
+    persist((currentTasks) => currentTasks.map((task) => {
+      if (task.id !== taskId) return task;
+      const nextStatus = patch.status ?? task.status;
+
+      return {
+        ...task,
+        ...patch,
+        completedAt: nextStatus === "Готово" ? (task.completedAt || new Date().toISOString()) : "",
+        updatedAt: new Date().toISOString(),
+      };
+    }));
   }
 
   function addTask() {
     if (!draft.title.trim()) return;
-    persist([createDailyTask({ ...draft, title: draft.title.trim() }), ...tasks]);
+    persist((currentTasks) => [createDailyTask({ ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() }), ...currentTasks]);
     setDraft(createDailyTask({ status: "В работе" }));
   }
 
-  function removeTask(taskId) {
-    persist(tasks.filter((task) => task.id !== taskId));
+  function archiveTask(taskId) {
+    patchTask(taskId, { status: "Готово", completedAt: new Date().toISOString() });
+  }
+
+  function restoreTask(taskId) {
+    patchTask(taskId, { status: "В работе", completedAt: "" });
   }
 
   function addMessage(taskId) {
@@ -857,7 +913,9 @@ function DailyTasksBoard() {
       createdAt: new Date().toISOString(),
     };
 
-    persist(tasks.map((task) => (task.id === taskId ? { ...task, messages: [...normalizeArray(task.messages), message] } : task)));
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId ? { ...task, messages: [...normalizeArray(task.messages), message], updatedAt: new Date().toISOString() } : task
+    )));
     setChatDrafts((current) => ({ ...current, [taskId]: "" }));
   }
 
@@ -873,7 +931,88 @@ function DailyTasksBoard() {
     }
   }
 
-  const doneCount = tasks.filter((task) => task.status === "Готово").length;
+  const completedTasks = tasks.filter((task) => task.status === "Готово");
+  const activeTasks = tasks.filter((task) => task.status !== "Готово");
+  const doneCount = completedTasks.length;
+
+  function renderDailyTaskCard(task, index, isCompleted = false) {
+    const priorityTone = getLaunchPriorityTone(task.priority);
+    const statusTone = getLaunchStatusTone(task.status);
+
+    return (
+      <article key={task.id} className={`analytics-surface analytics-daily-card${isCompleted ? " analytics-daily-card-done" : ""}`}>
+        <div className="analytics-daily-card-head">
+          <div>
+            <span className="analytics-daily-number">{isCompleted ? "Выполнено" : `Задача ${index + 1}`}</span>
+            <input className="analytics-daily-title" value={task.title} onChange={(event) => patchTask(task.id, { title: event.target.value })} />
+          </div>
+          <button type="button" className="analytics-daily-remove" onClick={() => (isCompleted ? restoreTask(task.id) : archiveTask(task.id))}>
+            {isCompleted ? "Вернуть" : "Готово"}
+          </button>
+        </div>
+
+        <div className="analytics-daily-fields">
+          <label>
+            <span>Приоритет</span>
+            <select className={`form-select analytics-launch-priority-select analytics-launch-priority-${priorityTone}`} value={task.priority} onChange={(event) => patchTask(task.id, { priority: event.target.value })}>
+              {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Статус</span>
+            <select className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`} value={task.status} onChange={(event) => patchTask(task.id, { status: event.target.value })}>
+              {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Срок выполнения</span>
+            <input className="form-control analytics-launch-input" value={task.duration} onChange={(event) => patchTask(task.id, { duration: event.target.value })} />
+          </label>
+          <label>
+            <span>Дата дедлайна</span>
+            <input className="form-control analytics-launch-input" value={task.deadline} onChange={(event) => patchTask(task.id, { deadline: event.target.value })} />
+          </label>
+          <label className="analytics-daily-field-wide">
+            <span>Ответственный</span>
+            <input className="form-control analytics-launch-input" value={task.responsible} onChange={(event) => patchTask(task.id, { responsible: event.target.value })} />
+          </label>
+          <label className="analytics-daily-field-wide">
+            <span>Доп. описание</span>
+            <textarea className="form-control analytics-launch-input" rows="3" value={task.description} onChange={(event) => patchTask(task.id, { description: event.target.value })} />
+          </label>
+          <label className="analytics-daily-field-wide">
+            <span>Доп. материалы / ссылки</span>
+            <textarea className="form-control analytics-launch-input" rows="2" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
+          </label>
+        </div>
+
+        <div className="analytics-daily-chat">
+          <div className="analytics-daily-chat-title">Чат по задаче</div>
+          <div className="analytics-daily-chat-list">
+            {normalizeArray(task.messages).map((message) => (
+              <div key={message.id} className="analytics-daily-message">
+                <div><strong>{message.author || "Команда"}</strong><span>{formatDailyMessageTime(message.createdAt)}</span></div>
+                <p>{message.text}</p>
+              </div>
+            ))}
+            {!normalizeArray(task.messages).length ? <div className="analytics-daily-chat-empty">История переписки пока пустая.</div> : null}
+          </div>
+          <div className="analytics-daily-chat-form">
+            <input
+              className="form-control analytics-launch-input"
+              value={chatDrafts[task.id] || ""}
+              onChange={(event) => setChatDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addMessage(task.id);
+              }}
+              placeholder="Написать сообщение по этой задаче"
+            />
+            <AnalyticsActionButton variant="primary" onClick={() => addMessage(task.id)} disabled={!(chatDrafts[task.id] || "").trim()}>Отправить</AnalyticsActionButton>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <>
@@ -888,9 +1027,10 @@ function DailyTasksBoard() {
         <div className="analytics-daily-summary">
           <div><span>Всего</span><strong>{tasks.length}</strong></div>
           <div><span>Готово</span><strong>{doneCount}</strong></div>
-          <div><span>В работе</span><strong>{tasks.length - doneCount}</strong></div>
+          <div><span>В работе</span><strong>{activeTasks.length}</strong></div>
           <AnalyticsActionButton variant="primary" onClick={copyShareCard}>{copyState}</AnalyticsActionButton>
         </div>
+        <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
       </section>
 
       <section className="analytics-surface analytics-daily-add mt-4">
@@ -941,84 +1081,25 @@ function DailyTasksBoard() {
         </div>
       </section>
 
-      <section className="analytics-daily-grid mt-4">
-        {tasks.map((task, index) => {
-          const priorityTone = getLaunchPriorityTone(task.priority);
-          const statusTone = getLaunchStatusTone(task.status);
-
-          return (
-            <article key={task.id} className="analytics-surface analytics-daily-card">
-              <div className="analytics-daily-card-head">
-                <div>
-                  <span className="analytics-daily-number">Задача {index + 1}</span>
-                  <input className="analytics-daily-title" value={task.title} onChange={(event) => patchTask(task.id, { title: event.target.value })} />
-                </div>
-                <button type="button" className="analytics-daily-remove" onClick={() => removeTask(task.id)}>×</button>
-              </div>
-
-              <div className="analytics-daily-fields">
-                <label>
-                  <span>Приоритет</span>
-                  <select className={`form-select analytics-launch-priority-select analytics-launch-priority-${priorityTone}`} value={task.priority} onChange={(event) => patchTask(task.id, { priority: event.target.value })}>
-                    {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Статус</span>
-                  <select className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`} value={task.status} onChange={(event) => patchTask(task.id, { status: event.target.value })}>
-                    {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Срок выполнения</span>
-                  <input className="form-control analytics-launch-input" value={task.duration} onChange={(event) => patchTask(task.id, { duration: event.target.value })} />
-                </label>
-                <label>
-                  <span>Дата дедлайна</span>
-                  <input className="form-control analytics-launch-input" value={task.deadline} onChange={(event) => patchTask(task.id, { deadline: event.target.value })} />
-                </label>
-                <label className="analytics-daily-field-wide">
-                  <span>Ответственный</span>
-                  <input className="form-control analytics-launch-input" value={task.responsible} onChange={(event) => patchTask(task.id, { responsible: event.target.value })} />
-                </label>
-                <label className="analytics-daily-field-wide">
-                  <span>Доп. описание</span>
-                  <textarea className="form-control analytics-launch-input" rows="3" value={task.description} onChange={(event) => patchTask(task.id, { description: event.target.value })} />
-                </label>
-                <label className="analytics-daily-field-wide">
-                  <span>Доп. материалы / ссылки</span>
-                  <textarea className="form-control analytics-launch-input" rows="2" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
-                </label>
-              </div>
-
-              <div className="analytics-daily-chat">
-                <div className="analytics-daily-chat-title">Чат по задаче</div>
-                <div className="analytics-daily-chat-list">
-                  {normalizeArray(task.messages).map((message) => (
-                    <div key={message.id} className="analytics-daily-message">
-                      <div><strong>{message.author || "Команда"}</strong><span>{formatDailyMessageTime(message.createdAt)}</span></div>
-                      <p>{message.text}</p>
-                    </div>
-                  ))}
-                  {!normalizeArray(task.messages).length ? <div className="analytics-daily-chat-empty">История переписки пока пустая.</div> : null}
-                </div>
-                <div className="analytics-daily-chat-form">
-                  <input
-                    className="form-control analytics-launch-input"
-                    value={chatDrafts[task.id] || ""}
-                    onChange={(event) => setChatDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") addMessage(task.id);
-                    }}
-                    placeholder="Написать сообщение по этой задаче"
-                  />
-                  <AnalyticsActionButton variant="primary" onClick={() => addMessage(task.id)} disabled={!(chatDrafts[task.id] || "").trim()}>Отправить</AnalyticsActionButton>
-                </div>
-              </div>
-            </article>
-          );
-        })}
+      <div className="analytics-daily-section-head mt-4">
+        <span className="analytics-kicker">Активные задачи</span>
+        <strong>{activeTasks.length}</strong>
+      </div>
+      <section className="analytics-daily-grid mt-3">
+        {activeTasks.map((task, index) => renderDailyTaskCard(task, index))}
       </section>
+
+      {completedTasks.length ? (
+        <>
+          <div className="analytics-daily-section-head analytics-daily-archive-head mt-4">
+            <span className="analytics-kicker">Архив дня / выполнено</span>
+            <strong>{completedTasks.length}</strong>
+          </div>
+          <section className="analytics-daily-grid analytics-daily-archive-grid mt-3">
+            {completedTasks.map((task, index) => renderDailyTaskCard(task, index, true))}
+          </section>
+        </>
+      ) : null}
     </>
   );
 }
