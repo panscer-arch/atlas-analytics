@@ -874,8 +874,8 @@ function DailyTasksBoard() {
   const [tasks, setTasks] = useState(readStoredDailyTasks);
   const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
   const [chatDrafts, setChatDrafts] = useState({});
+  const [messageEditDrafts, setMessageEditDrafts] = useState({});
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
-  const [copyState, setCopyState] = useState("Скопировать карточку");
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const saveRequestRef = useRef(0);
@@ -972,6 +972,50 @@ function DailyTasksBoard() {
     setChatDrafts((current) => ({ ...current, [taskId]: "" }));
   }
 
+  function startEditMessage(taskId, message) {
+    setMessageEditDrafts((current) => ({ ...current, [`${taskId}:${message.id}`]: message.text || "" }));
+  }
+
+  function cancelEditMessage(taskId, messageId) {
+    setMessageEditDrafts((current) => {
+      const next = { ...current };
+      delete next[`${taskId}:${messageId}`];
+      return next;
+    });
+  }
+
+  function saveEditedMessage(taskId, messageId) {
+    const draftKey = `${taskId}:${messageId}`;
+    const value = (messageEditDrafts[draftKey] || "").trim();
+    if (!value) return;
+
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          messages: normalizeArray(task.messages).map((message) => (
+            message.id === messageId ? { ...message, text: value, editedAt: new Date().toISOString() } : message
+          )),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+    cancelEditMessage(taskId, messageId);
+  }
+
+  function removeMessage(taskId, messageId) {
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          messages: normalizeArray(task.messages).filter((message) => message.id !== messageId),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+    cancelEditMessage(taskId, messageId);
+  }
+
   function addSubtask(taskId) {
     const title = (subtaskDrafts[taskId] || "").trim();
     if (!title) return;
@@ -1006,18 +1050,6 @@ function DailyTasksBoard() {
         }
         : task
     )));
-  }
-
-  async function copyShareCard() {
-    const text = buildDailyShareText(tasks);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyState("Скопировано");
-      window.setTimeout(() => setCopyState("Скопировать карточку"), 1600);
-    } catch {
-      setCopyState("Не скопировалось");
-      window.setTimeout(() => setCopyState("Скопировать карточку"), 1600);
-    }
   }
 
   const completedTasks = tasks.filter((task) => task.status === "Готово");
@@ -1128,8 +1160,37 @@ function DailyTasksBoard() {
           <div className="analytics-daily-chat-list">
             {normalizeArray(task.messages).map((message) => (
               <div key={message.id} className="analytics-daily-message">
-                <div><strong>{message.author || "Команда"}</strong><span>{formatDailyMessageTime(message.createdAt)}</span></div>
-                <p>{message.text}</p>
+                <div className="analytics-daily-message-head">
+                  <strong>{message.author || "Команда"}</strong>
+                  <span>
+                    {formatDailyMessageTime(message.createdAt)}
+                    {message.editedAt ? " · изменено" : ""}
+                  </span>
+                </div>
+                {Object.prototype.hasOwnProperty.call(messageEditDrafts, `${task.id}:${message.id}`) ? (
+                  <div className="analytics-daily-message-edit">
+                    <textarea
+                      className="form-control analytics-launch-input"
+                      rows="3"
+                      value={messageEditDrafts[`${task.id}:${message.id}`]}
+                      onChange={(event) => setMessageEditDrafts((current) => ({ ...current, [`${task.id}:${message.id}`]: event.target.value }))}
+                    />
+                    <div className="analytics-daily-message-actions">
+                      <button type="button" className="analytics-daily-message-action analytics-daily-message-action-save" onClick={() => saveEditedMessage(task.id, message.id)} disabled={!(messageEditDrafts[`${task.id}:${message.id}`] || "").trim()}>
+                        Сохранить
+                      </button>
+                      <button type="button" className="analytics-daily-message-action" onClick={() => cancelEditMessage(task.id, message.id)}>Отмена</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p>{message.text}</p>
+                    <div className="analytics-daily-message-actions">
+                      <button type="button" className="analytics-daily-message-action" onClick={() => startEditMessage(task.id, message)}>Редактировать</button>
+                      <button type="button" className="analytics-daily-message-action analytics-daily-message-action-danger" onClick={() => removeMessage(task.id, message.id)}>Удалить</button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
             {!normalizeArray(task.messages).length ? <div className="analytics-daily-chat-empty">История переписки пока пустая.</div> : null}
@@ -1168,7 +1229,6 @@ function DailyTasksBoard() {
           <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
             {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
           </AnalyticsActionButton>
-          <AnalyticsActionButton variant="primary" onClick={copyShareCard}>{copyState}</AnalyticsActionButton>
         </div>
         <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
       </section>

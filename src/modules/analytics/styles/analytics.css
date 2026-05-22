@@ -5347,7 +5347,7 @@
   background: rgba(5, 12, 24, 0.58);
 }
 
-.analytics-daily-message div {
+.analytics-daily-message-head {
   display: flex;
   justify-content: space-between;
   gap: 0.8rem;
@@ -5369,6 +5369,46 @@
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.analytics-daily-message-edit {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.analytics-daily-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.analytics-daily-message-action {
+  min-height: 2rem;
+  border: 1px solid rgba(123, 180, 255, 0.16);
+  border-radius: 10px;
+  padding: 0 0.62rem;
+  background: rgba(123, 180, 255, 0.06);
+  color: #cfe0f6;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.analytics-daily-message-action-save {
+  border-color: rgba(120, 255, 224, 0.24);
+  background: rgba(120, 255, 224, 0.08);
+  color: #c8fff6;
+}
+
+.analytics-daily-message-action-danger {
+  border-color: rgba(255, 122, 122, 0.24);
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffc1c1;
+}
+
+.analytics-daily-message-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .analytics-daily-chat-empty {
