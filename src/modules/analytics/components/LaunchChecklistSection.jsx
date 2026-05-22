@@ -672,6 +672,14 @@ function normalizeDailyTasks(tasks) {
       title: subtask.title || "",
       done: Boolean(subtask.done),
     })),
+    questions: normalizeArray(task.questions).map((question) => ({
+      id: question.id || `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      author: question.author || "Команда",
+      text: question.text || "",
+      answered: Boolean(question.answered),
+      createdAt: question.createdAt || "",
+      closedAt: question.closedAt || "",
+    })),
     messages: normalizeArray(task.messages),
   }));
 }
@@ -819,6 +827,28 @@ function createDailySubtask(title = "") {
   };
 }
 
+function createDailyQuestion(text = "", author = "Команда") {
+  return {
+    id: `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    author: author || "Команда",
+    text,
+    answered: false,
+    createdAt: new Date().toISOString(),
+    closedAt: "",
+  };
+}
+
+function getSupportedAudioMimeType() {
+  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
+
+  return [
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/webm;codecs=opus",
+    "audio/webm",
+  ].find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
 function formatDailyMessageTime(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -887,6 +917,7 @@ function DailyTasksBoard() {
   const [chatDrafts, setChatDrafts] = useState({});
   const [messageEditDrafts, setMessageEditDrafts] = useState({});
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
+  const [questionDrafts, setQuestionDrafts] = useState({});
   const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
   const [recordingTaskId, setRecordingTaskId] = useState("");
   const [recordingError, setRecordingError] = useState("");
@@ -997,6 +1028,11 @@ function DailyTasksBoard() {
       delete next[taskId];
       return next;
     });
+    setQuestionDrafts((current) => {
+      const next = { ...current };
+      delete next[taskId];
+      return next;
+    });
     setMessageEditDrafts((current) => {
       const next = {};
       Object.entries(current).forEach(([key, value]) => {
@@ -1063,7 +1099,7 @@ function DailyTasksBoard() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+      const mimeType = getSupportedAudioMimeType();
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
 
       audioChunksRef.current = [];
@@ -1095,7 +1131,7 @@ function DailyTasksBoard() {
         }
       };
 
-      recorder.start();
+      recorder.start(1000);
       setRecordingTaskId(taskId);
     } catch {
       setRecordingError("Не удалось получить доступ к микрофону.");
@@ -1164,6 +1200,50 @@ function DailyTasksBoard() {
     setSubtaskDrafts((current) => ({ ...current, [taskId]: "" }));
   }
 
+  function addQuestion(taskId) {
+    const text = (questionDrafts[taskId] || "").trim();
+    if (!text) return;
+
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? { ...task, questions: [createDailyQuestion(text, chatAuthor.trim() || "Команда"), ...normalizeArray(task.questions)], updatedAt: new Date().toISOString() }
+        : task
+    )));
+    setQuestionDrafts((current) => ({ ...current, [taskId]: "" }));
+  }
+
+  function toggleQuestion(taskId, questionId) {
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          questions: normalizeArray(task.questions).map((question) => (
+            question.id === questionId
+              ? {
+                ...question,
+                answered: !question.answered,
+                closedAt: question.answered ? "" : new Date().toISOString(),
+              }
+              : question
+          )),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+  }
+
+  function removeQuestion(taskId, questionId) {
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          questions: normalizeArray(task.questions).filter((question) => question.id !== questionId),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+  }
+
   function updateSubtask(taskId, subtaskId, patch) {
     persist((currentTasks) => currentTasks.map((task) => (
       task.id === taskId
@@ -1197,6 +1277,8 @@ function DailyTasksBoard() {
     const statusTone = getLaunchStatusTone(task.status);
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
+    const questions = normalizeArray(task.questions);
+    const openQuestions = questions.filter((question) => !question.answered).length;
     const deadlineMeta = getDailyDeadlineMeta(task.deadline);
 
     return (
@@ -1204,7 +1286,7 @@ function DailyTasksBoard() {
         <div className="analytics-daily-card-head">
           <div>
             <span className="analytics-daily-number">{isCompleted ? "Выполнено" : `Задача ${index + 1}`}</span>
-            <input className="analytics-daily-title" value={task.title} onChange={(event) => patchTask(task.id, { title: event.target.value })} />
+            <textarea className="analytics-daily-title" rows="2" value={task.title} onChange={(event) => patchTask(task.id, { title: event.target.value })} />
           </div>
           <div className="analytics-daily-card-actions">
             <span className={`analytics-daily-deadline analytics-daily-deadline-${deadlineMeta.tone}`}>{deadlineMeta.label}</span>
@@ -1242,7 +1324,7 @@ function DailyTasksBoard() {
           </label>
           <label>
             <span>Кто</span>
-            <input className="form-control analytics-launch-input" value={task.responsible} onChange={(event) => patchTask(task.id, { responsible: event.target.value })} />
+            <textarea className="form-control analytics-launch-input" rows="2" value={task.responsible} onChange={(event) => patchTask(task.id, { responsible: event.target.value })} />
           </label>
         </div>
 
@@ -1260,8 +1342,9 @@ function DailyTasksBoard() {
                   onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
                   aria-label="Отметить подзадачу"
                 />
-                <input
+                <textarea
                   className="form-control analytics-launch-input"
+                  rows="2"
                   value={subtask.title}
                   onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
                   placeholder="Название подзадачи"
@@ -1272,13 +1355,11 @@ function DailyTasksBoard() {
             {!subtasks.length ? <div className="analytics-daily-chat-empty">Разбей большую задачу на конкретные шаги.</div> : null}
           </div>
           <div className="analytics-daily-subtask-add">
-            <input
+            <textarea
               className="form-control analytics-launch-input"
+              rows="2"
               value={subtaskDrafts[task.id] || ""}
               onChange={(event) => setSubtaskDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") addSubtask(task.id);
-              }}
               placeholder="Например: настроить парсер, добавить сотрудника, написать письма"
             />
             <AnalyticsActionButton variant="primary" onClick={() => addSubtask(task.id)} disabled={!(subtaskDrafts[task.id] || "").trim()}>Добавить</AnalyticsActionButton>
@@ -1294,6 +1375,45 @@ function DailyTasksBoard() {
             <span>Доп. материалы / ссылки</span>
             <textarea className="form-control analytics-launch-input" rows="3" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
           </label>
+        </div>
+
+        <div className="analytics-daily-questions">
+          <div className="analytics-daily-questions-head">
+            <span>Вопросы по задаче</span>
+            <small>{openQuestions} открыто</small>
+          </div>
+          <div className="analytics-daily-question-list">
+            {questions.map((question) => (
+              <div key={question.id} className={`analytics-daily-question${question.answered ? " is-answered" : ""}`}>
+                <div className="analytics-daily-question-top">
+                  <strong>{question.author || "Команда"}</strong>
+                  <span>{formatDailyMessageTime(question.createdAt)}</span>
+                </div>
+                <p>{question.text}</p>
+                <div className="analytics-daily-question-actions">
+                  <button type="button" onClick={() => toggleQuestion(task.id, question.id)}>
+                    {question.answered ? "Открыть" : "Закрыть"}
+                  </button>
+                  <button type="button" className="analytics-daily-question-danger" onClick={() => removeQuestion(task.id, question.id)}>
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            ))}
+            {!questions.length ? <div className="analytics-daily-chat-empty">Если по задаче что-то непонятно, вопрос появится здесь отдельно от чата.</div> : null}
+          </div>
+          <div className="analytics-daily-question-form">
+            <input
+              className="form-control analytics-launch-input"
+              value={questionDrafts[task.id] || ""}
+              onChange={(event) => setQuestionDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addQuestion(task.id);
+              }}
+              placeholder="Задать вопрос по этой задаче"
+            />
+            <AnalyticsActionButton variant="primary" onClick={() => addQuestion(task.id)} disabled={!(questionDrafts[task.id] || "").trim()}>Задать</AnalyticsActionButton>
+          </div>
         </div>
 
         <div className="analytics-daily-chat">
@@ -1333,7 +1453,9 @@ function DailyTasksBoard() {
                   <>
                     {message.type === "audio" && message.audioDataUrl ? (
                       <div className="analytics-daily-audio-message">
-                        <audio controls src={message.audioDataUrl} />
+                        <audio controls>
+                          <source src={message.audioDataUrl} type={message.audioMimeType || "audio/webm"} />
+                        </audio>
                         <small>{message.text || "Голосовое сообщение"}</small>
                       </div>
                     ) : (

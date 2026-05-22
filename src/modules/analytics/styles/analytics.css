@@ -5196,6 +5196,10 @@
   font-size: 1.35rem;
   font-weight: 900;
   line-height: 1.12;
+  min-height: 3.1rem;
+  resize: none;
+  overflow: auto;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
@@ -5256,6 +5260,16 @@
 .analytics-daily-fields .analytics-launch-status-select {
   width: 100%;
   min-width: 0;
+}
+
+.analytics-daily-fields textarea.analytics-launch-input,
+.analytics-daily-subtask-add textarea.analytics-launch-input {
+  min-height: 2.65rem;
+  resize: none;
+  overflow: auto;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .analytics-daily-field-wide {
@@ -5320,6 +5334,15 @@
   text-decoration-color: rgba(120, 255, 224, 0.58);
 }
 
+.analytics-daily-subtask textarea.analytics-launch-input {
+  min-height: 2.55rem;
+  resize: none;
+  overflow: auto;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .analytics-daily-subtask button {
   width: 32px;
   height: 32px;
@@ -5359,6 +5382,108 @@
   min-height: 112px;
   resize: none;
   overflow: auto;
+}
+
+.analytics-daily-questions {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid rgba(47, 217, 255, 0.18);
+  border-radius: 18px;
+  padding: 0.85rem;
+  background:
+    radial-gradient(circle at 100% 0, rgba(47, 217, 255, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(47, 217, 255, 0.045), rgba(255, 196, 107, 0.025)),
+    rgba(255, 255, 255, 0.025);
+}
+
+.analytics-daily-questions-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: #bff4ff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-daily-questions-head small {
+  color: #9ff0df;
+  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+  font-size: 0.74rem;
+}
+
+.analytics-daily-question-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.analytics-daily-question {
+  border: 1px solid rgba(47, 217, 255, 0.12);
+  border-radius: 14px;
+  padding: 0.7rem 0.78rem;
+  background: rgba(5, 12, 24, 0.58);
+}
+
+.analytics-daily-question.is-answered {
+  opacity: 0.66;
+}
+
+.analytics-daily-question-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.35rem;
+}
+
+.analytics-daily-question-top strong {
+  color: #edf3ff;
+}
+
+.analytics-daily-question-top span {
+  color: #7d8ca5;
+  font-size: 0.74rem;
+}
+
+.analytics-daily-question p {
+  margin: 0;
+  color: #cfe0f6;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.analytics-daily-question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.analytics-daily-question-actions button {
+  min-height: 2rem;
+  border: 1px solid rgba(120, 255, 224, 0.2);
+  border-radius: 10px;
+  padding: 0 0.62rem;
+  background: rgba(120, 255, 224, 0.07);
+  color: #c8fff6;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.analytics-daily-question-actions .analytics-daily-question-danger {
+  border-color: rgba(255, 122, 122, 0.24);
+  background: rgba(255, 122, 122, 0.08);
+  color: #ffc1c1;
+}
+
+.analytics-daily-question-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
 }
 
 .analytics-daily-chat {
@@ -7531,6 +7656,96 @@
   .analytics-table thead th,
   .analytics-table tbody td {
     font-size: 0.86rem;
+  }
+
+  .analytics-daily-card {
+    padding: 0.82rem;
+  }
+
+  .analytics-daily-card-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .analytics-daily-card-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .analytics-daily-deadline {
+    grid-column: 1 / -1;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .analytics-daily-title {
+    font-size: 1.12rem;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .analytics-daily-remove,
+  .analytics-daily-delete {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .analytics-daily-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-daily-details {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-daily-subtask {
+    grid-template-columns: 22px minmax(0, 1fr) 32px;
+    align-items: flex-start;
+  }
+
+  .analytics-daily-subtask .analytics-launch-input {
+    min-height: auto;
+    height: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+  }
+
+  .analytics-daily-subtask-add,
+  .analytics-daily-question-form,
+  .analytics-daily-chat-form {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-daily-subtask-add .analytics-action-button,
+  .analytics-daily-question-form .analytics-action-button,
+  .analytics-daily-chat-form .analytics-action-button {
+    width: 100%;
+  }
+
+  .analytics-daily-chat-head {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-daily-chat-author {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .analytics-daily-message-head,
+  .analytics-daily-question-top,
+  .analytics-daily-questions-head,
+  .analytics-daily-subtasks-head {
+    align-items: flex-start;
+  }
+
+  .analytics-daily-audio-message audio {
+    min-width: 0;
   }
 
   .analytics-products-summary-primary {
