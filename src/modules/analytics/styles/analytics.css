@@ -4931,11 +4931,12 @@
 }
 
 .analytics-daily-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1.25rem;
+  gap: 0.85rem;
   align-items: center;
-  padding: 1.2rem;
+  padding: 0.82rem 0.95rem;
   border-color: rgba(47, 217, 255, 0.15);
   background:
     radial-gradient(circle at 12% 0%, rgba(47, 217, 255, 0.12), transparent 28%),
@@ -4945,16 +4946,16 @@
 
 .analytics-daily-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(86px, 1fr)) auto;
-  gap: 0.65rem;
-  align-items: stretch;
+  grid-template-columns: repeat(3, minmax(72px, 0.72fr)) repeat(2, auto);
+  gap: 0.48rem;
+  align-items: center;
 }
 
 .analytics-daily-summary div {
-  min-width: 88px;
+  min-width: 74px;
   border: 1px solid rgba(123, 180, 255, 0.14);
-  border-radius: 16px;
-  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  padding: 0.52rem 0.68rem;
   background: rgba(255, 255, 255, 0.035);
 }
 
@@ -4969,23 +4970,25 @@
 
 .analytics-daily-summary strong {
   display: block;
-  margin-top: 0.25rem;
+  margin-top: 0.12rem;
   color: #edf3ff;
   font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
-  font-size: 1.55rem;
+  font-size: 1.18rem;
 }
 
 .analytics-daily-save {
+  position: absolute;
+  right: 0.85rem;
+  bottom: -0.72rem;
   justify-self: end;
-  grid-column: 1 / -1;
   border: 1px solid rgba(123, 180, 255, 0.18);
   border-radius: 999px;
-  padding: 0.48rem 0.78rem;
+  padding: 0.3rem 0.58rem;
   background: rgba(5, 12, 24, 0.64);
   color: #9ff0df;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 

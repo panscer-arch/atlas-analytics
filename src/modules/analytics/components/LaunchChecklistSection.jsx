@@ -1219,9 +1219,6 @@ function DailyTasksBoard() {
         <div>
           <span className="analytics-kicker">Фокус на день</span>
           <h3 className="analytics-section-title">Задачи на 22 мая</h3>
-          <p className="analytics-page-subtitle mb-0">
-            Одна рабочая карточка для команды: приоритеты, сроки, ответственные, материалы и чат по каждой задаче. Всё сохраняется на сервере.
-          </p>
         </div>
         <div className="analytics-daily-summary">
           <div><span>Всего</span><strong>{tasks.length}</strong></div>
