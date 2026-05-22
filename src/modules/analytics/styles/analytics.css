@@ -5060,13 +5060,37 @@
 }
 
 .analytics-daily-card {
+  position: relative;
+  overflow: hidden;
   display: grid;
   gap: 1rem;
-  padding: 1rem;
-  border-color: rgba(123, 180, 255, 0.14);
+  padding: 1.05rem;
+  border-color: rgba(47, 217, 255, 0.18);
   background:
-    radial-gradient(circle at 16% 0%, rgba(47, 217, 255, 0.1), transparent 32%),
-    linear-gradient(180deg, rgba(8, 15, 29, 0.96), rgba(4, 9, 18, 0.98));
+    radial-gradient(circle at 10% 0%, rgba(47, 217, 255, 0.16), transparent 32%),
+    radial-gradient(circle at 92% 8%, rgba(255, 196, 107, 0.1), transparent 30%),
+    linear-gradient(145deg, rgba(8, 17, 31, 0.98), rgba(3, 8, 17, 0.99));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    inset 0 0 0 1px rgba(47, 217, 255, 0.03),
+    0 20px 44px rgba(0, 0, 0, 0.22);
+}
+
+.analytics-daily-card::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(rgba(120, 255, 224, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(47, 217, 255, 0.028) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.75), transparent 72%);
+}
+
+.analytics-daily-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .analytics-daily-card-done {
@@ -5086,6 +5110,55 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(123, 180, 255, 0.1);
+}
+
+.analytics-daily-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+}
+
+.analytics-daily-deadline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.15rem;
+  border: 1px solid rgba(123, 180, 255, 0.18);
+  border-radius: 999px;
+  padding: 0 0.72rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cfe0f6;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.analytics-daily-deadline-urgent {
+  border-color: rgba(255, 196, 107, 0.36);
+  background: rgba(255, 196, 107, 0.12);
+  color: #ffe0a3;
+}
+
+.analytics-daily-deadline-accent {
+  border-color: rgba(47, 217, 255, 0.26);
+  background: rgba(47, 217, 255, 0.09);
+  color: #bff4ff;
+}
+
+.analytics-daily-deadline-safe {
+  border-color: rgba(120, 255, 224, 0.22);
+  background: rgba(120, 255, 224, 0.08);
+  color: #c8fff6;
+}
+
+.analytics-daily-deadline-danger {
+  border-color: rgba(255, 122, 122, 0.35);
+  background: rgba(255, 122, 122, 0.1);
+  color: #ffc1c1;
 }
 
 .analytics-daily-number {
@@ -5133,8 +5206,12 @@
 
 .analytics-daily-fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
+  grid-template-columns: minmax(112px, 0.75fr) minmax(116px, 0.75fr) minmax(130px, 0.9fr) minmax(136px, 0.9fr) minmax(92px, 0.6fr);
+  gap: 0.62rem;
+  border: 1px solid rgba(123, 180, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.72rem;
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .analytics-daily-field-wide {
@@ -5144,11 +5221,12 @@
 .analytics-daily-subtasks {
   display: grid;
   gap: 0.75rem;
-  border: 1px solid rgba(255, 196, 107, 0.13);
+  border: 1px solid rgba(255, 196, 107, 0.2);
   border-radius: 18px;
   padding: 0.85rem;
   background:
-    radial-gradient(circle at 0 0, rgba(255, 196, 107, 0.08), transparent 38%),
+    radial-gradient(circle at 0 0, rgba(255, 196, 107, 0.12), transparent 38%),
+    linear-gradient(135deg, rgba(255, 196, 107, 0.045), rgba(47, 217, 255, 0.025)),
     rgba(255, 255, 255, 0.025);
 }
 
@@ -5215,6 +5293,26 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.65rem;
   align-items: center;
+}
+
+.analytics-daily-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-daily-details label {
+  display: grid;
+  gap: 0.42rem;
+  color: #8fa3c0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-daily-details textarea {
+  min-height: 112px;
 }
 
 .analytics-daily-chat {

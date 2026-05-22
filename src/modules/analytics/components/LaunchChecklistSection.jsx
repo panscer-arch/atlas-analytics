@@ -815,6 +815,39 @@ function formatDailyMessageTime(value) {
   return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+function parseDailyDeadline(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const ruMatch = normalized.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  const isoMatch = normalized.match(/(\d{4})-(\d{2})-(\d{2})/);
+
+  if (ruMatch) {
+    const date = new Date(Number(ruMatch[3]), Number(ruMatch[2]) - 1, Number(ruMatch[1]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  if (isoMatch) {
+    const date = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  return null;
+}
+
+function getDailyDeadlineMeta(deadline) {
+  const date = parseDailyDeadline(deadline);
+  if (!date) return { label: "Без даты", tone: "idle" };
+
+  const today = getStartOfDay();
+  const deadlineDay = getStartOfDay(date);
+  const diffDays = Math.ceil((deadlineDay.getTime() - today.getTime()) / 86400000);
+
+  if (diffDays < 0) return { label: `Просрочено ${Math.abs(diffDays)} дн.`, tone: "danger" };
+  if (diffDays === 0) return { label: "Сегодня дедлайн", tone: "urgent" };
+  if (diffDays === 1) return { label: "Остался 1 день", tone: "accent" };
+  return { label: `Осталось ${diffDays} дн.`, tone: diffDays <= 3 ? "accent" : "safe" };
+}
+
 function buildDailyShareText(tasks) {
   const activeTasks = normalizeArray(tasks).filter((task) => task.status !== "Готово");
 
@@ -996,6 +1029,7 @@ function DailyTasksBoard() {
     const statusTone = getLaunchStatusTone(task.status);
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
+    const deadlineMeta = getDailyDeadlineMeta(task.deadline);
 
     return (
       <article key={task.id} className={`analytics-surface analytics-daily-card${isCompleted ? " analytics-daily-card-done" : ""}`}>
@@ -1004,9 +1038,12 @@ function DailyTasksBoard() {
             <span className="analytics-daily-number">{isCompleted ? "Выполнено" : `Задача ${index + 1}`}</span>
             <input className="analytics-daily-title" value={task.title} onChange={(event) => patchTask(task.id, { title: event.target.value })} />
           </div>
-          <button type="button" className="analytics-daily-remove" onClick={() => (isCompleted ? restoreTask(task.id) : archiveTask(task.id))}>
-            {isCompleted ? "Вернуть" : "Готово"}
-          </button>
+          <div className="analytics-daily-card-actions">
+            <span className={`analytics-daily-deadline analytics-daily-deadline-${deadlineMeta.tone}`}>{deadlineMeta.label}</span>
+            <button type="button" className="analytics-daily-remove" onClick={() => (isCompleted ? restoreTask(task.id) : archiveTask(task.id))}>
+              {isCompleted ? "Вернуть" : "Готово"}
+            </button>
+          </div>
         </div>
 
         <div className="analytics-daily-fields">
@@ -1030,17 +1067,9 @@ function DailyTasksBoard() {
             <span>Дата дедлайна</span>
             <input className="form-control analytics-launch-input" value={task.deadline} onChange={(event) => patchTask(task.id, { deadline: event.target.value })} />
           </label>
-          <label className="analytics-daily-field-wide">
-            <span>Ответственный</span>
+          <label>
+            <span>Кто</span>
             <input className="form-control analytics-launch-input" value={task.responsible} onChange={(event) => patchTask(task.id, { responsible: event.target.value })} />
-          </label>
-          <label className="analytics-daily-field-wide">
-            <span>Доп. описание</span>
-            <textarea className="form-control analytics-launch-input" rows="3" value={task.description} onChange={(event) => patchTask(task.id, { description: event.target.value })} />
-          </label>
-          <label className="analytics-daily-field-wide">
-            <span>Доп. материалы / ссылки</span>
-            <textarea className="form-control analytics-launch-input" rows="2" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
           </label>
         </div>
 
@@ -1081,6 +1110,17 @@ function DailyTasksBoard() {
             />
             <AnalyticsActionButton variant="primary" onClick={() => addSubtask(task.id)} disabled={!(subtaskDrafts[task.id] || "").trim()}>Добавить</AnalyticsActionButton>
           </div>
+        </div>
+
+        <div className="analytics-daily-details">
+          <label>
+            <span>Доп. описание</span>
+            <textarea className="form-control analytics-launch-input" rows="3" value={task.description} onChange={(event) => patchTask(task.id, { description: event.target.value })} />
+          </label>
+          <label>
+            <span>Доп. материалы / ссылки</span>
+            <textarea className="form-control analytics-launch-input" rows="3" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
+          </label>
         </div>
 
         <div className="analytics-daily-chat">
