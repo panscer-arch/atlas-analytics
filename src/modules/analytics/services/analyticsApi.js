@@ -1142,7 +1142,7 @@ function findTopPressureProduct(futureRecords) {
 function splitByProfiles(total, profiles, valueKey = "value") {
   const allocated = profiles.map((profile, index) => ({
     ...profile,
-    [valueKey]: Math.round(total * profile.share + index * 7),
+    [valueKey]: total > 0 ? Math.round(total * profile.share + index * 7) : 0,
   }));
 
   return allocated;
@@ -1166,7 +1166,7 @@ function buildTrafficTab(records) {
   const newVisitors = Math.round(siteOnline * 0.57);
   const repeatVisitors = Math.max(0, siteOnline - newVisitors);
   const engagedUsers = Math.round(siteOnline * 0.48);
-  const avgSessionMinutes = 6.8;
+  const avgSessionMinutes = siteOnline > 0 ? 6.8 : 0;
   const registrationsToday = latestDay.investors || 0;
   const walletConnectsToday = latestDay.walletsConnected || 0;
   const cycleActivationsToday = Math.round(walletConnectsToday * 0.58);
@@ -1193,11 +1193,11 @@ function buildTrafficTab(records) {
     siteUsers: item.siteUsers,
     cabinetUsers: Math.round(item.siteUsers * 0.61),
     sessions: Math.round(item.siteUsers * 2.3),
-    wallets: Math.round(item.siteUsers * 0.42 + index * 2),
+    wallets: item.siteUsers > 0 ? Math.round(item.siteUsers * 0.42 + index * 2) : 0,
     newVisitors: Math.round(item.siteUsers * (0.55 - index * 0.02)),
     repeatVisitors: Math.max(0, Math.round(item.siteUsers * 0.45 + index * 3)),
-    engagementRate: 54 - index * 4,
-    depositConversion: 18 - index * 1.3,
+    engagementRate: item.siteUsers > 0 ? 54 - index * 4 : 0,
+    depositConversion: item.siteUsers > 0 ? 18 - index * 1.3 : 0,
   }));
 
   const sources = groupBySource(records).map((source, index) => ({
@@ -1209,10 +1209,10 @@ function buildTrafficTab(records) {
     conversion: source.walletsConnected ? (source.walletsConnected / Math.max(Math.round(source.walletsConnected * 1.35), 1)) * 100 : 0,
     newVisitors: Math.round(source.walletsConnected * 0.71),
     repeatVisitors: Math.round(source.walletsConnected * 0.64),
-    bounceRate: 31 - index * 3,
+    bounceRate: source.walletsConnected > 0 ? 31 - index * 3 : 0,
     depositStarts: Math.round(source.walletsConnected * 0.52),
-    depositConversion: 39 - index * 4,
-    qualityScore: 73 - index * 5,
+    depositConversion: source.walletsConnected > 0 ? 39 - index * 4 : 0,
+    qualityScore: source.walletsConnected > 0 ? 73 - index * 5 : 0,
     id: `${source.source}-${index}`,
   }));
 
@@ -1364,22 +1364,23 @@ function buildLeadersTab(records) {
   const totalInflow = sumField(records, "incomingAmount");
   const totalWallets = sumField(records, "walletsConnected");
   const totalClaimable = sumField(records, "claimableNow");
+  const hasLeaderData = totalInflow > 0 || totalWallets > 0 || totalClaimable > 0;
 
   const byParticipation = LEADER_PROFILES.map((profile, index) => {
     const investment = Math.round(totalInflow * (0.12 - index * 0.014));
     const obligations = Math.round(investment * (0.34 + index * 0.03));
     const referralIncome = Math.round(investment * (0.082 - index * 0.007));
     const netContribution = Math.max(0, investment - obligations - referralIncome);
-    const reinvestRate = 52 - index * 5;
-    const retentionRate = 74 - index * 4;
-    const claimRate = 39 + index * 3;
+    const reinvestRate = hasLeaderData ? 52 - index * 5 : 0;
+    const retentionRate = hasLeaderData ? 74 - index * 4 : 0;
+    const claimRate = hasLeaderData ? 39 + index * 3 : 0;
 
     return {
       name: profile.name,
       country: profile.country,
       investment,
-      cycles: 34 - index * 4,
-      activeDays: 29 - index * 3,
+      cycles: hasLeaderData ? 34 - index * 4 : 0,
+      activeDays: hasLeaderData ? 29 - index * 3 : 0,
       obligations,
       referralIncome,
       netContribution,
@@ -1395,10 +1396,10 @@ function buildLeadersTab(records) {
     const invited = Math.round(totalWallets * (0.1 - index * 0.011));
     const activeInvited = Math.round(totalWallets * (0.072 - index * 0.009));
     const depositingInvited = Math.round(activeInvited * (0.64 - index * 0.04));
-    const leaderDependency = 49 - index * 6;
-    const baseRetention = 68 - index * 4;
-    const reinvestRate = 33 + index * 3;
-    const claimPressure = 22 + index * 4;
+    const leaderDependency = hasLeaderData ? 49 - index * 6 : 0;
+    const baseRetention = hasLeaderData ? 68 - index * 4 : 0;
+    const reinvestRate = hasLeaderData ? 33 + index * 3 : 0;
+    const claimPressure = hasLeaderData ? 22 + index * 4 : 0;
     const netContribution = Math.max(0, inflow - referralLoad - Math.round(totalClaimable * (0.018 - index * 0.0017)));
 
     return {
@@ -1482,6 +1483,7 @@ function buildGeographyTab(records, futureRecords) {
   const totalInflow = sumField(records, "incomingAmount");
   const totalObligations = sumField(futureRecords.slice(0, 30), "cyclePayouts");
   const totalDeposits = sumField(records, "incomingAmount");
+  const hasGeoData = totalUsers > 0 || totalWallets > 0 || totalInflow > 0 || totalObligations > 0;
 
   const rows = COUNTRY_PROFILES.map((profile, index) => ({
     country: profile.country,
@@ -1497,8 +1499,8 @@ function buildGeographyTab(records, futureRecords) {
     reinvestUsers: Math.round(totalUsers * profile.share * (0.18 + index * 0.018)),
     payingUsers: Math.round(totalUsers * profile.share * (0.58 - index * 0.015)),
     claimUsers: Math.round(totalUsers * profile.share * (0.33 + index * 0.013)),
-    riskScore: 24 + index * 7,
-    growthScore: 79 - index * 4,
+    riskScore: hasGeoData ? 24 + index * 7 : 0,
+    growthScore: hasGeoData ? 79 - index * 4 : 0,
   })).map((item) => {
     const activeRate = item.users ? (item.activeUsers / item.users) * 100 : 0;
     const repeatRate = item.users ? (item.repeatUsers / item.users) * 100 : 0;
@@ -1577,22 +1579,23 @@ function buildPartnerTab(records, futureRecords) {
   const totalInflow = sumField(records, "incomingAmount");
   const totalReferral = sumField(futureRecords.slice(0, 30), "referralPayouts");
   const totalObligations = sumField(futureRecords.slice(0, 30), "cyclePayouts");
+  const hasPartnerData = totalInflow > 0 || totalReferral > 0 || totalObligations > 0;
 
   const rows = PARTNER_BRANCHES.map((branch, index) => ({
     leader: `Leader ${index + 1}`,
     branch,
     inflow: Math.round(totalInflow * (0.18 - index * 0.022)),
-    invited: 160 - index * 18,
-    activeInvited: 112 - index * 14,
-    depositingInvited: 74 - index * 10,
+    invited: hasPartnerData ? 160 - index * 18 : 0,
+    activeInvited: hasPartnerData ? 112 - index * 14 : 0,
+    depositingInvited: hasPartnerData ? 74 - index * 10 : 0,
     referralAccrual: Math.round(totalReferral * (0.2 - index * 0.024)),
     payout: Math.round(totalReferral * (0.16 - index * 0.02)),
     obligations: Math.round(totalObligations * (0.17 - index * 0.019)),
     creatorFlow: Math.round(totalInflow * (0.043 - index * 0.004)),
-    leaderDependency: 51 - index * 6,
-    depthScore: 76 - index * 7,
-    conversionToDeposit: 46 - index * 4,
-    structuralLeak: 13 + index * 3,
+    leaderDependency: hasPartnerData ? 51 - index * 6 : 0,
+    depthScore: hasPartnerData ? 76 - index * 7 : 0,
+    conversionToDeposit: hasPartnerData ? 46 - index * 4 : 0,
+    structuralLeak: hasPartnerData ? 13 + index * 3 : 0,
   })).map((item) => {
     const referralRate = item.inflow ? (item.referralAccrual / item.inflow) * 100 : 0;
     const payoutRate = item.referralAccrual ? (item.payout / item.referralAccrual) * 100 : 0;
@@ -1672,6 +1675,7 @@ function buildWalletsTab(records, futureRecords) {
   const totalObligations = sumField(futureRecords.slice(0, 30), "cyclePayouts");
   const totalClaimable = sumField(records, "claimableNow");
   const totalAccrued = sumField(records, "accruedLater");
+  const hasWalletData = totalVolume > 0 || totalObligations > 0 || totalClaimable > 0 || totalAccrued > 0;
 
   const rows = [
     { wallet: "0xA91...7D1", role: "user", inflow: Math.round(totalVolume * 0.14), obligations: Math.round(totalObligations * 0.16), network: "BNB", ownerType: "Инвестор" },
@@ -1684,10 +1688,10 @@ function buildWalletsTab(records, futureRecords) {
     const reinvestFlow = Math.round(item.inflow * (0.21 + index * 0.03));
     const claimPressure = item.inflow ? (claimable / item.inflow) * 100 : 0;
     const obligationLoad = item.inflow ? (item.obligations / item.inflow) * 100 : 0;
-    const riskScore = 36 + index * 11;
-    const activityScore = 82 - index * 8;
+    const riskScore = hasWalletData ? 36 + index * 11 : 0;
+    const activityScore = hasWalletData ? 82 - index * 8 : 0;
     const netContribution = Math.max(0, item.inflow - item.obligations - claimable * 0.12);
-    const concentrationShare = 22 - index * 3;
+    const concentrationShare = hasWalletData ? 22 - index * 3 : 0;
 
     return {
       ...item,
@@ -1714,13 +1718,13 @@ function buildWalletsTab(records, futureRecords) {
       title: `${largestWallet?.wallet || "Кошелёк"} сейчас держит главный объём`,
       description: `Верхние кошельки формируют большую часть притока и обязательств, а ${highestRiskWallet?.wallet || "один из адресов"} уже выглядит самым рискованным по нагрузке и claim pressure.`,
       bullets: [
-        `Top-5 концентрация: 58%`,
+        `Top-5 концентрация: ${hasWalletData ? 58 : 0}%`,
         `Лидер по inflow: ${largestWallet?.inflow || 0}`,
         `Средний claim pressure: ${avgClaimPressure.toFixed(1)}%`,
       ],
     },
     metrics: [
-      { title: "Top-5 концентрация", value: 58, variant: "percent", icon: "risk", statusLabel: "risk", description: "Доля top-кошельков в объёме." },
+      { title: "Top-5 концентрация", value: hasWalletData ? 58 : 0, variant: "percent", icon: "risk", statusLabel: "risk", description: "Доля top-кошельков в объёме." },
       { title: "Лидер по inflow", value: largestWallet?.inflow || 0, variant: "currency", icon: "inflow", statusLabel: largestWallet?.wallet || "—", description: "Самый крупный кошелёк по притоку." },
       { title: "Лидер по obligations", value: largestWallet?.obligations || 0, variant: "currency", icon: "calendar", statusLabel: largestWallet?.wallet || "—", description: "Самый крупный кошелёк по нагрузке." },
       { title: "Creator / Platform flow", value: Math.round(rows[1].inflow + rows[3].inflow), variant: "currency", icon: "wallet", statusLabel: "flow", description: "Поток creator и platform wallets." },
@@ -1763,13 +1767,14 @@ function buildReinvestTab(records) {
   const totalUsers = sumField(records, "investors");
   const totalClaimable = sumField(records, "claimableNow");
   const totalInflow = sumField(records, "incomingAmount");
+  const hasReinvestData = totalUsers > 0 || totalClaimable > 0 || totalInflow > 0;
   const reinvestUsers = Math.round(totalUsers * 0.37);
   const repeatDepositors = Math.round(totalUsers * 0.29);
   const reinvestedCapital = Math.round(totalClaimable * 0.41);
   const capitalRate = totalClaimable ? (reinvestedCapital / totalClaimable) * 100 : 0;
   const userRate = totalUsers ? (reinvestUsers / totalUsers) * 100 : 0;
   const repeatDepositRate = totalUsers ? (repeatDepositors / totalUsers) * 100 : 0;
-  const averageDelay = 4.6;
+  const averageDelay = hasReinvestData ? 4.6 : 0;
 
   const byProduct = groupBySource(records).map((item, index) => {
     const claimedCapital = item.claimableNow;
@@ -1805,11 +1810,11 @@ function buildReinvestTab(records) {
   }).sort((left, right) => right.reinvestedCapital - left.reinvestedCapital);
 
   const timeline = [
-    { period: "1д", rate: 11.5 },
-    { period: "3д", rate: 23.8 },
-    { period: "7д", rate: 37.2 },
-    { period: "14д", rate: 44.9 },
-    { period: "30д", rate: 52.1 },
+    { period: "1д", rate: hasReinvestData ? 11.5 : 0 },
+    { period: "3д", rate: hasReinvestData ? 23.8 : 0 },
+    { period: "7д", rate: hasReinvestData ? 37.2 : 0 },
+    { period: "14д", rate: hasReinvestData ? 44.9 : 0 },
+    { period: "30д", rate: hasReinvestData ? 52.1 : 0 },
   ];
 
   return {
@@ -1844,6 +1849,7 @@ function buildBaseCompositionTab(records, futureRecords) {
   const totalObligations = sumField(futureRecords.slice(0, 30), "cyclePayouts");
   const totalReferral = sumField(futureRecords.slice(0, 30), "referralPayouts");
   const totalPlatformFee = sumField(futureRecords.slice(0, 30), "platformFee");
+  const hasBaseData = totalUsers > 0 || totalInflow > 0 || totalObligations > 0 || totalReferral > 0 || totalPlatformFee > 0;
 
   const segments = [
     {
@@ -1852,8 +1858,8 @@ function buildBaseCompositionTab(records, futureRecords) {
       inflow: Math.round(totalInflow * 0.42),
       obligations: Math.round(totalObligations * 0.39),
       referralShare: Math.round(totalReferral * 0.08),
-      repeatRate: 34.2,
-      claimPressure: 31.4,
+      repeatRate: hasBaseData ? 34.2 : 0,
+      claimPressure: hasBaseData ? 31.4 : 0,
     },
     {
       segment: "Только партнёры",
@@ -1861,8 +1867,8 @@ function buildBaseCompositionTab(records, futureRecords) {
       inflow: Math.round(totalInflow * 0.09),
       obligations: Math.round(totalObligations * 0.11),
       referralShare: Math.round(totalReferral * 0.47),
-      repeatRate: 12.6,
-      claimPressure: 18.8,
+      repeatRate: hasBaseData ? 12.6 : 0,
+      claimPressure: hasBaseData ? 18.8 : 0,
     },
     {
       segment: "Инвесторы + партнёры",
@@ -1870,8 +1876,8 @@ function buildBaseCompositionTab(records, futureRecords) {
       inflow: Math.round(totalInflow * 0.49),
       obligations: Math.round(totalObligations * 0.5),
       referralShare: Math.round(totalReferral * 0.45),
-      repeatRate: 58.9,
-      claimPressure: 49.3,
+      repeatRate: hasBaseData ? 58.9 : 0,
+      claimPressure: hasBaseData ? 49.3 : 0,
     },
   ].map((item) => {
     const share = totalUsers ? (item.users / totalUsers) * 100 : 0;
@@ -1898,7 +1904,7 @@ function buildBaseCompositionTab(records, futureRecords) {
     const largeInflow = Math.round(item.inflow * (item.segment === "Инвесторы + партнёры" ? 0.58 : item.segment === "Только инвесторы" ? 0.46 : 0.27));
     const mediumInflow = Math.round(item.inflow * (item.segment === "Инвесторы + партнёры" ? 0.28 : item.segment === "Только инвесторы" ? 0.34 : 0.31));
     const smallInflow = Math.max(0, item.inflow - largeInflow - mediumInflow);
-    const mixedRoleConversion = item.segment === "Только инвесторы" ? 8.7 : item.segment === "Только партнёры" ? 6.1 : 100;
+    const mixedRoleConversion = hasBaseData ? item.segment === "Только инвесторы" ? 8.7 : item.segment === "Только партнёры" ? 6.1 : 100 : 0;
 
     return {
       ...item,

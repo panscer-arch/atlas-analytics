@@ -7,6 +7,8 @@ export const analyticsDateRanges = [
 export const analyticsSegments = ["Все сегменты", "Розница", "Крупные игроки", "Партнёры"];
 export const analyticsSources = ["Все продукты", "Lockup", "Daily Flow"];
 
+const ZERO_MOCK_ANALYTICS = true;
+
 export const analyticsTariffs = [
   {
     id: "contract_test",
@@ -270,24 +272,25 @@ for (let daysAgo = 89; daysAgo >= 0; daysAgo -= 1) {
 
   analyticsTariffs.forEach((tariff, tariffIndex) => {
     Object.entries(segmentProfiles).forEach(([segment, segmentProfile], segmentIndex) => {
-      const investors = Math.max(
+      const projectedInvestors = Math.max(
         2,
         Math.round(tariff.baseInvestors * segmentProfile.investors * dayFactor + tariffIndex * 0.6 + segmentIndex),
       );
-      const walletsConnected = investors + 2 + (tariff.source === "Daily Flow" ? 2 : 0);
-      const activeWallets = Math.max(walletsConnected, Math.round(walletsConnected * (1.04 + (tariff.source === "Daily Flow" ? 0.06 : 0.02))));
-      const incomingAmount = roundMoney(investors * tariff.avgDeposit * segmentProfile.incoming * dayFactor);
-      const planAmount = roundMoney(incomingAmount * tariff.planMultiplier * (0.98 + segmentIndex * 0.04));
-      const cyclePayouts = roundMoney(incomingAmount * tariff.payoutLoad * segmentProfile.payout * (0.84 + tariffIndex * 0.014));
-      const referralPayouts = roundMoney(incomingAmount * tariff.referralRate * (0.9 + segmentIndex * 0.05));
-      const platformFee = roundMoney((cyclePayouts + referralPayouts) * tariff.feeRate);
-      const operatorNet = roundMoney(incomingAmount - cyclePayouts - referralPayouts - platformFee);
-      const gap = roundMoney(planAmount - incomingAmount);
-      const claimableNow = roundMoney(cyclePayouts * tariff.claimableRate);
-      const accruedLater = roundMoney(cyclePayouts * tariff.accruedRate);
-      const transactions = Math.max(1, Math.round(walletsConnected * (1.35 + tariffIndex * 0.08)));
-      const failedTransactions = Math.max(0, Math.round(transactions * tariff.failedRate));
-      const transactionVolume = roundMoney(transactions * tariff.avgTxValue * segmentProfile.incoming);
+      const investors = ZERO_MOCK_ANALYTICS ? 0 : projectedInvestors;
+      const walletsConnected = ZERO_MOCK_ANALYTICS ? 0 : investors + 2 + (tariff.source === "Daily Flow" ? 2 : 0);
+      const activeWallets = ZERO_MOCK_ANALYTICS ? 0 : Math.max(walletsConnected, Math.round(walletsConnected * (1.04 + (tariff.source === "Daily Flow" ? 0.06 : 0.02))));
+      const incomingAmount = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(investors * tariff.avgDeposit * segmentProfile.incoming * dayFactor);
+      const planAmount = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(incomingAmount * tariff.planMultiplier * (0.98 + segmentIndex * 0.04));
+      const cyclePayouts = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(incomingAmount * tariff.payoutLoad * segmentProfile.payout * (0.84 + tariffIndex * 0.014));
+      const referralPayouts = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(incomingAmount * tariff.referralRate * (0.9 + segmentIndex * 0.05));
+      const platformFee = ZERO_MOCK_ANALYTICS ? 0 : roundMoney((cyclePayouts + referralPayouts) * tariff.feeRate);
+      const operatorNet = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(incomingAmount - cyclePayouts - referralPayouts - platformFee);
+      const gap = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(planAmount - incomingAmount);
+      const claimableNow = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(cyclePayouts * tariff.claimableRate);
+      const accruedLater = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(cyclePayouts * tariff.accruedRate);
+      const transactions = ZERO_MOCK_ANALYTICS ? 0 : Math.max(1, Math.round(walletsConnected * (1.35 + tariffIndex * 0.08)));
+      const failedTransactions = ZERO_MOCK_ANALYTICS ? 0 : Math.max(0, Math.round(transactions * tariff.failedRate));
+      const transactionVolume = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(transactions * tariff.avgTxValue * segmentProfile.incoming);
       const averageTransactionValue = transactions ? transactionVolume / transactions : 0;
 
       dailyRecords.push({
@@ -316,7 +319,7 @@ for (let daysAgo = 89; daysAgo >= 0; daysAgo -= 1) {
         transactionVolume,
         averageTransactionValue,
         networks: Object.fromEntries(
-          Object.entries(tariff.networks).map(([network, value]) => [network, Math.round(value * segmentProfile.incoming * dayFactor)]),
+          Object.entries(tariff.networks).map(([network, value]) => [network, ZERO_MOCK_ANALYTICS ? 0 : Math.round(value * segmentProfile.incoming * dayFactor)]),
         ),
       });
     });
@@ -329,15 +332,15 @@ for (let daysAhead = 1; daysAhead <= 30; daysAhead += 1) {
 
   analyticsTariffs.forEach((tariff, tariffIndex) => {
     Object.entries(segmentProfiles).forEach(([segment, segmentProfile], segmentIndex) => {
-      const expectedIncoming = roundMoney(
+      const expectedIncoming = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(
         tariff.baseInvestors * tariff.avgDeposit * segmentProfile.incoming * dayFactor * (1.08 + tariffIndex * 0.015),
       );
-      const cyclePayouts = roundMoney(expectedIncoming * tariff.payoutLoad * segmentProfile.payout * (1 + daysAhead / 180));
-      const referralPayouts = roundMoney(expectedIncoming * tariff.referralRate * (0.95 + segmentIndex * 0.06));
-      const platformFee = roundMoney((cyclePayouts + referralPayouts) * tariff.feeRate);
-      const requiredNewMoney = roundMoney((cyclePayouts + referralPayouts + platformFee) * (1.02 + segmentIndex * 0.03));
-      const projectedGap = roundMoney(requiredNewMoney - expectedIncoming);
-      const riskScore = Number((segmentProfile.risk * (1 + daysAhead / 180) + tariffIndex * 0.05).toFixed(2));
+      const cyclePayouts = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(expectedIncoming * tariff.payoutLoad * segmentProfile.payout * (1 + daysAhead / 180));
+      const referralPayouts = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(expectedIncoming * tariff.referralRate * (0.95 + segmentIndex * 0.06));
+      const platformFee = ZERO_MOCK_ANALYTICS ? 0 : roundMoney((cyclePayouts + referralPayouts) * tariff.feeRate);
+      const requiredNewMoney = ZERO_MOCK_ANALYTICS ? 0 : roundMoney((cyclePayouts + referralPayouts + platformFee) * (1.02 + segmentIndex * 0.03));
+      const projectedGap = ZERO_MOCK_ANALYTICS ? 0 : roundMoney(requiredNewMoney - expectedIncoming);
+      const riskScore = ZERO_MOCK_ANALYTICS ? 0 : Number((segmentProfile.risk * (1 + daysAhead / 180) + tariffIndex * 0.05).toFixed(2));
 
       futureObligations.push({
         date,
