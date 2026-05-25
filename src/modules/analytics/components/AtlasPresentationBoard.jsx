@@ -3,17 +3,151 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const PRESENTATION_SCRIPT_DRAFTS_STORAGE_KEY = "atlas.analytics.ceoPresentation.scriptDrafts.v1";
 const PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY = "atlas.analytics.ceoPresentation.visualDrafts.v1";
+const PRESENTATION_FRAME_DRAFTS_STORAGE_KEY = "atlas.analytics.ceoPresentation.frameDrafts.v1";
 const PRESENTATION_PREVIEW_MODES = [
   { id: "architect", label: "Архитектор", hint: "говорящая голова" },
   { id: "transition", label: "Переход", hint: "мягкая склейка" },
   { id: "slide", label: "Слайд", hint: "статичный кадр" },
 ];
 const SMART_CYCLE_TARIFFS = [
-  { term: "1 день", delta: "0,3%" },
-  { term: "5 дней", delta: "2%" },
-  { term: "10 дней", delta: "5%" },
-  { term: "20 дней", delta: "12%" },
-  { term: "30 дней", delta: "22,5%" },
+  { term: "1 день", termEn: "1 day", delta: "0,3%" },
+  { term: "5 дней", termEn: "5 days", delta: "2%" },
+  { term: "10 дней", termEn: "10 days", delta: "5%" },
+  { term: "20 дней", termEn: "20 days", delta: "12%" },
+  { term: "30 дней", termEn: "30 days", delta: "22,5%" },
+];
+const SLIDE_03_FRAME_PLAN = [
+  {
+    id: "03-01",
+    mode: "Архитектор",
+    title: "Переход к конкретике",
+    titleEn: "Transition to the concrete explanation",
+    timing: "00:00–00:12",
+    narration: "Теперь конкретно. Что такое Atlas и что такое Smart Cycle?",
+    narrationEn: "Now let us get specific. What is Atlas, and what is a Smart Cycle?",
+    visual:
+      "Говорящая голова Архитектора в тёмной премиальной студии Atlas, белый пиджак, лицо частично в тени, спокойный строгий взгляд. На заднем плане едва видны линии схемы и оранжевый свет Atlas. Без лишнего текста, только маленькая подпись: Что такое Atlas и Smart Cycle.",
+    visualEn:
+      "Talking-head Architect in a dark premium Atlas studio, white blazer, face partly hidden in shadow, calm strict look. Subtle architecture lines and orange Atlas light in the background. No extra text, only a small caption: What is Atlas and Smart Cycle.",
+  },
+  {
+    id: "03-02",
+    mode: "Смысловой слайд",
+    title: "Atlas как касса взаимопомощи",
+    titleEn: "Atlas as a mutual-aid treasury",
+    timing: "00:12–00:28",
+    generatedImage: "/generated/ceo-slide-03-frame-02.png",
+    narration: "Atlas — это цифровая система взаимопомощи. Если проще — цифровая касса взаимопомощи.",
+    narrationEn: "Atlas is a digital mutual-aid system. In simple terms, it is a digital mutual-aid treasury.",
+    visual:
+      "Кинематографичный 16:9 кадр: множество людей как световые узлы соединяются в единую цифровую кассу взаимопомощи. В центре мягко светится Atlas System, вокруг аккуратные оранжевые линии помощи, графитовый фон, премиальный Web3 стиль. Крупная надпись: Цифровая касса взаимопомощи.",
+    visualEn:
+      "Cinematic 16:9 frame: many people represented as glowing nodes connect into one digital mutual-aid treasury. Atlas System glows softly in the center, with clean orange help-flow lines around it, graphite background, premium Web3 style. Large readable headline: Digital mutual-aid treasury.",
+  },
+  {
+    id: "03-03",
+    mode: "Смысловой слайд",
+    title: "Smart Cycle как ядро",
+    titleEn: "Smart Cycle as the core",
+    timing: "00:28–00:45",
+    narration: "Его основное ядро — это Smart Cycle. Smart Cycle — это цикл помощи на выбранный срок.",
+    narrationEn: "Its main core is the Smart Cycle. A Smart Cycle is a help cycle for a selected term.",
+    visual:
+      "В центре тёмной архитектурной схемы крупное ядро Smart Cycle, вокруг него кольцо Atlas System и тонкие орбиты: срок, помощь, смарт-контракт, завершение, запрос помощи. Цвета Atlas: чёрный графит, тёплый оранжевый, янтарные акценты. На экране: Smart Cycle — ядро Atlas.",
+    visualEn:
+      "A dark architectural scheme with a large Smart Cycle core in the center, surrounded by an Atlas System ring and thin orbits: term, help, smart contract, cycle completion, help request. Atlas colors: graphite black, warm orange, amber accents. On-screen text: Smart Cycle is the core of Atlas.",
+  },
+  {
+    id: "03-04",
+    mode: "Смысловой слайд",
+    title: "Шаг 1: выбрать срок и оказать помощь",
+    titleEn: "Step 1: choose a term and provide help",
+    timing: "00:45–01:04",
+    narration: "Участник выбирает срок цикла и нажимает «Оказать помощь».",
+    narrationEn: "A participant chooses the cycle term and presses Provide Help.",
+    visual:
+      "Премиальный интерфейс Atlas на тёмном планшете: карточки сроков 1 день, 5 дней, 10 дней, 20 дней, 30 дней; выделена кнопка Оказать помощь. Руки не нужны, кадр чистый, как production UI mockup. На фоне тонкая сеть участников и оранжевое свечение.",
+    visualEn:
+      "Premium Atlas interface on a dark tablet: term cards for 1 day, 5 days, 10 days, 20 days, 30 days; highlighted button Provide Help. No hands needed, clean production UI mockup. Subtle participant network and orange glow in the background.",
+  },
+  {
+    id: "03-05",
+    mode: "Архитектор",
+    title: "Это не инвестиция",
+    titleEn: "This is not an investment",
+    timing: "01:04–01:24",
+    narration: "Он не нажимает кнопку инвестировать. Он не передаёт деньги компании в управление.",
+    narrationEn: "He is not pressing an Invest button. He is not handing money over to a company for management.",
+    visual:
+      "Архитектор снова в кадре, серьёзная пауза. Рядом с ним на прозрачном стеклянном экране три перечёркнутые формулировки: не банк, не депозит, не фонд. Визуально без агрессии, без красного перегруза, аккуратные янтарные предупреждающие линии.",
+    visualEn:
+      "Architect back on screen for a serious pause. Next to him, on a transparent glass screen, three crossed-out labels: not a bank, not a deposit, not a fund. Visually calm, no aggressive red overload, only precise amber caution lines.",
+  },
+  {
+    id: "03-06",
+    mode: "Смысловой слайд",
+    title: "Смарт-контракт фиксирует действие",
+    titleEn: "The smart contract records the action",
+    timing: "01:24–01:45",
+    narration: "Его действие фиксируется через смарт-контракт. Средства поступают в общую цифровую механику Atlas.",
+    narrationEn: "His action is recorded through a smart contract. The funds enter the shared digital mechanics of Atlas.",
+    visual:
+      "Схема смарт-контракта Atlas: участник отправляет помощь, транзакция фиксируется в смарт-контракте, дальше поток идёт на исполнение запросов завершивших цикл участников. Не показывать деньги как прибыль компании. Стиль: чистая блокчейн-архитектура, оранжевые линии, тёмный фон.",
+    visualEn:
+      "Atlas smart-contract diagram: participant provides help, transaction is recorded in the smart contract, then the flow is used to fulfill requests from participants whose cycles have completed. Do not show money as company profit. Clean blockchain architecture, orange lines, dark background.",
+  },
+  {
+    id: "03-07",
+    mode: "Смысловой слайд",
+    title: "Что такое добавочная дельта",
+    titleEn: "What the additional delta means",
+    timing: "01:45–02:10",
+    narration: "Добавочная дельта — это дополнительная часть к сумме оказанной помощи.",
+    narrationEn: "The additional delta is the extra part added to the amount of help provided.",
+    visual:
+      "Минималистичная финансовая схема: сумма помощи + добавочная дельта = сумма запроса после завершения цикла. Центральная формула крупно и понятно, без мелкого текста. Вокруг тонкие Atlas-линии и маленькие узлы ликвидности смарт-контракта.",
+    visualEn:
+      "Minimal financial scheme: help amount + additional delta = request amount after cycle completion. Central formula large and clear, no tiny text. Thin Atlas lines and small smart-contract liquidity nodes around it.",
+  },
+  {
+    id: "03-08",
+    mode: "Смысловой слайд",
+    title: "Пример 100 долларов на 10 дней",
+    titleEn: "Example: 100 dollars for 10 days",
+    timing: "02:10–02:35",
+    narration: "Например, человек оказал помощь на 100 долларов. Через 10 дней может запросить 105 долларов.",
+    narrationEn: "For example, a person provides 100 dollars of help. After 10 days, he may request 105 dollars.",
+    visual:
+      "Крупная понятная инфографика: $100 оказал помощь → 10 дней Smart Cycle → $105 запрос помощи. Отдельно подписать: $100 сумма помощи, $5 добавочная дельта. Премиальный тёмный фон, оранжевые стрелки, без мелкой таблицы.",
+    visualEn:
+      "Large clear infographic: $100 provided help → 10-day Smart Cycle → $105 help request. Separate labels: $100 help amount, $5 additional delta. Premium dark background, orange arrows, no small table.",
+  },
+  {
+    id: "03-09",
+    mode: "Смысловой слайд",
+    title: "Тарифная линейка дельты",
+    titleEn: "Delta term line",
+    timing: "02:35–03:05",
+    narration: "На 1 день дельта 0,3%. На 5 дней — 2%. На 10 дней — 5%. На 20 дней — 12%. На 30 дней — 22,5%.",
+    narrationEn: "For 1 day, the delta is 0.3%. For 5 days, 2%. For 10 days, 5%. For 20 days, 12%. For 30 days, 22.5%.",
+    visual:
+      "Стильная линейка Smart Cycle тарифов: 1 день 0,3%, 5 дней 2%, 10 дней 5%, 20 дней 12%, 30 дней 22,5%. Ниже короткий пример для $100: $100,30 / $102 / $105 / $112 / $122,50. Карточки должны быть крупными, читаемыми, тёмный премиальный Atlas UI.",
+    visualEn:
+      "Stylish Smart Cycle term line: 1 day 0.3%, 5 days 2%, 10 days 5%, 20 days 12%, 30 days 22.5%. Below, a short example for $100: $100.30 / $102 / $105 / $112 / $122.50. Cards must be large and readable, dark premium Atlas UI.",
+  },
+  {
+    id: "03-10",
+    mode: "Финальный слайд",
+    title: "Запросить помощь после завершения",
+    titleEn: "Request help after completion",
+    timing: "03:05–03:35",
+    narration: "Когда срок заканчивается, участник может нажать «Запросить помощь», если в системе есть доступная ликвидность.",
+    narrationEn: "When the term ends, the participant may press Request Help if available liquidity exists in the system.",
+    visual:
+      "Финальная схема цикла: Оказать помощь → ожидание срока → завершение Smart Cycle → запросить помощь → смарт-контракт проверяет ликвидность. В центре Atlas System и сообщество вокруг. Крупная финальная мысль: Atlas — система. Smart Cycle — её ядро.",
+    visualEn:
+      "Final cycle scheme: Provide Help → wait for the term → Smart Cycle completed → Request Help → smart contract checks liquidity. Atlas System in the center and community around it. Large final message: Atlas is the system. Smart Cycle is its core.",
+  },
 ];
 const PARTNER_STATUS_TABLE_ROWS = [
   { status: "Start", tone: "start", personal: "10", line: "не требуется", depth: "не требуется", bonus: "15", matching: "" },
@@ -144,6 +278,216 @@ function countWords(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
+function escapeSvg(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function wrapText(text, maxLength = 52) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxLength && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  });
+
+  if (current) lines.push(current);
+  return lines.slice(0, 5);
+}
+
+function renderSvgLines(lines, x, y, options = {}) {
+  const { size = 34, lineHeight = 46, weight = 700, fill = "#dce7f7", opacity = 1 } = options;
+  return lines
+    .map((line, index) => (
+      `<text x="${x}" y="${y + index * lineHeight}" fill="${fill}" opacity="${opacity}" font-size="${size}" font-weight="${weight}" font-family="Inter, Arial, sans-serif">${escapeSvg(line)}</text>`
+    ))
+    .join("");
+}
+
+function getFrameLocale(frame, language) {
+  if (language === "en") {
+    return {
+      title: frame.titleEn || frame.title,
+      narration: frame.narrationEn || frame.narration,
+      visual: frame.visualEn || frame.visual,
+      mode: frame.mode === "Архитектор" ? "Architect" : frame.mode === "Финальный слайд" ? "Final slide" : "Meaning slide",
+      stageLabel: "ENGLISH SOURCE",
+      helpAction: "provided help",
+      deltaLabel: "$5 delta",
+      cycleSteps: ["Provide Help", "Wait term", "Completed", "Request Help", "Liquidity check"],
+      tariffExamples: ["$100.30", "$102", "$105", "$112", "$122.50"],
+    };
+  }
+
+  return {
+    title: frame.title,
+    narration: frame.narration,
+    visual: frame.visual,
+    mode: frame.mode,
+    stageLabel: "РУССКАЯ ВЫЧИТКА",
+    helpAction: "оказал помощь",
+    deltaLabel: "$5 дельта",
+    cycleSteps: ["Оказать помощь", "Ожидание срока", "Завершение", "Запросить помощь", "Проверка ликвидности"],
+    tariffExamples: ["$100,30", "$102", "$105", "$112", "$122,50"],
+  };
+}
+
+function buildFrameDraftSvg(frame, index, seed = 1, language = "en") {
+  const locale = getFrameLocale(frame, language);
+  const accent = index % 2 === 0 ? "#f26614" : "#ffb13b";
+  const altAccent = index % 3 === 0 ? "#7bb4ff" : "#ffd39a";
+  const titleLines = wrapText(locale.title, 28);
+  const narrationLines = wrapText(locale.narration, 56);
+  const visualLines = wrapText(locale.visual, 68);
+  const isArchitect = frame.mode === "Архитектор";
+  const isTariff = frame.id === "03-09";
+  const isExample = frame.id === "03-08";
+  const isCycle = frame.id === "03-10";
+
+  const networkNodes = Array.from({ length: 26 }, (_, nodeIndex) => {
+    const x = 145 + ((nodeIndex * 79 + seed * 31) % 1120);
+    const y = 145 + ((nodeIndex * 43 + seed * 19) % 470);
+    const r = 4 + (nodeIndex % 4);
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${accent}" opacity="${0.35 + (nodeIndex % 5) * 0.08}" />`;
+  }).join("");
+
+  const networkLines = Array.from({ length: 18 }, (_, lineIndex) => {
+    const x1 = 160 + ((lineIndex * 101 + seed * 17) % 1080);
+    const y1 = 160 + ((lineIndex * 67 + seed * 23) % 430);
+    const x2 = 160 + (((lineIndex + 5) * 101 + seed * 17) % 1080);
+    const y2 = 160 + (((lineIndex + 3) * 67 + seed * 23) % 430);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${accent}" stroke-width="1.5" opacity="0.16" />`;
+  }).join("");
+
+  const architectLayer = isArchitect
+    ? `
+      <ellipse cx="880" cy="220" rx="155" ry="48" fill="#ffe1bb" opacity="0.22" filter="url(#blur)" />
+      <path d="M808 682 C812 538 836 446 888 408 C934 374 990 374 1038 408 C1090 449 1116 540 1120 682 Z" fill="#e9e3d8" opacity="0.86"/>
+      <path d="M880 244 C940 226 1004 246 1020 320 C1034 383 994 448 936 458 C870 468 812 422 806 354 C800 300 828 260 880 244 Z" fill="#120b08"/>
+      <path d="M807 682 C848 545 902 486 962 474 C912 558 890 620 874 682 Z" fill="#ffffff" opacity="0.38"/>
+      <rect x="116" y="510" width="480" height="92" rx="18" fill="rgba(5,8,13,0.72)" stroke="${accent}" stroke-width="2"/>
+      <text x="144" y="547" fill="${accent}" font-size="24" font-weight="900" letter-spacing="3" font-family="Inter, Arial, sans-serif">${language === "en" ? "ARCHITECT" : "АРХИТЕКТОР"}</text>
+      <text x="144" y="580" fill="#fff1dc" font-size="28" font-weight="900" font-family="Inter, Arial, sans-serif">${escapeSvg(locale.title)}</text>
+    `
+    : "";
+
+  const tariffLayer = isTariff
+    ? `
+      <g transform="translate(118 386)">
+        ${SMART_CYCLE_TARIFFS.map((tariff, tariffIndex) => {
+          const x = tariffIndex * 210;
+          const example = locale.tariffExamples[tariffIndex];
+          const term = language === "en" ? tariff.termEn : tariff.term;
+          return `
+            <rect x="${x}" y="0" width="178" height="132" rx="22" fill="rgba(255,255,255,0.06)" stroke="${tariffIndex === 2 ? accent : "rgba(255,211,154,0.28)"}" stroke-width="${tariffIndex === 2 ? 3 : 1.5}"/>
+            <text x="${x + 24}" y="42" fill="#aebddb" font-size="22" font-weight="800" font-family="Inter, Arial, sans-serif">${escapeSvg(term)}</text>
+            <text x="${x + 24}" y="82" fill="#ffd39a" font-size="36" font-weight="950" font-family="Inter, Arial, sans-serif">${tariff.delta}</text>
+            <text x="${x + 24}" y="112" fill="#f5f8ff" font-size="20" font-weight="800" font-family="Inter, Arial, sans-serif">${example}</text>
+          `;
+        }).join("")}
+      </g>
+    `
+    : "";
+
+  const exampleLayer = isExample
+    ? `
+      <g transform="translate(154 394)">
+        <rect x="0" y="0" width="260" height="128" rx="24" fill="rgba(255,255,255,0.07)" stroke="rgba(255,211,154,0.28)"/>
+        <text x="34" y="56" fill="#fff" font-size="46" font-weight="950" font-family="Inter, Arial, sans-serif">$100</text>
+        <text x="34" y="92" fill="#aebddb" font-size="22" font-weight="800" font-family="Inter, Arial, sans-serif">${escapeSvg(locale.helpAction)}</text>
+        <path d="M304 62 H510" stroke="${accent}" stroke-width="7" stroke-linecap="round"/>
+        <path d="M510 62 l-34 -24 v48 Z" fill="${accent}"/>
+        <rect x="548" y="0" width="260" height="128" rx="24" fill="rgba(242,102,20,0.13)" stroke="${accent}" stroke-width="2"/>
+        <text x="582" y="56" fill="#ffd39a" font-size="46" font-weight="950" font-family="Inter, Arial, sans-serif">${language === "en" ? "10 days" : "10 дней"}</text>
+        <text x="582" y="92" fill="#fff" font-size="22" font-weight="800" font-family="Inter, Arial, sans-serif">Smart Cycle</text>
+        <path d="M850 62 H1058" stroke="${accent}" stroke-width="7" stroke-linecap="round"/>
+        <path d="M1058 62 l-34 -24 v48 Z" fill="${accent}"/>
+        <text x="1094" y="57" fill="#fff" font-size="46" font-weight="950" font-family="Inter, Arial, sans-serif">$105</text>
+        <text x="1094" y="94" fill="#ffd39a" font-size="22" font-weight="900" font-family="Inter, Arial, sans-serif">${escapeSvg(locale.deltaLabel)}</text>
+      </g>
+    `
+    : "";
+
+  const cycleLayer = isCycle
+    ? `
+      <g transform="translate(118 396)" fill="none" stroke="${accent}" stroke-width="2.5">
+        ${locale.cycleSteps.map((label, stepIndex) => {
+          const x = stepIndex * 218;
+          return `
+            <rect x="${x}" y="0" width="178" height="94" rx="20" fill="rgba(255,255,255,0.055)" />
+            <text x="${x + 89}" y="40" fill="#fff1dc" text-anchor="middle" font-size="20" font-weight="900" font-family="Inter, Arial, sans-serif">${escapeSvg(label)}</text>
+            <circle cx="${x + 89}" cy="68" r="9" fill="${accent}" stroke="none"/>
+            ${stepIndex < 4 ? `<path d="M${x + 184} 47 H${x + 214}" stroke="${accent}" stroke-width="5" stroke-linecap="round"/>` : ""}
+          `;
+        }).join("")}
+      </g>
+    `
+    : "";
+
+  const genericLayer = !isArchitect && !isTariff && !isExample && !isCycle
+    ? `
+      <circle cx="698" cy="408" r="116" fill="rgba(242,102,20,0.08)" stroke="${accent}" stroke-width="3"/>
+      <circle cx="698" cy="408" r="62" fill="rgba(255,177,59,0.18)" stroke="${altAccent}" stroke-width="2"/>
+      <text x="698" y="402" fill="#fff1dc" text-anchor="middle" font-size="26" font-weight="950" font-family="Inter, Arial, sans-serif">ATLAS</text>
+      <text x="698" y="434" fill="${accent}" text-anchor="middle" font-size="23" font-weight="950" font-family="Inter, Arial, sans-serif">SYSTEM</text>
+    `
+    : "";
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+    <defs>
+      <filter id="blur"><feGaussianBlur stdDeviation="16"/></filter>
+      <radialGradient id="bgGlow" cx="72%" cy="18%" r="74%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.22"/>
+        <stop offset="45%" stop-color="#11151f" stop-opacity="0.8"/>
+        <stop offset="100%" stop-color="#05070b"/>
+      </radialGradient>
+    </defs>
+    <rect width="1600" height="900" fill="url(#bgGlow)"/>
+    <rect width="1600" height="900" fill="#05070b" opacity="0.52"/>
+    <g opacity="0.95">${networkLines}${networkNodes}</g>
+    <text x="88" y="92" fill="${accent}" font-size="24" font-weight="950" letter-spacing="8" font-family="Inter, Arial, sans-serif">ATLAS SYSTEM</text>
+    <text x="88" y="137" fill="#7bb4ff" font-size="20" font-weight="900" letter-spacing="5" font-family="Inter, Arial, sans-serif">SLIDE 03 / FRAME ${String(index + 1).padStart(2, "0")} / ${escapeSvg(locale.stageLabel)}</text>
+    ${renderSvgLines(titleLines, 88, 230, { size: 58, lineHeight: 66, weight: 950, fill: "#f7fbff" })}
+    ${renderSvgLines(narrationLines, 92, 676, { size: 30, lineHeight: 40, weight: 760, fill: "#dce7f7", opacity: 0.92 })}
+    ${renderSvgLines(visualLines, 1120, 708, { size: 19, lineHeight: 28, weight: 650, fill: "#9fb2cf", opacity: 0.72 })}
+    <rect x="88" y="770" width="820" height="6" rx="3" fill="${accent}" opacity="0.84"/>
+    ${architectLayer}
+    ${tariffLayer}
+    ${exampleLayer}
+    ${cycleLayer}
+    ${genericLayer}
+  </svg>`;
+}
+
+function svgToDataUrl(svg) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function buildFramePrompt(slide, frame, index, visual, notes, language = "en") {
+  const locale = getFrameLocale(frame, language);
+  return [
+    `Create frame ${index + 1} of ${SLIDE_03_FRAME_PLAN.length} for Atlas System CEO presentation, slide ${slide.number}: ${slide.title}.`,
+    `Frame language: ${language === "en" ? "English source. All readable on-slide text must be in English." : "Russian proofreading layer. Readable on-slide text may be Russian only for review."}`,
+    `Frame type: ${locale.mode}. Frame title: ${locale.title}. Approx timing: ${frame.timing}.`,
+    `Narration meaning for this frame: ${locale.narration}`,
+    `Frame visual direction: ${locale.visual}`,
+    `Base slide visual direction: ${visual}`,
+    notes ? `Additional designer notes: ${notes}` : "",
+    "Keep one unified Atlas brand style across all frames: dark premium graphite background, warm orange/yellow Atlas accents, clean network architecture, serious CEO production still, realistic and cinematic.",
+    "Use the Atlas logo/reference only as brand identity, not as clutter. Text must be large and readable if present. Avoid cartoon style, criminal hacker look, stock-photo feeling, excessive small UI text, and exaggerated profit imagery.",
+  ].filter(Boolean).join(" ");
+}
+
 function readStoredScriptDrafts() {
   if (typeof window === "undefined") return {};
 
@@ -164,6 +508,16 @@ function readStoredVisualDrafts() {
   }
 }
 
+function readStoredFrameDrafts() {
+  if (typeof window === "undefined") return {};
+
+  try {
+    return JSON.parse(window.localStorage.getItem(PRESENTATION_FRAME_DRAFTS_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 function persistScriptDrafts(nextDrafts) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(PRESENTATION_SCRIPT_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
@@ -176,18 +530,29 @@ function persistVisualDrafts(nextDrafts) {
   saveServerContent(PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY, nextDrafts);
 }
 
+function persistFrameDrafts(nextDrafts) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PRESENTATION_FRAME_DRAFTS_STORAGE_KEY, JSON.stringify(nextDrafts));
+  saveServerContent(PRESENTATION_FRAME_DRAFTS_STORAGE_KEY, nextDrafts);
+}
+
 function AtlasPresentationBoard() {
   const [activeSlideId, setActiveSlideId] = useState(PRESENTATION_SLIDES[0].id);
   const [visualDrafts, setVisualDrafts] = useState(readStoredVisualDrafts);
   const [scriptDrafts, setScriptDrafts] = useState(readStoredScriptDrafts);
+  const [frameDrafts, setFrameDrafts] = useState(readStoredFrameDrafts);
   const [scriptEditMode, setScriptEditMode] = useState({});
   const [visualEditMode, setVisualEditMode] = useState({});
   const [draftSeed, setDraftSeed] = useState(1);
   const [draftNotes, setDraftNotes] = useState("");
+  const [activeFrameId, setActiveFrameId] = useState(SLIDE_03_FRAME_PLAN[0].id);
+  const [frameLanguage, setFrameLanguage] = useState("en");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedBrief, setCopiedBrief] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
   const [copiedDrafts, setCopiedDrafts] = useState(false);
+  const [copiedFramePlan, setCopiedFramePlan] = useState(false);
+  const [copiedFrameId, setCopiedFrameId] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewMode, setPreviewMode] = useState("slide");
   const activeSlide = PRESENTATION_SLIDES.find((slide) => slide.id === activeSlideId) || PRESENTATION_SLIDES[0];
@@ -217,6 +582,21 @@ function AtlasPresentationBoard() {
     "Use supplied brand reference images only for identity details: the new Atlas System logo, orange/yellow/black color scheme, Architect appearance, lighting mood, premium materials, network architecture, and brand object language. Do not replace the slide concept with the reference scene; follow the Visual direction for this exact slide.",
     "Style: dark premium graphite, warm orange Atlas accents, serious CEO presentation, realistic production still, no cartoon style, no criminal hacker look, no clutter, no readable tiny text except intentional large brand words.",
   ].filter(Boolean).join(" ");
+  const activeFramePlan = useMemo(() => {
+    if (activeSlide.id !== "slide-03") return [];
+
+    return SLIDE_03_FRAME_PLAN.map((frame, index) => ({
+      ...frame,
+      text: getFrameLocale(frame, frameLanguage),
+      prompt: buildFramePrompt(activeSlide, frame, index, activeVisual, draftNotes, frameLanguage),
+      promptEn: buildFramePrompt(activeSlide, frame, index, activeVisual, draftNotes, "en"),
+      promptRu: buildFramePrompt(activeSlide, frame, index, activeVisual, draftNotes, "ru"),
+    }));
+  }, [activeSlide, activeVisual, draftNotes, frameLanguage]);
+  const activeFrameIndex = Math.max(0, activeFramePlan.findIndex((frame) => frame.id === activeFrameId));
+  const activeFrame = activeFramePlan[activeFrameIndex] || activeFramePlan[0] || null;
+  const activeFrameDraft = activeFrame ? frameDrafts[`${activeFrame.id}:${frameLanguage}`] : null;
+  const generatedFrameCount = activeFramePlan.filter((frame) => frameDrafts[`${frame.id}:${frameLanguage}`]?.svg || (frameLanguage === "ru" && frame.generatedImage)).length;
 
   useEffect(() => {
     let isMounted = true;
@@ -228,6 +608,10 @@ function AtlasPresentationBoard() {
     loadServerContent(PRESENTATION_VISUAL_DRAFTS_STORAGE_KEY).then((savedDrafts) => {
       if (!isMounted || !savedDrafts || typeof savedDrafts !== "object") return;
       setVisualDrafts(savedDrafts);
+    });
+    loadServerContent(PRESENTATION_FRAME_DRAFTS_STORAGE_KEY).then((savedDrafts) => {
+      if (!isMounted || !savedDrafts || typeof savedDrafts !== "object") return;
+      setFrameDrafts(savedDrafts);
     });
 
     return () => {
@@ -241,6 +625,9 @@ function AtlasPresentationBoard() {
     setCopiedPrompt(false);
     setCopiedBrief(false);
     setCopiedScript(false);
+    setCopiedFramePlan(false);
+    setCopiedFrameId("");
+    setActiveFrameId(SLIDE_03_FRAME_PLAN[0].id);
     setPreviewMode("slide");
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -290,6 +677,133 @@ function AtlasPresentationBoard() {
     window.navigator.clipboard.writeText(text).then(() => {
       onCopied(true);
       window.setTimeout(() => onCopied(false), 1400);
+    });
+  }
+
+  function getFramePlanPayload() {
+    return {
+      language: frameLanguage,
+      languageLabel: frameLanguage === "en" ? "English source for final video" : "Russian proofreading layer",
+      sourceLanguage: "en",
+      proofingLanguage: "ru",
+      slide: {
+        id: activeSlide.id,
+        number: activeSlide.number,
+        title: activeSlide.title,
+      },
+      recommendation:
+        "Для третьего слайда нужно 10 кадров: 3 кадра с Архитектором/переходом и 7 смысловых статичных слайдов. Монтаж: Архитектор открывает мысль, затем 1-2 визуальных кадра под voiceover, затем возвращение к Архитектору на юридически/смыслово важной оговорке.",
+      frames: activeFramePlan.map((frame, index) => ({
+        order: index + 1,
+        id: frame.id,
+        mode: frame.mode,
+        title: frame.title,
+        titleEn: frame.titleEn,
+        timing: frame.timing,
+        narration: frame.narration,
+        narrationEn: frame.narrationEn,
+        visual: frame.visual,
+        visualEn: frame.visualEn,
+        prompt: frame.prompt,
+        promptEn: frame.promptEn,
+        promptRu: frame.promptRu,
+      })),
+    };
+  }
+
+  function copyFramePlan() {
+    copyText(JSON.stringify(getFramePlanPayload(), null, 2), setCopiedFramePlan);
+  }
+
+  function downloadFramePlan() {
+    if (typeof window === "undefined" || !activeFramePlan.length) return;
+
+    const blob = new Blob([JSON.stringify(getFramePlanPayload(), null, 2)], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `atlas-slide-${activeSlide.number}-frames.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  function updateFrameDrafts(nextDrafts) {
+    setFrameDrafts(nextDrafts);
+    persistFrameDrafts(nextDrafts);
+  }
+
+  function generateFrameDraft(frame = activeFrame) {
+    if (!frame) return;
+
+    const frameIndex = activeFramePlan.findIndex((item) => item.id === frame.id);
+    const svg = buildFrameDraftSvg(frame, frameIndex >= 0 ? frameIndex : 0, draftSeed + frameIndex, frameLanguage);
+    updateFrameDrafts({
+      ...frameDrafts,
+      [`${frame.id}:${frameLanguage}`]: {
+        svg,
+        generatedAt: new Date().toISOString(),
+        prompt: frame.prompt,
+        language: frameLanguage,
+      },
+    });
+    setActiveFrameId(frame.id);
+  }
+
+  function generateAllFrameDrafts() {
+    if (!activeFramePlan.length) return;
+
+    const nextDrafts = { ...frameDrafts };
+    activeFramePlan.forEach((frame, index) => {
+      nextDrafts[`${frame.id}:${frameLanguage}`] = {
+        svg: buildFrameDraftSvg(frame, index, draftSeed + index, frameLanguage),
+        generatedAt: new Date().toISOString(),
+        prompt: frame.prompt,
+        language: frameLanguage,
+      };
+    });
+    updateFrameDrafts(nextDrafts);
+  }
+
+  function downloadFrameDraft(frame = activeFrame) {
+    if (typeof window === "undefined" || !frame) return;
+
+    const draft = frameDrafts[`${frame.id}:${frameLanguage}`];
+    if (!draft?.svg && frame.generatedImage && frameLanguage === "ru") {
+      const link = document.createElement("a");
+      link.href = frame.generatedImage;
+      link.download = `atlas-slide-03-frame-${frame.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+
+    const svg = draft?.svg || buildFrameDraftSvg(frame, activeFramePlan.findIndex((item) => item.id === frame.id), draftSeed, frameLanguage);
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `atlas-slide-03-frame-${frame.id}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  function goToFrame(direction) {
+    if (!activeFramePlan.length) return;
+
+    const nextIndex = (activeFrameIndex + direction + activeFramePlan.length) % activeFramePlan.length;
+    setActiveFrameId(activeFramePlan[nextIndex].id);
+  }
+
+  function copyFramePrompt(frame) {
+    copyText(frame.prompt, (value) => {
+      if (!value) return;
+      setCopiedFrameId(frame.id);
+      window.setTimeout(() => setCopiedFrameId(""), 1400);
     });
   }
 
@@ -430,6 +944,119 @@ function AtlasPresentationBoard() {
                 Он не “ведущий презентации”, а голос системы.
               </p>
             </article>
+
+            {activeFramePlan.length ? (
+              <article className="analytics-presentation-card analytics-presentation-frame-plan">
+                <div className="analytics-presentation-brief-head">
+                  <div>
+                    <span className="analytics-kicker">Кадры для генерации</span>
+                    <h4>Слайд 03: портянка из {activeFramePlan.length} картинок</h4>
+                  </div>
+                  <div>
+                    <div className="analytics-presentation-frame-language" aria-label="Язык кадров">
+                      <button type="button" className={frameLanguage === "en" ? "active" : ""} onClick={() => setFrameLanguage("en")}>
+                        EN источник
+                      </button>
+                      <button type="button" className={frameLanguage === "ru" ? "active" : ""} onClick={() => setFrameLanguage("ru")}>
+                        RU вычитка
+                      </button>
+                    </div>
+                    <button type="button" onClick={copyFramePlan}>
+                      {copiedFramePlan ? "Портянка скопирована" : "Скопировать JSON"}
+                    </button>
+                    <button type="button" onClick={downloadFramePlan}>
+                      Скачать JSON
+                    </button>
+                    <button type="button" onClick={generateAllFrameDrafts}>
+                      Сгенерировать все
+                    </button>
+                  </div>
+                </div>
+
+                <div className="analytics-presentation-frame-summary">
+                  <strong>Рекомендация по монтажу</strong>
+                  <span>
+                    Основной источник для генерации — английский слой EN, потому что исходный ролик будет на английском.
+                    Русский слой RU нужен для вычитки смысла перед финальной английской генерацией.
+                  </span>
+                </div>
+
+                {activeFrame ? (
+                  <div className="analytics-presentation-frame-generator">
+                  <div className="analytics-presentation-frame-stage">
+                      {activeFrameDraft?.svg ? (
+                        <img src={svgToDataUrl(activeFrameDraft.svg)} alt={`Черновик кадра ${activeFrame.id}`} />
+                      ) : activeFrame.generatedImage && frameLanguage === "ru" ? (
+                        <img src={activeFrame.generatedImage} alt={`Готовый кадр ${activeFrame.id}`} />
+                      ) : (
+                        <div className="analytics-presentation-frame-empty">
+                          <span>{String(activeFrameIndex + 1).padStart(2, "0")}</span>
+                          <strong>{activeFrame.text.title}</strong>
+                          <small>Нажми «Сгенерировать кадр», и здесь появится черновая картинка 16:9.</small>
+                        </div>
+                      )}
+                    </div>
+                    <div className="analytics-presentation-frame-controls">
+                      <div>
+                        <span className="analytics-presentation-frame-time">{activeFrame.timing}</span>
+                        <h5>{activeFrame.text.title}</h5>
+                        <p>{activeFrame.text.narration}</p>
+                        <small>
+                          {frameLanguage === "en" ? "English source for final video" : "Русская вычитка смысла"}. Готово: {generatedFrameCount} из {activeFramePlan.length}
+                        </small>
+                      </div>
+                      <div className="analytics-presentation-frame-buttons">
+                        <button type="button" onClick={() => goToFrame(-1)}>Назад</button>
+                        <button type="button" onClick={() => generateFrameDraft(activeFrame)}>Сгенерировать кадр</button>
+                        <button type="button" onClick={() => copyFramePrompt(activeFrame)}>
+                          {copiedFrameId === activeFrame.id ? "Промпт скопирован" : "Скопировать промпт"}
+                        </button>
+                        <button type="button" onClick={() => downloadFrameDraft(activeFrame)}>Скачать</button>
+                        <button type="button" onClick={() => goToFrame(1)}>Дальше</button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="analytics-presentation-frame-strip" aria-label="Портянка кадров третьего слайда">
+                  {activeFramePlan.map((frame, index) => (
+                    <section
+                      key={frame.id}
+                      className={`analytics-presentation-frame-card${activeFrame?.id === frame.id ? " analytics-presentation-frame-card-active" : ""}`}
+                    >
+                      <div className="analytics-presentation-frame-preview">
+                        {frameDrafts[`${frame.id}:${frameLanguage}`]?.svg ? (
+                          <img src={svgToDataUrl(frameDrafts[`${frame.id}:${frameLanguage}`].svg)} alt={`Черновик кадра ${frame.id}`} />
+                        ) : frame.generatedImage && frameLanguage === "ru" ? (
+                          <img src={frame.generatedImage} alt={`Готовый кадр ${frame.id}`} />
+                        ) : null}
+                        <span>{String(index + 1).padStart(2, "0")}</span>
+                        <strong>{frame.text.mode}</strong>
+                      </div>
+                      <div className="analytics-presentation-frame-body">
+                        <div>
+                          <span className="analytics-presentation-frame-time">{frame.timing}</span>
+                          <h5>{frame.text.title}</h5>
+                        </div>
+                        <p>{frame.text.narration}</p>
+                        <small>{frame.text.visual}</small>
+                        <div className="analytics-presentation-frame-card-actions">
+                          <button type="button" onClick={() => setActiveFrameId(frame.id)}>
+                            Открыть
+                          </button>
+                          <button type="button" onClick={() => generateFrameDraft(frame)}>
+                            Генерировать
+                          </button>
+                          <button type="button" onClick={() => downloadFrameDraft(frame)}>
+                            Скачать
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </article>
+            ) : null}
 
             <article className="analytics-presentation-card analytics-presentation-tools">
               <div className="analytics-presentation-tools-head">

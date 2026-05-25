@@ -6497,6 +6497,335 @@
   line-height: 1.3;
 }
 
+.analytics-presentation-frame-plan {
+  grid-column: 1 / -1;
+  border-color: rgba(123, 180, 255, 0.18);
+  background:
+    radial-gradient(circle at 82% 0%, rgba(123, 180, 255, 0.1), transparent 30%),
+    radial-gradient(circle at 10% 18%, rgba(242, 102, 20, 0.08), transparent 28%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.analytics-presentation-frame-plan .analytics-presentation-brief-head > div:first-child {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.analytics-presentation-frame-plan h4 {
+  margin: 0;
+  color: #f5f8ff;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.analytics-presentation-frame-summary {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.85rem;
+  border: 1px solid rgba(242, 102, 20, 0.18);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgba(7, 12, 22, 0.42);
+}
+
+.analytics-presentation-frame-summary strong {
+  color: #ffd39a;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.analytics-presentation-frame-summary span {
+  color: #c9d7ec;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.analytics-presentation-frame-language {
+  display: inline-flex;
+  gap: 0.28rem;
+  border: 1px solid rgba(123, 180, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.22rem;
+  background: rgba(5, 8, 14, 0.62);
+}
+
+.analytics-presentation-frame-language button {
+  border: 0;
+  border-radius: 9px;
+  padding: 0.42rem 0.58rem;
+  background: transparent;
+  color: #aebddb;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.analytics-presentation-frame-language button.active {
+  background: rgba(242, 102, 20, 0.16);
+  color: #ffe0bf;
+  box-shadow: inset 0 0 0 1px rgba(242, 102, 20, 0.24);
+}
+
+.analytics-presentation-frame-generator {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 18px;
+  padding: 0.85rem;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(242, 102, 20, 0.12), transparent 30%),
+    rgba(7, 12, 22, 0.46);
+}
+
+.analytics-presentation-frame-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(242, 102, 20, 0.18);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 70% 16%, rgba(242, 102, 20, 0.18), transparent 32%),
+    linear-gradient(135deg, #05070b, #18110d 62%, #06080d);
+}
+
+.analytics-presentation-frame-stage img,
+.analytics-presentation-frame-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.analytics-presentation-frame-empty {
+  display: grid;
+  place-content: center;
+  gap: 0.45rem;
+  height: 100%;
+  padding: 1rem;
+  text-align: center;
+}
+
+.analytics-presentation-frame-empty span {
+  justify-self: center;
+  border: 1px solid rgba(242, 102, 20, 0.34);
+  border-radius: 999px;
+  padding: 0.28rem 0.58rem;
+  color: #ff8b3d;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.analytics-presentation-frame-empty strong {
+  color: #fff1dc;
+  font-size: clamp(1.3rem, 2.4vw, 2.1rem);
+  font-weight: 950;
+  line-height: 1.08;
+}
+
+.analytics-presentation-frame-empty small {
+  max-width: 36rem;
+  color: #aebddb;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.analytics-presentation-frame-controls {
+  display: grid;
+  gap: 0.8rem;
+  align-content: space-between;
+}
+
+.analytics-presentation-frame-controls h5 {
+  margin: 0.2rem 0 0;
+  color: #f5f8ff;
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.analytics-presentation-frame-controls p {
+  margin: 0.55rem 0 0;
+  color: #d6e1f3;
+  font-size: 0.9rem;
+  line-height: 1.48;
+}
+
+.analytics-presentation-frame-controls small {
+  display: block;
+  margin-top: 0.55rem;
+  color: #ffd39a;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.analytics-presentation-frame-buttons,
+.analytics-presentation-frame-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.analytics-presentation-frame-buttons button,
+.analytics-presentation-frame-card-actions button {
+  border: 1px solid rgba(242, 102, 20, 0.24);
+  border-radius: 11px;
+  padding: 0.5rem 0.62rem;
+  background: rgba(242, 102, 20, 0.08);
+  color: #ffe5c8;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.analytics-presentation-frame-buttons button:hover,
+.analytics-presentation-frame-buttons button:focus-visible,
+.analytics-presentation-frame-card-actions button:hover,
+.analytics-presentation-frame-card-actions button:focus-visible {
+  border-color: rgba(242, 102, 20, 0.48);
+  background: rgba(242, 102, 20, 0.15);
+  outline: none;
+}
+
+.analytics-presentation-frame-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 34%);
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scroll-snap-type: x proximity;
+}
+
+.analytics-presentation-frame-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 25rem;
+  overflow: hidden;
+  border: 1px solid rgba(157, 178, 255, 0.13);
+  border-radius: 16px;
+  background: rgba(7, 12, 22, 0.56);
+  scroll-snap-align: start;
+}
+
+.analytics-presentation-frame-card-active {
+  border-color: rgba(242, 102, 20, 0.46);
+  box-shadow: 0 0 0 1px rgba(242, 102, 20, 0.18), 0 20px 44px rgba(0, 0, 0, 0.24);
+}
+
+.analytics-presentation-frame-preview {
+  position: relative;
+  display: grid;
+  align-content: end;
+  gap: 0.25rem;
+  min-height: 8.8rem;
+  padding: 0.8rem;
+  background:
+    radial-gradient(circle at 65% 18%, rgba(242, 102, 20, 0.28), transparent 32%),
+    linear-gradient(135deg, rgba(6, 8, 13, 0.98), rgba(25, 18, 13, 0.92));
+}
+
+.analytics-presentation-frame-preview img {
+  position: absolute;
+  inset: 0;
+  opacity: 0.56;
+}
+
+.analytics-presentation-frame-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 76%);
+}
+
+.analytics-presentation-frame-preview span,
+.analytics-presentation-frame-preview strong {
+  position: relative;
+  z-index: 1;
+}
+
+.analytics-presentation-frame-preview span {
+  width: fit-content;
+  border: 1px solid rgba(242, 102, 20, 0.3);
+  border-radius: 999px;
+  padding: 0.2rem 0.48rem;
+  background: rgba(3, 5, 8, 0.58);
+  color: #ff8b3d;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.analytics-presentation-frame-preview strong {
+  color: #fff0da;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.analytics-presentation-frame-body {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 0.85rem;
+}
+
+.analytics-presentation-frame-body h5 {
+  margin: 0.18rem 0 0;
+  color: #f5f8ff;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.analytics-presentation-frame-time {
+  color: #7bb4ff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-presentation-frame-body p {
+  margin: 0;
+  color: #d6e1f3;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.analytics-presentation-frame-body small {
+  color: #aebddb;
+  font-size: 0.76rem;
+  line-height: 1.48;
+}
+
+.analytics-presentation-frame-body > button {
+  width: fit-content;
+  border: 1px solid rgba(242, 102, 20, 0.24);
+  border-radius: 11px;
+  padding: 0.5rem 0.62rem;
+  background: rgba(242, 102, 20, 0.08);
+  color: #ffe5c8;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.analytics-presentation-frame-body > button:hover,
+.analytics-presentation-frame-body > button:focus-visible {
+  border-color: rgba(242, 102, 20, 0.48);
+  background: rgba(242, 102, 20, 0.15);
+  outline: none;
+}
+
 .analytics-presentation-brief-head,
 .analytics-presentation-tools-head {
   display: flex;
