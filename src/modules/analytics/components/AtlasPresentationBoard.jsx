@@ -305,6 +305,71 @@ function wrapText(text, maxLength = 52) {
   return lines.slice(0, 5);
 }
 
+function formatFrameTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.max(0, Math.round(seconds % 60));
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function makeFrameTiming(index, total, durationSeconds) {
+  const start = Math.round((durationSeconds / total) * index);
+  const end = Math.round((durationSeconds / total) * (index + 1));
+  return `${formatFrameTime(start)}–${formatFrameTime(end)}`;
+}
+
+function makeFrameTitleFromText(text, fallback) {
+  const clean = String(text)
+    .replace(/\s+/g, " ")
+    .replace(/[“”"«»]/g, "")
+    .trim();
+  if (!clean) return fallback;
+
+  const sentence = clean.split(/[.!?]/).find((part) => part.trim().length > 10) || clean;
+  const words = sentence.trim().split(/\s+/).slice(0, 8).join(" ");
+  return words.length > 64 ? `${words.slice(0, 61)}...` : words;
+}
+
+function splitScriptIntoFramePlan(slide, script, visual, stats) {
+  const paragraphs = String(script)
+    .split(/\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const words = countWords(script);
+  const durationSeconds = Math.max(40, Math.round((words / 130) * 60));
+  const targetFrameCount = Math.min(12, Math.max(4, Math.round(durationSeconds / 15)));
+  const sourceParts = paragraphs.length ? paragraphs : [script];
+  const frameCount = Math.min(targetFrameCount, Math.max(1, sourceParts.length));
+  const buckets = Array.from({ length: frameCount }, () => []);
+
+  sourceParts.forEach((part, index) => {
+    const bucketIndex = Math.min(frameCount - 1, Math.floor((index / sourceParts.length) * frameCount));
+    buckets[bucketIndex].push(part);
+  });
+
+  return buckets.map((bucket, index) => {
+    const narration = bucket.join("\n\n");
+    const mode = index === 0 || index === frameCount - 1 || index % 4 === 0 ? "Архитектор" : "Смысловой слайд";
+    const title = makeFrameTitleFromText(narration, `${slide.title}: кадр ${index + 1}`);
+
+    return {
+      id: `${slide.id}-frame-${String(index + 1).padStart(2, "0")}`,
+      mode,
+      title,
+      titleEn: `Frame ${index + 1}: source beat`,
+      timing: makeFrameTiming(index, frameCount, durationSeconds),
+      narration,
+      narrationEn:
+        "Translate this narration meaning into English for the final video and keep the same semantic accent from the Russian source.",
+      visual:
+        `${visual} Смысл кадра: ${title}. Визуализировать именно этот фрагмент речи Архитектора, без лишнего текста и без перегруза деталями.`,
+      visualEn:
+        "Dark premium Atlas production frame based on this source narration beat. Translate the meaning into English for final on-slide text, keep text concise and readable, and preserve the Atlas graphite/orange brand style.",
+      sourceSlideId: slide.id,
+      sourceSlideNumber: slide.number,
+    };
+  });
+}
+
 function renderSvgLines(lines, x, y, options = {}) {
   const { size = 34, lineHeight = 46, weight = 700, fill = "#dce7f7", opacity = 1 } = options;
   return lines
@@ -475,8 +540,9 @@ function svgToDataUrl(svg) {
 
 function buildFramePrompt(slide, frame, index, visual, notes, language = "en") {
   const locale = getFrameLocale(frame, language);
+  const totalFrames = frame.totalFrames || 1;
   return [
-    `Create frame ${index + 1} of ${SLIDE_03_FRAME_PLAN.length} for Atlas System CEO presentation, slide ${slide.number}: ${slide.title}.`,
+    `Create frame ${index + 1} of ${totalFrames} for Atlas System CEO presentation, slide ${slide.number}: ${slide.title}.`,
     `Frame language: ${language === "en" ? "English source. All readable on-slide text must be in English." : "Russian proofreading layer. Readable on-slide text may be Russian only for review."}`,
     `Frame type: ${locale.mode}. Frame title: ${locale.title}. Approx timing: ${frame.timing}.`,
     `Narration meaning for this frame: ${locale.narration}`,
@@ -545,8 +611,8 @@ function AtlasPresentationBoard() {
   const [visualEditMode, setVisualEditMode] = useState({});
   const [draftSeed, setDraftSeed] = useState(1);
   const [draftNotes, setDraftNotes] = useState("");
-  const [activeFrameId, setActiveFrameId] = useState(SLIDE_03_FRAME_PLAN[0].id);
-  const [frameLanguage, setFrameLanguage] = useState("en");
+  const [activeFrameId, setActiveFrameId] = useState("");
+  const [frameLanguage, setFrameLanguage] = useState("ru");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedBrief, setCopiedBrief] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
@@ -582,17 +648,21 @@ function AtlasPresentationBoard() {
     "Use supplied brand reference images only for identity details: the new Atlas System logo, orange/yellow/black color scheme, Architect appearance, lighting mood, premium materials, network architecture, and brand object language. Do not replace the slide concept with the reference scene; follow the Visual direction for this exact slide.",
     "Style: dark premium graphite, warm orange Atlas accents, serious CEO presentation, realistic production still, no cartoon style, no criminal hacker look, no clutter, no readable tiny text except intentional large brand words.",
   ].filter(Boolean).join(" ");
+  const baseFramePlan = useMemo(() => {
+    return splitScriptIntoFramePlan(activeSlide, activeScript, activeVisual, stats);
+  }, [activeSlide, activeScript, activeVisual, stats]);
   const activeFramePlan = useMemo(() => {
-    if (activeSlide.id !== "slide-03") return [];
+    const totalFrames = baseFramePlan.length;
 
-    return SLIDE_03_FRAME_PLAN.map((frame, index) => ({
+    return baseFramePlan.map((frame, index) => ({
       ...frame,
+      totalFrames,
       text: getFrameLocale(frame, frameLanguage),
       prompt: buildFramePrompt(activeSlide, frame, index, activeVisual, draftNotes, frameLanguage),
       promptEn: buildFramePrompt(activeSlide, frame, index, activeVisual, draftNotes, "en"),
       promptRu: buildFramePrompt(activeSlide, frame, index, activeVisual, draftNotes, "ru"),
     }));
-  }, [activeSlide, activeVisual, draftNotes, frameLanguage]);
+  }, [activeSlide, activeVisual, baseFramePlan, draftNotes, frameLanguage]);
   const activeFrameIndex = Math.max(0, activeFramePlan.findIndex((frame) => frame.id === activeFrameId));
   const activeFrame = activeFramePlan[activeFrameIndex] || activeFramePlan[0] || null;
   const activeFrameDraft = activeFrame ? frameDrafts[`${activeFrame.id}:${frameLanguage}`] : null;
@@ -627,7 +697,7 @@ function AtlasPresentationBoard() {
     setCopiedScript(false);
     setCopiedFramePlan(false);
     setCopiedFrameId("");
-    setActiveFrameId(SLIDE_03_FRAME_PLAN[0].id);
+    setActiveFrameId("");
     setPreviewMode("slide");
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -692,7 +762,7 @@ function AtlasPresentationBoard() {
         title: activeSlide.title,
       },
       recommendation:
-        "Для третьего слайда нужно 10 кадров: 3 кадра с Архитектором/переходом и 7 смысловых статичных слайдов. Монтаж: Архитектор открывает мысль, затем 1-2 визуальных кадра под voiceover, затем возвращение к Архитектору на юридически/смыслово важной оговорке.",
+        "Кадры считаются от текста Архитектора выбранного слайда: речь делится на смысловые фрагменты, под каждый фрагмент создаётся отдельный production frame. Монтаж: Архитектор открывает мысль, затем визуальный слайд под voiceover, затем возврат к лицу Архитектора на ключевых акцентах.",
       frames: activeFramePlan.map((frame, index) => ({
         order: index + 1,
         id: frame.id,
@@ -950,7 +1020,7 @@ function AtlasPresentationBoard() {
                 <div className="analytics-presentation-brief-head">
                   <div>
                     <span className="analytics-kicker">Кадры для генерации</span>
-                    <h4>Слайд 03: портянка из {activeFramePlan.length} картинок</h4>
+                    <h4>Слайд {activeSlide.number}: портянка из {activeFramePlan.length} кадров под речь</h4>
                   </div>
                   <div>
                     <div className="analytics-presentation-frame-language" aria-label="Язык кадров">
@@ -968,16 +1038,16 @@ function AtlasPresentationBoard() {
                       Скачать JSON
                     </button>
                     <button type="button" onClick={generateAllFrameDrafts}>
-                      Сгенерировать все
+                      Сгенерировать все кадры
                     </button>
                   </div>
                 </div>
 
                 <div className="analytics-presentation-frame-summary">
-                  <strong>Рекомендация по монтажу</strong>
+                  <strong>Как это работает</strong>
                   <span>
-                    Основной источник для генерации — английский слой EN, потому что исходный ролик будет на английском.
-                    Русский слой RU нужен для вычитки смысла перед финальной английской генерацией.
+                    Блок берёт полный текст Архитектора выбранного слайда, делит его на смысловые куски по длительности речи
+                    и делает под них отдельные кадры. EN — слой для финального английского ролика, RU — русская вычитка смысла.
                   </span>
                 </div>
 
@@ -992,7 +1062,7 @@ function AtlasPresentationBoard() {
                         <div className="analytics-presentation-frame-empty">
                           <span>{String(activeFrameIndex + 1).padStart(2, "0")}</span>
                           <strong>{activeFrame.text.title}</strong>
-                          <small>Нажми «Сгенерировать кадр», и здесь появится черновая картинка 16:9.</small>
+                          <small>Нажми «Сгенерировать кадр», и здесь появится черновой 16:9 кадр по этому фрагменту речи.</small>
                         </div>
                       )}
                     </div>
@@ -1018,7 +1088,7 @@ function AtlasPresentationBoard() {
                   </div>
                 ) : null}
 
-                <div className="analytics-presentation-frame-strip" aria-label="Портянка кадров третьего слайда">
+                <div className="analytics-presentation-frame-strip" aria-label={`Портянка кадров слайда ${activeSlide.number}`}>
                   {activeFramePlan.map((frame, index) => (
                     <section
                       key={frame.id}
