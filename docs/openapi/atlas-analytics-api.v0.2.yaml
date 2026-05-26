@@ -1,0 +1,1459 @@
+openapi: 3.1.0
+info:
+  title: Atlas Analytics API
+  version: 0.2.0
+  summary: Read-only analytics contract for Atlas frontend and Atlas Agents.
+  description: |
+    Draft v0.2 contract for the Atlas analytics backend/API-gateway.
+
+    Current status:
+    - The atlas-analytics frontend already expects these 12 analytics endpoints.
+    - Atlas Agents should use /meta to discover valid filter values before asking data questions.
+    - This specification fixes the external contract for backend and Atlas Agents alignment.
+    - All endpoints are read-only and require a scoped Bearer token.
+    - All data endpoints may return extra fields for forward compatibility; strict clients should preserve
+      unknown fields in an extra dict instead of failing.
+    - All endpoints may return 429 if the service account exceeds the agreed limit.
+    - Atlas Agents production IP planned for whitelist: 187.127.88.96.
+
+    Data source is intentionally not fixed here: implementation may aggregate PUP Postgres,
+    Atlas Web3 API, on-chain data, or an internal analytics warehouse.
+servers:
+  - url: https://analytics-api.pupanel.cc/api/admin/analytics
+    description: Planned production namespace
+  - url: http://127.0.0.1:3100/api/admin/analytics
+    description: Local development placeholder
+
+security:
+  - bearerAuth:
+      - analytics:read
+
+tags:
+  - name: meta
+  - name: overview
+  - name: cash
+  - name: obligations
+  - name: plan-fact
+  - name: orders
+  - name: wallets
+  - name: partner-structure
+  - name: reinvest
+  - name: leaders
+  - name: geography
+  - name: traffic
+  - name: base-composition
+
+paths:
+  /meta:
+    get:
+      tags: [meta]
+      operationId: getAnalyticsMeta
+      summary: Discover valid filter values and API capabilities.
+      description: Agents should call this endpoint before composing filtered analytics requests.
+      security:
+        - bearerAuth:
+            - analytics:read
+      responses:
+        "200":
+          description: Available filters, scopes and rate-limit metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaResponse"
+              examples:
+                default:
+                  value:
+                    generatedAt: "2026-05-21T09:00:00Z"
+                    dateRanges: ["1d", "today", "yesterday", "7d", "30d", "90d", "mtd", "qtd", "ytd"]
+                    products: ["all", "unity_lockup", "unity_daily"]
+                    segments: ["all", "Инвесторы", "Партнёры", "Инвесторы + партнёры"]
+                    countries: ["Great Britain", "Germany", "Kazakhstan", "UAE", "Turkey"]
+                    networks: ["BNB", "ETH", "Polygon", "Tron"]
+                    defaultDateRange: "30d"
+                    rateLimit:
+                      requestsPerDay: 1000
+                      burstPerMinute: 60
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /overview:
+    get:
+      tags: [overview]
+      operationId: getAnalyticsOverview
+      summary: High-level KPI snapshot and dashboard summary.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Overview snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewResponse"
+              examples:
+                default:
+                  value:
+                    generatedAt: "2026-05-21T09:00:00Z"
+                    source: analytics-warehouse
+                    summary:
+                      headline: "Покрытие обязательств на 7 дней в зелёной зоне"
+                      description: "Входящий поток сегодня перекрывает ближайшие выплаты, но нагрузка по партнёрским начислениям растёт."
+                      bullets:
+                        - "Входящий поток сегодня: $128500"
+                        - "Обязательства 7 дней: $420000"
+                        - "Первой риск-даты сейчас нет"
+                      topMetrics:
+                        - title: "Входящий поток"
+                          value: 128500
+                          displayValue: "$128 500"
+                          variant: currency
+                    kpi:
+                      incomingToday: 128500
+                      factToday: 128500
+                      outgoingToday: 76000
+                      contractNetFlowToday: 52500
+                      planToday: 120000
+                      gapToday: 8500
+                      obligations7d: 420000
+                      obligations30d: 1840000
+                      coverage7d: 74
+                      coverage30d: 62
+                      firstRiskDate: null
+                      noRisk: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /cash-position:
+    get:
+      tags: [cash]
+      operationId: getCashPosition
+      summary: Daily incoming/outgoing cash position.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Cash position by day.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashPositionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /obligations:
+    get:
+      tags: [obligations]
+      operationId: getObligations
+      summary: Future obligations and payout pressure.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Obligation windows and rows.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObligationsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /plan-fact:
+    get:
+      tags: [plan-fact]
+      operationId: getPlanFact
+      summary: Plan/fact comparison for incoming flow.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Plan/fact rows.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanFactResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /orders:
+    get:
+      tags: [orders]
+      operationId: getOrders
+      summary: Orders, cycles, claims, transactions and product breakdown.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Order and product breakdown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrdersResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /wallets:
+    get:
+      tags: [wallets]
+      operationId: getWallets
+      summary: Wallet inflow, obligations, claim pressure and risk.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Wallet analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /partner-structure:
+    get:
+      tags: [partner-structure]
+      operationId: getPartnerStructure
+      summary: Partner branches, referral accruals, payouts and structural risks.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Partner structure analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerStructureResponse"
+              examples:
+                default:
+                  value:
+                    generatedAt: "2026-05-21T09:00:00Z"
+                    source: analytics-warehouse
+                    summary:
+                      headline: "North Star лидирует по притоку, но зависимость от лидера повышена"
+                      description: "Ветка даёт максимальный новый поток, при этом концентрация на одном лидере требует наблюдения."
+                      bullets:
+                        - "Начислено партнёрам: $18400"
+                        - "Выплачено партнёрам: $12100"
+                        - "Топ ветка: North Star"
+                      topMetrics:
+                        - title: "Приток ветки"
+                          value: 91000
+                          displayValue: "$91 000"
+                          variant: currency
+                    pagination:
+                      limit: 500
+                      offset: 0
+                      total: 42
+                      nextOffset: null
+                    rows:
+                      - leader: "North Star"
+                        branch: "North Star"
+                        generatedInflow: 91000
+                        inflow: 91000
+                        invited: 320
+                        activeInvited: 180
+                        depositingInvited: 94
+                        referralAccrual: 18400
+                        referralPaid: 12100
+                        payout: 12100
+                        downlineObligations: 238000
+                        obligations: 238000
+                        creatorFlow: 8600
+                        leaderDependency: 67
+                        depthScore: 58
+                        conversionToDeposit: 29.4
+                        structuralLeak: 34
+                        netContribution: 54600
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /reinvest:
+    get:
+      tags: [reinvest]
+      operationId: getReinvest
+      summary: Reinvest behavior by product and geography.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Reinvest analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReinvestResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /leaders:
+    get:
+      tags: [leaders]
+      operationId: getLeaders
+      summary: Leader participation and attraction quality.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Leader analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadersResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /geography:
+    get:
+      tags: [geography]
+      operationId: getGeography
+      summary: Country and city analytics.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Geography analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeographyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /traffic:
+    get:
+      tags: [traffic]
+      operationId: getTraffic
+      summary: Live website/cabinet traffic, funnel and conversion.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Traffic analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrafficResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /base-composition:
+    get:
+      tags: [base-composition]
+      operationId: getBaseComposition
+      summary: User base composition by role, lifecycle and value tiers.
+      parameters:
+        - $ref: "#/components/parameters/dateRange"
+        - $ref: "#/components/parameters/segment"
+        - $ref: "#/components/parameters/product"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/network"
+      responses:
+        "200":
+          description: Base composition analytics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseCompositionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: scoped-token
+      description: Service Account token with analytics:read scope.
+
+  parameters:
+    dateRange:
+      name: dateRange
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [1d, today, yesterday, 7d, 30d, 90d, mtd, qtd, ytd]
+        default: 30d
+      description: Time window. today and 1d are aliases for the current day; yesterday is the previous calendar day.
+    segment:
+      name: segment
+      in: query
+      required: false
+      schema:
+        type: string
+        default: all
+      description: User/business segment. Use all when no segment filter is needed.
+    product:
+      name: product
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [all, unity_lockup, unity_daily]
+        default: all
+      description: Product filter. unity_lockup maps to Smart Cycle Lockup Flow; unity_daily maps to Smart Cycle Daily Flow; all disables product filtering.
+    country:
+      name: country
+      in: query
+      required: false
+      schema:
+        type: string
+        default: all
+    network:
+      name: network
+      in: query
+      required: false
+      schema:
+        type: string
+        default: all
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 500
+      description: Optional row limit for potentially large row collections.
+    offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Optional zero-based offset for row collections.
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Token lacks analytics:read scope or request IP is not whitelisted.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Rate limit exceeded. Draft target for Atlas Agents is 1000 requests/day with a 60 requests/minute burst cap per service account.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+
+    Money:
+      type: number
+      format: double
+      minimum: 0
+
+    Percent:
+      type: number
+      format: double
+      minimum: 0
+      maximum: 100
+
+    Coverage:
+      type: number
+      format: double
+      minimum: 0
+      description: Coverage ratio expressed as percent points. Can exceed 100 when inflow covers obligations with a surplus.
+
+    DateString:
+      type: string
+      format: date
+
+    GeneratedResponseMeta:
+      type: object
+      description: Extra fields may appear for forward compatibility; strict clients should keep unknown fields in an extra dict.
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          examples: [api-gateway, analytics-warehouse, pup-postgres]
+      additionalProperties: true
+
+    MetaResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [dateRanges, products, segments, countries, networks]
+          properties:
+            dateRanges:
+              type: array
+              items:
+                type: string
+              examples: [["1d", "today", "yesterday", "7d", "30d", "90d", "mtd", "qtd", "ytd"]]
+            products:
+              type: array
+              items:
+                type: string
+              examples: [["all", "unity_lockup", "unity_daily"]]
+            segments:
+              type: array
+              items:
+                type: string
+            countries:
+              type: array
+              items:
+                type: string
+            networks:
+              type: array
+              items:
+                type: string
+            defaultDateRange:
+              type: string
+              default: 30d
+            scopes:
+              type: array
+              items:
+                type: string
+              description: Supported scopes. v0.2 accepts analytics:read; narrower scopes are planned.
+              examples: [["analytics:read", "analytics:financial", "analytics:partner", "analytics:traffic"]]
+            rateLimit:
+              $ref: "#/components/schemas/RateLimitPolicy"
+          additionalProperties: true
+
+    RateLimitPolicy:
+      type: object
+      properties:
+        requestsPerDay:
+          type: integer
+          example: 1000
+        burstPerMinute:
+          type: integer
+          example: 60
+      additionalProperties: false
+
+    PaginationMeta:
+      type: object
+      description: Offset pagination metadata for large row collections. nextOffset is null when there are no more rows.
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+        offset:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        nextOffset:
+          type:
+            - integer
+            - "null"
+          minimum: 0
+      additionalProperties: false
+
+    EndpointSummary:
+      type: object
+      description: Human-readable top-level summary optimized for agents before they inspect rows.
+      required: [headline, description, bullets]
+      properties:
+        headline:
+          type: string
+          description: One-sentence answer headline suitable for LLM citation.
+        description:
+          type: string
+          description: Short paragraph explaining the current state.
+        bullets:
+          type: array
+          minItems: 0
+          maxItems: 5
+          items:
+            type: string
+        topMetrics:
+          type: array
+          description: Three to five most important metrics for this endpoint.
+          items:
+            $ref: "#/components/schemas/Metric"
+      additionalProperties: true
+
+    OverviewResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, kpi]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            narrativeSummary:
+              allOf:
+                - $ref: "#/components/schemas/EndpointSummary"
+              deprecated: true
+              description: Deprecated alias kept only for compatibility with early v0.2 drafts. Use summary.
+            kpi:
+              $ref: "#/components/schemas/OverviewSummary"
+            cashPosition:
+              $ref: "#/components/schemas/CashPositionDay"
+            partnerPressure:
+              type: array
+              items:
+                $ref: "#/components/schemas/Metric"
+            operations:
+              $ref: "#/components/schemas/OverviewOperations"
+          additionalProperties: true
+
+    OverviewSummary:
+      type: object
+      properties:
+        incomingToday: { $ref: "#/components/schemas/Money" }
+        factToday: { $ref: "#/components/schemas/Money" }
+        outgoingToday: { $ref: "#/components/schemas/Money" }
+        contractNetFlowToday:
+          type: number
+          format: double
+        planToday: { $ref: "#/components/schemas/Money" }
+        gapToday:
+          type: number
+          format: double
+        carryForwardDeficit: { $ref: "#/components/schemas/Money" }
+        targetToday: { $ref: "#/components/schemas/Money" }
+        targetTomorrow: { $ref: "#/components/schemas/Money" }
+        obligations7d: { $ref: "#/components/schemas/Money" }
+        obligations30d: { $ref: "#/components/schemas/Money" }
+        deficit7d: { $ref: "#/components/schemas/Money" }
+        deficit30d: { $ref: "#/components/schemas/Money" }
+        coverage7d: { $ref: "#/components/schemas/Coverage" }
+        coverage30d: { $ref: "#/components/schemas/Coverage" }
+        requiredNewMoney: { $ref: "#/components/schemas/Money" }
+        referralBurden: { $ref: "#/components/schemas/Money" }
+        platformFee: { $ref: "#/components/schemas/Money" }
+        operatorNet: { $ref: "#/components/schemas/Money" }
+        activeWallets:
+          type: integer
+        connectedWallets:
+          type: integer
+        uniqueWallets:
+          type: integer
+        transactions:
+          type: integer
+        transactionVolume: { $ref: "#/components/schemas/Money" }
+        failedTransactions:
+          type: integer
+        averageTransactionValue: { $ref: "#/components/schemas/Money" }
+        topNetwork:
+          type: string
+        claimableNow: { $ref: "#/components/schemas/Money" }
+        accruedLater: { $ref: "#/components/schemas/Money" }
+        firstRiskDate:
+          type:
+            - string
+            - "null"
+          format: date
+          description: First projected risk date, or null when no risk is currently detected.
+        noRisk:
+          type: boolean
+          description: True when firstRiskDate is null and no projected risk is detected.
+        firstRiskGap: { $ref: "#/components/schemas/Money" }
+      additionalProperties: true
+
+    Metric:
+      type: object
+      description: Agent-friendly metric. Numeric value is always numeric/null; displayValue carries text labels.
+      properties:
+        title: { type: string }
+        value:
+          type:
+            - number
+            - "null"
+          format: double
+        displayValue:
+          type: string
+          description: Human-readable representation when the metric is textual or needs formatting.
+        variant:
+          type: string
+          enum: [currency, percent, number, text]
+        icon: { type: string }
+        tone:
+          type: string
+          enum: [danger, accent, success, default]
+        statusLabel: { type: string }
+        description: { type: string }
+        pulse:
+          type: boolean
+          description: UI-only animation hint for critical metrics. Atlas Agents may ignore it.
+      additionalProperties: true
+
+    RiskScore:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Composite risk score from 0 to 100. Bands: 0-30 low, 30-60 medium, 60+ high."
+
+    GrowthScore:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Composite growth quality score from 0 to 100. Bands: 0-30 weak, 30-60 stable, 60+ strong."
+
+    ActivityScore:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Wallet/user activity score from 0 to 100. Bands: 0-30 inactive, 30-60 moderate, 60+ active."
+
+    ClaimPressure:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Claimable pressure relative to available inflow/position. Bands: 0-30 low, 30-60 elevated, 60+ high."
+
+    ObligationLoad:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Obligations load relative to inflow or active capital. Bands: 0-30 low, 30-60 medium, 60+ heavy."
+
+    LeaderDependency:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Dependence on one leader or branch. Bands: 0-30 distributed, 30-60 concentrated, 60+ critical concentration."
+
+    StructuralLeak:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Structure inefficiency/leakage score. Bands: 0-30 healthy, 30-60 watch, 60+ problematic."
+
+    DepthScore:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: Structure depth quality score from 0 to 100. Higher means deeper and more resilient downline.
+
+    ConversionToDeposit:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: Share of invited/registered users reaching deposit or Smart Cycle activation.
+
+    EngagementRate:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Share of traffic/users with meaningful engagement. Bands: 0-30 weak, 30-60 normal, 60+ strong."
+
+    QualityScore:
+      allOf:
+        - $ref: "#/components/schemas/Percent"
+      description: "Composite traffic/source quality score from 0 to 100. Bands: 0-30 weak, 30-60 acceptable, 60+ strong."
+
+    OverviewOperations:
+      type: object
+      properties:
+        periods:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationPeriod"
+        cycleTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CycleTypeOperation"
+      additionalProperties: false
+
+    OperationPeriod:
+      type: object
+      properties:
+        period: { type: string }
+        incoming: { $ref: "#/components/schemas/Money" }
+        newMoney: { $ref: "#/components/schemas/Money" }
+        existingMoney: { $ref: "#/components/schemas/Money" }
+        cycleActivations: { type: integer }
+        outgoing: { $ref: "#/components/schemas/Money" }
+      additionalProperties: false
+
+    CycleTypeOperation:
+      type: object
+      properties:
+        cycleType: { type: string }
+        source: { type: string }
+        todayCreated: { type: integer }
+        weekCreated: { type: integer }
+        monthCreated: { type: integer }
+        todayIncoming: { $ref: "#/components/schemas/Money" }
+        todayOutgoing: { $ref: "#/components/schemas/Money" }
+      additionalProperties: false
+
+    CashPositionResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, days]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            days:
+              type: array
+              items:
+                $ref: "#/components/schemas/CashPositionDay"
+          additionalProperties: true
+
+    CashPositionDay:
+      type: object
+      required: [date]
+      properties:
+        date: { $ref: "#/components/schemas/DateString" }
+        incomingFact: { $ref: "#/components/schemas/Money" }
+        incomingPlan: { $ref: "#/components/schemas/Money" }
+        outgoingFact: { $ref: "#/components/schemas/Money" }
+        cyclePayouts: { $ref: "#/components/schemas/Money" }
+        referralPayouts: { $ref: "#/components/schemas/Money" }
+        platformFee: { $ref: "#/components/schemas/Money" }
+        operatorNet:
+          type: number
+          format: double
+        projectedGap:
+          type: number
+          format: double
+      additionalProperties: true
+
+    ObligationsResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, rows]
+          properties:
+            summary:
+              allOf:
+                - $ref: "#/components/schemas/EndpointSummary"
+                - type: object
+                  properties:
+                    obligations7d: { $ref: "#/components/schemas/Money" }
+                    obligations30d: { $ref: "#/components/schemas/Money" }
+                    deficit7d: { $ref: "#/components/schemas/Money" }
+                    deficit30d: { $ref: "#/components/schemas/Money" }
+                    firstRiskDate:
+                      type:
+                        - string
+                        - "null"
+                      format: date
+                    noRisk:
+                      type: boolean
+                    firstRiskGap: { $ref: "#/components/schemas/Money" }
+                  additionalProperties: true
+            rows:
+              type: array
+              items:
+                $ref: "#/components/schemas/ObligationRow"
+          additionalProperties: true
+
+    ObligationRow:
+      type: object
+      required: [date]
+      properties:
+        date: { $ref: "#/components/schemas/DateString" }
+        expectedIncoming: { $ref: "#/components/schemas/Money" }
+        cyclePayouts: { $ref: "#/components/schemas/Money" }
+        referralPayouts: { $ref: "#/components/schemas/Money" }
+        platformFee: { $ref: "#/components/schemas/Money" }
+        requiredNewMoney: { $ref: "#/components/schemas/Money" }
+        projectedGap:
+          type: number
+          format: double
+      additionalProperties: true
+
+    PlanFactResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, rows]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            rows:
+              type: array
+              items:
+                $ref: "#/components/schemas/PlanFactRow"
+          additionalProperties: true
+
+    PlanFactRow:
+      type: object
+      required: [date]
+      properties:
+        date: { $ref: "#/components/schemas/DateString" }
+        planAmount: { $ref: "#/components/schemas/Money" }
+        factAmount: { $ref: "#/components/schemas/Money" }
+        gap:
+          type: number
+          format: double
+        coverage: { $ref: "#/components/schemas/Coverage" }
+      additionalProperties: true
+
+    OrdersResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, rows]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            pagination:
+              $ref: "#/components/schemas/PaginationMeta"
+            rows:
+              type: array
+              items:
+                $ref: "#/components/schemas/OrderRow"
+            products:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProductRow"
+          additionalProperties: true
+
+    OrderRow:
+      type: object
+      properties:
+        id: { type: string }
+        date: { $ref: "#/components/schemas/DateString" }
+        product: { type: string }
+        tariffId: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+        wallet: { type: string }
+        network: { type: string }
+        status: { type: string }
+      additionalProperties: true
+
+    ProductRow:
+      type: object
+      properties:
+        source: { type: string }
+        incomingAmount: { $ref: "#/components/schemas/Money" }
+        planAmount: { $ref: "#/components/schemas/Money" }
+        cyclePayouts: { $ref: "#/components/schemas/Money" }
+        referralPayouts: { $ref: "#/components/schemas/Money" }
+        platformFee: { $ref: "#/components/schemas/Money" }
+        operatorNet: { $ref: "#/components/schemas/Money" }
+        gap:
+          type: number
+          format: double
+      additionalProperties: true
+
+    WalletsResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, rows]
+          properties:
+            summary:
+              allOf:
+                - $ref: "#/components/schemas/EndpointSummary"
+                - type: object
+                  properties:
+                    top5Concentration: { $ref: "#/components/schemas/Percent" }
+                  additionalProperties: true
+            pagination:
+              $ref: "#/components/schemas/PaginationMeta"
+            rows:
+              type: array
+              items:
+                $ref: "#/components/schemas/WalletRow"
+          additionalProperties: true
+
+    WalletRow:
+      type: object
+      required: [wallet]
+      description: Wallet analytics row. Extra fields may appear for forward compatibility and should be preserved by strict clients.
+      properties:
+        wallet: { type: string }
+        role: { type: string }
+        ownerType: { type: string }
+        inflow: { $ref: "#/components/schemas/Money" }
+        linkedObligations: { $ref: "#/components/schemas/Money" }
+        obligations: { $ref: "#/components/schemas/Money" }
+        network: { type: string }
+        claimable: { $ref: "#/components/schemas/Money" }
+        accrued: { $ref: "#/components/schemas/Money" }
+        claimPressure: { $ref: "#/components/schemas/ClaimPressure" }
+        reinvestFlow: { $ref: "#/components/schemas/Money" }
+        concentrationShare: { $ref: "#/components/schemas/Percent" }
+        obligationLoad: { $ref: "#/components/schemas/ObligationLoad" }
+        riskScore: { $ref: "#/components/schemas/RiskScore" }
+        activityScore: { $ref: "#/components/schemas/ActivityScore" }
+        netContribution:
+          type: number
+          format: double
+      additionalProperties: true
+
+    PartnerStructureResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, rows]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            pagination:
+              $ref: "#/components/schemas/PaginationMeta"
+            rows:
+              type: array
+              items:
+                $ref: "#/components/schemas/PartnerBranchRow"
+          additionalProperties: true
+
+    PartnerBranchRow:
+      type: object
+      required: [leader, branch]
+      description: Partner branch analytics row. Extra fields may appear for forward compatibility and should be preserved by strict clients.
+      properties:
+        leader: { type: string }
+        branch: { type: string }
+        generatedInflow: { $ref: "#/components/schemas/Money" }
+        inflow: { $ref: "#/components/schemas/Money" }
+        invited: { type: integer }
+        activeInvited: { type: integer }
+        depositingInvited: { type: integer }
+        referralAccrual: { $ref: "#/components/schemas/Money" }
+        referralPaid: { $ref: "#/components/schemas/Money" }
+        payout: { $ref: "#/components/schemas/Money" }
+        downlineObligations: { $ref: "#/components/schemas/Money" }
+        obligations: { $ref: "#/components/schemas/Money" }
+        creatorFlow: { $ref: "#/components/schemas/Money" }
+        leaderDependency: { $ref: "#/components/schemas/LeaderDependency" }
+        depthScore: { $ref: "#/components/schemas/DepthScore" }
+        conversionToDeposit: { $ref: "#/components/schemas/ConversionToDeposit" }
+        structuralLeak: { $ref: "#/components/schemas/StructuralLeak" }
+        netContribution:
+          type: number
+          format: double
+      additionalProperties: true
+
+    ReinvestResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, byProduct]
+          properties:
+            summary:
+              allOf:
+                - $ref: "#/components/schemas/EndpointSummary"
+                - type: object
+                  properties:
+                    reinvestUsersRate: { $ref: "#/components/schemas/Percent" }
+                    reinvestCapitalRate: { $ref: "#/components/schemas/Percent" }
+                    repeatDepositRate: { $ref: "#/components/schemas/Percent" }
+                    averageDaysToReinvest:
+                      type: number
+                      format: double
+                  additionalProperties: true
+            byProduct:
+              type: array
+              items:
+                $ref: "#/components/schemas/ReinvestProductRow"
+            byCountry:
+              type: array
+              items:
+                $ref: "#/components/schemas/ReinvestCountryRow"
+            timeline:
+              type: array
+              items:
+                $ref: "#/components/schemas/TimelinePoint"
+          additionalProperties: true
+
+    ReinvestProductRow:
+      type: object
+      description: Reinvest analytics row. This schema is also extended by country rows, so additional fields are allowed.
+      properties:
+        source: { type: string }
+        claimedCapital: { $ref: "#/components/schemas/Money" }
+        reinvestedCapital: { $ref: "#/components/schemas/Money" }
+        capitalRate: { $ref: "#/components/schemas/Percent" }
+        claimUsers: { type: integer }
+        reinvestUsers: { type: integer }
+        userRate: { $ref: "#/components/schemas/Percent" }
+      additionalProperties: true
+
+    ReinvestCountryRow:
+      allOf:
+        - $ref: "#/components/schemas/ReinvestProductRow"
+        - type: object
+          properties:
+            country: { type: string }
+          additionalProperties: true
+
+    LeadersResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, participation, attraction]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            participation:
+              type: array
+              items:
+                $ref: "#/components/schemas/LeaderParticipationRow"
+            attraction:
+              type: array
+              items:
+                $ref: "#/components/schemas/LeaderAttractionRow"
+          additionalProperties: true
+
+    LeaderParticipationRow:
+      type: object
+      description: Leader participation analytics row. Extra fields may appear for forward compatibility and should be preserved by strict clients.
+      properties:
+        name: { type: string }
+        country: { type: string }
+        investment: { $ref: "#/components/schemas/Money" }
+        cycles: { type: integer }
+        activeDays: { type: integer }
+        obligations: { $ref: "#/components/schemas/Money" }
+        referralIncome: { $ref: "#/components/schemas/Money" }
+        netContribution:
+          type: number
+          format: double
+        reinvestRate: { $ref: "#/components/schemas/Percent" }
+        retentionRate: { $ref: "#/components/schemas/Percent" }
+        claimRate: { $ref: "#/components/schemas/Percent" }
+      additionalProperties: true
+
+    LeaderAttractionRow:
+      type: object
+      description: Leader attraction analytics row. Extra fields may appear for forward compatibility and should be preserved by strict clients.
+      properties:
+        name: { type: string }
+        country: { type: string }
+        invited: { type: integer }
+        activeInvited: { type: integer }
+        depositingInvited: { type: integer }
+        inflow: { $ref: "#/components/schemas/Money" }
+        referralLoad: { $ref: "#/components/schemas/Money" }
+        leaderDependency: { $ref: "#/components/schemas/LeaderDependency" }
+        baseRetention: { $ref: "#/components/schemas/Percent" }
+        reinvestRate: { $ref: "#/components/schemas/Percent" }
+        claimPressure: { $ref: "#/components/schemas/ClaimPressure" }
+        netContribution:
+          type: number
+          format: double
+      additionalProperties: true
+
+    GeographyResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, rows]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            pagination:
+              $ref: "#/components/schemas/PaginationMeta"
+            rows:
+              type: array
+              items:
+                $ref: "#/components/schemas/GeographyRow"
+          additionalProperties: true
+
+    GeographyRow:
+      type: object
+      description: Geography analytics row. Extra fields may appear for forward compatibility and should be preserved by strict clients.
+      properties:
+        country: { type: string }
+        city: { type: string }
+        users: { type: integer }
+        wallets: { type: integer }
+        inflow: { $ref: "#/components/schemas/Money" }
+        obligations: { $ref: "#/components/schemas/Money" }
+        deposits: { type: integer }
+        activeUsers: { type: integer }
+        activeRate: { $ref: "#/components/schemas/Percent" }
+        newUsers: { type: integer }
+        repeatUsers: { type: integer }
+        repeatRate: { $ref: "#/components/schemas/Percent" }
+        reinvestUsers: { type: integer }
+        reinvestRate: { $ref: "#/components/schemas/Percent" }
+        payingUsers: { type: integer }
+        payingRate: { $ref: "#/components/schemas/Percent" }
+        claimUsers: { type: integer }
+        claimRate: { $ref: "#/components/schemas/Percent" }
+        riskScore: { $ref: "#/components/schemas/RiskScore" }
+        growthScore: { $ref: "#/components/schemas/GrowthScore" }
+        obligationLoad: { $ref: "#/components/schemas/ObligationLoad" }
+      additionalProperties: true
+
+    TrafficResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary]
+          properties:
+            summary:
+              allOf:
+                - $ref: "#/components/schemas/EndpointSummary"
+                - $ref: "#/components/schemas/TrafficSummary"
+            countries:
+              type: array
+              items:
+                $ref: "#/components/schemas/TrafficCountryRow"
+            sources:
+              type: array
+              items:
+                $ref: "#/components/schemas/TrafficSourceRow"
+            funnel:
+              type: array
+              items:
+                $ref: "#/components/schemas/FunnelStep"
+            conversion:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConversionStep"
+            lifecycleRows:
+              type: array
+              items:
+                $ref: "#/components/schemas/LifecycleRow"
+            lifecycleTotals:
+              type: array
+              items:
+                $ref: "#/components/schemas/LifecycleRow"
+            timeline:
+              type: array
+              items:
+                $ref: "#/components/schemas/TimelinePoint"
+          additionalProperties: true
+
+    TrafficSummary:
+      type: object
+      description: Traffic-specific numeric summary fields mixed into EndpointSummary. Additional fields are allowed because it participates in allOf.
+      properties:
+        registrationsToday: { type: integer }
+        walletConnects: { type: integer }
+        cycleActivationsToday: { type: integer }
+        siteOnline: { type: integer }
+        cabinetOnline: { type: integer }
+        sessionsToday: { type: integer }
+        authorizedToday: { type: integer }
+        depositStarts: { type: integer }
+        newVisitors: { type: integer }
+        repeatVisitors: { type: integer }
+        engagedUsers: { type: integer }
+        averageSessionMinutes:
+          type: number
+          format: double
+      additionalProperties: true
+
+    TrafficCountryRow:
+      type: object
+      properties:
+        country: { type: string }
+        siteUsers: { type: integer }
+        cabinetUsers: { type: integer }
+        newVisitors: { type: integer }
+        repeatVisitors: { type: integer }
+        engagementRate: { $ref: "#/components/schemas/EngagementRate" }
+        depositConversion: { $ref: "#/components/schemas/ConversionToDeposit" }
+      additionalProperties: true
+
+    TrafficSourceRow:
+      type: object
+      description: Traffic source analytics row. Extra fields may appear for forward compatibility and should be preserved by strict clients.
+      properties:
+        source: { type: string }
+        visitors: { type: integer }
+        newVisitors: { type: integer }
+        repeatVisitors: { type: integer }
+        bounceRate: { $ref: "#/components/schemas/Percent" }
+        walletConnects: { type: integer }
+        depositStarts: { type: integer }
+        depositConversion: { $ref: "#/components/schemas/ConversionToDeposit" }
+        qualityScore: { $ref: "#/components/schemas/QualityScore" }
+      additionalProperties: true
+
+    FunnelStep:
+      type: object
+      properties:
+        stage: { type: string }
+        value: { type: integer }
+        conversion: { $ref: "#/components/schemas/Percent" }
+      additionalProperties: true
+
+    ConversionStep:
+      type: object
+      properties:
+        period: { type: string }
+        rate: { $ref: "#/components/schemas/Percent" }
+      additionalProperties: true
+
+    LifecycleRow:
+      type: object
+      properties:
+        date: { type: string }
+        registrations: { type: integer }
+        walletConnects: { type: integer }
+        cycleActivations: { type: integer }
+      additionalProperties: true
+
+    TimelinePoint:
+      type: object
+      properties:
+        date: { type: string }
+        value:
+          type: number
+          format: double
+      additionalProperties: true
+
+    BaseCompositionResponse:
+      allOf:
+        - $ref: "#/components/schemas/GeneratedResponseMeta"
+        - type: object
+          required: [summary, segments]
+          properties:
+            summary:
+              $ref: "#/components/schemas/EndpointSummary"
+            segments:
+              type: array
+              items:
+                $ref: "#/components/schemas/BaseSegmentRow"
+          additionalProperties: true
+
+    BaseSegmentRow:
+      type: object
+      properties:
+        segment: { type: string }
+        users: { type: integer }
+        share: { $ref: "#/components/schemas/Percent" }
+        inflow: { $ref: "#/components/schemas/Money" }
+        activeUsers: { type: integer }
+        sleepingUsers: { type: integer }
+        dormantUsers: { type: integer }
+        dormantRate: { $ref: "#/components/schemas/Percent" }
+        reactivatedUsers: { type: integer }
+        reactivatedRate: { $ref: "#/components/schemas/Percent" }
+        churnedUsers: { type: integer }
+        churnRate: { $ref: "#/components/schemas/Percent" }
+        newUsers: { type: integer }
+        repeatUsers: { type: integer }
+        repeatRate: { $ref: "#/components/schemas/Percent" }
+        reinvestUsers: { type: integer }
+        reinvestRate: { $ref: "#/components/schemas/Percent" }
+        payingUsers: { type: integer }
+        nonPayingUsers: { type: integer }
+        claimUsers: { type: integer }
+        noClaimUsers: { type: integer }
+        referralIncomeUsers: { type: integer }
+        noReferralIncomeUsers: { type: integer }
+        largeUsers: { type: integer }
+        largeInflow: { $ref: "#/components/schemas/Money" }
+        mediumUsers: { type: integer }
+        mediumInflow: { $ref: "#/components/schemas/Money" }
+        smallUsers: { type: integer }
+        smallInflow: { $ref: "#/components/schemas/Money" }
+        netContribution:
+          type: number
+          format: double
+        mixedRoleConversion: { $ref: "#/components/schemas/ConversionToDeposit" }
+      additionalProperties: true
