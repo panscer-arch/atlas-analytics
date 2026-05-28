@@ -9,7 +9,7 @@ import useAnalyticsData from "./hooks/useAnalyticsData";
 import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
 
-const ANALYTICS_BOARD_URL = "/analytics-board/";
+const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
 
 const restoredTabs = [
   { id: "overview", label: "Обзор" },

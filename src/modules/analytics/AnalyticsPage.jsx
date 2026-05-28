@@ -12,6 +12,7 @@ import AnalyticsBoardEmbed from "./components/AnalyticsBoardEmbed";
 import { AGENT_FAQ_STORAGE_KEY, defaultFaqTemplate } from "./components/AgentFaqTemplate";
 import { AGENT_KNOWLEDGE_STORAGE_KEY, defaultKnowledgeTemplate } from "./components/AgentKnowledgeTemplate";
 import { AGENT_TERMINOLOGY_STORAGE_KEY, defaultTerminologyTemplate } from "./components/AgentTerminologyTemplate";
+import { AGENT_TRAINING_DATASET_STORAGE_KEY, defaultTrainingDataset } from "./components/AgentTrainingDataset";
 import { PRESENTATION_SLIDES } from "./components/AtlasPresentationBoard";
 import LaunchChecklistSection, {
   IDEAS_CHECKLIST_STORAGE_KEY,
@@ -33,6 +34,7 @@ import SectionHeading from "./components/SectionHeading";
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import ProductsTabSection from "./components/ProductsTabSection";
+import ProductLibraryBoard from "./components/ProductLibraryBoard";
 import DashboardBalance from "./components/DashboardBalance";
 import DashboardBlock from "./components/DashboardBlock";
 import DashboardKpiCard from "./components/DashboardKpiCard";
@@ -58,7 +60,7 @@ import formatCurrency from "./utils/formatCurrency";
 import "./styles/analytics.css";
 import { useEffect, useRef, useState } from "react";
 
-const ANALYTICS_BOARD_URL = "/analytics-board/";
+const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
 const CRM_MY_TASKS_STORAGE_KEY = "atlas.analytics.crmMyTasks.v1";
 
@@ -204,6 +206,11 @@ function countTemplateRows(template, fallbackTemplate) {
   return (source.sections || []).reduce((sum, section) => sum + (Array.isArray(section.rows) ? section.rows.length : 0), 0);
 }
 
+function countDatasetBlocks(dataset, fallbackDataset) {
+  const source = Array.isArray(dataset?.blocks) ? dataset : fallbackDataset;
+  return Array.isArray(source?.blocks) ? source.blocks.length : 0;
+}
+
 function buildCrmContentStats(source = {}) {
   const materials = Array.isArray(source.materials) ? source.materials : defaultMaterialItems;
   const videos = Array.isArray(source.videos) ? source.videos : defaultVideoScripts;
@@ -211,6 +218,7 @@ function buildCrmContentStats(source = {}) {
   return [
     ["Материалы", materials.length, "файлов", "success"],
     ["Параметры", countTemplateRows(source.knowledge, defaultKnowledgeTemplate), "параметров", "accent"],
+    ["Датасет", countDatasetBlocks(source.dataset, defaultTrainingDataset), "блоков", "success"],
     ["FAQ", countTemplateRows(source.faq, defaultFaqTemplate), "вопросов", "success"],
     ["CEO", PRESENTATION_SLIDES.length, "слайдов", "accent"],
     ["Ролики", videos.length, "роликов", "success"],
@@ -369,7 +377,7 @@ function getInitialAnalyticsTab() {
 
   const url = new URL(window.location.href);
   const board = url.searchParams.get("board");
-  const contentBoards = new Set(["materials", "agentTasks", "agentFaq", "ceoPresentation", "videoScripts", "terminology"]);
+  const contentBoards = new Set(["materials", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "videoScripts", "terminology"]);
   const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
 
   if (contentBoards.has(board)) return "content";
@@ -497,13 +505,14 @@ function AnalyticsPage() {
     Promise.all([
       loadServerContent(MATERIALS_STORAGE_KEY),
       loadServerContent(AGENT_KNOWLEDGE_STORAGE_KEY),
+      loadServerContent(AGENT_TRAINING_DATASET_STORAGE_KEY),
       loadServerContent(AGENT_FAQ_STORAGE_KEY),
       loadServerContent(VIDEO_SCRIPTS_STORAGE_KEY),
       loadServerContent(AGENT_TERMINOLOGY_STORAGE_KEY),
-    ]).then(([materials, knowledge, faq, videos, terminology]) => {
+    ]).then(([materials, knowledge, dataset, faq, videos, terminology]) => {
       if (!isMounted) return;
 
-      setCrmContentStats(buildCrmContentStats({ materials, knowledge, faq, videos, terminology }));
+      setCrmContentStats(buildCrmContentStats({ materials, knowledge, dataset, faq, videos, terminology }));
     });
 
     return () => {
@@ -846,6 +855,7 @@ function AnalyticsPage() {
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
     { id: "analytics", label: "Аналитика" },
+    { id: "productLibrary", label: "Библиотека" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
     { id: "developments", label: "Разработки" },
@@ -2063,6 +2073,7 @@ function AnalyticsPage() {
     if (activeTab === "tasks") return renderTasksTab();
     if (activeTab === "content") return renderContentTab();
     if (activeTab === "developments") return renderDevelopmentsTab();
+    if (activeTab === "productLibrary") return <ProductLibraryBoard />;
     if (activeTab === "crmBoard") return renderCrmBoardTab();
     return renderAnalyticsTab();
   }

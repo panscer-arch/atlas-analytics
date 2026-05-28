@@ -38,11 +38,15 @@ cp .env.example .env.local
   Пример: `https://your-board-domain.com`
 - `VITE_ANALYTICS_BOARD_API_URL`
   Пример: `https://your-board-domain.com/api/signal`
+- `VITE_CONTENT_API_BASE_URL`
+  Пример: `https://supersussystem.com`
+  Если не задано, сохранение идёт в относительный `/api/content/...` на том же домене.
 
 Если переменные не заданы:
 
 - analytics API просто не используется, экран падает в локальный fallback
 - отправка идей в доску не ломает интерфейс и сохраняет идею локально
+- редактируемый контент пробует сохраняться в `/api/content/...` на текущем домене и остаётся в localStorage, если сервер сохранения недоступен
 
 ## GitHub -> Netlify
 

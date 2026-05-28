@@ -1,6 +1,13 @@
+const CONTENT_API_BASE_URL = (import.meta.env.VITE_CONTENT_API_BASE_URL || "").trim().replace(/\/+$/, "");
+
+function contentApiUrl(key) {
+  const path = `/api/content/${encodeURIComponent(key)}`;
+  return CONTENT_API_BASE_URL ? `${CONTENT_API_BASE_URL}${path}` : path;
+}
+
 export async function loadServerContent(key) {
   try {
-    const response = await fetch(`/api/content/${encodeURIComponent(key)}`, {
+    const response = await fetch(contentApiUrl(key), {
       method: "GET",
       headers: { Accept: "application/json" },
       cache: "no-store",
@@ -17,7 +24,7 @@ export async function loadServerContent(key) {
 
 export async function saveServerContent(key, value) {
   try {
-    const response = await fetch(`/api/content/${encodeURIComponent(key)}`, {
+    const response = await fetch(contentApiUrl(key), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value }),
