@@ -4831,6 +4831,243 @@
   background: rgba(123, 180, 255, 0.1);
 }
 
+.analytics-developments {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-developments-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(47, 217, 255, 0.14), transparent 36%),
+    radial-gradient(circle at 100% 10%, rgba(255, 204, 102, 0.12), transparent 32%),
+    linear-gradient(135deg, rgba(9, 17, 31, 0.96), rgba(5, 10, 18, 0.98));
+}
+
+.analytics-developments-hero h2 {
+  margin: 0.35rem 0 0;
+  color: #f5f8ff;
+  font-size: clamp(1.5rem, 2.4vw, 2.35rem);
+  font-weight: 900;
+}
+
+.analytics-developments-hero p {
+  max-width: 880px;
+  margin: 0.55rem 0 0;
+  color: #aebdd4;
+  line-height: 1.55;
+}
+
+.analytics-developments-save {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 204, 102, 0.24);
+  border-radius: 999px;
+  padding: 0.62rem 0.9rem;
+  background: rgba(255, 204, 102, 0.08);
+  color: #ffd27a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-developments-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.analytics-developments-stat {
+  border: 1px solid rgba(47, 217, 255, 0.13);
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    linear-gradient(135deg, rgba(47, 217, 255, 0.08), rgba(255, 204, 102, 0.03)),
+    rgba(255, 255, 255, 0.025);
+}
+
+.analytics-developments-stat span {
+  display: block;
+  color: #7f93b0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-developments-stat strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #f5f8ff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.analytics-developments-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.analytics-developments-toolbar span {
+  color: #8fa2bd;
+  line-height: 1.45;
+}
+
+.analytics-developments-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.analytics-developments-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.analytics-developments-form textarea,
+.analytics-developments-form .analytics-action-button {
+  grid-column: span 2;
+}
+
+.analytics-developments-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.analytics-developments-card {
+  position: relative;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.analytics-developments-card::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(47, 217, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(47, 217, 255, 0.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  opacity: 0.28;
+}
+
+.analytics-developments-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.analytics-developments-card-head,
+.analytics-developments-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.analytics-developments-card-head > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.analytics-developments-type,
+.analytics-developments-card label span,
+.analytics-developments-card-foot > span {
+  display: block;
+  color: #7f93b0;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-developments-title {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(123, 180, 255, 0.16);
+  padding: 0.22rem 0 0.38rem;
+  background: transparent;
+  color: #f5f8ff;
+  font-size: clamp(1.15rem, 1.7vw, 1.5rem);
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.analytics-developments-title:focus {
+  outline: none;
+  border-color: rgba(120, 255, 224, 0.5);
+}
+
+.analytics-developments-status {
+  flex: 0 0 auto;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 999px;
+  padding: 0.48rem 0.72rem;
+  color: #edf3ff;
+  font-weight: 900;
+}
+
+.analytics-developments-status-success {
+  border-color: rgba(60, 208, 157, 0.32);
+  background: rgba(60, 208, 157, 0.14);
+}
+
+.analytics-developments-status-accent,
+.analytics-developments-status-work {
+  border-color: rgba(255, 204, 102, 0.32);
+  background: rgba(255, 204, 102, 0.12);
+}
+
+.analytics-developments-status-muted {
+  background: rgba(255, 255, 255, 0.04);
+  color: #9dadc4;
+}
+
+.analytics-developments-status-idea {
+  border-color: rgba(123, 180, 255, 0.24);
+  background: rgba(123, 180, 255, 0.1);
+}
+
+.analytics-developments-links,
+.analytics-developments-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-developments-card label {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.analytics-developments-wide textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.analytics-developments-card-foot {
+  align-items: center;
+  border-top: 1px solid rgba(157, 178, 255, 0.1);
+  padding-top: 0.75rem;
+}
+
+.analytics-developments-card-foot div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
 .analytics-launch-checkbox {
   width: 1.05rem;
   height: 1.05rem;
@@ -7939,6 +8176,15 @@
   .analytics-daily-grid {
     grid-template-columns: 1fr;
   }
+
+  .analytics-developments-grid,
+  .analytics-developments-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-developments-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -8028,6 +8274,27 @@
 
   .analytics-tab-btn {
     min-width: 0;
+  }
+
+  .analytics-developments-hero,
+  .analytics-developments-toolbar,
+  .analytics-developments-card-head,
+  .analytics-developments-card-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .analytics-developments-grid,
+  .analytics-developments-stats,
+  .analytics-developments-form,
+  .analytics-developments-links,
+  .analytics-developments-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-developments-form textarea,
+  .analytics-developments-form .analytics-action-button {
+    grid-column: auto;
   }
 
   .analytics-table thead th,

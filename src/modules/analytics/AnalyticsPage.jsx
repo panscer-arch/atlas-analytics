@@ -43,6 +43,7 @@ import DashboardValue from "./components/DashboardValue";
 import Wrapper from "./components/Wrapper";
 import QuickNotesModal from "./components/QuickNotesModal";
 import CrmCommandDashboard from "./components/CrmCommandDashboard";
+import DevelopmentsRegistry from "./components/DevelopmentsRegistry";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
 import ConversionFunnelChart from "./charts/ConversionFunnelChart";
@@ -847,6 +848,7 @@ function AnalyticsPage() {
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
+    { id: "developments", label: "Разработки" },
     { id: "crmBoard", label: "CRM-доска" },
     { id: "quickNotes", label: "Заметки" },
   ];
@@ -2030,6 +2032,10 @@ function AnalyticsPage() {
     return <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} variant="inline" />;
   }
 
+  function renderDevelopmentsTab() {
+    return <DevelopmentsRegistry />;
+  }
+
   function renderActiveAnalyticsTab() {
     if (activeAnalyticsTab === "dashboard") return renderDashboard();
     if (activeAnalyticsTab === "traffic") return renderTrafficTab();
@@ -2056,6 +2062,7 @@ function AnalyticsPage() {
     if (activeTab === "dashboard") return renderCrmDashboard();
     if (activeTab === "tasks") return renderTasksTab();
     if (activeTab === "content") return renderContentTab();
+    if (activeTab === "developments") return renderDevelopmentsTab();
     if (activeTab === "crmBoard") return renderCrmBoardTab();
     return renderAnalyticsTab();
   }
