@@ -220,6 +220,7 @@ function buildCrmContentStats(source = {}) {
     ["Параметры", countTemplateRows(source.knowledge, defaultKnowledgeTemplate), "параметров", "accent"],
     ["Датасет", countDatasetBlocks(source.dataset, defaultTrainingDataset), "блоков", "success"],
     ["FAQ", countTemplateRows(source.faq, defaultFaqTemplate), "вопросов", "success"],
+    ["Презентация", 1, "слайд", "accent"],
     ["CEO", PRESENTATION_SLIDES.length, "слайдов", "accent"],
     ["Ролики", videos.length, "роликов", "success"],
     ["Термины", countTemplateRows(source.terminology, defaultTerminologyTemplate), "терминов", "accent"],
@@ -377,7 +378,7 @@ function getInitialAnalyticsTab() {
 
   const url = new URL(window.location.href);
   const board = url.searchParams.get("board");
-  const contentBoards = new Set(["materials", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "videoScripts", "terminology"]);
+  const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "videoScripts", "terminology"]);
   const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
 
   if (contentBoards.has(board)) return "content";
