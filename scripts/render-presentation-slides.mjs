@@ -131,6 +131,96 @@ const slides = [
       ["05", "Отправить помощь", "Подтвердить действие и отслеживать статус цикла"],
     ],
   },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-11.png"),
+    background: null,
+    title: "Партнёрская<br />программа",
+    titleStyle: "font-size: 64px; line-height: 0.98;",
+    headline: "Статусы, структура<br />и бонусная логика",
+    body: "Программа строится на личном объёме,<br />объёме первой линии и развитии структуры.<br />Условия зависят от статуса участника.",
+    partnerGroups: [
+      ["Builders", "Строим фундамент", "$50–$1.000", "18–36%"],
+      ["Masters", "Управляем ростом", "$1.500–$7.000", "38–50%"],
+      ["Elite", "Стратегия и влияние", "$8.000–$15.000", "52.5–60%"],
+    ],
+    partnerStats: [
+      ["1-я линия", "до $150.000"],
+      ["Глубина", "до $1.500.000"],
+      ["Матчинг", "до 25%"],
+    ],
+  },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-12.png"),
+    background: null,
+    title: "Экосистема<br />Atlas",
+    titleStyle: "font-size: 72px; line-height: 0.96;",
+    headline: "Не один продукт,<br />а экосистема<br />вокруг пользователя",
+    body: "Atlas System развивается поэтапно:<br />циклы, база знаний, обучение,<br />партнёрские инструменты и DAO.",
+    productCards: [
+      ["Smart Cycle 1", "доступно на старте", "Первый пилотный финансовый продукт и ядро экосистемы Atlas System."],
+      ["Invite & Earn", "доступно на старте", "Партнёрская программа для роста команды и развития структуры."],
+      ["Knowledge Hub", "доступно на старте", "База знаний: термины, FAQ, материалы и логика работы системы."],
+      ["Atlas Academy", "Q1 2027", "Обучение финансовой грамотности, Web3 и командообразованию."],
+      ["P2P Exchange", "Q4 2026", "Платформа прямых сделок между пользователями Atlas System."],
+      ["Governance", "Q4 2026", "Инструменты децентрализованного управления экосистемой."],
+    ],
+  },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-13.png"),
+    background: null,
+    title: "Архитектура<br />и управление",
+    titleStyle: "font-size: 66px; line-height: 0.96;",
+    headline: "Техническая основа,<br />безопасность и DAO-логика",
+    body: "Система развивается командой Web3.<br />Ключевая логика закрепляется в коде,<br />а управление постепенно переходит<br />к прозрачным процедурам.",
+    architectureCards: [
+      ["Безопасность", "Аудит smart-contract, bug bounty и постоянный мониторинг системы."],
+      ["Инфраструктура", "Устойчивые узлы, масштабируемые сервисы и резервирование."],
+      ["Разработка", "Открытые стандарты, модульная архитектура и улучшение продукта."],
+      ["DAO-управление", "Прозрачные on-chain процедуры, голосования и распределение ресурсов."],
+    ],
+    architectureNote: "Проект работает по модели Hybrid DAO: код задаёт правила, а ключевые решения постепенно переходят в on-chain механику.",
+  },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-14.png"),
+    background: null,
+    title: "Для кого<br />Atlas System",
+    titleStyle: "font-size: 68px; line-height: 0.96;",
+    headline: "Для людей, которым важны<br />понятные правила",
+    body: "Система подходит тем, кто хочет<br />разобраться в цифровой взаимопомощи,<br />видеть условия заранее и принимать<br />решение осознанно.",
+    audienceCards: [
+      ["Новичок", "Можно начать с базовых понятий: кошелёк, цикл, smart-contract и статус участия."],
+      ["Web3-пользователь", "Привычная логика подключения кошелька и проверки действий в блокчейне."],
+      ["Партнёр", "Понятная система статусов, роста команды и бонусов по правилам программы."],
+      ["Лидер команды", "Материалы, структура и дорожная карта для долгосрочного развития сообщества."],
+    ],
+  },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-15.png"),
+    background: null,
+    title: "Главная<br />идея",
+    titleStyle: "font-size: 78px; line-height: 0.96;",
+    headline: "От закрытых обещаний<br />к прозрачной<br />цифровой системе",
+    body: "Добровольное участие, smart-contract<br />и on-chain прозрачность.",
+    ideaCards: [
+      ["Понятно", "Новичок видит не набор сложных терминов, а простую механику участия."],
+      ["Прозрачно", "Правила заранее записаны в коде, а ключевые действия фиксируются в блокчейне."],
+      ["Добровольно", "Участник сам выбирает формат, сумму и момент входа в систему."],
+      ["Долгосрочно", "Atlas развивается как экосистема, а не как один временный продукт."],
+    ],
+  },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-16.png"),
+    background: null,
+    title: "Присоединяйтесь",
+    titleStyle: "font-size: 54px; line-height: 1; white-space: nowrap;",
+    headline: "к Atlas System<br />осознанно",
+    body: "Начните с материалов, проверьте условия,<br />разберитесь в механике циклов и только<br />после этого подключайтесь к системе.",
+    finalCta: {
+      label: "Официальный сайт",
+      url: "atlas-system.io",
+      note: "Изучить материалы, проверить условия и подключиться",
+    },
+  },
 ];
 
 function dataUrl(filePath) {
@@ -565,6 +655,376 @@ function htmlFor(slide) {
       line-height: 1.28;
       font-weight: 760;
     }
+    .partner-groups {
+      position: absolute;
+      left: 604px;
+      top: 126px;
+      width: 560px;
+      display: grid;
+      gap: 16px;
+    }
+    .partner-group-card {
+      min-height: 122px;
+      padding: 20px 22px;
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,248,238,0.68));
+      border: 1px solid rgba(255, 145, 40, 0.28);
+      box-shadow:
+        0 22px 44px rgba(126, 62, 0, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .partner-group-card header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .partner-group-card strong {
+      display: block;
+      color: #250d04;
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 900;
+    }
+    .partner-group-card em {
+      display: block;
+      margin-top: 6px;
+      color: #8d3514;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 820;
+    }
+    .partner-group-card span {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 90, 31, 0.12);
+      color: #a33d15;
+      font-size: 17px;
+      font-weight: 900;
+    }
+    .partner-group-card p {
+      margin: 0;
+      color: #4c3126;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 820;
+    }
+    .partner-stats {
+      position: absolute;
+      left: 604px;
+      top: 548px;
+      width: 560px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .partner-stat {
+      min-height: 70px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 10px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ff8a00, #ff5a1f);
+      color: #fff;
+      box-shadow: 0 16px 32px rgba(255, 90, 31, 0.22);
+    }
+    .partner-stat small {
+      display: block;
+      font-size: 14px;
+      font-weight: 800;
+      opacity: 0.88;
+    }
+    .partner-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+      font-weight: 950;
+    }
+    .product-grid {
+      position: absolute;
+      left: 590px;
+      top: 120px;
+      width: 600px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .product-card {
+      min-height: 138px;
+      padding: 20px 20px 18px;
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,248,238,0.68));
+      border: 1px solid rgba(255, 145, 40, 0.28);
+      box-shadow:
+        0 22px 44px rgba(126, 62, 0, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .product-card header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+    .product-card strong {
+      display: block;
+      max-width: 182px;
+      color: #250d04;
+      font-size: 24px;
+      line-height: 1.04;
+      font-weight: 940;
+    }
+    .product-card span {
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 90, 31, 0.12);
+      color: #a33d15;
+      font-size: 13px;
+      line-height: 1;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .product-card p {
+      margin: 0;
+      color: #5a392b;
+      font-size: 16px;
+      line-height: 1.34;
+      font-weight: 760;
+    }
+    .architecture-grid {
+      position: absolute;
+      left: 590px;
+      top: 124px;
+      width: 600px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .architecture-card {
+      min-height: 172px;
+      padding: 22px 22px 20px;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,248,238,0.66));
+      border: 1px solid rgba(255, 145, 40, 0.28);
+      box-shadow:
+        0 22px 44px rgba(126, 62, 0, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .architecture-card span {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      margin-bottom: 18px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255, 138, 0, 0.22), rgba(255, 90, 31, 0.14));
+      color: #ff5a1f;
+      font-size: 22px;
+      font-weight: 950;
+    }
+    .architecture-card strong {
+      display: block;
+      color: #250d04;
+      font-size: 25px;
+      line-height: 1.06;
+      font-weight: 930;
+    }
+    .architecture-card p {
+      margin: 11px 0 0;
+      color: #5a392b;
+      font-size: 16px;
+      line-height: 1.32;
+      font-weight: 760;
+    }
+    .architecture-note {
+      position: absolute;
+      left: 590px;
+      top: 548px;
+      width: 600px;
+      min-height: 74px;
+      display: flex;
+      align-items: center;
+      padding: 16px 22px;
+      border-radius: 22px;
+      background: rgba(255, 90, 31, 0.12);
+      color: #6b2a12;
+      border: 1px solid rgba(255, 90, 31, 0.2);
+      font-size: 17px;
+      line-height: 1.32;
+      font-weight: 850;
+    }
+    .audience-grid {
+      position: absolute;
+      left: 590px;
+      top: 128px;
+      width: 600px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .audience-card {
+      min-height: 204px;
+      padding: 24px 24px 22px;
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.89), rgba(255,248,238,0.67));
+      border: 1px solid rgba(255, 145, 40, 0.28);
+      box-shadow:
+        0 24px 48px rgba(126, 62, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .audience-card span {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      margin-bottom: 22px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ff8a00, #ff5a1f);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 950;
+      box-shadow: 0 14px 28px rgba(255, 90, 31, 0.2);
+    }
+    .audience-card strong {
+      display: block;
+      color: #250d04;
+      font-size: 28px;
+      line-height: 1.04;
+      font-weight: 930;
+    }
+    .audience-card p {
+      margin: 13px 0 0;
+      color: #5a392b;
+      font-size: 17px;
+      line-height: 1.34;
+      font-weight: 760;
+    }
+    .idea-grid {
+      position: absolute;
+      left: 590px;
+      top: 128px;
+      width: 600px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .idea-card {
+      min-height: 204px;
+      padding: 24px 24px 22px;
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.89), rgba(255,248,238,0.67));
+      border: 1px solid rgba(255, 145, 40, 0.28);
+      box-shadow:
+        0 24px 48px rgba(126, 62, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .idea-card span {
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 13px;
+      margin-bottom: 28px;
+      border-radius: 999px;
+      background: rgba(255, 90, 31, 0.12);
+      color: #a33d15;
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .idea-card strong {
+      display: block;
+      color: #250d04;
+      font-size: 30px;
+      line-height: 1.04;
+      font-weight: 940;
+    }
+    .idea-card p {
+      margin: 13px 0 0;
+      color: #5a392b;
+      font-size: 17px;
+      line-height: 1.34;
+      font-weight: 760;
+    }
+    .final-panel {
+      position: absolute;
+      left: 585px;
+      top: 138px;
+      width: 604px;
+      min-height: 432px;
+      padding: 44px;
+      border-radius: 38px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,248,238,0.68));
+      border: 1px solid rgba(255, 145, 40, 0.3);
+      box-shadow:
+        0 30px 64px rgba(126, 62, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(10px);
+    }
+    .final-panel small {
+      display: inline-flex;
+      height: 34px;
+      align-items: center;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: rgba(255, 90, 31, 0.12);
+      color: #a33d15;
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .final-panel strong {
+      display: block;
+      margin-top: 28px;
+      color: #250d04;
+      font-size: 66px;
+      line-height: 0.98;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+    .final-panel p {
+      margin: 24px 0 0;
+      width: 430px;
+      color: #5a392b;
+      font-size: 23px;
+      line-height: 1.28;
+      font-weight: 780;
+    }
+    .final-orbit {
+      position: absolute;
+      right: 44px;
+      bottom: 38px;
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ff8a00, #ff5a1f);
+      box-shadow: 0 18px 36px rgba(255, 90, 31, 0.24);
+    }
+    .final-orbit::before,
+    .final-orbit::after {
+      content: "";
+      position: absolute;
+      inset: 24px;
+      border-radius: 50%;
+      border: 10px solid rgba(255, 255, 255, 0.82);
+    }
+    .final-orbit::after {
+      inset: 44px;
+      background: #fff;
+      border: 0;
+    }
   </style>
 </head>
 <body>
@@ -583,6 +1043,14 @@ function htmlFor(slide) {
     ${slide.financeRows ? `<section class="finance-panel"><div class="finance-panel-head"><strong>Пример сценария</strong><span>${slide.financeBadge}</span></div><div class="finance-table">${slide.financeRows.map(([month, value]) => `<div class="finance-row"><span>${month}</span><span>${value}</span></div>`).join("")}</div><div class="finance-total">${slide.financeTotal}</div></section>` : ""}
     ${slide.riskCards ? `<section class="risk-grid">${slide.riskCards.map(([title, text], index) => `<div class="risk-card"><span>${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
     ${slide.steps ? `<section class="steps-grid">${slide.steps.map(([number, title, text]) => `<div class="step-card"><span>${number}</span><div><strong>${title}</strong><p>${text}</p></div></div>`).join("")}</section>` : ""}
+    ${slide.partnerGroups ? `<section class="partner-groups">${slide.partnerGroups.map(([name, subtitle, volume, bonus]) => `<div class="partner-group-card"><header><div><strong>${name}</strong><em>${subtitle}</em></div><span>${bonus}</span></header><p>Личный активный объём: ${volume}</p></div>`).join("")}</section>` : ""}
+    ${slide.partnerStats ? `<section class="partner-stats">${slide.partnerStats.map(([label, value]) => `<div class="partner-stat"><div><small>${label}</small><strong>${value}</strong></div></div>`).join("")}</section>` : ""}
+    ${slide.productCards ? `<section class="product-grid">${slide.productCards.map(([name, status, text]) => `<div class="product-card"><header><strong>${name}</strong><span>${status}</span></header><p>${text}</p></div>`).join("")}</section>` : ""}
+    ${slide.architectureCards ? `<section class="architecture-grid">${slide.architectureCards.map(([title, text], index) => `<div class="architecture-card"><span>${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
+    ${slide.architectureNote ? `<div class="architecture-note">${slide.architectureNote}</div>` : ""}
+    ${slide.audienceCards ? `<section class="audience-grid">${slide.audienceCards.map(([title, text], index) => `<div class="audience-card"><span>${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
+    ${slide.ideaCards ? `<section class="idea-grid">${slide.ideaCards.map(([title, text], index) => `<div class="idea-card"><span>0${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
+    ${slide.finalCta ? `<section class="final-panel"><small>${slide.finalCta.label}</small><strong>${slide.finalCta.url}</strong><p>${slide.finalCta.note}</p><div class="final-orbit"></div></section>` : ""}
     ${slide.note ? `<div class="slide-note">${slide.note}</div>` : ""}
     <div class="domain">atlas-system.io</div>
   </main>
