@@ -7264,6 +7264,53 @@
   min-height: 12rem;
 }
 
+.analytics-legal-doc-preview {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid rgba(118, 214, 194, 0.14);
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(245, 196, 106, 0.08), transparent 32%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.analytics-legal-doc-preview-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.analytics-legal-doc-preview-head span {
+  color: #f5f8ff;
+  font-size: 0.92rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analytics-legal-doc-preview-head small {
+  color: #ffc46a;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.analytics-legal-doc-preview-body {
+  max-height: 30rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #d8e3f5;
+  font-size: 0.88rem;
+  font-weight: 720;
+  line-height: 1.58;
+}
+
+.analytics-legal-doc-new-text {
+  color: #ffc46a;
+  font-weight: 900;
+}
+
 @media (max-width: 920px) {
   .analytics-program-editor,
   .analytics-program-grid {
