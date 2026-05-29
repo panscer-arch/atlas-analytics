@@ -131,7 +131,7 @@ const presentationSlides = [
     id: "slide-10",
     number: "10",
     title: "Как начать",
-    status: "План",
+    status: "Черновик",
     description:
       "Пошаговый слайд для новичка: установить кошелёк, пополнить USDT BEP-20, подключить кошелёк, выбрать цикл, отправить помощь, затем отслеживать статус.",
     slideText: [
@@ -139,6 +139,7 @@ const presentationSlides = [
       "Пять простых шагов для первого участия",
       "Установите Web3-кошелёк, пополните его USDT в сети BEP-20, подключите к Atlas System, выберите цикл и отправьте добровольную помощь через smart-contract.",
     ],
+    image: "/generated/atlas-presentation-slide-10.png",
   },
   {
     id: "slide-11",

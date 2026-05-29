@@ -116,6 +116,21 @@ const slides = [
       ["Ликвидность", "Запрос возможен при наличии средств в системе"],
     ],
   },
+  {
+    output: path.join(root, "public/generated/atlas-presentation-slide-10.png"),
+    background: null,
+    title: "Как начать",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "Пять шагов<br />для первого участия",
+    body: "Маршрут простой: подготовить кошелёк,<br />подключиться к системе, выбрать цикл<br />и отслеживать статус.",
+    steps: [
+      ["01", "Установить Web3-кошелёк", "MetaMask, Trust Wallet или другой совместимый кошелёк"],
+      ["02", "Пополнить USDT BEP-20", "Подготовить сумму участия и небольшую комиссию сети"],
+      ["03", "Подключить кошелёк", "Connect wallet на сайте Atlas System"],
+      ["04", "Выбрать цикл", "Открыть подходящий формат участия"],
+      ["05", "Отправить помощь", "Подтвердить действие и отслеживать статус цикла"],
+    ],
+  },
 ];
 
 function dataUrl(filePath) {
@@ -155,6 +170,23 @@ function htmlFor(slide) {
       object-fit: cover;
       -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 39%, rgba(0,0,0,0.26) 47%, #000 61%, #000 100%);
       mask-image: linear-gradient(90deg, transparent 0%, transparent 39%, rgba(0,0,0,0.26) 47%, #000 61%, #000 100%);
+    }
+    .fallback-visual {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 82% 16%, rgba(255, 199, 111, 0.46), transparent 34%),
+        radial-gradient(circle at 80% 78%, rgba(255, 116, 31, 0.18), transparent 34%),
+        linear-gradient(90deg, #fff7ef 0%, #fff1e5 47%, #ffd7a9 100%);
+    }
+    .fallback-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent 0 43%, rgba(255,255,255,0.1) 43% 100%),
+        repeating-linear-gradient(135deg, rgba(255, 149, 49, 0.10) 0 1px, transparent 1px 38px);
+      opacity: 0.56;
     }
     .veil {
       position: absolute;
@@ -483,11 +515,61 @@ function htmlFor(slide) {
       line-height: 1.35;
       font-weight: 760;
     }
+    .steps-grid {
+      position: absolute;
+      left: 610px;
+      top: 112px;
+      width: 560px;
+      display: grid;
+      gap: 14px;
+    }
+    .step-card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+      min-height: 86px;
+      padding: 16px 20px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,248,238,0.66));
+      border: 1px solid rgba(255, 145, 40, 0.28);
+      box-shadow:
+        0 20px 40px rgba(126, 62, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+    .step-card span {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ff8a00, #ff5a1f);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 950;
+      box-shadow: 0 12px 24px rgba(255, 90, 31, 0.22);
+    }
+    .step-card strong {
+      display: block;
+      color: #250d04;
+      font-size: 23px;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+    .step-card p {
+      margin: 7px 0 0;
+      color: #6b4434;
+      font-size: 16px;
+      line-height: 1.28;
+      font-weight: 760;
+    }
   </style>
 </head>
 <body>
   <main class="slide">
-    <img class="visual" src="${dataUrl(slide.background)}" alt="" />
+    ${slide.background ? `<img class="visual" src="${dataUrl(slide.background)}" alt="" />` : `<div class="fallback-visual"></div>`}
     <div class="veil"></div>
     <img class="logo" src="${dataUrl(logo)}" alt="Atlas System" />
     <section class="copy">
@@ -500,6 +582,7 @@ function htmlFor(slide) {
     ${slide.dailyCards ? `<section class="daily-grid">${slide.dailyCards.map(([name, term, amount, total, daily]) => `<div class="daily-card"><h2>${name}</h2><ul><li>${term}</li><li>${amount}</li><li>${total}</li><li>${daily}</li></ul></div>`).join("")}</section>` : ""}
     ${slide.financeRows ? `<section class="finance-panel"><div class="finance-panel-head"><strong>Пример сценария</strong><span>${slide.financeBadge}</span></div><div class="finance-table">${slide.financeRows.map(([month, value]) => `<div class="finance-row"><span>${month}</span><span>${value}</span></div>`).join("")}</div><div class="finance-total">${slide.financeTotal}</div></section>` : ""}
     ${slide.riskCards ? `<section class="risk-grid">${slide.riskCards.map(([title, text], index) => `<div class="risk-card"><span>${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
+    ${slide.steps ? `<section class="steps-grid">${slide.steps.map(([number, title, text]) => `<div class="step-card"><span>${number}</span><div><strong>${title}</strong><p>${text}</p></div></div>`).join("")}</section>` : ""}
     ${slide.note ? `<div class="slide-note">${slide.note}</div>` : ""}
     <div class="domain">atlas-system.io</div>
   </main>
