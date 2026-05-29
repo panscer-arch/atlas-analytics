@@ -220,7 +220,7 @@ function buildCrmContentStats(source = {}) {
     ["Параметры", countTemplateRows(source.knowledge, defaultKnowledgeTemplate), "параметров", "accent"],
     ["Датасет", countDatasetBlocks(source.dataset, defaultTrainingDataset), "блоков", "success"],
     ["FAQ", countTemplateRows(source.faq, defaultFaqTemplate), "вопросов", "success"],
-    ["Презентация", 1, "слайд", "accent"],
+    ["Презентация", 16, "слайдов", "accent"],
     ["CEO", PRESENTATION_SLIDES.length, "слайдов", "accent"],
     ["Ролики", videos.length, "роликов", "success"],
     ["Термины", countTemplateRows(source.terminology, defaultTerminologyTemplate), "терминов", "accent"],
