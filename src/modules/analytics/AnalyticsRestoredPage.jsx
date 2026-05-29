@@ -3,6 +3,7 @@ import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import AnalyticsDataTable from "./components/AnalyticsDataTable";
 import AnalyticsDateTime from "./components/AnalyticsDateTime";
+import PresentationContentTab from "./components/PresentationContentTab";
 import RestoredHeroCard from "./components/RestoredHeroCard";
 import RestoredSection from "./components/RestoredSection";
 import useAnalyticsData from "./hooks/useAnalyticsData";
@@ -15,6 +16,7 @@ const restoredTabs = [
   { id: "overview", label: "Обзор" },
   { id: "traffic", label: "Трафик" },
   { id: "products", label: "Продукты" },
+  { id: "presentation", label: "Презентация" },
   { id: "wallets", label: "Кошельки" },
   { id: "partner", label: "Структура" },
   { id: "geography", label: "География" },
@@ -24,21 +26,20 @@ function AnalyticsRestoredPage() {
   const { data, isLoading } = useAnalyticsData();
   const [activeTab, setActiveTab] = useState("overview");
   const [isBoardOpen, setIsBoardOpen] = useState(false);
-
-  if (isLoading) return <LoadingState />;
-  if (!data) return <EmptyState />;
-
-  const walletRows = data.tabsData?.wallets?.rows || [];
-  const partnerRows = data.tabsData?.partner?.rows || [];
-  const geographyRows = data.tabsData?.geography?.rows || [];
-  const trafficCountryRows = data.tabsData?.traffic?.countries || [];
-  const productRows = data.tabsData?.products?.rows || [];
+  const walletRows = data?.tabsData?.wallets?.rows || [];
+  const partnerRows = data?.tabsData?.partner?.rows || [];
+  const geographyRows = data?.tabsData?.geography?.rows || [];
+  const trafficCountryRows = data?.tabsData?.traffic?.countries || [];
+  const productRows = data?.tabsData?.products?.rows || [];
 
   const groupedProductRows = useMemo(() => {
     const lockup = productRows.filter((row) => row.source === "Lockup");
     const daily = productRows.filter((row) => row.source === "Daily Flow");
     return { lockup, daily };
   }, [productRows]);
+
+  if (isLoading) return <LoadingState />;
+  if (!data) return <EmptyState />;
 
   function renderOverviewTab() {
     return (
@@ -303,6 +304,7 @@ function AnalyticsRestoredPage() {
   function renderActiveTab() {
     if (activeTab === "traffic") return renderTrafficTab();
     if (activeTab === "products") return renderProductsTab();
+    if (activeTab === "presentation") return <PresentationContentTab />;
     if (activeTab === "wallets") return renderWalletsTab();
     if (activeTab === "partner") return renderPartnerTab();
     if (activeTab === "geography") return renderGeographyTab();
