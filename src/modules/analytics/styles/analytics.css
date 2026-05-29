@@ -7139,6 +7139,131 @@
   padding-top: 0.25rem;
 }
 
+.analytics-legal-docs-editor {
+  grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+}
+
+.analytics-legal-docs-sidebar {
+  max-height: min(72vh, 760px);
+  overflow: auto;
+}
+
+.analytics-legal-doc-tab {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.35rem 0.65rem;
+  align-items: center;
+  width: 100%;
+  border: 1px solid rgba(157, 178, 255, 0.11);
+  border-radius: 14px;
+  padding: 0.72rem;
+  background: rgba(255, 255, 255, 0.025);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.analytics-legal-doc-tab:hover,
+.analytics-legal-doc-tab:focus-visible {
+  border-color: rgba(123, 180, 255, 0.28);
+  background: rgba(123, 180, 255, 0.07);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.analytics-legal-doc-tab-active {
+  border-color: rgba(118, 214, 194, 0.3);
+  background:
+    linear-gradient(135deg, rgba(118, 214, 194, 0.14), rgba(123, 180, 255, 0.08)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.analytics-legal-doc-tab span {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 12px;
+  background: rgba(118, 214, 194, 0.08);
+  color: #9ff0df;
+  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.analytics-legal-doc-tab strong {
+  min-width: 0;
+  color: #f5f8ff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.22;
+}
+
+.analytics-legal-doc-tab small {
+  grid-column: 2;
+  color: #93a7c5;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.analytics-legal-doc-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.22fr);
+  gap: 1rem;
+  align-items: start;
+  border: 1px solid rgba(118, 214, 194, 0.16);
+  border-radius: 18px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(118, 214, 194, 0.12), transparent 34%),
+    rgba(118, 214, 194, 0.035);
+}
+
+.analytics-legal-doc-head h3 {
+  margin: 0.2rem 0 0;
+  color: #f5f8ff;
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+  font-weight: 950;
+}
+
+.analytics-legal-doc-head p {
+  margin: 0.45rem 0 0;
+  color: #aebdd4;
+  font-size: 0.95rem;
+  font-weight: 760;
+  line-height: 1.55;
+}
+
+.analytics-legal-doc-status {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgba(245, 196, 106, 0.18);
+  border-radius: 14px;
+  padding: 0.78rem 0.85rem;
+  background: rgba(245, 196, 106, 0.07);
+}
+
+.analytics-legal-doc-status span {
+  color: #ffe2a3;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-legal-doc-status strong {
+  color: #fff8e6;
+  font-size: 0.95rem;
+  font-weight: 950;
+}
+
+.analytics-legal-doc-body {
+  min-height: 12rem;
+}
+
 @media (max-width: 920px) {
   .analytics-program-editor,
   .analytics-program-grid {
@@ -7147,6 +7272,10 @@
 
   .analytics-program-sidebar {
     position: static;
+  }
+
+  .analytics-legal-doc-head {
+    grid-template-columns: 1fr;
   }
 }
 

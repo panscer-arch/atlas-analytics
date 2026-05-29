@@ -6,6 +6,7 @@ import AgentTrainingDataset from "./AgentTrainingDataset";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import AtlasPresentationBoard from "./AtlasPresentationBoard";
 import LaunchProgressBar from "./LaunchProgressBar";
+import LegalDocumentsBoard from "./LegalDocumentsBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
@@ -26,7 +27,7 @@ const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готов�
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
 const DEFAULT_BOARD_ID = "launch";
-const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "terminology", "marketing"];
+const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "marketing"];
 const STATIC_BOARD_META = {
   launch: {
     title: "Задачи запуска",
@@ -75,6 +76,10 @@ const STATIC_BOARD_META = {
   whitePaper: {
     title: "White Paper",
     description: "Рабочая структура White Paper: разделы, текстовые блоки, статусы вычитки и заметки.",
+  },
+  legalDocs: {
+    title: "Документы",
+    description: "Международный пакет документов для smart-contract проекта: правила протокола, риски, интерфейс, privacy, партнёрка и безопасность.",
   },
   terminology: {
     title: "Терминология",
@@ -1762,9 +1767,10 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isAgentFaqBoard = activeBoard === "agentFaq";
   const isCeoPresentationBoard = activeBoard === "ceoPresentation";
   const isWhitePaperBoard = activeBoard === "whitePaper";
+  const isLegalDocsBoard = activeBoard === "legalDocs";
   const isTerminologyBoard = activeBoard === "terminology";
   const isMarketingBoard = activeBoard === "marketing";
-  const isStaticContentBoard = isDailyTasksBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isTerminologyBoard;
+  const isStaticContentBoard = isDailyTasksBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard;
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isStaticContentBoard ? [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
@@ -1864,6 +1870,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "agentFaq", label: "FAQ" },
     { id: "ceoPresentation", label: "CEO-презентация" },
     { id: "whitePaper", label: "White Paper" },
+    { id: "legalDocs", label: "Документы" },
     { id: "videoScripts", label: "Ролики" },
     { id: "terminology", label: "Терминология" },
   ];
@@ -2235,6 +2242,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       {isAgentFaqBoard ? <AgentFaqTemplate /> : null}
       {isCeoPresentationBoard ? <AtlasPresentationBoard /> : null}
       {isWhitePaperBoard ? <WhitePaperBoard /> : null}
+      {isLegalDocsBoard ? <LegalDocumentsBoard /> : null}
       {isTerminologyBoard ? <AgentTerminologyTemplate /> : null}
       {isDailyTasksBoard ? <DailyTasksBoard /> : null}
 

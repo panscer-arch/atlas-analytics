@@ -378,7 +378,7 @@ function getInitialAnalyticsTab() {
 
   const url = new URL(window.location.href);
   const board = url.searchParams.get("board");
-  const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "videoScripts", "terminology"]);
+  const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "videoScripts", "terminology"]);
   const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
 
   if (contentBoards.has(board)) return "content";
