@@ -153,7 +153,6 @@ function WhitePaperBoard() {
               className={`analytics-agent-template-tab${activeBlock.id === block.id ? " analytics-agent-template-tab-active" : ""}`}
               onClick={() => setActiveBlockId(block.id)}
             >
-              <span>{block.sectionNumber || index + 1}</span>
               {block.title}
             </button>
           ))}
