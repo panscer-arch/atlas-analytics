@@ -3,9 +3,17 @@ import AnalyticsActionButton from "./AnalyticsActionButton";
 import { defaultWhitePaperBlocks } from "../data/whitePaperBlocks";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v6";
+export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v7";
 
 const BLOCK_STATUSES = ["Черновик", "На вычитке", "Готово", "Переписать"];
+const WHITE_PAPER_VIEWS = [
+  { id: "document", label: "Документ" },
+  { id: "manifest", label: "Манифест" },
+];
+
+function getBlockView(block) {
+  return block.view || (block.id === "full-manifest" ? "manifest" : "document");
+}
 
 function normalizeBlock(block, index = 0) {
   return {
@@ -13,6 +21,7 @@ function normalizeBlock(block, index = 0) {
     title: block.title || "Новый блок White Paper",
     sourceTitle: block.sourceTitle || block.title || "Новый блок White Paper",
     sectionNumber: block.sectionNumber || "",
+    view: block.view || (block.id === "full-manifest" ? "manifest" : "document"),
     role: block.role || "Раздел",
     status: block.status || "Черновик",
     text: block.text || "",
@@ -57,6 +66,13 @@ function WhitePaperBoard() {
     const url = new URL(window.location.href);
     return url.searchParams.get("block") || defaultWhitePaperBlocks[0].id;
   });
+  const [activeView, setActiveView] = useState(() => {
+    if (typeof window === "undefined") return "document";
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("view") === "manifest") return "manifest";
+    if (url.searchParams.get("block") === "full-manifest") return "manifest";
+    return "document";
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -71,27 +87,29 @@ function WhitePaperBoard() {
     };
   }, []);
 
-  const activeBlock = blocks.find((block) => block.id === activeBlockId) || blocks[0];
+  const visibleBlocks = useMemo(() => blocks.filter((block) => getBlockView(block) === activeView), [activeView, blocks]);
+  const activeBlock = visibleBlocks.find((block) => block.id === activeBlockId) || visibleBlocks[0] || blocks[0];
   const stats = useMemo(() => {
-    const ready = blocks.filter((block) => block.status === "Готово").length;
-    const review = blocks.filter((block) => block.status === "На вычитке").length;
-    const chars = blocks.reduce((sum, block) => sum + block.text.length, 0);
+    const ready = visibleBlocks.filter((block) => block.status === "Готово").length;
+    const review = visibleBlocks.filter((block) => block.status === "На вычитке").length;
+    const chars = visibleBlocks.reduce((sum, block) => sum + block.text.length, 0);
     return [
-      ["Блоков", blocks.length],
+      ["Блоков", visibleBlocks.length],
       ["На вычитке", review],
       ["Готово", ready],
       ["Символов", chars.toLocaleString("ru-RU")],
     ];
-  }, [blocks]);
+  }, [visibleBlocks]);
 
   useEffect(() => {
     if (!activeBlock || typeof window === "undefined") return;
 
     const url = new URL(window.location.href);
     url.searchParams.set("board", "whitePaper");
+    url.searchParams.set("view", activeView);
     url.searchParams.set("block", activeBlock.id);
     window.history.replaceState({}, "", url.toString());
-  }, [activeBlock]);
+  }, [activeBlock, activeView]);
 
   function updateBlocks(updater) {
     setBlocks((current) => {
@@ -105,11 +123,18 @@ function WhitePaperBoard() {
     updateBlocks((current) => current.map((block) => (block.id === blockId ? { ...block, ...patch } : block)));
   }
 
+  function switchView(viewId) {
+    setActiveView(viewId);
+    const firstBlock = blocks.find((block) => getBlockView(block) === viewId);
+    if (firstBlock) setActiveBlockId(firstBlock.id);
+  }
+
   function addBlock() {
     const block = normalizeBlock({
       id: `white-paper-${Date.now()}`,
-      title: "Новый блок White Paper",
-      role: "Рабочий раздел",
+      title: activeView === "manifest" ? "Новый блок манифеста" : "Новый блок White Paper",
+      role: activeView === "manifest" ? "Манифест" : "Рабочий раздел",
+      view: activeView,
       text: "",
       notes: "",
     });
@@ -129,9 +154,18 @@ function WhitePaperBoard() {
             Чистая версия для чтения, юридической вычитки и технической сверки без внутренних чеклистов.
           </p>
         </div>
-        <AnalyticsActionButton variant="primary" size="sm" onClick={addBlock}>
-          + блок
-        </AnalyticsActionButton>
+        <div className="analytics-agent-template-review-actions">
+          <div className="analytics-agent-template-review-filter" aria-label="Раздел White Paper">
+            {WHITE_PAPER_VIEWS.map((view) => (
+              <button key={view.id} type="button" className={activeView === view.id ? "is-active" : ""} onClick={() => switchView(view.id)}>
+                {view.label}
+              </button>
+            ))}
+          </div>
+          <AnalyticsActionButton variant="primary" size="sm" onClick={addBlock}>
+            + блок
+          </AnalyticsActionButton>
+        </div>
       </div>
 
       <div className="analytics-agent-dataset-stats">
@@ -146,7 +180,7 @@ function WhitePaperBoard() {
       <div className="analytics-dataset-editor">
         <aside className="analytics-dataset-sidebar">
           <span className="analytics-kicker">Блоки документа</span>
-          {blocks.map((block, index) => (
+          {visibleBlocks.map((block) => (
             <button
               key={block.id}
               type="button"
