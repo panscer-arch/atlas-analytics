@@ -3,16 +3,20 @@ import AnalyticsActionButton from "./AnalyticsActionButton";
 import { defaultWhitePaperBlocks } from "../data/whitePaperBlocks";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v7";
+export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v8";
 
 const BLOCK_STATUSES = ["Черновик", "На вычитке", "Готово", "Переписать"];
 const WHITE_PAPER_VIEWS = [
   { id: "document", label: "Документ" },
   { id: "manifest", label: "Манифест" },
+  { id: "archive", label: "Архив v6.4" },
 ];
 
 function getBlockView(block) {
-  return block.view || (block.id === "full-manifest" ? "manifest" : "document");
+  if (block.view) return block.view;
+  if (block.id === "full-manifest") return "manifest";
+  if (block.id?.startsWith("archive-")) return "archive";
+  return "document";
 }
 
 function normalizeBlock(block, index = 0) {
@@ -21,7 +25,7 @@ function normalizeBlock(block, index = 0) {
     title: block.title || "Новый блок White Paper",
     sourceTitle: block.sourceTitle || block.title || "Новый блок White Paper",
     sectionNumber: block.sectionNumber || "",
-    view: block.view || (block.id === "full-manifest" ? "manifest" : "document"),
+    view: getBlockView(block),
     role: block.role || "Раздел",
     status: block.status || "Черновик",
     text: block.text || "",
@@ -69,8 +73,10 @@ function WhitePaperBoard() {
   const [activeView, setActiveView] = useState(() => {
     if (typeof window === "undefined") return "document";
     const url = new URL(window.location.href);
-    if (url.searchParams.get("view") === "manifest") return "manifest";
+    const requestedView = url.searchParams.get("view");
+    if (WHITE_PAPER_VIEWS.some((view) => view.id === requestedView)) return requestedView;
     if (url.searchParams.get("block") === "full-manifest") return "manifest";
+    if (url.searchParams.get("block")?.startsWith("archive-")) return "archive";
     return "document";
   });
 
@@ -130,10 +136,16 @@ function WhitePaperBoard() {
   }
 
   function addBlock() {
+    const defaultsByView = {
+      document: { title: "Новый блок White Paper", role: "Рабочий раздел" },
+      manifest: { title: "Новый блок манифеста", role: "Манифест" },
+      archive: { title: "Новый блок архива v6.4", role: "Архив v6.4" },
+    };
+    const defaults = defaultsByView[activeView] || defaultsByView.document;
     const block = normalizeBlock({
       id: `white-paper-${Date.now()}`,
-      title: activeView === "manifest" ? "Новый блок манифеста" : "Новый блок White Paper",
-      role: activeView === "manifest" ? "Манифест" : "Рабочий раздел",
+      title: defaults.title,
+      role: defaults.role,
       view: activeView,
       text: "",
       notes: "",
@@ -151,7 +163,7 @@ function WhitePaperBoard() {
           <span className="analytics-kicker">White Paper</span>
           <h2 className="analytics-agent-template-title">White Paper: публичная версия</h2>
           <p className="analytics-page-subtitle mb-0">
-            Чистая версия для чтения, юридической вычитки и технической сверки без внутренних чеклистов.
+            Чистая версия для чтения и сверки. Большая старая редакция v6.4 вынесена отдельно, чтобы можно было спокойно вычитывать и переносить сильные блоки.
           </p>
         </div>
         <div className="analytics-agent-template-review-actions">
