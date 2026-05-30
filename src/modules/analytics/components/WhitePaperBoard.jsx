@@ -3,7 +3,7 @@ import AnalyticsActionButton from "./AnalyticsActionButton";
 import { defaultWhitePaperBlocks } from "../data/whitePaperBlocks";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v3";
+export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v4";
 
 const BLOCK_STATUSES = ["Черновик", "На вычитке", "Готово", "Переписать"];
 

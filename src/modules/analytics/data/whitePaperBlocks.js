@@ -1,4 +1,4 @@
-import atlasWhitePaperMarkdown from "../../../../docs/atlas-system-white-paper-v0.6.md?raw";
+import atlasWhitePaperMarkdown from "../../../../docs/atlas-system-white-paper-v6.4.md?raw";
 
 const BLOCK_META = {
   "00": { id: "cover", role: "Титульный блок" },
@@ -27,14 +27,44 @@ function createFallbackId(index) {
 }
 
 function createWhitePaperBlocks(markdown) {
-  const [intro, ...sections] = markdown.trim().split(/\n## /);
+  const lines = markdown.trim().split("\n");
+  const titleLine = lines[0]?.startsWith("# ") ? lines.shift().replace(/^#\s+/, "") : "Atlas System White Paper";
+  const introLines = [];
+  const sections = [];
+  let currentSection = null;
+
+  lines.forEach((line, index) => {
+    const nextLine = lines[index + 1] || "";
+    const previousNonEmptyLine = lines.slice(0, index).reverse().find((candidate) => candidate.trim()) || "";
+    const currentNumber = Number(line.match(/^(\d+)\.\s/)?.[1] || 0);
+    const previousListNumber = Number(previousNonEmptyLine.match(/^(\d+)\.\s/)?.[1] || 0);
+    const isSequentialListItem = currentNumber > 1 && previousListNumber === currentNumber - 1;
+    const isNumberedHeading = /^\d+(?:\.\d+)*\.?\s+\S/.test(line) && nextLine.trim() === "" && !isSequentialListItem;
+    const isMarkdownHeading = /^##\s+\S/.test(line);
+
+    if (isNumberedHeading || isMarkdownHeading) {
+      if (currentSection) sections.push(currentSection);
+      currentSection = {
+        title: normalizeTitle(line.replace(/^##\s+/, "")),
+        lines: [],
+      };
+      return;
+    }
+
+    if (currentSection) {
+      currentSection.lines.push(line);
+    } else {
+      introLines.push(line);
+    }
+  });
+
+  if (currentSection) sections.push(currentSection);
+
   const preparedSections = sections.map((section, index) => {
-    const [rawTitle = "", ...contentLines] = section.split("\n");
-    const title = normalizeTitle(rawTitle.replace(/^##\s*/, ""));
-    const number = title.match(/^(\d+)/)?.[1] || String(index).padStart(2, "0");
+    const title = section.title;
+    const number = title.match(/^(\d+(?:\.\d+)*)/)?.[1] || String(index).padStart(2, "0");
     const meta = BLOCK_META[number] || {};
-    const body = [title, "", contentLines.join("\n").trim()].filter(Boolean).join("\n");
-    const text = index === 0 ? [intro.trim(), "", body].filter(Boolean).join("\n\n") : body;
+    const text = [title, "", section.lines.join("\n").trim()].filter(Boolean).join("\n");
 
     return {
       id: meta.id || createFallbackId(index),
@@ -42,11 +72,21 @@ function createWhitePaperBlocks(markdown) {
       role: meta.role || "Раздел",
       status: "На вычитке",
       text,
-      notes: "Рабочая версия v0.6. Вычитать на ясность, юридическую аккуратность и отсутствие обещаний результата.",
+      notes: "Рабочая версия v6.4 из документа White Paper. Вычитать на ясность, юридическую аккуратность, соответствие smart-spec и отсутствие обещаний результата.",
     };
   });
 
-  return preparedSections;
+  return [
+    {
+      id: "cover",
+      title: titleLine,
+      role: "Титульный блок",
+      status: "На вычитке",
+      text: [titleLine, "", introLines.join("\n").trim()].filter(Boolean).join("\n"),
+      notes: "Титульный блок рабочей версии v6.4. Проверить статус Draft, дату версии и публичную пригодность перед публикацией.",
+    },
+    ...preparedSections,
+  ];
 }
 
 export const defaultWhitePaperBlocks = createWhitePaperBlocks(atlasWhitePaperMarkdown);
