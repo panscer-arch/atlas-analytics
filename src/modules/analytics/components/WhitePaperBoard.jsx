@@ -11,6 +11,8 @@ function normalizeBlock(block, index = 0) {
   return {
     id: block.id || `white-paper-${Date.now()}-${index}`,
     title: block.title || "Новый блок White Paper",
+    sourceTitle: block.sourceTitle || block.title || "Новый блок White Paper",
+    sectionNumber: block.sectionNumber || "",
     role: block.role || "Раздел",
     status: block.status || "Черновик",
     text: block.text || "",
@@ -151,7 +153,7 @@ function WhitePaperBoard() {
               className={`analytics-agent-template-tab${activeBlock.id === block.id ? " analytics-agent-template-tab-active" : ""}`}
               onClick={() => setActiveBlockId(block.id)}
             >
-              <span>{index + 1}</span>
+              <span>{block.sectionNumber || index + 1}</span>
               {block.title}
             </button>
           ))}
