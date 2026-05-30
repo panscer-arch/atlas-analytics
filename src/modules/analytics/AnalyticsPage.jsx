@@ -46,6 +46,7 @@ import Wrapper from "./components/Wrapper";
 import QuickNotesModal from "./components/QuickNotesModal";
 import CrmCommandDashboard from "./components/CrmCommandDashboard";
 import DevelopmentsRegistry from "./components/DevelopmentsRegistry";
+import SocialSubscriptionsBoard from "./components/SocialSubscriptionsBoard";
 import UsersGrowthChart from "./charts/UsersGrowthChart";
 import RevenueChart from "./charts/RevenueChart";
 import ConversionFunnelChart from "./charts/ConversionFunnelChart";
@@ -381,6 +382,7 @@ function getInitialAnalyticsTab() {
   const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "videoScripts", "terminology"]);
   const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
 
+  if (board === "socialSubscriptions") return "socialSubscriptions";
   if (contentBoards.has(board)) return "content";
   if (taskBoards.has(board)) return "tasks";
   if (board) return "tasks";
@@ -859,6 +861,7 @@ function AnalyticsPage() {
     { id: "productLibrary", label: "Библиотека" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
+    { id: "socialSubscriptions", label: "Подписки" },
     { id: "developments", label: "Разработки" },
     { id: "crmBoard", label: "CRM-доска" },
     { id: "quickNotes", label: "Заметки" },
@@ -2047,6 +2050,10 @@ function AnalyticsPage() {
     return <DevelopmentsRegistry />;
   }
 
+  function renderSocialSubscriptionsTab() {
+    return <SocialSubscriptionsBoard />;
+  }
+
   function renderActiveAnalyticsTab() {
     if (activeAnalyticsTab === "dashboard") return renderDashboard();
     if (activeAnalyticsTab === "traffic") return renderTrafficTab();
@@ -2073,6 +2080,7 @@ function AnalyticsPage() {
     if (activeTab === "dashboard") return renderCrmDashboard();
     if (activeTab === "tasks") return renderTasksTab();
     if (activeTab === "content") return renderContentTab();
+    if (activeTab === "socialSubscriptions") return renderSocialSubscriptionsTab();
     if (activeTab === "developments") return renderDevelopmentsTab();
     if (activeTab === "productLibrary") return <ProductLibraryBoard />;
     if (activeTab === "crmBoard") return renderCrmBoardTab();
