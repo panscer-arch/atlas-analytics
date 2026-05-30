@@ -223,6 +223,199 @@ const slides = [
   },
 ];
 
+const zhOverrides = [
+  {
+    title: "Atlas System",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "数字互助系统",
+    body: "人们在<strong>自愿</strong>基础上汇集资金，<br />分配规则提前写入<br /><strong>智能合约</strong>。",
+  },
+  {
+    title: "它如何<br />运作",
+    titleStyle: "font-size: 78px; line-height: 0.96;",
+    headline: "钱包 → 智能合约 →<br />透明分配",
+    body: "参与者连接数字钱包。<br />智能合约保存规则，并按系统逻辑<br />自动执行分配。",
+  },
+  {
+    title: "为什么<br />透明",
+    titleStyle: "font-size: 78px; line-height: 0.96;",
+    headline: "规则提前写入，<br />关键操作可在链上查看",
+    body: "关键流程记录在区块链上。<br />参与者可以查看周期状态、操作历史<br />和智能合约条件。",
+  },
+  {
+    title: "Smart Cycle",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "Atlas System 的<br />基础参与周期",
+    body: "参与者选择周期形式，<br />提供自愿帮助，并查看系统中的<br />执行阶段。",
+  },
+  {
+    title: "参与形式",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "根据自己的准备程度<br />选择周期",
+    body: "系统提供多种参与形式：<br />从短期测试到更长周期。<br />选择权始终在用户手中。",
+  },
+  {
+    title: "Lockup Flow",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "固定锁定期<br />参与方案",
+    body: "参与者选择方案，将自愿帮助<br />发送到智能合约，并等待<br />所选期限结束。",
+    tariffGrid: [
+      ["Contract test", "10 分钟", "返还"],
+      ["Launch", "1 天", "增量 +0.3%"],
+      ["Momentum", "5 天", "增量 +2%"],
+      ["Premiere", "10 天", "增量 +5%"],
+      ["President", "20 天", "增量 +12%"],
+      ["Imperium", "30 天", "增量 +22.5%"],
+    ],
+    note: "Lockup Flow 起步 $10",
+  },
+  {
+    title: "Daily Flow",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "带有每日逻辑的<br />长期周期",
+    body: "该形式设计为 200 天。<br />参与者根据参与金额<br />选择 Core 或 Elite。",
+    dailyCards: [
+      ["Core", "200 天", "$10–$2,000", "+120%", "每日 0.6%"],
+      ["Elite", "200 天", "超过 $2,000", "+160%", "每日 0.8%"],
+    ],
+  },
+  {
+    title: "财务机会",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "所选周期的<br />示例计算",
+    body: "表格展示一个参考增长情景。<br />结果取决于系统规则<br />和可用流动性。",
+    financeRows: [
+      ["第 1 个月", "$1,202.50"],
+      ["第 2 个月", "$1,446.01"],
+      ["第 3 个月", "$1,738.82"],
+      ["第 4 个月", "$2,090.93"],
+      ["第 5 个月", "$2,514.35"],
+      ["第 6 个月", "$3,023.50"],
+      ["第 7 个月", "$3,635.76"],
+      ["第 8 个月", "$4,372.01"],
+      ["第 9 个月", "$5,257.34"],
+      ["第 10 个月", "$6,321.95"],
+      ["第 11 个月", "$7,602.14"],
+      ["第 12 个月", "$9,141.57"],
+    ],
+    financeTitle: "示例情景",
+    financeTotal: "12 个月后约 $9,142",
+    financeBadge: "年化 814%",
+  },
+  {
+    title: "风险提示",
+    titleStyle: "font-size: 78px; line-height: 0.98;",
+    headline: "参与是自愿的，<br />结果不作保证",
+    body: "请求只会根据智能合约规则<br />并在系统具备足够流动性时执行。",
+    riskCards: [
+      ["自愿参与", "参与者独立作出决定"],
+      ["无保证", "额外帮助不是承诺收益"],
+      ["按规则", "执行逻辑提前写入智能合约"],
+      ["流动性", "请求取决于系统中的可用资金"],
+    ],
+  },
+  {
+    title: "如何开始",
+    titleStyle: "font-size: 72px; line-height: 1; white-space: nowrap;",
+    headline: "首次参与的<br />五个步骤",
+    body: "路径很简单：准备钱包，<br />连接系统，选择周期，<br />并跟踪状态。",
+    steps: [
+      ["01", "安装 Web3 钱包", "MetaMask、Trust Wallet 或其他兼容钱包"],
+      ["02", "充值 USDT BEP-20", "准备参与金额和少量网络手续费"],
+      ["03", "连接钱包", "在 Atlas System 网站点击 Connect wallet"],
+      ["04", "选择周期", "打开适合自己的参与形式"],
+      ["05", "发送帮助", "确认操作并跟踪周期状态"],
+    ],
+  },
+  {
+    title: "伙伴计划",
+    titleStyle: "font-size: 78px; line-height: 1; white-space: nowrap;",
+    headline: "等级、结构<br />和奖金逻辑",
+    body: "计划基于个人量、第一线量<br />和团队结构发展。<br />条件取决于参与者等级。",
+    partnerGroups: [
+      ["Builders", "建立基础", "$50–$1,000", "18–36%"],
+      ["Masters", "管理增长", "$1,500–$7,000", "38–50%"],
+      ["Elite", "战略与影响力", "$8,000–$15,000", "52.5–60%"],
+    ],
+    partnerVolumeLabel: "个人活跃量",
+    partnerStats: [
+      ["第一线", "最高 $150,000"],
+      ["深度结构", "最高 $1,500,000"],
+      ["匹配奖金", "最高 25%"],
+    ],
+  },
+  {
+    title: "Atlas<br />生态系统",
+    titleStyle: "font-size: 72px; line-height: 0.96;",
+    headline: "不是单一产品，<br />而是围绕用户的生态",
+    body: "Atlas System 分阶段发展：<br />周期、知识库、培训、<br />伙伴工具和 DAO。",
+    productCards: [
+      ["Smart Cycle 1", "启动时可用", "首个试点金融产品，也是 Atlas System 生态的核心。"],
+      ["Invite & Earn", "启动时可用", "用于团队增长和结构发展的伙伴计划。"],
+      ["Knowledge Hub", "启动时可用", "知识库：术语、FAQ、材料和系统逻辑。"],
+      ["Atlas Academy", "2027 Q1", "金融素养、Web3 和团队建设培训。"],
+      ["P2P Exchange", "2026 Q4", "Atlas System 用户之间的直接交易平台。"],
+      ["Governance", "2026 Q4", "生态系统去中心化治理工具。"],
+    ],
+  },
+  {
+    title: "架构<br />与治理",
+    titleStyle: "font-size: 78px; line-height: 0.96;",
+    headline: "技术基础、<br />安全和 DAO 逻辑",
+    body: "系统由 Web3 团队开发。<br />关键逻辑写入代码，治理逐步<br />走向透明流程。",
+    architectureCards: [
+      ["安全", "智能合约审计、bug bounty 和持续系统监控。"],
+      ["基础设施", "稳定节点、可扩展服务和备份机制。"],
+      ["开发", "开放标准、模块化架构和产品持续改进。"],
+      ["DAO 治理", "透明的链上流程、投票和资源分配。"],
+    ],
+    architectureNote: "项目采用 Hybrid DAO 模型：代码设定规则，关键决策逐步转向链上机制。",
+  },
+  {
+    title: "Atlas System<br />适合谁",
+    titleStyle: "font-size: 66px; line-height: 0.98;",
+    headline: "适合重视<br />清晰规则的人",
+    body: "适合希望理解数字互助、<br />提前看到条件并理性决策的人。",
+    audienceCards: [
+      ["新手", "可以从钱包、周期、智能合约和参与状态等基础概念开始。"],
+      ["Web3 用户", "熟悉的钱包连接逻辑，以及在区块链上核验操作。"],
+      ["伙伴", "清晰的等级体系、团队增长和规则化奖金逻辑。"],
+      ["团队领导", "用于长期社区发展的材料、结构和路线图。"],
+    ],
+  },
+  {
+    title: "核心理念",
+    titleStyle: "font-size: 78px; line-height: 1; white-space: nowrap;",
+    headline: "从封闭承诺<br />到透明数字系统",
+    body: "自愿参与、智能合约<br />和链上透明。",
+    ideaCards: [
+      ["易懂", "新手看到的不是复杂术语，而是简单的参与机制。"],
+      ["透明", "规则提前写入代码，关键操作记录在区块链上。"],
+      ["自愿", "参与者自行选择形式、金额和进入时机。"],
+      ["长期", "Atlas 发展为生态系统，而不是一次性产品。"],
+    ],
+  },
+  {
+    title: "加入 Atlas System",
+    titleStyle: "font-size: 58px; line-height: 1; white-space: nowrap;",
+    headline: "先理解，<br />再参与",
+    body: "从材料开始，检查条件，<br />理解周期机制，然后再连接系统。",
+    finalCta: {
+      label: "官方网站",
+      url: "atlas-system.io",
+      note: "查看材料、核验条件并连接系统",
+    },
+  },
+];
+
+const selectedSlides = process.argv.includes("--zh")
+  ? slides.map((slide, index) => ({
+      ...slide,
+      ...zhOverrides[index],
+      output: path.join(root, `public/generated/atlas-presentation-zh-slide-${String(index + 1).padStart(2, "0")}.png`),
+    }))
+  : slides;
+
 function dataUrl(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const mime = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/svg+xml";
@@ -242,7 +435,7 @@ function htmlFor(slide) {
       height: 720px;
       overflow: hidden;
       background: #111;
-      font-family: Inter, Aptos, Arial, sans-serif;
+      font-family: Inter, Aptos, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
     }
     .slide {
       position: relative;
@@ -1040,10 +1233,10 @@ function htmlFor(slide) {
     </section>
     ${slide.tariffGrid ? `<section class="tariff-grid">${slide.tariffGrid.map(([name, days, delta]) => `<div class="tariff-card"><strong>${name}</strong><span>${days}</span><small>${delta}</small></div>`).join("")}</section>` : ""}
     ${slide.dailyCards ? `<section class="daily-grid">${slide.dailyCards.map(([name, term, amount, total, daily]) => `<div class="daily-card"><h2>${name}</h2><ul><li>${term}</li><li>${amount}</li><li>${total}</li><li>${daily}</li></ul></div>`).join("")}</section>` : ""}
-    ${slide.financeRows ? `<section class="finance-panel"><div class="finance-panel-head"><strong>Пример сценария</strong><span>${slide.financeBadge}</span></div><div class="finance-table">${slide.financeRows.map(([month, value]) => `<div class="finance-row"><span>${month}</span><span>${value}</span></div>`).join("")}</div><div class="finance-total">${slide.financeTotal}</div></section>` : ""}
+    ${slide.financeRows ? `<section class="finance-panel"><div class="finance-panel-head"><strong>${slide.financeTitle || "Пример сценария"}</strong><span>${slide.financeBadge}</span></div><div class="finance-table">${slide.financeRows.map(([month, value]) => `<div class="finance-row"><span>${month}</span><span>${value}</span></div>`).join("")}</div><div class="finance-total">${slide.financeTotal}</div></section>` : ""}
     ${slide.riskCards ? `<section class="risk-grid">${slide.riskCards.map(([title, text], index) => `<div class="risk-card"><span>${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
     ${slide.steps ? `<section class="steps-grid">${slide.steps.map(([number, title, text]) => `<div class="step-card"><span>${number}</span><div><strong>${title}</strong><p>${text}</p></div></div>`).join("")}</section>` : ""}
-    ${slide.partnerGroups ? `<section class="partner-groups">${slide.partnerGroups.map(([name, subtitle, volume, bonus]) => `<div class="partner-group-card"><header><div><strong>${name}</strong><em>${subtitle}</em></div><span>${bonus}</span></header><p>Личный активный объём: ${volume}</p></div>`).join("")}</section>` : ""}
+    ${slide.partnerGroups ? `<section class="partner-groups">${slide.partnerGroups.map(([name, subtitle, volume, bonus]) => `<div class="partner-group-card"><header><div><strong>${name}</strong><em>${subtitle}</em></div><span>${bonus}</span></header><p>${slide.partnerVolumeLabel || "Личный активный объём"}: ${volume}</p></div>`).join("")}</section>` : ""}
     ${slide.partnerStats ? `<section class="partner-stats">${slide.partnerStats.map(([label, value]) => `<div class="partner-stat"><div><small>${label}</small><strong>${value}</strong></div></div>`).join("")}</section>` : ""}
     ${slide.productCards ? `<section class="product-grid">${slide.productCards.map(([name, status, text]) => `<div class="product-card"><header><strong>${name}</strong><span>${status}</span></header><p>${text}</p></div>`).join("")}</section>` : ""}
     ${slide.architectureCards ? `<section class="architecture-grid">${slide.architectureCards.map(([title, text], index) => `<div class="architecture-card"><span>${index + 1}</span><strong>${title}</strong><p>${text}</p></div>`).join("")}</section>` : ""}
@@ -1063,7 +1256,7 @@ const browser = await chromium.launch({
   executablePath: "/Users/digitex/Library/Caches/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-mac-arm64/chrome-headless-shell",
 });
 
-for (const slide of slides) {
+for (const slide of selectedSlides) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   await page.setContent(htmlFor(slide), { waitUntil: "load" });
   await page.screenshot({ path: slide.output, fullPage: false });
