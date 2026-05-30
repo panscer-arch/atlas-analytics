@@ -3,7 +3,7 @@ import AnalyticsActionButton from "./AnalyticsActionButton";
 import { defaultWhitePaperBlocks } from "../data/whitePaperBlocks";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v5";
+export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v6";
 
 const BLOCK_STATUSES = ["Черновик", "На вычитке", "Готово", "Переписать"];
 
@@ -124,9 +124,9 @@ function WhitePaperBoard() {
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">White Paper</span>
-          <h2 className="analytics-agent-template-title">White Paper: структура по блокам</h2>
+          <h2 className="analytics-agent-template-title">White Paper: публичная версия</h2>
           <p className="analytics-page-subtitle mb-0">
-            Рабочая вкладка для постепенного наполнения, редактуры и вычитки White Paper по разделам.
+            Чистая версия для чтения, юридической вычитки и технической сверки без внутренних чеклистов.
           </p>
         </div>
         <AnalyticsActionButton variant="primary" size="sm" onClick={addBlock}>
