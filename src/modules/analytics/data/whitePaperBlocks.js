@@ -3,6 +3,7 @@ import atlasWhitePaperMarkdown from "../../../../docs/atlas-system-white-paper-p
 const BLOCK_META = {
   "1": { id: "executive-summary", title: "Краткое резюме", role: "Публичное резюме" },
   "2": { id: "what-is-atlas", title: "Что такое Atlas", role: "Объяснение системы" },
+  "2.1": { id: "mission-manifest", title: "Миссия и манифест Atlas", role: "Идеология системы" },
   "3": { id: "participant-journey", title: "Как участник работает с Atlas", role: "Путь участника" },
   "4": { id: "smart-cycle", title: "Smart Cycle", role: "Основная механика" },
   "5": { id: "calculation-model", title: "Расчётная модель и примеры", role: "Экономика" },
