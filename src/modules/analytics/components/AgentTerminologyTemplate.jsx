@@ -4,6 +4,65 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const AGENT_TERMINOLOGY_STORAGE_KEY = "atlas.analytics.agentTerminologyTemplate.v2";
 
+const terminologyReviewComments = {
+  "core-0": "Вариант термина: Atlas System. Описание лучше: Web3-based mutual support system with smart-contract automation and DAO-inspired mechanics. По-русски: цифровая Web3-система взаимной помощи, а не инвестиционная платформа.",
+  "core-1": "Вариант термина: Участник / Participant. Не использовать “клиент” и “инвестор”; это меняет юридическую рамку.",
+  "core-2": "Вариант термина: Web3-регистрация. Хорошо подчеркнуть: аккаунт создается через подключение кошелька, без email/password.",
+  "core-3": "Вариант термина: Личный кабинет / Participant Dashboard. Можно убрать “тикеты помощи” из короткого описания, если в интерфейсе пока показываются циклы.",
+  "core-4": "Вариант термина: Сообщество Atlas / Atlas Community. Важно: сообщество помогает обучать и развивать систему, но не гарантирует выплаты.",
+  "core-5": "Вариант термина: DAO-inspired mechanics. Английская формулировка: Atlas is not a full DAO, but uses DAO-inspired mechanics for selected governance and community decision-making features.",
+  "web3-0": "Вариант термина: MetaMask wallet. Уточнить: non-custodial wallet, где Atlas не хранит приватные ключи.",
+  "web3-1": "Вариант термина: WalletConnect. Оставить только если реально включено в кабинете; иначе пометить как planned/optional.",
+  "web3-2": "Вариант термина: BNB Smart Chain (BSC). Лучше писать полное название при первом упоминании.",
+  "web3-3": "Вариант термина: BEP20 USDT. Важно: не просто USDT, а USDT в сети BSC/BEP20.",
+  "web3-4": "Вариант термина: Network gas / BNB gas. Пояснить, что это комиссия сети, а не комиссия Atlas.",
+  "web3-5": "Вариант термина: BscScan explorer. Добавить после публикации: official contract address should be checked only from official registry.",
+  "web3-6": "Вариант термина: Non-custodial wallet. Это нужно для FAQ и рисков: пользователь сам хранит ключи и сам подтверждает транзакции.",
+  "web3-7": "Вариант термина: Contract Address Registry. Нужен как source-of-truth для адресов контрактов, сети и explorer links.",
+  "cycles-0": "Вариант термина: Smart Cycle. Хорошо, но лучше убрать ощущение обещанного результата: цикл исполняется по правилам смарт-контракта и при наличии условий.",
+  "cycles-1": "Вариант термина: Participation ticket / Тикет участия. “Тикет помощи” мягче юридически, но может звучать непривычно; выбрать один термин и держать везде.",
+  "cycles-2": "Вариант термина: Создание Smart Cycle. Не использовать “депозит” в публичных материалах.",
+  "cycles-3": "Вариант термина: Participation amount / Сумма участия. “Сумма оказанной помощи” юридически мягко, но длинно для интерфейса.",
+  "cycles-4": "Вариант термина: Lockup Flow. Добавить: fixed-period Smart Cycle.",
+  "cycles-5": "Вариант термина: Daily Flow. Нужна короткая точная формула: 200-day flow with daily claim mechanics, если это финально подтверждено.",
+  "cycles-6": "Вариант термина: Запрос помощи / Claim request. Хорошая публичная замена Claim.",
+  "cycles-7": "Вариант термина: Claim. Оставить как технический термин в Web3-интерфейсе, но для новичков объяснять как “запросить помощь”.",
+  "cycles-8": "Вариант термина: Calculated delta / Расчетная дельта. Слово “добавочная помощь” безопаснее, но обязательно: не гарантированная прибыль.",
+  "cycles-9": "Вариант термина: New money / Новый вход средств. Это важно для аналитики и устойчивости модели.",
+  "cycles-10": "Вариант термина: System obligations / Расчетные обязательства. Указать, что это аналитическая метрика, не отдельная гарантия выплаты.",
+  "partner-0": "Вариант термина: Partner Program. Описание должно говорить про правила, квалификации и компрессию, без обещания дохода.",
+  "partner-1": "Вариант термина: Referral link. Важно: личная ссылка участника; для общих вебинаров не давать ведущему уводить чужую аудиторию.",
+  "partner-2": "Вариант термина: Career status / Статус. Связать с Builder, Master, Strategist и т.д.",
+  "partner-3": "Вариант термина: Compression. Нужно финальное описание на простом примере для партнерского документа.",
+  "partner-4": "Вариант термина: Matching bonus. Оставить английский термин, но рядом дать русское объяснение.",
+  "partner-5": "Вариант термина: Referral structure / Партнерская структура. “Неограниченная глубина” использовать осторожно: начисления ограничиваются правилами.",
+  "finance-0": "Вариант термина: Platform fee. Проверить финальные проценты и писать: applies according to current rules.",
+  "finance-1": "Вариант термина: Smart-contract reserve. Лучше, чем “пул”, но надо синхронизировать с интерфейсом.",
+  "finance-2": "Вариант термина: Available liquidity. Подчеркнуть: влияет на исполнение запросов помощи.",
+  "finance-3": "Вариант термина: Inflow / Входящий поток. Для аналитики ок.",
+  "finance-4": "Вариант термина: Outflow / Исходящий поток. Для отчетов и health of system.",
+  "finance-5": "Вариант термина: Net flow / Чистый поток. Хорошая метрика, не показывать как доход пользователя.",
+  "dao-0": "Вариант термина: DAO-inspired mechanics. Не писать, что Atlas — полноценное DAO.",
+  "dao-1": "Вариант термина: Voting power / Вес голоса. “10 USDT = 1 vote” оставить только после финального подтверждения.",
+  "dao-2": "Вариант термина: Governance process. Нужна граница: какие вопросы можно выносить на голосование.",
+  "dao-3": "Вариант термина: Cycle epoch / Эпоха циклов. Термин сложный; добавить пример или не использовать в публичном FAQ до готовности.",
+  "legal-0": "Вариант термина: Not an investment product. Обязательная compliance-формулировка.",
+  "legal-1": "Вариант термина: No guaranteed return. Жестко оставить: no guarantee, no fixed profit, no risk-free participation.",
+  "legal-2": "Вариант термина: Risk Disclaimer. Хорошо, но добавить user responsibility, smart-contract risk, liquidity risk and network risk.",
+  "legal-3": "Вариант термина: Participate / Provide mutual support. “Оказать помощь” безопасно, но в английском лучше avoid “donation”, если это не юридически подтверждено.",
+  "legal-4": "Вариант термина: Request support / Claim. Оставить оба: публичный и технический.",
+  "legal-5": "Вариант термина: Source of truth. Нужен для документов, contract registry, тарифов и партнерских процентов.",
+  "legal-6": "Вариант термина: Web3 risk. Должен попадать в Risk Disclaimer, FAQ и onboarding.",
+  "analytics-0": "Вариант термина: Registered wallet. Лучше, чем Registered, потому что регистрация привязана к адресу кошелька.",
+  "analytics-1": "Вариант термина: First Smart Cycle. Если в интерфейсе уйдем от “ticket”, этот термин понятнее.",
+  "analytics-2": "Вариант термина: Active participant. Нужен точный период/условие активности.",
+  "analytics-3": "Вариант термина: Inactive participant. Уточнить, после какого события/периода считается inactive.",
+  "analytics-4": "Вариант термина: Web3 funnel. Хороший термин для аналитики продукта.",
+  "analytics-5": "Вариант термина: Repeat participation / Повторный Smart Cycle. Лучше, чем повторный депозит.",
+  "analytics-6": "Вариант термина: Speaker rating. Нужен для вебинаров и бонусов ведущим.",
+  "analytics-7": "Вариант термина: Webinar bonus. Обязательно: бонус определяется после вебинара по критериям, не автоматическая гарантия.",
+};
+
 const defaultTerminologySections = [
   {
     id: "core",
@@ -14,6 +73,7 @@ const defaultTerminologySections = [
       ["Регистрация", "Первое подключение MetaMask или другого поддерживаемого кошелька к личному кабинету.", "Важно: email-регистрации нет."],
       ["Личный кабинет", "Интерфейс участника для создания тикетов помощи, отслеживания смарт-циклов, запроса помощи, статусов, партнёрки и материалов.", ""],
       ["Сообщество", "Участники, лидеры и команды, которые помогают объяснять правила взаимопомощи, обучать новичков и развивать систему.", ""],
+      ["DAO-inspired mechanics", "Механики, вдохновленные DAO: отдельные функции голосования, обсуждения и участия сообщества без заявления, что Atlas является полноценным DAO.", "Рекомендуемая английская формулировка для сайта и White Paper."],
     ],
   },
   {
@@ -26,6 +86,8 @@ const defaultTerminologySections = [
       ["BEP20", "Стандарт токенов в сети BSC, в котором используется USDT для участия.", ""],
       ["BNB Gas", "BNB, который нужен на кошельке для оплаты комиссии сети при транзакциях.", ""],
       ["BscScan", "Обозреватель сети BSC, где можно проверить транзакции, адреса и события smart-contract.", "Добавить ссылку на контракт после публикации."],
+      ["Non-custodial wallet", "Кошелек, где приватные ключи и seed-фраза хранятся у пользователя, а не у Atlas.", "Важный термин для рисков и FAQ."],
+      ["Contract Address Registry", "Официальный реестр адресов smart-contract, сети, explorer-ссылок и статуса проверки кода.", "Нужен как source-of-truth перед публичным запуском."],
     ],
   },
   {
@@ -88,6 +150,8 @@ const defaultTerminologySections = [
       ["Risk disclaimer", "Предупреждение о рисках Web3, ликвидности, smart-contract и самостоятельной ответственности участника.", "Важно указывать, что запрос помощи исполняется при наличии достаточной ликвидности."],
       ["Оказать помощь", "Корректная формулировка для создания тикета/смарт-цикла вместо слова «инвестировать».", ""],
       ["Запросить помощь", "Корректная формулировка для claim после выполнения условий тикета или в ежедневной логике Daily Flow.", ""],
+      ["Source of truth", "Основной утвержденный источник данных по параметрам, адресам контрактов, тарифам, комиссиям и партнерским правилам.", "Нужен для White Paper, FAQ, AI-агента и переводчиков."],
+      ["Web3 risk", "Риск, связанный с кошельком, сетью, smart-contract, фишингом, ликвидностью, ошибкой пользователя или изменением внешней инфраструктуры.", "Добавить в onboarding и уведомление о рисках."],
     ],
   },
   {
@@ -100,6 +164,8 @@ const defaultTerminologySections = [
       ["Inactive", "Участник без новых действий после регистрации, тикета или запроса помощи.", ""],
       ["Web3-воронка", "Путь от открытия сайта до подключения кошелька, первого тикета помощи, запроса помощи и повторного участия.", ""],
       ["Повторное участие", "Создание нового тикета помощи после предыдущего участия или запроса помощи.", "В аналитике это новые деньги."],
+      ["Speaker rating", "Оценка ведущего вебинара по качеству презентации, удержанию аудитории, соблюдению правил коммуникации и реакции участников.", "Нужно для расчета бонусов за вебинары."],
+      ["Webinar bonus", "Денежный бонус ведущему вебинара, который может определяться после события по количеству участников, качеству, рейтингу и статусу спикера.", "Не обещать автоматическую фиксированную выплату без правил."],
     ],
   },
 ].map((section) => ({
@@ -109,6 +175,8 @@ const defaultTerminologySections = [
     term,
     description,
     comment: comment || "",
+    review: terminologyReviewComments[`${section.id}-${index}`] || "",
+    approved: false,
   })),
 }));
 
@@ -124,9 +192,10 @@ const TERMINOLOGY_SECTION_DESCRIPTIONS = {
   analytics: "CRM-состояния, Web3-воронка и ключевые определения для аналитики.",
 };
 
-function hydrateRows(defaultRows, savedRows = []) {
+function hydrateRows(defaultRows, savedRows = [], deletedRowIds = []) {
+  const deletedRows = new Set(deletedRowIds);
   const savedRowsById = new Map(savedRows.map((row) => [row.id, row]));
-  const hydratedDefaultRows = defaultRows.map((defaultRow) => {
+  const hydratedDefaultRows = defaultRows.filter((defaultRow) => !deletedRows.has(defaultRow.id)).map((defaultRow) => {
     const savedRow = savedRowsById.get(defaultRow.id);
     if (!savedRow) return defaultRow;
 
@@ -135,11 +204,18 @@ function hydrateRows(defaultRows, savedRows = []) {
       term: savedRow.term || defaultRow.term,
       description: savedRow.description || defaultRow.description,
       comment: savedRow.comment || savedRow.source || defaultRow.comment,
+      review: savedRow.review || defaultRow.review || "",
+      approved: Boolean(savedRow.approved),
     };
   });
   const customRows = savedRows
-    .filter((row) => !defaultRows.some((defaultRow) => defaultRow.id === row.id))
-    .map((row) => ({ ...row, comment: row.comment || row.source || "" }));
+    .filter((row) => !defaultRows.some((defaultRow) => defaultRow.id === row.id) && !deletedRows.has(row.id))
+    .map((row) => ({
+      ...row,
+      comment: row.comment || row.source || "",
+      review: row.review || "",
+      approved: Boolean(row.approved),
+    }));
 
   return [...hydratedDefaultRows, ...customRows];
 }
@@ -154,7 +230,8 @@ function hydrateTemplate(template) {
 
     return {
       ...defaultSection,
-      rows: hydrateRows(defaultSection.rows, savedSection.rows),
+      deletedRowIds: savedSection.deletedRowIds || [],
+      rows: hydrateRows(defaultSection.rows, savedSection.rows, savedSection.deletedRowIds),
     };
   });
 
@@ -187,6 +264,8 @@ function createRow(sectionId) {
     term: "",
     description: "",
     comment: "",
+    review: "Новый термин: добавь здесь мой/редакторский вариант термина, пометку для перевода или что нужно уточнить.",
+    approved: false,
   };
 }
 
@@ -198,6 +277,7 @@ function AgentTerminologyTemplate() {
     const url = new URL(window.location.href);
     return url.searchParams.get("term") || defaultTerminologyTemplate.sections[0]?.id || "core";
   });
+  const [reviewFilter, setReviewFilter] = useState("all");
 
   useEffect(() => {
     let isMounted = true;
@@ -243,13 +323,28 @@ function AgentTerminologyTemplate() {
   function removeRow(sectionId, rowId) {
     updateTemplate((current) => ({
       ...current,
-      sections: current.sections.map((section) => (section.id === sectionId ? { ...section, rows: section.rows.filter((row) => row.id !== rowId) } : section)),
+      sections: current.sections.map((section) => {
+        if (section.id !== sectionId) return section;
+
+        return {
+          ...section,
+          deletedRowIds: Array.from(new Set([...(section.deletedRowIds || []), rowId])),
+          rows: section.rows.filter((row) => row.id !== rowId),
+        };
+      }),
     }));
   }
 
   const totalTerms = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
   const activeSection = template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
   const activeSectionDescription = activeSection ? TERMINOLOGY_SECTION_DESCRIPTIONS[activeSection.id] : "";
+  const activeRows = activeSection?.rows || [];
+  const approvedRowsCount = activeRows.filter((row) => row.approved).length;
+  const visibleRows = activeRows.filter((row) => {
+    if (reviewFilter === "approved") return row.approved;
+    if (reviewFilter === "pending") return !row.approved;
+    return true;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -275,7 +370,7 @@ function AgentTerminologyTemplate() {
           <span className="analytics-kicker">Терминология</span>
           <h2 className="analytics-agent-template-title">Глоссарий Atlas System</h2>
           <p className="analytics-page-subtitle mb-0">
-            Editable-база терминов для команды и AI-агента. Сейчас в шаблоне {totalTerms} терминов; описание, комментарий и ссылки можно редактировать прямо в таблице.
+            Editable-база терминов для команды и AI-агента. Сейчас в шаблоне {totalTerms} терминов; описания, статусы вычитки и оранжевые редакторские комментарии можно редактировать прямо в таблице.
           </p>
         </div>
       </div>
@@ -301,24 +396,53 @@ function AgentTerminologyTemplate() {
         <div className="analytics-agent-template-grid">
           <div className="analytics-agent-template-card">
             <div className="analytics-agent-template-card-head">
-              <h3>{activeSection.title}</h3>
-              <AnalyticsActionButton variant="primary" size="sm" onClick={() => addRow(activeSection.id)}>
-                + термин
-              </AnalyticsActionButton>
+              <div>
+                <h3>{activeSection.title}</h3>
+                <p className="analytics-agent-template-review-summary">
+                  Одобрено {approvedRowsCount} из {activeRows.length}
+                </p>
+              </div>
+              <div className="analytics-agent-template-review-actions">
+                <div className="analytics-agent-template-review-filter" aria-label="Фильтр вычитки терминологии">
+                  <button type="button" className={reviewFilter === "all" ? "is-active" : ""} onClick={() => setReviewFilter("all")}>
+                    Все
+                  </button>
+                  <button type="button" className={reviewFilter === "pending" ? "is-active" : ""} onClick={() => setReviewFilter("pending")}>
+                    Не вычитаны
+                  </button>
+                  <button type="button" className={reviewFilter === "approved" ? "is-active" : ""} onClick={() => setReviewFilter("approved")}>
+                    Одобрены
+                  </button>
+                </div>
+                <AnalyticsActionButton variant="primary" size="sm" onClick={() => addRow(activeSection.id)}>
+                  + термин
+                </AnalyticsActionButton>
+              </div>
             </div>
             <div className="table-responsive">
               <table className="table analytics-table analytics-agent-template-table mb-0">
                 <thead>
                   <tr>
+                    <th>Статус</th>
                     <th>Термин</th>
                     <th>Описание</th>
-                    <th>Комментарий</th>
+                    <th>Комментарий / вариант</th>
                     <th> </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {activeSection.rows.map((row) => (
-                    <tr key={row.id}>
+                  {visibleRows.map((row) => (
+                    <tr key={row.id} className={row.approved ? "analytics-agent-template-row-approved" : ""}>
+                      <td>
+                        <label className="analytics-agent-template-approval">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(row.approved)}
+                            onChange={(event) => updateRow(activeSection.id, row.id, "approved", event.target.checked)}
+                          />
+                          <span>{row.approved ? "Вычитан" : "Не вычитан"}</span>
+                        </label>
+                      </td>
                       <td>
                         <textarea
                           className="analytics-agent-template-input"
@@ -337,11 +461,11 @@ function AgentTerminologyTemplate() {
                       </td>
                       <td>
                         <textarea
-                          className="analytics-agent-template-input"
-                          value={row.comment || ""}
-                          onChange={(event) => updateRow(activeSection.id, row.id, "comment", event.target.value)}
-                          placeholder="Источник, спорная формулировка или комментарий для вычитки"
-                          rows="2"
+                          className="analytics-agent-template-input analytics-agent-template-comment"
+                          value={row.review || row.comment || ""}
+                          onChange={(event) => updateRow(activeSection.id, row.id, "review", event.target.value)}
+                          placeholder="Оранжевый комментарий: вариант термина, правка, перевод или что уточнить"
+                          rows="4"
                         />
                       </td>
                       <td>
@@ -351,6 +475,13 @@ function AgentTerminologyTemplate() {
                       </td>
                     </tr>
                   ))}
+                  {!visibleRows.length ? (
+                    <tr>
+                      <td colSpan="5">
+                        <div className="analytics-agent-template-empty">В этом фильтре пока нет терминов.</div>
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
