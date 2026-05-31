@@ -1,0 +1,67 @@
+import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
+import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
+import CrmDashboardTab from "./CrmDashboardTab";
+import DevelopmentsRegistry from "./DevelopmentsRegistry";
+import LaunchChecklistSection from "./LaunchChecklistSection";
+import ProductLibraryBoard from "./ProductLibraryBoard";
+import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
+import Wrapper from "./Wrapper";
+import formatCurrency from "../utils/formatCurrency";
+
+function formatPercent(value) {
+  return `${Number(value || 0).toFixed(1)}%`;
+}
+
+export default function AnalyticsMainPanel({
+  activeTab,
+  analyticsBoardUrl,
+  crmDashboard,
+  analyticsSection,
+}) {
+  if (activeTab === "dashboard") {
+    return (
+      <CrmDashboardTab
+        {...crmDashboard}
+        analyticsTitle={formatCurrency(crmDashboard.analyticsTitleValue)}
+        analyticsCoverageLabel={formatPercent(crmDashboard.analyticsCoveragePercent)}
+      />
+    );
+  }
+
+  if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" />;
+  if (activeTab === "content") return <LaunchChecklistSection mode="content" />;
+
+  if (activeTab === "socialSubscriptions") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <SocialSubscriptionsBoard />
+      </Wrapper>
+    );
+  }
+
+  if (activeTab === "developments") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <DevelopmentsRegistry />
+      </Wrapper>
+    );
+  }
+
+  if (activeTab === "productLibrary") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <ProductLibraryBoard />
+      </Wrapper>
+    );
+  }
+
+  if (activeTab === "crmBoard") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" />
+      </Wrapper>
+    );
+  }
+
+  return <AnalyticsSectionPanel {...analyticsSection} />;
+}

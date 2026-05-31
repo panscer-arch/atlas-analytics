@@ -1,24 +1,25 @@
 import MetricCard from "./MetricCard";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 
-const GRID_DENSITY_CLASSES = {
-  default: "col-12 col-sm-6 col-xl-4 col-xxl-3",
-  compact: "col-12 col-md-6 col-xl-4 col-xxl-2",
-  balanced: "col-12 col-md-6 col-xl-3",
-  half: "col-12 col-md-6 col-xl-6",
-  wide: "col-12 col-md-6 col-xl-3 col-xxl-3",
+const GRID_DENSITY_COLUMNS = {
+  default: "auto",
+  compact: "auto",
+  balanced: "four",
+  half: "two",
+  wide: "four",
 };
 
 function MetricsGrid({ metrics, density = "default" }) {
-  const columnClassName = GRID_DENSITY_CLASSES[density] || GRID_DENSITY_CLASSES.default;
+  const columns = GRID_DENSITY_COLUMNS[density] || GRID_DENSITY_COLUMNS.default;
 
   return (
-    <div className="row g-3">
+    <LayoutGrid columns={columns} gap="md">
       {metrics.map((metric) => (
-        <div key={metric.title} className={columnClassName}>
+        <LayoutCell key={metric.title}>
           <MetricCard {...metric} />
-        </div>
+        </LayoutCell>
       ))}
-    </div>
+    </LayoutGrid>
   );
 }
 

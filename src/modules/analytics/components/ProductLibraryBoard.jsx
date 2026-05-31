@@ -146,12 +146,12 @@ function ProductLibraryBoard() {
   }
 
   return (
-    <section className="analytics-product-library mt-4">
+    <section className="analytics-product-library">
       <div className="analytics-surface analytics-product-library-hero">
         <div>
           <span className="analytics-kicker">Мини-библиотека</span>
           <h2 className="analytics-agent-template-title">Продукты Atlas / PUP</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Короткая карта продуктов, чтобы команда не путалась между CRM, аналитикой, AI-агентами и новыми направлениями.
           </p>
         </div>
@@ -171,17 +171,17 @@ function ProductLibraryBoard() {
           <span className="analytics-product-library-save">{saveState}</span>
         </div>
         <div className="analytics-product-library-add-grid">
-          <input className="form-control analytics-launch-input" value={newProduct.name} onChange={(event) => setNewProduct((current) => ({ ...current, name: event.target.value }))} placeholder="Название: Atlas Site, Billing, Support..." />
-          <input className="form-control analytics-launch-input" value={newProduct.type} onChange={(event) => setNewProduct((current) => ({ ...current, type: event.target.value }))} placeholder="Тип: CRM, AI, сайт, сервис" />
-          <select className="form-select analytics-launch-input" value={newProduct.status} onChange={(event) => setNewProduct((current) => ({ ...current, status: event.target.value }))}>
+          <input className="analytics-launch-input" value={newProduct.name} onChange={(event) => setNewProduct((current) => ({ ...current, name: event.target.value }))} placeholder="Название: Atlas Site, Billing, Support..." />
+          <input className="analytics-launch-input" value={newProduct.type} onChange={(event) => setNewProduct((current) => ({ ...current, type: event.target.value }))} placeholder="Тип: CRM, AI, сайт, сервис" />
+          <select className="analytics-launch-input" value={newProduct.status} onChange={(event) => setNewProduct((current) => ({ ...current, status: event.target.value }))}>
             {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
           </select>
-          <input className="form-control analytics-launch-input" value={newProduct.owner} onChange={(event) => setNewProduct((current) => ({ ...current, owner: event.target.value }))} placeholder="Ответственный" />
-          <input className="form-control analytics-launch-input" value={newProduct.link} onChange={(event) => setNewProduct((current) => ({ ...current, link: event.target.value }))} placeholder="Ссылка, если есть" />
+          <input className="analytics-launch-input" value={newProduct.owner} onChange={(event) => setNewProduct((current) => ({ ...current, owner: event.target.value }))} placeholder="Ответственный" />
+          <input className="analytics-launch-input" value={newProduct.link} onChange={(event) => setNewProduct((current) => ({ ...current, link: event.target.value }))} placeholder="Ссылка, если есть" />
           <button type="button" className="analytics-product-library-add-btn" onClick={addProduct} disabled={!newProduct.name.trim()}>
             +
           </button>
-          <textarea className="form-control analytics-launch-input analytics-product-library-wide" rows="2" value={newProduct.description} onChange={(event) => setNewProduct((current) => ({ ...current, description: event.target.value }))} placeholder="Коротко: зачем продукт нужен и кто им пользуется" />
+          <textarea className="analytics-launch-input analytics-product-library-wide" rows="2" value={newProduct.description} onChange={(event) => setNewProduct((current) => ({ ...current, description: event.target.value }))} placeholder="Коротко: зачем продукт нужен и кто им пользуется" />
         </div>
       </div>
 
@@ -194,24 +194,24 @@ function ProductLibraryBoard() {
               <div className="analytics-product-card-head">
                 <div>
                   {isEditing ? (
-                    <input className="form-control analytics-launch-input" value={product.name} onChange={(event) => updateProduct(product.id, { name: event.target.value })} />
+                    <input className="analytics-launch-input" value={product.name} onChange={(event) => updateProduct(product.id, { name: event.target.value })} />
                   ) : (
                     <h3>{product.name}</h3>
                   )}
                   <span>{product.type || "Без типа"}</span>
                 </div>
-                <select className="form-select analytics-product-status" value={product.status} onChange={(event) => updateProduct(product.id, { status: event.target.value })}>
+                <select className="analytics-product-status" value={product.status} onChange={(event) => updateProduct(product.id, { status: event.target.value })}>
                   {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
               </div>
 
               {isEditing ? (
                 <div className="analytics-product-card-edit">
-                  <input className="form-control analytics-launch-input" value={product.type} onChange={(event) => updateProduct(product.id, { type: event.target.value })} placeholder="Тип" />
-                  <input className="form-control analytics-launch-input" value={product.owner} onChange={(event) => updateProduct(product.id, { owner: event.target.value })} placeholder="Ответственный" />
-                  <input className="form-control analytics-launch-input" value={product.link} onChange={(event) => updateProduct(product.id, { link: event.target.value })} placeholder="Ссылка" />
-                  <textarea className="form-control analytics-launch-input" rows="3" value={product.description} onChange={(event) => updateProduct(product.id, { description: event.target.value })} placeholder="Описание" />
-                  <textarea className="form-control analytics-launch-input" rows="2" value={product.notes} onChange={(event) => updateProduct(product.id, { notes: event.target.value })} placeholder="Заметки" />
+                  <input className="analytics-launch-input" value={product.type} onChange={(event) => updateProduct(product.id, { type: event.target.value })} placeholder="Тип" />
+                  <input className="analytics-launch-input" value={product.owner} onChange={(event) => updateProduct(product.id, { owner: event.target.value })} placeholder="Ответственный" />
+                  <input className="analytics-launch-input" value={product.link} onChange={(event) => updateProduct(product.id, { link: event.target.value })} placeholder="Ссылка" />
+                  <textarea className="analytics-launch-input" rows="3" value={product.description} onChange={(event) => updateProduct(product.id, { description: event.target.value })} placeholder="Описание" />
+                  <textarea className="analytics-launch-input" rows="2" value={product.notes} onChange={(event) => updateProduct(product.id, { notes: event.target.value })} placeholder="Заметки" />
                 </div>
               ) : (
                 <>

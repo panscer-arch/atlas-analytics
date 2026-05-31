@@ -730,7 +730,7 @@ function MaterialsLinksBoard() {
 
   return (
     <>
-      <section className="analytics-surface analytics-materials-form mt-4">
+      <section className="analytics-surface analytics-materials-form">
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Материалы</span>
@@ -740,7 +740,7 @@ function MaterialsLinksBoard() {
           <label>
             <span>Раздел</span>
             <select
-              className="form-select analytics-launch-input"
+              className="analytics-launch-input"
               value={draft.category}
               onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}
             >
@@ -754,7 +754,7 @@ function MaterialsLinksBoard() {
           <label>
             <span>Название</span>
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={draft.title}
               onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
               placeholder="Например: FAQ или Лендинг 1"
@@ -763,7 +763,7 @@ function MaterialsLinksBoard() {
           <label>
             <span>Ссылка</span>
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={draft.url}
               onChange={(event) => setDraft((current) => ({ ...current, url: event.target.value }))}
               placeholder="https://docs.google.com/..."
@@ -777,7 +777,7 @@ function MaterialsLinksBoard() {
           <label>
             <span>Импорт из Google Sheets</span>
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={sheetUrl}
               onChange={(event) => setSheetUrl(event.target.value)}
               placeholder="https://docs.google.com/spreadsheets/d/..."
@@ -796,7 +796,7 @@ function MaterialsLinksBoard() {
           <label>
             <span>Вставить таблицу</span>
             <textarea
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               rows="3"
               onPaste={handleTablePaste}
               placeholder="Вставь таблицу с названиями и ссылками"
@@ -804,11 +804,11 @@ function MaterialsLinksBoard() {
           </label>
         </div>
         <div className="analytics-materials-export analytics-materials-export-hidden">
-          <button type="button" className="btn analytics-board-btn" onClick={copyMaterialsJson}>
+          <button type="button" className="analytics-board-btn" onClick={copyMaterialsJson}>
             Скопировать все материалы JSON
           </button>
           <textarea
-            className="form-control analytics-launch-input"
+            className="analytics-launch-input"
             readOnly
             value={JSON.stringify(
               items
@@ -823,9 +823,9 @@ function MaterialsLinksBoard() {
         </div>
       </section>
 
-      <section className="analytics-surface analytics-materials-board mt-4">
-        <div className="table-responsive">
-          <table className="table analytics-table analytics-materials-table mb-0">
+      <section className="analytics-surface analytics-materials-board">
+        <div className="analytics-table-responsive">
+          <table className="analytics-table analytics-materials-table">
             <thead>
               <tr>
                 {MATERIAL_CATEGORIES.map((category) => (
@@ -845,13 +845,13 @@ function MaterialsLinksBoard() {
                           return (
                             <div key={item.id} className="analytics-materials-editor">
                               <input
-                                className="form-control analytics-launch-table-input"
+                                className="analytics-launch-table-input"
                                 value={item.title}
                                 onChange={(event) => updateItem(item.id, { title: event.target.value })}
                                 placeholder="Название"
                               />
                               <input
-                                className="form-control analytics-launch-table-input"
+                                className="analytics-launch-table-input"
                                 value={item.url}
                                 onChange={(event) => updateItem(item.id, { url: event.target.value })}
                                 placeholder="Ссылка Google Docs / Drive"

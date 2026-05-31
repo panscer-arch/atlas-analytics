@@ -14,7 +14,7 @@ function AnalyticsBoardEmbed({
 
   return (
     <Root
-      className={isOverlay ? "analytics-board-overlay" : "analytics-board-inline mt-4"}
+      className={isOverlay ? "analytics-board-overlay" : "analytics-board-inline"}
       role={isOverlay ? "dialog" : undefined}
       aria-modal={isOverlay ? "true" : undefined}
       aria-labelledby={titleId}
@@ -24,16 +24,16 @@ function AnalyticsBoardEmbed({
           <div>
             <span className="analytics-kicker">{kicker}</span>
             <h2 id={titleId} className="analytics-idea-title">{title}</h2>
-            <p className="analytics-page-subtitle mb-0">
+            <p className="analytics-page-subtitle">
               {subtitle}
             </p>
           </div>
           <div className="analytics-board-embed-actions">
-            <a className="btn analytics-board-btn" href={boardUrl} target="_blank" rel="noreferrer">
+            <a className="analytics-board-btn" href={boardUrl} target="_blank" rel="noreferrer">
               Открыть отдельно
             </a>
             {isOverlay ? (
-              <button type="button" className="btn analytics-board-close-btn" onClick={onClose}>
+              <button type="button" className="analytics-board-close-btn" onClick={onClose}>
                 Закрыть
               </button>
             ) : null}

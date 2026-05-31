@@ -213,7 +213,7 @@ function SocialSubscriptionsBoard() {
   }
 
   return (
-    <section className="analytics-social mt-4">
+    <section className="analytics-social">
       <div className="analytics-developments-hero analytics-surface">
         <div>
           <span className="analytics-kicker">Social brand map</span>

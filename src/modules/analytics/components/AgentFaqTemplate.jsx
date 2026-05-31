@@ -516,12 +516,12 @@ function AgentFaqTemplate() {
   }, [activeSectionId, template.sections]);
 
   return (
-    <section className="analytics-surface analytics-agent-template mt-4">
+    <section className="analytics-surface analytics-agent-template">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">FAQ AI-агента</span>
           <h2 className="analytics-agent-template-title">FAQ Atlas System</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Стартовая база вопросов участников по категориям. Сейчас в шаблоне {totalQuestions} вопросов; ответы, статусы вычитки и оранжевые редакторские комментарии можно редактировать прямо в таблицах.
           </p>
         </div>
@@ -568,8 +568,8 @@ function AgentFaqTemplate() {
                 </AnalyticsActionButton>
               </div>
             </div>
-            <div className="table-responsive">
-              <table className="table analytics-table analytics-agent-template-table mb-0">
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-agent-template-table">
                 <thead>
                   <tr>
                     <th>Статус</th>

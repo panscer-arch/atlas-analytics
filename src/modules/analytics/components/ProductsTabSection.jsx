@@ -1,9 +1,11 @@
 import MetricsGrid from "./MetricsGrid";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 import ProductHeroCard from "./ProductHeroCard";
 import ProductTierCard from "./ProductTierCard";
 import ProductsSummaryTable from "./ProductsSummaryTable";
 import SectionHeading from "./SectionHeading";
 import TabSummary from "./TabSummary";
+import Wrapper from "./Wrapper";
 
 function ProductsTabSection({ productsTabData }) {
   const rows = productsTabData.rows || [];
@@ -17,41 +19,41 @@ function ProductsTabSection({ productsTabData }) {
 
   return (
     <>
-      <TabSummary
-        kicker="Продукты"
-        title={summary.title}
-        description={summary.description}
-        bullets={summary.bullets}
-      />
-      <section className="mt-4">
+      <Wrapper as="section" marginTop="lg">
+        <TabSummary
+          kicker="Продукты"
+          title={summary.title}
+          description={summary.description}
+          bullets={summary.bullets}
+        />
+      </Wrapper>
+      <Wrapper as="section" marginTop="lg">
         <SectionHeading kicker="Продукты / Циклы" title="Какой продукт даёт приток и какой создаёт давление" />
         <MetricsGrid metrics={productsTabData.metrics || []} density="half" />
-      </section>
-      <section className="mt-4">
+      </Wrapper>
+      <Wrapper as="section" marginTop="lg">
         <SectionHeading kicker="Lockup" title="Lockup тарифы" />
-        <div className="row g-3">
+        <LayoutGrid columns="three" gap="md">
           {lockupRows.map((row) => (
-            <div key={row.tariff} className="col-12 col-md-6 col-xxl-4">
+            <LayoutCell key={row.tariff}>
               <ProductTierCard row={row} />
-            </div>
+            </LayoutCell>
           ))}
-        </div>
-      </section>
-      <section className="mt-4">
+        </LayoutGrid>
+      </Wrapper>
+      <Wrapper as="section" marginTop="lg">
         <SectionHeading kicker="Daily Flow" title="Daily Flow тарифы" />
-        <div className="row g-3">
+        <LayoutGrid columns="two" gap="md">
           {dailyRows.map((row) => (
-            <div key={row.tariff} className="col-12 col-xl-6">
+            <LayoutCell key={row.tariff}>
               <ProductHeroCard row={row} />
-            </div>
+            </LayoutCell>
           ))}
-        </div>
-      </section>
-      <section className="row g-3 mt-1">
-        <div className="col-12">
-          <ProductsSummaryTable rows={rows} />
-        </div>
-      </section>
+        </LayoutGrid>
+      </Wrapper>
+      <Wrapper as="section" marginTop="sm">
+        <ProductsSummaryTable rows={rows} />
+      </Wrapper>
     </>
   );
 }

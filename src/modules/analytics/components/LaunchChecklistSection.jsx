@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import DailyTasksBoard from "./DailyTasksBoard";
 import AgentFaqTemplate from "./AgentFaqTemplate";
 import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
 import AgentTerminologyTemplate from "./AgentTerminologyTemplate";
@@ -6,11 +7,14 @@ import AgentTrainingDataset from "./AgentTrainingDataset";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import AtlasPresentationBoard from "./AtlasPresentationBoard";
 import LaunchProgressBar from "./LaunchProgressBar";
+import LaunchEditableCell from "./LaunchEditableCell";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
+import Wrapper from "./Wrapper";
 import WhitePaperBoard from "./WhitePaperBoard";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
@@ -18,11 +22,9 @@ export const LAUNCH_CHECKLIST_STORAGE_KEY = "atlas.analytics.launchChecklist.tas
 export const KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY = "atlas.analytics.knowledgeBaseChecklist.tasks.v1";
 export const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks.v1";
 export const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
-export const DAILY_TASKS_STORAGE_KEY = "atlas.analytics.dailyTasks.2026-05-22.v1";
 export const TASK_ARCHIVE_STORAGE_KEY = "atlas.analytics.taskArchive.v1";
 export const TASK_HISTORY_STORAGE_KEY = "atlas.analytics.taskHistory.v1";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
-const DAILY_CHAT_AUTHOR_STORAGE_KEY = "atlas.analytics.dailyTasks.chatAuthor.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
@@ -578,64 +580,6 @@ export const defaultMarketingChecklistTasks = [
   },
 ];
 
-const defaultDailyTasks = [
-  {
-    id: "daily-2026-05-22-prototype",
-    title: "Утвердить прототип заглушки atlas-system.io",
-    priority: "Срочно",
-    duration: "22 мая, до 12:00",
-    deadline: "22.05.2026 12:00",
-    responsible: "Digitex / UI-designer / Product-manager",
-    description: "Посмотреть 3-screen prototype: 1 экран Architect video + coming soon, 2 экран краткое описание Atlas + CTA, 3 экран соцсети и контакты команды. Зафиксировать, что берём в дизайн.",
-    materials: "https://analytics.pupanel.cc/atlas-site-concept/prototype-v2.html",
-    status: "В работе",
-    messages: [
-      {
-        id: "msg-daily-prototype-1",
-        author: "Codex",
-        text: "Фокус: не распыляться на весь сайт. Сначала утверждаем композицию первых 3 экранов.",
-        createdAt: "2026-05-21T20:30:00.000Z",
-      },
-    ],
-  },
-  {
-    id: "daily-2026-05-22-copy",
-    title: "Собрать короткий английский текст для первых 3 экранов",
-    priority: "Высокий",
-    duration: "22 мая, до 15:00",
-    deadline: "22.05.2026 15:00",
-    responsible: "Copywriter / Content architect",
-    description: "Нужны короткие блоки: Architect intro, Community idea, Ecosystem summary. Без обещаний гарантированного дохода и без агрессивного MLM.",
-    materials: "ТЗ в карточке “Заглушка на сайт → Дизайн hero и визуальная система”.",
-    status: "В работе",
-    messages: [],
-  },
-  {
-    id: "daily-2026-05-22-assets",
-    title: "Подготовить финальные контакты и медиа для заглушки",
-    priority: "Высокий",
-    duration: "22 мая, до 17:00",
-    deadline: "22.05.2026 17:00",
-    responsible: "Content ops / Assets",
-    description: "Дать Telegram-ссылки помощников, финальный логотип, ссылку на YouTube-ролик Архитектора или финальный placeholder до публикации.",
-    materials: "Telegram, WhatsApp, Email. Домен: atlas-system.io. English only.",
-    status: "Не в работе",
-    messages: [],
-  },
-  {
-    id: "daily-2026-05-22-front",
-    title: "Собрать рабочий HTML-прототип после утверждения дизайна",
-    priority: "Средний",
-    duration: "22 мая, после утверждения первых экранов",
-    deadline: "22.05.2026 20:00",
-    responsible: "Frontend-developer / QA",
-    description: "После утверждения направления собрать первый рабочий вариант страницы, проверить desktop/mobile, CTA, ссылки, читаемость и отсутствие визуального мусора.",
-    materials: "/atlas-site-concept/prototype-v2.html и /atlas-site-preview/index.html",
-    status: "Не в работе",
-    messages: [],
-  },
-];
-
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
 }
@@ -679,36 +623,6 @@ function normalizeChecklistTasks(tasks) {
   }));
 }
 
-function normalizeDailyTasks(tasks) {
-  return normalizeArray(tasks).map((task) => ({
-    id: task.id || `daily-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: task.title || "",
-    priority: task.priority || "Средний",
-    duration: task.duration || "",
-    deadline: task.deadline || "",
-    responsible: task.responsible || "",
-    description: task.description || "",
-    materials: task.materials || "",
-    status: task.status || "Не в работе",
-    completedAt: task.completedAt || "",
-    updatedAt: task.updatedAt || "",
-    subtasks: normalizeArray(task.subtasks).map((subtask) => ({
-      id: subtask.id || `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      title: subtask.title || "",
-      done: Boolean(subtask.done),
-    })),
-    questions: normalizeArray(task.questions).map((question) => ({
-      id: question.id || `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      author: question.author || "Команда",
-      text: question.text || "",
-      answered: Boolean(question.answered),
-      createdAt: question.createdAt || "",
-      closedAt: question.closedAt || "",
-    })),
-    messages: normalizeArray(task.messages),
-  }));
-}
-
 function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -721,27 +635,6 @@ function readStoredTasks(storageKey, fallbackTasks) {
     return normalizeChecklistTasks(saved ? JSON.parse(saved) : fallbackTasks);
   } catch {
     return normalizeChecklistTasks(fallbackTasks);
-  }
-}
-
-function readStoredDailyTasks() {
-  if (typeof window === "undefined") return normalizeDailyTasks(defaultDailyTasks);
-
-  try {
-    const saved = window.localStorage.getItem(DAILY_TASKS_STORAGE_KEY);
-    return normalizeDailyTasks(saved ? JSON.parse(saved) : defaultDailyTasks);
-  } catch {
-    return normalizeDailyTasks(defaultDailyTasks);
-  }
-}
-
-function readStoredDailyChatAuthor() {
-  if (typeof window === "undefined") return "Digitex";
-
-  try {
-    return window.localStorage.getItem(DAILY_CHAT_AUTHOR_STORAGE_KEY) || "Digitex";
-  } catch {
-    return "Digitex";
   }
 }
 
@@ -825,882 +718,6 @@ function formatHistoryDate(value) {
 
 function shouldLogTaskPatch(patch) {
   return Object.keys(patch).some((key) => ["assignee", "status", "done", "priority", "focus"].includes(key));
-}
-
-function createDailyTask(overrides = {}) {
-  return {
-    id: `daily-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: "",
-    priority: "Средний",
-    duration: "22 мая",
-    deadline: "22.05.2026",
-    responsible: "",
-    description: "",
-    materials: "",
-    status: "Не в работе",
-    subtasks: [],
-    messages: [],
-    ...overrides,
-  };
-}
-
-function createDailySubtask(title = "") {
-  return {
-    id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title,
-    done: false,
-  };
-}
-
-function createDailyQuestion(text = "", author = "Команда") {
-  return {
-    id: `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    author: author || "Команда",
-    text,
-    answered: false,
-    createdAt: new Date().toISOString(),
-    closedAt: "",
-  };
-}
-
-function getSupportedAudioMimeType() {
-  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
-
-  return [
-    "audio/mp4",
-    "audio/mp4;codecs=mp4a.40.2",
-    "audio/webm;codecs=opus",
-    "audio/webm",
-  ].find((type) => MediaRecorder.isTypeSupported(type)) || "";
-}
-
-function getAudioPlaybackMimeType(mimeType = "") {
-  if (mimeType.includes("mp4")) return "audio/mp4";
-  if (mimeType.includes("webm")) return "audio/webm";
-  return mimeType || "audio/webm";
-}
-
-function normalizeAudioDataUrl(dataUrl = "", mimeType = "") {
-  if (!dataUrl.startsWith("data:")) return dataUrl;
-
-  const marker = ";base64,";
-  const markerIndex = dataUrl.indexOf(marker);
-  if (markerIndex === -1) return dataUrl;
-
-  return `data:${getAudioPlaybackMimeType(mimeType)}${dataUrl.slice(markerIndex)}`;
-}
-
-function formatDailyMessageTime(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-}
-
-function parseDailyDeadline(value) {
-  if (!value) return null;
-  const normalized = String(value).trim();
-  const ruMatch = normalized.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  const isoMatch = normalized.match(/(\d{4})-(\d{2})-(\d{2})/);
-
-  if (ruMatch) {
-    const date = new Date(Number(ruMatch[3]), Number(ruMatch[2]) - 1, Number(ruMatch[1]));
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  if (isoMatch) {
-    const date = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  return null;
-}
-
-function getDailyDeadlineMeta(deadline) {
-  const date = parseDailyDeadline(deadline);
-  if (!date) return { label: "Без даты", tone: "idle" };
-
-  const today = getStartOfDay();
-  const deadlineDay = getStartOfDay(date);
-  const diffDays = Math.ceil((deadlineDay.getTime() - today.getTime()) / 86400000);
-
-  if (diffDays < 0) return { label: `Просрочено ${Math.abs(diffDays)} дн.`, tone: "danger" };
-  if (diffDays === 0) return { label: "Сегодня дедлайн", tone: "urgent" };
-  if (diffDays === 1) return { label: "Остался 1 день", tone: "accent" };
-  return { label: `Осталось ${diffDays} дн.`, tone: diffDays <= 3 ? "accent" : "safe" };
-}
-
-function buildDailyShareText(tasks) {
-  const activeTasks = normalizeArray(tasks).filter((task) => task.status !== "Готово");
-
-  return [
-    "Задачи на 22 мая",
-    "",
-    ...activeTasks.map((task, index) => [
-      `${index + 1}. ${task.title || "Без названия"}`,
-      `Статус: ${task.status || "Не в работе"}`,
-      `Приоритет: ${task.priority || "Средний"}`,
-      `Срок выполнения: ${task.duration || "—"}`,
-      `Дедлайн: ${task.deadline || "—"}`,
-      `Ответственный: ${task.responsible || "Не назначен"}`,
-      `Материалы: ${task.materials || "—"}`,
-      task.description ? `Описание: ${task.description}` : "",
-      normalizeArray(task.subtasks).length
-        ? `Подзадачи:\n${normalizeArray(task.subtasks).map((subtask) => `- ${subtask.done ? "[x]" : "[ ]"} ${subtask.title || "Без названия"}`).join("\n")}`
-        : "",
-    ].filter(Boolean).join("\n")),
-  ].join("\n\n");
-}
-
-function DailyTasksBoard() {
-  const [tasks, setTasks] = useState(readStoredDailyTasks);
-  const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
-  const [chatDrafts, setChatDrafts] = useState({});
-  const [messageEditDrafts, setMessageEditDrafts] = useState({});
-  const [subtaskDrafts, setSubtaskDrafts] = useState({});
-  const [questionDrafts, setQuestionDrafts] = useState({});
-  const [responsibleDrafts, setResponsibleDrafts] = useState({});
-  const [responsibleSavedTaskId, setResponsibleSavedTaskId] = useState("");
-  const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
-  const [recordingTaskId, setRecordingTaskId] = useState("");
-  const [recordingError, setRecordingError] = useState("");
-  const [saveState, setSaveState] = useState("Сохранено");
-  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
-  const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
-  const saveRequestRef = useRef(0);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const audioStreamRef = useRef(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    loadServerContent(DAILY_TASKS_STORAGE_KEY).then((savedTasks) => {
-      if (!isMounted || !Array.isArray(savedTasks)) return;
-
-      const normalizedTasks = normalizeDailyTasks(savedTasks);
-      setTasks(normalizedTasks);
-      try {
-        window.localStorage.setItem(DAILY_TASKS_STORAGE_KEY, JSON.stringify(normalizedTasks));
-      } catch {
-        // Серверная версия всё равно уже загружена в состояние страницы.
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(DAILY_CHAT_AUTHOR_STORAGE_KEY, chatAuthor);
-    } catch {
-      // Имя автора не критично для работы доски.
-    }
-  }, [chatAuthor]);
-
-  useEffect(() => () => {
-    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
-  }, []);
-
-  function persistDailyTasks(nextTasks) {
-    const normalizedTasks = normalizeDailyTasks(nextTasks);
-    const requestId = saveRequestRef.current + 1;
-    saveRequestRef.current = requestId;
-    setSaveState("Сохраняю...");
-
-    try {
-      window.localStorage.setItem(DAILY_TASKS_STORAGE_KEY, JSON.stringify(normalizedTasks));
-    } catch {
-      // Дневная доска продолжит работать в состоянии страницы.
-    }
-
-    saveServerContent(DAILY_TASKS_STORAGE_KEY, normalizedTasks).then((ok) => {
-      if (saveRequestRef.current !== requestId) return;
-      setSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
-    });
-  }
-
-  function persist(updater) {
-    setTasks((currentTasks) => {
-      const nextTasks = typeof updater === "function" ? updater(currentTasks) : updater;
-      persistDailyTasks(nextTasks);
-      return normalizeDailyTasks(nextTasks);
-    });
-  }
-
-  function patchTask(taskId, patch) {
-    persist((currentTasks) => currentTasks.map((task) => {
-      if (task.id !== taskId) return task;
-      const nextStatus = patch.status ?? task.status;
-
-      return {
-        ...task,
-        ...patch,
-        completedAt: nextStatus === "Готово" ? (task.completedAt || new Date().toISOString()) : "",
-        updatedAt: new Date().toISOString(),
-      };
-    }));
-  }
-
-  function addTask() {
-    if (!draft.title.trim()) return;
-    persist((currentTasks) => [createDailyTask({ ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() }), ...currentTasks]);
-    setDraft(createDailyTask({ status: "В работе" }));
-    setIsAddTaskOpen(false);
-  }
-
-  function archiveTask(taskId) {
-    patchTask(taskId, { status: "Готово", completedAt: new Date().toISOString() });
-  }
-
-  function restoreTask(taskId) {
-    patchTask(taskId, { status: "В работе", completedAt: "" });
-  }
-
-  function deleteArchivedTask(taskId) {
-    persist((currentTasks) => currentTasks.filter((task) => task.id !== taskId));
-    setChatDrafts((current) => {
-      const next = { ...current };
-      delete next[taskId];
-      return next;
-    });
-    setSubtaskDrafts((current) => {
-      const next = { ...current };
-      delete next[taskId];
-      return next;
-    });
-    setQuestionDrafts((current) => {
-      const next = { ...current };
-      delete next[taskId];
-      return next;
-    });
-    setResponsibleDrafts((current) => {
-      const next = { ...current };
-      delete next[taskId];
-      return next;
-    });
-    setMessageEditDrafts((current) => {
-      const next = {};
-      Object.entries(current).forEach(([key, value]) => {
-        if (!key.startsWith(`${taskId}:`)) next[key] = value;
-      });
-      return next;
-    });
-  }
-
-  function addMessage(taskId) {
-    const value = (chatDrafts[taskId] || "").trim();
-    if (!value) return;
-
-    const message = {
-      id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      author: chatAuthor.trim() || "Команда",
-      text: value,
-      createdAt: new Date().toISOString(),
-    };
-
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId ? { ...task, messages: [...normalizeArray(task.messages), message], updatedAt: new Date().toISOString() } : task
-    )));
-    setChatDrafts((current) => ({ ...current, [taskId]: "" }));
-  }
-
-  function addAudioMessage(taskId, audioDataUrl, audioMimeType) {
-    const playbackMimeType = getAudioPlaybackMimeType(audioMimeType);
-    const message = {
-      id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      author: chatAuthor.trim() || "Команда",
-      text: "Голосовое сообщение",
-      type: "audio",
-      audioDataUrl: normalizeAudioDataUrl(audioDataUrl, playbackMimeType),
-      audioMimeType: playbackMimeType,
-      createdAt: new Date().toISOString(),
-    };
-
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId ? { ...task, messages: [...normalizeArray(task.messages), message], updatedAt: new Date().toISOString() } : task
-    )));
-  }
-
-  function readBlobAsDataUrl(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(String(reader.result || ""));
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  async function startVoiceRecording(taskId) {
-    setRecordingError("");
-
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      setRecordingError("Браузер не поддерживает запись голоса.");
-      return;
-    }
-
-    if (recordingTaskId && recordingTaskId !== taskId) {
-      setRecordingError("Сначала останови текущую запись.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = getSupportedAudioMimeType();
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-
-      audioChunksRef.current = [];
-      audioStreamRef.current = stream;
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data?.size) audioChunksRef.current.push(event.data);
-      };
-
-      recorder.onstop = async () => {
-        const chunks = audioChunksRef.current;
-        const type = recorder.mimeType || "audio/webm";
-
-        audioStreamRef.current?.getTracks().forEach((track) => track.stop());
-        audioStreamRef.current = null;
-        mediaRecorderRef.current = null;
-        audioChunksRef.current = [];
-        setRecordingTaskId("");
-
-        if (!chunks.length) return;
-
-        try {
-          const blob = new Blob(chunks, { type });
-          const audioDataUrl = await readBlobAsDataUrl(blob);
-          addAudioMessage(taskId, audioDataUrl, type);
-        } catch {
-          setRecordingError("Не получилось сохранить голосовое сообщение.");
-        }
-      };
-
-      recorder.start(1000);
-      setRecordingTaskId(taskId);
-    } catch {
-      setRecordingError("Не удалось получить доступ к микрофону.");
-    }
-  }
-
-  function stopVoiceRecording() {
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.requestData?.();
-      mediaRecorderRef.current.stop();
-    }
-  }
-
-  function startEditMessage(taskId, message) {
-    setMessageEditDrafts((current) => ({ ...current, [`${taskId}:${message.id}`]: message.text || "" }));
-  }
-
-  function cancelEditMessage(taskId, messageId) {
-    setMessageEditDrafts((current) => {
-      const next = { ...current };
-      delete next[`${taskId}:${messageId}`];
-      return next;
-    });
-  }
-
-  function saveEditedMessage(taskId, messageId) {
-    const draftKey = `${taskId}:${messageId}`;
-    const value = (messageEditDrafts[draftKey] || "").trim();
-    if (!value) return;
-
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          messages: normalizeArray(task.messages).map((message) => (
-            message.id === messageId ? { ...message, text: value, editedAt: new Date().toISOString() } : message
-          )),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-    cancelEditMessage(taskId, messageId);
-  }
-
-  function removeMessage(taskId, messageId) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          messages: normalizeArray(task.messages).filter((message) => message.id !== messageId),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-    cancelEditMessage(taskId, messageId);
-  }
-
-  function addSubtask(taskId) {
-    const title = (subtaskDrafts[taskId] || "").trim();
-    if (!title) return;
-
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? { ...task, subtasks: [...normalizeArray(task.subtasks), createDailySubtask(title)], updatedAt: new Date().toISOString() }
-        : task
-    )));
-    setSubtaskDrafts((current) => ({ ...current, [taskId]: "" }));
-  }
-
-  function commitResponsible(taskId) {
-    const task = tasks.find((item) => item.id === taskId);
-    if (!task) return;
-
-    const nextResponsible = Object.prototype.hasOwnProperty.call(responsibleDrafts, taskId)
-      ? responsibleDrafts[taskId]
-      : task.responsible;
-
-    patchTask(taskId, { responsible: nextResponsible.trim() });
-    setResponsibleSavedTaskId(taskId);
-    window.setTimeout(() => {
-      setResponsibleSavedTaskId((current) => (current === taskId ? "" : current));
-    }, 1600);
-    setResponsibleDrafts((current) => {
-      const next = { ...current };
-      delete next[taskId];
-      return next;
-    });
-  }
-
-  function addQuestion(taskId) {
-    const text = (questionDrafts[taskId] || "").trim();
-    if (!text) return;
-
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? { ...task, questions: [createDailyQuestion(text, chatAuthor.trim() || "Команда"), ...normalizeArray(task.questions)], updatedAt: new Date().toISOString() }
-        : task
-    )));
-    setQuestionDrafts((current) => ({ ...current, [taskId]: "" }));
-  }
-
-  function toggleQuestion(taskId, questionId) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          questions: normalizeArray(task.questions).map((question) => (
-            question.id === questionId
-              ? {
-                ...question,
-                answered: !question.answered,
-                closedAt: question.answered ? "" : new Date().toISOString(),
-              }
-              : question
-          )),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-  }
-
-  function removeQuestion(taskId, questionId) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          questions: normalizeArray(task.questions).filter((question) => question.id !== questionId),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-  }
-
-  function updateSubtask(taskId, subtaskId, patch) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          subtasks: normalizeArray(task.subtasks).map((subtask) => (subtask.id === subtaskId ? { ...subtask, ...patch } : subtask)),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-  }
-
-  function removeSubtask(taskId, subtaskId) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          subtasks: normalizeArray(task.subtasks).filter((subtask) => subtask.id !== subtaskId),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-  }
-
-  const completedTasks = tasks.filter((task) => task.status === "Готово");
-  const activeTasks = tasks.filter((task) => task.status !== "Готово");
-  const doneCount = completedTasks.length;
-
-  function renderDailyTaskCard(task, index, isCompleted = false) {
-    const priorityTone = getLaunchPriorityTone(task.priority);
-    const statusTone = getLaunchStatusTone(task.status);
-    const subtasks = normalizeArray(task.subtasks);
-    const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
-    const questions = normalizeArray(task.questions);
-    const openQuestions = questions.filter((question) => !question.answered).length;
-    const deadlineMeta = getDailyDeadlineMeta(task.deadline);
-    const hasResponsibleDraft = Object.prototype.hasOwnProperty.call(responsibleDrafts, task.id);
-    const responsibleValue = hasResponsibleDraft ? responsibleDrafts[task.id] : task.responsible;
-    const isResponsibleChanged = hasResponsibleDraft && responsibleValue.trim() !== task.responsible;
-    const isResponsibleSaved = responsibleSavedTaskId === task.id && !isResponsibleChanged;
-
-    return (
-      <article key={task.id} className={`analytics-surface analytics-daily-card${isCompleted ? " analytics-daily-card-done" : ""}`}>
-        <div className="analytics-daily-card-head">
-          <div>
-            <span className="analytics-daily-number">{isCompleted ? "Выполнено" : `Задача ${index + 1}`}</span>
-            <textarea className="analytics-daily-title" rows="2" value={task.title} onChange={(event) => patchTask(task.id, { title: event.target.value })} />
-          </div>
-          <div className="analytics-daily-card-actions">
-            <span className={`analytics-daily-deadline analytics-daily-deadline-${deadlineMeta.tone}`}>{deadlineMeta.label}</span>
-            <button type="button" className="analytics-daily-remove" onClick={() => (isCompleted ? restoreTask(task.id) : archiveTask(task.id))}>
-              {isCompleted ? "Вернуть" : "Готово"}
-            </button>
-            {isCompleted ? (
-              <button type="button" className="analytics-daily-delete" onClick={() => deleteArchivedTask(task.id)}>
-                Удалить
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="analytics-daily-fields">
-          <label>
-            <span>Приоритет</span>
-            <select className={`form-select analytics-launch-priority-select analytics-launch-priority-${priorityTone}`} value={task.priority} onChange={(event) => patchTask(task.id, { priority: event.target.value })}>
-              {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Статус</span>
-            <select className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`} value={task.status} onChange={(event) => patchTask(task.id, { status: event.target.value })}>
-              {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Срок выполнения</span>
-            <input className="form-control analytics-launch-input" value={task.duration} onChange={(event) => patchTask(task.id, { duration: event.target.value })} />
-          </label>
-          <label>
-            <span>Дата дедлайна</span>
-            <input className="form-control analytics-launch-input" value={task.deadline} onChange={(event) => patchTask(task.id, { deadline: event.target.value })} />
-          </label>
-          <label>
-            <span>Кто</span>
-            <div className="analytics-daily-responsible-control">
-              <textarea
-                className="form-control analytics-launch-input"
-                rows="2"
-                value={responsibleValue}
-                onChange={(event) => {
-                  setResponsibleSavedTaskId((current) => (current === task.id ? "" : current));
-                  setResponsibleDrafts((current) => ({ ...current, [task.id]: event.target.value }));
-                }}
-                onKeyDown={(event) => {
-                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") commitResponsible(task.id);
-                }}
-              />
-              <button
-                type="button"
-                className={`analytics-daily-responsible-save${isResponsibleSaved ? " is-saved" : ""}`}
-                onClick={() => commitResponsible(task.id)}
-                disabled={!isResponsibleChanged}
-              >
-                {isResponsibleSaved ? "Закреплено" : "Закрепить"}
-              </button>
-            </div>
-          </label>
-        </div>
-
-        <div className="analytics-daily-subtasks">
-          <div className="analytics-daily-subtasks-head">
-            <span>Подзадачи</span>
-            <small>{completedSubtasks}/{subtasks.length}</small>
-          </div>
-          <div className="analytics-daily-subtasks-list">
-            {subtasks.map((subtask) => (
-              <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(subtask.done)}
-                  onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
-                  aria-label="Отметить подзадачу"
-                />
-                <textarea
-                  className="form-control analytics-launch-input"
-                  rows="2"
-                  value={subtask.title}
-                  onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
-                  placeholder="Название подзадачи"
-                />
-                <button type="button" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
-              </div>
-            ))}
-            {!subtasks.length ? <div className="analytics-daily-chat-empty">Разбей большую задачу на конкретные шаги.</div> : null}
-          </div>
-          <div className="analytics-daily-subtask-add">
-            <textarea
-              className="form-control analytics-launch-input"
-              rows="2"
-              value={subtaskDrafts[task.id] || ""}
-              onChange={(event) => setSubtaskDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
-              placeholder="Например: настроить парсер, добавить сотрудника, написать письма"
-            />
-            <AnalyticsActionButton variant="primary" onClick={() => addSubtask(task.id)} disabled={!(subtaskDrafts[task.id] || "").trim()}>Добавить</AnalyticsActionButton>
-          </div>
-        </div>
-
-        <div className="analytics-daily-details">
-          <label>
-            <span>Доп. описание</span>
-            <textarea className="form-control analytics-launch-input" rows="3" value={task.description} onChange={(event) => patchTask(task.id, { description: event.target.value })} />
-          </label>
-          <label>
-            <span>Доп. материалы / ссылки</span>
-            <textarea className="form-control analytics-launch-input" rows="3" value={task.materials} onChange={(event) => patchTask(task.id, { materials: event.target.value })} />
-          </label>
-        </div>
-
-        <div className="analytics-daily-questions">
-          <div className="analytics-daily-questions-head">
-            <span>Вопросы по задаче</span>
-            <small>{openQuestions} открыто</small>
-          </div>
-          <div className="analytics-daily-question-list">
-            {questions.map((question) => (
-              <div key={question.id} className={`analytics-daily-question${question.answered ? " is-answered" : ""}`}>
-                <div className="analytics-daily-question-top">
-                  <strong>{question.author || "Команда"}</strong>
-                  <span>{formatDailyMessageTime(question.createdAt)}</span>
-                </div>
-                <p>{question.text}</p>
-                <div className="analytics-daily-question-actions">
-                  <button type="button" onClick={() => toggleQuestion(task.id, question.id)}>
-                    {question.answered ? "Открыть" : "Закрыть"}
-                  </button>
-                  <button type="button" className="analytics-daily-question-danger" onClick={() => removeQuestion(task.id, question.id)}>
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            ))}
-            {!questions.length ? <div className="analytics-daily-chat-empty">Если по задаче что-то непонятно, вопрос появится здесь отдельно от чата.</div> : null}
-          </div>
-          <div className="analytics-daily-question-form">
-            <input
-              className="form-control analytics-launch-input"
-              value={questionDrafts[task.id] || ""}
-              onChange={(event) => setQuestionDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") addQuestion(task.id);
-              }}
-              placeholder="Задать вопрос по этой задаче"
-            />
-            <AnalyticsActionButton variant="primary" onClick={() => addQuestion(task.id)} disabled={!(questionDrafts[task.id] || "").trim()}>Задать</AnalyticsActionButton>
-          </div>
-        </div>
-
-        <div className="analytics-daily-chat">
-          <div className="analytics-daily-chat-head">
-            <div className="analytics-daily-chat-title">Чат по задаче</div>
-            <label className="analytics-daily-chat-author">
-              <span>Пишет</span>
-              <input className="form-control analytics-launch-input" value={chatAuthor} onChange={(event) => setChatAuthor(event.target.value)} placeholder="Имя" />
-            </label>
-          </div>
-          <div className="analytics-daily-chat-list">
-            {normalizeArray(task.messages).map((message) => (
-              <div key={message.id} className="analytics-daily-message">
-                <div className="analytics-daily-message-head">
-                  <strong>{message.author || "Команда"}</strong>
-                  <span>
-                    {formatDailyMessageTime(message.createdAt)}
-                    {message.editedAt ? " · изменено" : ""}
-                  </span>
-                </div>
-                {Object.prototype.hasOwnProperty.call(messageEditDrafts, `${task.id}:${message.id}`) ? (
-                  <div className="analytics-daily-message-edit">
-                    <textarea
-                      className="form-control analytics-launch-input"
-                      rows="3"
-                      value={messageEditDrafts[`${task.id}:${message.id}`]}
-                      onChange={(event) => setMessageEditDrafts((current) => ({ ...current, [`${task.id}:${message.id}`]: event.target.value }))}
-                    />
-                    <div className="analytics-daily-message-actions">
-                      <button type="button" className="analytics-daily-message-action analytics-daily-message-action-save" onClick={() => saveEditedMessage(task.id, message.id)} disabled={!(messageEditDrafts[`${task.id}:${message.id}`] || "").trim()}>
-                        Сохранить
-                      </button>
-                      <button type="button" className="analytics-daily-message-action" onClick={() => cancelEditMessage(task.id, message.id)}>Отмена</button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {message.type === "audio" && message.audioDataUrl ? (
-                      <div className="analytics-daily-audio-message">
-                        <audio
-                          controls
-                          preload="auto"
-                          src={normalizeAudioDataUrl(message.audioDataUrl, message.audioMimeType)}
-                          onCanPlay={(event) => {
-                            event.currentTarget.dataset.ready = "true";
-                          }}
-                        />
-                        <small>{message.text || "Голосовое сообщение"}</small>
-                      </div>
-                    ) : (
-                      <p>{message.text}</p>
-                    )}
-                    <div className="analytics-daily-message-actions">
-                      {message.type === "audio" ? null : (
-                        <button type="button" className="analytics-daily-message-action" onClick={() => startEditMessage(task.id, message)}>Редактировать</button>
-                      )}
-                      <button type="button" className="analytics-daily-message-action analytics-daily-message-action-danger" onClick={() => removeMessage(task.id, message.id)}>Удалить</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-            {!normalizeArray(task.messages).length ? <div className="analytics-daily-chat-empty">История переписки пока пустая.</div> : null}
-          </div>
-          <div className="analytics-daily-chat-form">
-            <input
-              className="form-control analytics-launch-input"
-              value={chatDrafts[task.id] || ""}
-              onChange={(event) => setChatDrafts((current) => ({ ...current, [task.id]: event.target.value }))}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") addMessage(task.id);
-              }}
-              placeholder="Написать сообщение по этой задаче"
-            />
-            <AnalyticsActionButton variant="primary" onClick={() => addMessage(task.id)} disabled={!(chatDrafts[task.id] || "").trim()}>Отправить</AnalyticsActionButton>
-          </div>
-          <div className="analytics-daily-voice-row">
-            {recordingTaskId === task.id ? (
-              <button type="button" className="analytics-daily-voice analytics-daily-voice-recording" onClick={stopVoiceRecording}>
-                Остановить запись
-              </button>
-            ) : (
-              <button type="button" className="analytics-daily-voice" onClick={() => startVoiceRecording(task.id)} disabled={Boolean(recordingTaskId)}>
-                Записать голосовое
-              </button>
-            )}
-            {recordingTaskId === task.id ? <span>Идёт запись...</span> : null}
-          </div>
-          {recordingError ? <div className="analytics-daily-voice-error">{recordingError}</div> : null}
-        </div>
-      </article>
-    );
-  }
-
-  return (
-    <>
-      <section className="analytics-surface analytics-daily-hero mt-4">
-        <div>
-          <span className="analytics-kicker">Фокус на день</span>
-          <h3 className="analytics-section-title">Задачи на 22 мая</h3>
-        </div>
-        <div className="analytics-daily-summary">
-          <div><span>Всего</span><strong>{tasks.length}</strong></div>
-          <div><span>Готово</span><strong>{doneCount}</strong></div>
-          <div><span>В работе</span><strong>{activeTasks.length}</strong></div>
-          <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
-            {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
-          </AnalyticsActionButton>
-          <AnalyticsActionButton variant="secondary" onClick={() => setIsDailyArchiveOpen((current) => !current)} disabled={!completedTasks.length}>
-            {isDailyArchiveOpen ? "Скрыть архив" : `Архив задач (${completedTasks.length})`}
-          </AnalyticsActionButton>
-        </div>
-        <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
-      </section>
-
-      {isAddTaskOpen ? (
-        <section className="analytics-surface analytics-daily-add mt-4">
-          <div className="analytics-data-table-head">
-            <div>
-              <span className="analytics-kicker">Добавить на 22 мая</span>
-              <h3 className="analytics-section-title">Новая дневная задача</h3>
-            </div>
-            <AnalyticsActionButton variant="secondary" onClick={() => setIsAddTaskOpen(false)}>Свернуть</AnalyticsActionButton>
-          </div>
-          <div className="analytics-daily-form">
-            <label>
-              <span>Название задачи</span>
-              <input className="form-control analytics-launch-input" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Например: согласовать первый экран сайта" />
-            </label>
-            <label>
-              <span>Приоритет</span>
-              <select className="form-select analytics-launch-input" value={draft.priority} onChange={(event) => setDraft((current) => ({ ...current, priority: event.target.value }))}>
-                {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Срок выполнения</span>
-              <input className="form-control analytics-launch-input" value={draft.duration} onChange={(event) => setDraft((current) => ({ ...current, duration: event.target.value }))} placeholder="22 мая, до 15:00" />
-            </label>
-            <label>
-              <span>Дата дедлайна</span>
-              <input className="form-control analytics-launch-input" value={draft.deadline} onChange={(event) => setDraft((current) => ({ ...current, deadline: event.target.value }))} placeholder="22.05.2026 15:00" />
-            </label>
-            <label>
-              <span>Ответственный</span>
-              <input className="form-control analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))} placeholder="Имя или роль" />
-            </label>
-            <label>
-              <span>Статус</span>
-              <select className="form-select analytics-launch-input" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
-                {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-              </select>
-            </label>
-            <label className="analytics-daily-form-wide">
-              <span>Доп. описание</span>
-              <textarea className="form-control analytics-launch-input" rows="2" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Что конкретно нужно сделать" />
-            </label>
-            <label className="analytics-daily-form-wide">
-              <span>Доп. материалы / ссылки</span>
-              <textarea className="form-control analytics-launch-input" rows="2" value={draft.materials} onChange={(event) => setDraft((current) => ({ ...current, materials: event.target.value }))} placeholder="Ссылки, документы, прототипы" />
-            </label>
-            <AnalyticsActionButton variant="primary" onClick={addTask} disabled={!draft.title.trim()}>Добавить</AnalyticsActionButton>
-          </div>
-        </section>
-      ) : null}
-
-      <div className="analytics-daily-section-head mt-4">
-        <span className="analytics-kicker">Активные задачи</span>
-        <strong>{activeTasks.length}</strong>
-      </div>
-      <section className="analytics-daily-grid mt-3">
-        {activeTasks.map((task, index) => renderDailyTaskCard(task, index))}
-      </section>
-      {!activeTasks.length ? (
-        <div className="analytics-daily-empty mt-3">
-          Активных задач нет. Готовые задачи лежат в архиве и не мешают рабочему экрану.
-        </div>
-      ) : null}
-
-      {isDailyArchiveOpen && completedTasks.length ? (
-        <>
-          <div className="analytics-daily-section-head analytics-daily-archive-head mt-4">
-            <span className="analytics-kicker">Архив дня / выполнено</span>
-            <strong>{completedTasks.length}</strong>
-          </div>
-          <section className="analytics-daily-grid analytics-daily-archive-grid mt-3">
-            {completedTasks.map((task, index) => renderDailyTaskCard(task, index, true))}
-          </section>
-        </>
-      ) : null}
-    </>
-  );
 }
 
 function LaunchChecklistSection({ mode = "tasks" }) {
@@ -2113,70 +1130,10 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     setEditingCell(null);
   }
 
-  function renderEditableCell(task, field, options = {}) {
-    const cellKey = `${activeBoard}:${task.id}:${field}`;
-    const isEditing = editingCell === cellKey;
-    const value = task[field] || "";
-    const label = value || "Нажми, чтобы заполнить";
-    const inputClassName = `form-control analytics-launch-table-input${options.inputClassName ? ` ${options.inputClassName}` : ""}`;
-
-    if (isEditing) {
-      const commonProps = {
-        className: inputClassName,
-        value,
-        autoFocus: true,
-        onChange: (event) => updateTask(task.id, { [field]: event.target.value }),
-        onBlur: () => setEditingCell(null),
-      };
-
-      if (options.selectOptions) {
-        return (
-          <select
-            className={inputClassName}
-            value={value}
-            autoFocus
-            onChange={(event) => updateTask(task.id, { [field]: event.target.value })}
-            onBlur={() => setEditingCell(null)}
-          >
-            {options.selectOptions.map((option) => (
-              <option key={option || "empty"} value={option}>
-                {option || "Не назначен"}
-              </option>
-            ))}
-          </select>
-        );
-      }
-
-      if (options.multiline) {
-        return <textarea {...commonProps} rows={options.rows || 4} />;
-      }
-
-      return (
-        <input
-          {...commonProps}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === "Escape") {
-              event.currentTarget.blur();
-            }
-          }}
-        />
-      );
-    }
-
-    return (
-      <button
-        type="button"
-        className={`analytics-launch-read-cell${value ? "" : " analytics-launch-read-cell-empty"}${options.readClassName ? ` ${options.readClassName}` : ""}`}
-        onClick={() => setEditingCell(cellKey)}
-      >
-        {label}
-      </button>
-    );
-  }
-
   return (
     <>
-      <section className="analytics-surface analytics-tab-summary analytics-launch-nav mt-4">
+      <Wrapper as="section" marginTop="lg">
+        <div className="analytics-surface analytics-tab-summary analytics-launch-nav">
         <div className="analytics-launch-browser-tabs" role="tablist" aria-label="Разделы чеклиста запуска">
           {visibleBoardTabs.map((tab) => (
             <button
@@ -2231,48 +1188,54 @@ function LaunchChecklistSection({ mode = "tasks" }) {
             </button>
           ) : null}
         </div>
-      </section>
+        </div>
+      </Wrapper>
 
-      {isMaterialsBoard ? <MaterialsLinksBoard /> : null}
-      {isPresentationBoard ? <PresentationContentTab /> : null}
-      {isProductLibraryBoard ? <ProductLibraryBoard /> : null}
-      {isVideoScriptsBoard ? <VideoScriptsBoard /> : null}
-      {isAgentTasksBoard ? <AgentKnowledgeTemplate /> : null}
-      {isAgentDatasetBoard ? <AgentTrainingDataset /> : null}
-      {isAgentFaqBoard ? <AgentFaqTemplate /> : null}
-      {isCeoPresentationBoard ? <AtlasPresentationBoard /> : null}
-      {isWhitePaperBoard ? <WhitePaperBoard /> : null}
-      {isLegalDocsBoard ? <LegalDocumentsBoard /> : null}
-      {isTerminologyBoard ? <AgentTerminologyTemplate /> : null}
-      {isDailyTasksBoard ? <DailyTasksBoard /> : null}
+      {isMaterialsBoard ? <Wrapper as="section" marginTop="lg"><MaterialsLinksBoard /></Wrapper> : null}
+      {isPresentationBoard ? <Wrapper as="section" marginTop="lg"><PresentationContentTab /></Wrapper> : null}
+      {isProductLibraryBoard ? <Wrapper as="section" marginTop="lg"><ProductLibraryBoard /></Wrapper> : null}
+      {isVideoScriptsBoard ? <Wrapper as="section" marginTop="lg"><VideoScriptsBoard /></Wrapper> : null}
+      {isAgentTasksBoard ? <Wrapper as="section" marginTop="lg"><AgentKnowledgeTemplate /></Wrapper> : null}
+      {isAgentDatasetBoard ? <Wrapper as="section" marginTop="lg"><AgentTrainingDataset /></Wrapper> : null}
+      {isAgentFaqBoard ? <Wrapper as="section" marginTop="lg"><AgentFaqTemplate /></Wrapper> : null}
+      {isCeoPresentationBoard ? <Wrapper as="section" marginTop="lg"><AtlasPresentationBoard /></Wrapper> : null}
+      {isWhitePaperBoard ? <Wrapper as="section" marginTop="lg"><WhitePaperBoard /></Wrapper> : null}
+      {isLegalDocsBoard ? <Wrapper as="section" marginTop="lg"><LegalDocumentsBoard /></Wrapper> : null}
+      {isTerminologyBoard ? <Wrapper as="section" marginTop="lg"><AgentTerminologyTemplate /></Wrapper> : null}
+      {isDailyTasksBoard ? <Wrapper as="section" marginTop="lg"><DailyTasksBoard /></Wrapper> : null}
 
       {!isStaticContentBoard ? (
         <>
-      <section className="analytics-surface analytics-launch-progress mt-4">
-        <div className="row g-3">
-          <div className="col-12 col-md-4">
+      <Wrapper as="section" marginTop="lg">
+        <div className="analytics-surface analytics-launch-progress">
+        <LayoutGrid columns="three" gap="md">
+          <LayoutCell>
             <div className="analytics-launch-stat">
               <span>Всего задач</span>
               <strong>{visibleTasks.length}</strong>
             </div>
-          </div>
-          <div className="col-12 col-md-4">
+          </LayoutCell>
+          <LayoutCell>
             <div className="analytics-launch-stat">
               <span>Выполнено</span>
               <strong>{completedCount}</strong>
             </div>
-          </div>
-          <div className="col-12 col-md-4">
+          </LayoutCell>
+          <LayoutCell>
             <div className="analytics-launch-stat">
               <span>Осталось</span>
               <strong>{visibleTasks.length - completedCount}</strong>
             </div>
-          </div>
+          </LayoutCell>
+        </LayoutGrid>
+        <Wrapper marginTop="md">
+          <LaunchProgressBar value={progress} />
+        </Wrapper>
         </div>
-        <LaunchProgressBar value={progress} />
-      </section>
+      </Wrapper>
 
-      <section className="analytics-surface analytics-task-control-panel mt-4">
+      <Wrapper as="section" marginTop="lg">
+        <div className="analytics-surface analytics-task-control-panel">
         <div className="analytics-task-control-grid">
           <div className="analytics-task-signal is-danger">
             <span>Просрочено</span>
@@ -2293,7 +1256,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label className="analytics-task-assignee-filter">
             <span>Исполнитель</span>
             <select
-              className="form-select analytics-launch-input"
+              className="analytics-launch-input"
               value={assigneeFilter}
               onChange={(event) => setAssigneeFilter(event.target.value)}
             >
@@ -2307,14 +1270,16 @@ function LaunchChecklistSection({ mode = "tasks" }) {
             </select>
           </label>
         </div>
-      </section>
+        </div>
+      </Wrapper>
 
-      <section className="analytics-surface analytics-launch-form mt-4">
+      <Wrapper as="section" marginTop="lg">
+        <div className="analytics-surface analytics-launch-form">
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Добавить задачу</span>
             <h3 className="analytics-section-title">{isMarketingBoard ? "Новая маркетинговая задача" : isIdeasBoard ? "Новая идея" : isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
-            <p className="analytics-page-subtitle mb-0">
+            <p className="analytics-page-subtitle">
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
           </div>
@@ -2323,7 +1288,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label>
             <span>Название</span>
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={newTask.title}
               onChange={(event) => setNewTask((current) => ({ ...current, title: event.target.value }))}
               placeholder={isMarketingBoard ? "Например: парсер Telegram" : isIdeasBoard ? "Например: AMA-сессия" : isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
@@ -2332,7 +1297,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label>
             <span>Направление</span>
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={newTask.responsible}
               onChange={(event) => setNewTask((current) => ({ ...current, responsible: event.target.value }))}
               placeholder={isMarketingBoard ? "Маркетинг / парсеры" : isIdeasBoard ? "Маркетинг / продукт" : isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
@@ -2341,7 +1306,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label>
             <span>Исполнитель</span>
             <select
-              className="form-select analytics-launch-input"
+              className="analytics-launch-input"
               value={newTask.assignee}
               onChange={(event) => setNewTask((current) => ({ ...current, assignee: event.target.value }))}
             >
@@ -2355,7 +1320,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label>
             <span>Дата</span>
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={newTask.dueDate}
               onChange={(event) => setNewTask((current) => ({ ...current, dueDate: event.target.value }))}
               placeholder="25.05.2026"
@@ -2364,7 +1329,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label>
             <span>Приоритет</span>
             <select
-              className="form-select analytics-launch-input"
+              className="analytics-launch-input"
               value={newTask.priority}
               onChange={(event) => setNewTask((current) => ({ ...current, priority: event.target.value }))}
             >
@@ -2378,7 +1343,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label>
             <span>Статус</span>
             <select
-              className="form-select analytics-launch-input"
+              className="analytics-launch-input"
               value={newTask.status}
               onChange={(event) => setNewTask((current) => ({ ...current, status: event.target.value }))}
             >
@@ -2392,7 +1357,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
           <label className="analytics-launch-form-comment">
             <span>Комментарий</span>
             <textarea
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               rows="2"
               value={newTask.comment}
               onChange={(event) => setNewTask((current) => ({ ...current, comment: event.target.value }))}
@@ -2403,21 +1368,23 @@ function LaunchChecklistSection({ mode = "tasks" }) {
             Добавить задачу
           </AnalyticsActionButton>
         </div>
-      </section>
+        </div>
+      </Wrapper>
 
-      <section className="analytics-surface analytics-launch-checklist mt-4">
+      <Wrapper as="section" marginTop="lg">
+        <div className="analytics-surface analytics-launch-checklist">
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Задачи запуска</span>
             <h3 className="analytics-section-title">{boardTitle}</h3>
-            <p className="analytics-page-subtitle mb-0">
+            <p className="analytics-page-subtitle">
               {boardSubtitle}. Меняй название, направление, исполнителя, комментарий, дату, приоритет и статус прямо здесь. Готовые задачи зачёркиваются.
             </p>
           </div>
         </div>
 
-        <div className="table-responsive">
-          <table className="table analytics-table analytics-launch-table mb-0">
+        <div className="analytics-table-responsive">
+          <table className="analytics-table analytics-launch-table">
             <thead>
               <tr>
                 <th>Готово</th>
@@ -2451,18 +1418,15 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                       />
                     </td>
                     <td>
-                      {renderEditableCell(task, "title", {
-                        inputClassName: "analytics-launch-title-input",
-                        readClassName: "analytics-launch-title-read",
-                      })}
+                      <LaunchEditableCell activeBoard={activeBoard} task={task} field="title" editingCell={editingCell} setEditingCell={setEditingCell} updateTask={updateTask} variant="title" />
                     </td>
-                    <td>{renderEditableCell(task, "responsible")}</td>
-                    <td>{renderEditableCell(task, "assignee", { readClassName: "analytics-launch-assignee-read", selectOptions: TASK_ASSIGNEES })}</td>
-                    <td className="analytics-launch-comment">{renderEditableCell(task, "comment", { multiline: true, rows: 5 })}</td>
-                    <td>{renderEditableCell(task, "dueDate", { inputClassName: "analytics-launch-date-input" })}</td>
+                    <td><LaunchEditableCell activeBoard={activeBoard} task={task} field="responsible" editingCell={editingCell} setEditingCell={setEditingCell} updateTask={updateTask} /></td>
+                    <td><LaunchEditableCell activeBoard={activeBoard} task={task} field="assignee" editingCell={editingCell} setEditingCell={setEditingCell} updateTask={updateTask} variant="assignee" selectOptions={TASK_ASSIGNEES} /></td>
+                    <td className="analytics-launch-comment"><LaunchEditableCell activeBoard={activeBoard} task={task} field="comment" editingCell={editingCell} setEditingCell={setEditingCell} updateTask={updateTask} multiline rows={5} /></td>
+                    <td><LaunchEditableCell activeBoard={activeBoard} task={task} field="dueDate" editingCell={editingCell} setEditingCell={setEditingCell} updateTask={updateTask} variant="date" /></td>
                     <td>
                       <select
-                        className={`form-select analytics-launch-priority-select analytics-launch-priority-${priorityTone}`}
+                        className={`analytics-launch-priority-select analytics-launch-priority-${priorityTone}`}
                         value={priority}
                         onChange={(event) => updateTask(task.id, { priority: event.target.value })}
                       >
@@ -2475,7 +1439,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                     </td>
                     <td>
                       <select
-                        className={`form-select analytics-launch-status-select analytics-launch-status-${statusTone}`}
+                        className={`analytics-launch-status-select analytics-launch-status-${statusTone}`}
                         value={task.status}
                         onChange={(event) => updateTask(task.id, { status: event.target.value, done: event.target.value === "Готово" })}
                       >
@@ -2539,9 +1503,11 @@ function LaunchChecklistSection({ mode = "tasks" }) {
             </tbody>
           </table>
         </div>
-      </section>
+        </div>
+      </Wrapper>
 
-      <section className="analytics-task-lower-grid mt-4">
+      <Wrapper as="section" marginTop="lg">
+        <div className="analytics-task-lower-grid">
         <article className="analytics-surface analytics-task-history-card">
           <div className="analytics-data-table-head">
             <div>
@@ -2583,7 +1549,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
             {!boardArchive.length ? <div className="analytics-crm-my-tasks-empty">Архив пуст. Удалённые задачи будут попадать сюда.</div> : null}
           </div>
         </article>
-      </section>
+        </div>
+      </Wrapper>
         </>
       ) : null}
     </>

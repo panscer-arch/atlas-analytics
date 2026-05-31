@@ -1,5 +1,6 @@
 import AnalyticsIcon from "./AnalyticsIcon";
 import AnalyticsCollapsibleSection from "./AnalyticsCollapsibleSection";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 
 const SCENARIO_TONES = new Set(["default", "accent", "success", "danger"]);
 
@@ -25,9 +26,9 @@ function AnalyticsScenarios({ scenarios = [], defaultOpen = false }) {
       subtitle="Что происходит сейчас, почему это важно и как лучше реагировать."
       defaultOpen={defaultOpen}
     >
-      <div className="row g-3">
+      <LayoutGrid columns="three" gap="md">
         {scenarios.map((scenario, index) => (
-          <div key={scenario.title} className="col-12 col-xl-4">
+          <LayoutCell key={scenario.title}>
             <div className="analytics-surface analytics-scenario-card">
               <div className="analytics-scenario-topline">
                 <span className="analytics-scenario-index">
@@ -56,9 +57,9 @@ function AnalyticsScenarios({ scenarios = [], defaultOpen = false }) {
                 <div className="analytics-scenario-text">{scenario.outcome}</div>
               </div>
             </div>
-          </div>
+          </LayoutCell>
         ))}
-      </div>
+      </LayoutGrid>
     </AnalyticsCollapsibleSection>
   );
 }

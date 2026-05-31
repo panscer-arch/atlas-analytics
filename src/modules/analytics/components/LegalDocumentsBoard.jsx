@@ -4476,12 +4476,12 @@ function LegalDocumentsBoard() {
   if (!activeDocument) return null;
 
   return (
-    <section className="analytics-surface analytics-agent-template analytics-agent-dataset mt-4">
+    <section className="analytics-surface analytics-agent-template analytics-agent-dataset">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">International Web3 docs</span>
           <h2 className="analytics-agent-template-title">Документы для Atlas</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Рабочий список международных документов для smart-contract проекта: слева документ, справа описание, состав и статус.
           </p>
         </div>

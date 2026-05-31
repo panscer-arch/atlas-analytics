@@ -11,7 +11,7 @@ function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) 
             <span className="analytics-header-logo-eye analytics-header-logo-eye-right" />
             <span className="analytics-header-logo-mouth" />
           </span>
-          <h1 className="analytics-page-title analytics-page-title-animated mb-0">Аналитика</h1>
+          <h1 className="analytics-page-title analytics-page-title-animated">Аналитика</h1>
           {showMotion ? (
             <div className="analytics-header-motion analytics-header-motion-inline" aria-hidden="true">
               <div className="analytics-header-motion-label">

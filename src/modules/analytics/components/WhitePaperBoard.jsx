@@ -157,12 +157,12 @@ function WhitePaperBoard() {
   if (!activeBlock) return null;
 
   return (
-    <section className="analytics-surface analytics-agent-template analytics-agent-dataset mt-4">
+    <section className="analytics-surface analytics-agent-template analytics-agent-dataset">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">White Paper</span>
           <h2 className="analytics-agent-template-title">White Paper: публичная версия</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Чистая версия для чтения и сверки. Большая старая редакция v6.4 вынесена отдельно, чтобы можно было спокойно вычитывать и переносить сильные блоки.
           </p>
         </div>

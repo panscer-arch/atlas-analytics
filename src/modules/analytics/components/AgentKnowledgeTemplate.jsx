@@ -483,12 +483,12 @@ function AgentKnowledgeTemplate() {
   }
 
   return (
-    <section className="analytics-surface analytics-agent-template mt-4">
+    <section className="analytics-surface analytics-agent-template">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">Параметры AI-агента</span>
           <h2 className="analytics-agent-template-title">Параметры Atlas System</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Русскоязычная база параметров для обучения AI-агента Atlas System. В третьем столбике можно хранить ссылку на документ, источник или короткое описание.
           </p>
         </div>
@@ -503,8 +503,8 @@ function AgentKnowledgeTemplate() {
                 + строка
               </AnalyticsActionButton>
             </div>
-            <div className="table-responsive">
-              <table className="table analytics-table analytics-agent-template-table mb-0">
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-agent-template-table">
                 <thead>
                   <tr>
                     <th>Параметр</th>

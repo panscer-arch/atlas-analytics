@@ -364,12 +364,12 @@ function AgentTerminologyTemplate() {
   }, [activeSectionId, template.sections]);
 
   return (
-    <section className="analytics-surface analytics-agent-template mt-4">
+    <section className="analytics-surface analytics-agent-template">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">Терминология</span>
           <h2 className="analytics-agent-template-title">Глоссарий Atlas System</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Editable-база терминов для команды и AI-агента. Сейчас в шаблоне {totalTerms} терминов; описания, статусы вычитки и оранжевые редакторские комментарии можно редактировать прямо в таблице.
           </p>
         </div>
@@ -390,7 +390,7 @@ function AgentTerminologyTemplate() {
         ))}
       </div>
 
-      {activeSectionDescription ? <p className="analytics-page-subtitle mb-0">{activeSectionDescription}</p> : null}
+      {activeSectionDescription ? <p className="analytics-page-subtitle">{activeSectionDescription}</p> : null}
 
       {activeSection ? (
         <div className="analytics-agent-template-grid">
@@ -419,8 +419,8 @@ function AgentTerminologyTemplate() {
                 </AnalyticsActionButton>
               </div>
             </div>
-            <div className="table-responsive">
-              <table className="table analytics-table analytics-agent-template-table mb-0">
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-agent-template-table">
                 <thead>
                   <tr>
                     <th>Статус</th>

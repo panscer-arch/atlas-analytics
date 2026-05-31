@@ -1,18 +1,25 @@
 import CrmMyTasksCard from "./CrmMyTasksCard";
+import ProgressMeter from "./ProgressMeter";
+
+const FLOW_TONES = new Set(["positive", "negative"]);
+
+function getFlowTone(value) {
+  return FLOW_TONES.has(value) ? value : "positive";
+}
 
 function CrmCommandDashboard({
   isAiReviewOpen,
   aiTaskSummary,
   analyticsTitle,
-  analyticsTone,
+  analyticsFlowTone,
   analyticsCoverageLabel,
-  analyticsCoverageWidth,
+  analyticsCoverageValue,
   analyticsSignals,
   analyticsPulseRows,
   taskTotals,
   taskWidgets,
   crmTaskStats,
-  taskDoneWidth,
+  taskDoneValue,
   crmContentStats,
   crmMyTasks,
   crmMyTasksSaveState,
@@ -26,9 +33,10 @@ function CrmCommandDashboard({
 }) {
   const totalDone = crmTaskStats.reduce((sum, item) => sum + item.done, 0);
   const totalTasks = crmTaskStats.reduce((sum, item) => sum + item.total, 0);
+  const analyticsFlowToneToken = getFlowTone(analyticsFlowTone);
 
   return (
-    <section className="analytics-surface analytics-crm-command mt-4">
+    <section className="analytics-surface analytics-crm-command">
       <div className="analytics-crm-command-head">
         <div>
           <span className="analytics-kicker">Command center</span>
@@ -65,7 +73,7 @@ function CrmCommandDashboard({
           <div className="analytics-crm-analytics-main">
             <div>
               <span className="analytics-crm-analytics-label">Пул системы</span>
-              <strong className={analyticsTone}>{analyticsTitle}</strong>
+              <strong className={`analytics-crm-flow-value analytics-crm-flow-value-${analyticsFlowToneToken}`}>{analyticsTitle}</strong>
             </div>
           </div>
           <div className="analytics-crm-analytics-gauge">
@@ -73,9 +81,7 @@ function CrmCommandDashboard({
               <span>Покрытие выплат</span>
               <b>{analyticsCoverageLabel}</b>
             </div>
-            <div className="analytics-crm-analytics-track" aria-hidden="true">
-              <i style={{ width: analyticsCoverageWidth }} />
-            </div>
+            <ProgressMeter value={analyticsCoverageValue} variant="gauge" label="Покрытие выплат" />
           </div>
           <div className="analytics-crm-analytics-metrics">
             {analyticsSignals.map(([label, value, tone]) => (
@@ -130,7 +136,7 @@ function CrmCommandDashboard({
           <div className="analytics-crm-tasks-summary">
             <span>Прогресс закрытия задач</span>
             <b>{totalDone}/{totalTasks}</b>
-            <i style={{ width: taskDoneWidth }} aria-hidden="true" />
+            <ProgressMeter value={taskDoneValue} variant="summary" label="Прогресс закрытия задач" />
           </div>
         </article>
 

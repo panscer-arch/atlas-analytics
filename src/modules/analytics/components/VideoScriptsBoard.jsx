@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const VIDEO_SCRIPTS_STORAGE_KEY = "atlas.analytics.videoScripts.v2";
@@ -672,16 +673,16 @@ function VideoScriptsBoard() {
   }, [activeVideo]);
 
   return (
-    <section className="analytics-surface analytics-agent-template mt-4">
+    <section className="analytics-surface analytics-agent-template">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">Ролики</span>
           <h2 className="analytics-agent-template-title">Сценарии и ТЗ для роликов</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Здесь можно хранить тексты роликов, править сценарии, добавлять новые видео и держать рядом формат, длительность и комментарии к ТЗ.
           </p>
         </div>
-        <div className="d-flex flex-wrap gap-2">
+        <div className="analytics-action-row">
           <AnalyticsActionButton variant="primary" size="sm" onClick={addVideo}>
             + ролик
           </AnalyticsActionButton>
@@ -708,7 +709,7 @@ function VideoScriptsBoard() {
           <div className="analytics-agent-template-card">
             <div className="analytics-agent-template-card-head">
               <h3>{activeVideo.title || "Без названия"}</h3>
-              <div className="d-flex flex-wrap gap-2">
+              <div className="analytics-action-row">
                 <AnalyticsActionButton variant={isActiveVideoEditing ? "secondary" : "primary"} size="sm" onClick={() => toggleVideoEditing(activeVideo.id)}>
                   {isActiveVideoEditing ? "Готово" : "Редактировать"}
                 </AnalyticsActionButton>
@@ -723,38 +724,45 @@ function VideoScriptsBoard() {
                 : "Чтобы править текст ролика, нажмите «Редактировать». Так финальный текст не изменится случайно."}
             </p>
 
-            <div className="row g-3">
-              <label className="col-12 col-lg-6">
+            <LayoutGrid columns="four" gap="md">
+              <LayoutCell span="half">
+                <label className="analytics-video-field">
                 <span className="analytics-kicker">Название ролика</span>
                 <input
-                  className="form-control analytics-launch-input"
+                  className="analytics-launch-input"
                   value={activeVideo.title}
                   onChange={(event) => updateVideo(activeVideo.id, "title", event.target.value)}
                   readOnly={!isActiveVideoEditing}
                   placeholder="Например: Как работает Smart Cycle"
                 />
-              </label>
-              <label className="col-12 col-md-6 col-lg-3">
+                </label>
+              </LayoutCell>
+              <LayoutCell>
+                <label className="analytics-video-field">
                 <span className="analytics-kicker">Длительность</span>
                 <input
-                  className="form-control analytics-launch-input"
+                  className="analytics-launch-input"
                   value={activeVideo.duration}
                   onChange={(event) => updateVideo(activeVideo.id, "duration", event.target.value)}
                   readOnly={!isActiveVideoEditing}
                   placeholder="30-60 секунд"
                 />
-              </label>
-              <label className="col-12 col-md-6 col-lg-3">
+                </label>
+              </LayoutCell>
+              <LayoutCell>
+                <label className="analytics-video-field">
                 <span className="analytics-kicker">Формат</span>
                 <input
-                  className="form-control analytics-launch-input"
+                  className="analytics-launch-input"
                   value={activeVideo.format}
                   onChange={(event) => updateVideo(activeVideo.id, "format", event.target.value)}
                   readOnly={!isActiveVideoEditing}
                   placeholder="Reels / YouTube / motion"
                 />
-              </label>
-              <label className="col-12">
+                </label>
+              </LayoutCell>
+              <LayoutCell span="full">
+                <label className="analytics-video-field">
                 <span className="analytics-kicker">ТЗ / комментарий</span>
                 <textarea
                   className="analytics-agent-template-input"
@@ -764,8 +772,10 @@ function VideoScriptsBoard() {
                   placeholder="Что должен объяснить ролик, кому он адресован, какие акценты важны"
                   rows="4"
                 />
-              </label>
-              <label className="col-12">
+                </label>
+              </LayoutCell>
+              <LayoutCell span="full">
+                <label className="analytics-video-field">
                 <span className="analytics-kicker">Текст ролика</span>
                 <textarea
                   className="analytics-agent-template-input"
@@ -775,8 +785,9 @@ function VideoScriptsBoard() {
                   placeholder="Вставь или напиши сценарий ролика"
                   rows="14"
                 />
-              </label>
-            </div>
+                </label>
+              </LayoutCell>
+            </LayoutGrid>
           </div>
         </div>
       ) : null}

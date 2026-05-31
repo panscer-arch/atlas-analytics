@@ -137,7 +137,7 @@ function QuickNotesModal({ isOpen, onClose }) {
         <label className="analytics-quick-notes-field">
           <span>Свободный текст</span>
           <textarea
-            className="form-control analytics-quick-notes-textarea"
+            className="analytics-quick-notes-textarea"
             value={notes.text}
             onChange={(event) => updateNotes((current) => ({ ...current, text: event.target.value }))}
             placeholder="Срочная мысль, идея, поручение, кусок текста, который потом перенесёшь в нужный раздел..."
@@ -153,7 +153,7 @@ function QuickNotesModal({ isOpen, onClose }) {
 
           <div className="analytics-quick-notes-add-row">
             <input
-              className="form-control analytics-launch-input"
+              className="analytics-launch-input"
               value={draftItem}
               onChange={(event) => setDraftItem(event.target.value)}
               onKeyDown={(event) => {
@@ -176,7 +176,7 @@ function QuickNotesModal({ isOpen, onClose }) {
                   aria-label="Отметить пункт"
                 />
                 <input
-                  className="form-control analytics-launch-input"
+                  className="analytics-launch-input"
                   value={item.title}
                   onChange={(event) => updateChecklistItem(item.id, { title: event.target.value })}
                   placeholder="Пункт чек-листа"

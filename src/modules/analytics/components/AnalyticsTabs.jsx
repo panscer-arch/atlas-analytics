@@ -1,6 +1,6 @@
 function AnalyticsTabs({ tabs = [], activeTab, onChange }) {
   return (
-    <section className="analytics-surface analytics-tabs-panel mt-4">
+    <section className="analytics-surface analytics-tabs-panel">
       <div className="analytics-tabs-scroll">
         {tabs.map((tab) => (
           <button

@@ -329,6 +329,11 @@ function makeFrameTitleFromText(text, fallback) {
   return words.length > 64 ? `${words.slice(0, 61)}...` : words;
 }
 
+function getDraftShiftToken(seed) {
+  const normalizedSeed = Number.isFinite(Number(seed)) ? Number(seed) : 0;
+  return Math.abs(normalizedSeed) % 7;
+}
+
 function splitScriptIntoFramePlan(slide, script, visual, stats) {
   const paragraphs = String(script)
     .split(/\n+/)
@@ -898,12 +903,12 @@ function AtlasPresentationBoard() {
   }
 
   return (
-    <section className="analytics-surface analytics-presentation-board mt-4">
+    <section className="analytics-surface analytics-presentation-board">
       <div className="analytics-presentation-head">
         <div>
           <span className="analytics-kicker">CEO-презентация</span>
           <h2 className="analytics-agent-template-title">Согласованные слайды Atlas System</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Рабочая база для дизайнера, монтажёра и диктора: отдельно визуальное ТЗ и отдельно речь Архитектора.
           </p>
         </div>
@@ -965,7 +970,7 @@ function AtlasPresentationBoard() {
               </div>
             </div>
             <textarea
-              className="form-control analytics-presentation-script-input"
+              className="analytics-presentation-script-input"
               value={activeScript}
               onChange={(event) => updateScript(event.target.value)}
               readOnly={!isScriptEditing}
@@ -988,7 +993,7 @@ function AtlasPresentationBoard() {
                 </div>
               </div>
               <textarea
-                className="form-control analytics-presentation-visual-input"
+                className="analytics-presentation-visual-input"
                 value={activeVisual}
                 onChange={(event) => updateVisual(event.target.value)}
                 readOnly={!isVisualEditing}
@@ -1150,7 +1155,7 @@ function AtlasPresentationBoard() {
               <label className="analytics-presentation-notes">
                 <span>Уточнение дизайна</span>
                 <input
-                  className="form-control"
+                  className="analytics-presentation-field"
                   value={draftNotes}
                   onChange={(event) => setDraftNotes(event.target.value)}
                   placeholder="Например: больше силуэта, меньше текста, акцент на логотипе"
@@ -1172,10 +1177,7 @@ function AtlasPresentationBoard() {
               </div>
 
               <div className="analytics-presentation-tools-grid">
-                <div
-                  className={`analytics-presentation-draft analytics-presentation-draft-mode-${previewMode}`}
-                  style={{ "--draft-shift": `${(draftSeed * 19) % 70}%` }}
-                >
+                <div className={`analytics-presentation-draft analytics-presentation-draft-mode-${previewMode} analytics-presentation-draft-shift-${getDraftShiftToken(draftSeed)}`}>
                   {activeSlide.generatedImage ? (
                     <img src={activeSlide.generatedImage} alt={`AI-визуал слайда ${activeSlide.number}: ${activeSlide.title}`} />
                   ) : null}
@@ -1259,7 +1261,7 @@ function AtlasPresentationBoard() {
               </div>
               <label className="analytics-presentation-prompt">
                 <span>Image prompt</span>
-                <textarea className="form-control" value={visualPrompt} readOnly rows="5" />
+                <textarea className="analytics-presentation-field" value={visualPrompt} readOnly rows="5" />
               </label>
             </article>
 

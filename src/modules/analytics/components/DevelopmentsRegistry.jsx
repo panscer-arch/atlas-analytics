@@ -171,7 +171,7 @@ function DevelopmentsRegistry() {
   const parserCount = items.filter((item) => item.type === "Парсер").length;
 
   return (
-    <section className="analytics-developments mt-4">
+    <section className="analytics-developments">
       <div className="analytics-developments-hero analytics-surface">
         <div>
           <span className="analytics-kicker">Внутренние разработки</span>

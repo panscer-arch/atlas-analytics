@@ -33,8 +33,8 @@ function AnalyticsDataTable({
     <div className={`analytics-surface analytics-data-table analytics-data-table-${variantToken}`}>
       <AnalyticsPanelHeader actions={headerActions} subtitle={subtitle} title={title} />
 
-      <div className="table-responsive">
-        <table className={`table analytics-table align-middle mb-0 analytics-data-table-grid analytics-data-table-grid-${densityToken}`}>
+      <div className="analytics-table-responsive">
+        <table className={`analytics-table analytics-data-table-grid analytics-data-table-grid-${densityToken}`}>
           <thead>
             <tr>
               {columns.map((column) => (

@@ -4,7 +4,7 @@ function DateRangeFilter({ value, options, onChange }) {
       <label className="analytics-filter-label" htmlFor="dateRange">
         Период
       </label>
-      <select id="dateRange" className="form-select analytics-filter-select" value={value} onChange={(event) => onChange(event.target.value)}>
+      <select id="dateRange" className="analytics-filter-select" value={value} onChange={(event) => onChange(event.target.value)}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

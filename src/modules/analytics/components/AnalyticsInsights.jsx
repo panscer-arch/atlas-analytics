@@ -1,5 +1,6 @@
 import AnalyticsIcon from "./AnalyticsIcon";
 import AnalyticsCollapsibleSection from "./AnalyticsCollapsibleSection";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 
 function AnalyticsInsights({ alerts = [], recommendations = [] }) {
   return (
@@ -8,12 +9,12 @@ function AnalyticsInsights({ alerts = [], recommendations = [] }) {
       title="Посмотреть сигналы и реакции"
       subtitle="Где уже есть давление на систему и какие шаги стоит сделать прямо сейчас."
     >
-      <div className="row g-3">
-        <div className="col-12 col-xl-6">
+      <LayoutGrid columns="two" gap="md">
+        <LayoutCell>
           <div className="analytics-surface analytics-insight analytics-insight-alert">
-            <div className="analytics-section-heading mb-3">
+            <div className="analytics-section-heading analytics-section-heading-spaced">
               <span className="analytics-kicker">Сигналы</span>
-              <h2 className="mb-0">Где уже есть давление</h2>
+              <h2>Где уже есть давление</h2>
             </div>
             <div className="analytics-insight-list">
               {alerts.map((item, index) => (
@@ -27,13 +28,13 @@ function AnalyticsInsights({ alerts = [], recommendations = [] }) {
               ))}
             </div>
           </div>
-        </div>
+        </LayoutCell>
 
-        <div className="col-12 col-xl-6">
+        <LayoutCell>
           <div className="analytics-surface analytics-insight analytics-insight-action">
-            <div className="analytics-section-heading mb-3">
+            <div className="analytics-section-heading analytics-section-heading-spaced">
               <span className="analytics-kicker">Действия</span>
-              <h2 className="mb-0">Что делать оператору</h2>
+              <h2>Что делать оператору</h2>
             </div>
             <div className="analytics-insight-list">
               {recommendations.map((item, index) => (
@@ -47,8 +48,8 @@ function AnalyticsInsights({ alerts = [], recommendations = [] }) {
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        </LayoutCell>
+      </LayoutGrid>
     </AnalyticsCollapsibleSection>
   );
 }

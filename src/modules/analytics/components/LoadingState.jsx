@@ -1,7 +1,7 @@
 function LoadingState() {
   return (
     <div className="analytics-loading">
-      <div className="spinner-border text-info" role="status" />
+      <div className="analytics-loading-spinner" role="status" />
       <span>Загрузка модуля аналитики...</span>
     </div>
   );

@@ -235,12 +235,12 @@ function AgentTrainingDataset() {
   if (!activeBlock) return null;
 
   return (
-    <section className="analytics-surface analytics-agent-template analytics-agent-dataset mt-4">
+    <section className="analytics-surface analytics-agent-template analytics-agent-dataset">
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">Датасет агентов</span>
           <h2 className="analytics-agent-template-title">Atlas System: полный датасет из PDF</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             `Atlas_System_final.pdf` сохранён блоками без смысловых сокращений: каждый блок содержит полный извлечённый текст страниц, prompt/response пару и JSONL-экспорт.
           </p>
         </div>
@@ -296,7 +296,7 @@ function AgentTrainingDataset() {
             {block.title}
           </button>
         ))}
-        {!filteredBlocks.length ? <p className="analytics-page-subtitle mb-0">По этому фильтру блоков нет.</p> : null}
+        {!filteredBlocks.length ? <p className="analytics-page-subtitle">По этому фильтру блоков нет.</p> : null}
       </div>
 
       <div className="analytics-dataset-mode" role="tablist" aria-label="Режим просмотра датасета">

@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import LayoutGrid, { LayoutCell } from "./LayoutGrid";
+import Wrapper from "./Wrapper";
 
 const IDEAS_STORAGE_KEY = "analytics-idea-capture-v1";
 const BOARD_SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
@@ -113,49 +115,50 @@ function AnalyticsIdeaCapture({ activeTab }) {
   }
 
   return (
-    <section className="analytics-surface analytics-idea-capture mt-4">
+    <Wrapper as="section" marginTop="lg">
+      <div className="analytics-surface analytics-idea-capture">
       <div className="analytics-idea-head">
         <div>
           <span className="analytics-kicker">Идеи по доработке</span>
           <h2 className="analytics-idea-title">Быстро закинуть задачу в доску</h2>
-          <p className="analytics-page-subtitle mb-0">
+          <p className="analytics-page-subtitle">
             Запиши идею по улучшению аналитики, и она сразу уйдёт в нашу доску. Дата ставится автоматически.
           </p>
         </div>
       </div>
 
       <form className="analytics-idea-form" onSubmit={handleSubmit}>
-        <div className="row g-3">
-          <div className="col-12 col-xl-5">
+        <LayoutGrid columns="auto" gap="md" align="end">
+          <LayoutCell span="wide">
             <label className="analytics-filter-label" htmlFor="analytics-idea-title">
               Название задачи
             </label>
             <input
               id="analytics-idea-title"
-              className="form-control analytics-idea-input"
+              className="analytics-idea-input"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Например: добавить CAC по источникам"
             />
-          </div>
-          <div className="col-12 col-xl-5">
+          </LayoutCell>
+          <LayoutCell span="wide">
             <label className="analytics-filter-label" htmlFor="analytics-idea-details">
               Комментарий
             </label>
             <input
               id="analytics-idea-details"
-              className="form-control analytics-idea-input"
+              className="analytics-idea-input"
               value={details}
               onChange={(event) => setDetails(event.target.value)}
               placeholder="Коротко, что именно хотим улучшить"
             />
-          </div>
-          <div className="col-12 col-xl-2 d-flex align-items-end">
-            <button type="submit" className="btn analytics-export-btn w-100" disabled={isSubmitting}>
+          </LayoutCell>
+          <LayoutCell align="end">
+            <button type="submit" className="analytics-export-btn analytics-idea-submit" disabled={isSubmitting}>
               {isSubmitting ? "Отправляем..." : "Бросить в доску"}
             </button>
-          </div>
-        </div>
+          </LayoutCell>
+        </LayoutGrid>
       </form>
 
       <div className="analytics-idea-meta">
@@ -181,7 +184,8 @@ function AnalyticsIdeaCapture({ activeTab }) {
           ))}
         </div>
       ) : null}
-    </section>
+      </div>
+    </Wrapper>
   );
 }
 

@@ -22,8 +22,8 @@ function AnalyticsTable({ rows }) {
 
       <div className="analytics-breakdown-note">Нажмите на строку продукта, чтобы открыть тарифы.</div>
 
-      <div className="table-responsive analytics-breakdown-responsive">
-        <table className="table analytics-table analytics-breakdown-table-grid align-middle mb-0">
+      <div className="analytics-table-responsive analytics-breakdown-responsive">
+        <table className="analytics-table analytics-breakdown-table-grid">
           <thead>
             <tr>
               <th>Продукт / тариф</th>

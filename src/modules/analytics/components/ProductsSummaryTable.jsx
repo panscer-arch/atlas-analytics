@@ -1,32 +1,7 @@
 import AnalyticsDataTable from "./AnalyticsDataTable";
+import ProductSummaryPrimary from "./ProductSummaryPrimary";
+import ProductSummaryStack from "./ProductSummaryStack";
 import formatCurrency from "../utils/formatCurrency";
-
-function ProductSummaryPrimary({ row }) {
-  const badgeTone = row.source === "Lockup" ? "lockup" : "daily";
-
-  return (
-    <div className="analytics-products-summary-primary">
-      <div className="analytics-products-summary-primary-top">
-        <strong>{row.tariff}</strong>
-        <span className={`analytics-products-badge analytics-products-badge-${badgeTone}`}>{row.source}</span>
-      </div>
-      <span>{row.shortLabel}</span>
-    </div>
-  );
-}
-
-function ProductSummaryStack({ lines }) {
-  return (
-    <div className="analytics-products-summary-stack">
-      {lines.map((line) => (
-        <div key={line.label} className="analytics-products-summary-line">
-          <span>{line.label}</span>
-          <strong className={line.isRisk ? "analytics-products-summary-risk" : undefined}>{line.value}</strong>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function ProductsSummaryTable({ rows }) {
   const sortedRows = [...rows].sort((left, right) => {
