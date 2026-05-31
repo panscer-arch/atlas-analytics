@@ -152,13 +152,14 @@ jobs:
           sudo systemctl enable --now atlas-content-backup.timer
           sudo systemctl start atlas-content-backup.service
 
-          NGINX_FILE="$(sudo grep -rl 'analytics.pupanel.cc' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -n 1 || true)"
-          if [ -z "$NGINX_FILE" ]; then
-            NGINX_FILE="$(sudo find /etc/nginx/sites-enabled /etc/nginx/conf.d -type f 2>/dev/null | head -n 1 || true)"
+          NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
+          if [ -z "$NGINX_FILES" ]; then
+            NGINX_FILES="$(sudo find /etc/nginx/sites-enabled /etc/nginx/conf.d -type f 2>/dev/null | head -n 1 || true)"
           fi
 
-          if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/content/' "$NGINX_FILE"; then
-            sudo python3 - "$NGINX_FILE" <<'PY'
+          for NGINX_FILE in $NGINX_FILES; do
+            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/content/' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
           import sys
           path = sys.argv[1]
           text = open(path, encoding="utf-8").read()
@@ -183,10 +184,10 @@ jobs:
                   text = text[:index] + snippet + "\n" + text[index:]
               open(path, "w", encoding="utf-8").write(text)
           PY
-          fi
+            fi
 
-          if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/telegram/' "$NGINX_FILE"; then
-            sudo python3 - "$NGINX_FILE" <<'PY'
+            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/telegram/' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
           import sys
           path = sys.argv[1]
           text = open(path, encoding="utf-8").read()
@@ -215,7 +216,8 @@ jobs:
                       text = text[:index] + snippet + "\n" + text[index:]
               open(path, "w", encoding="utf-8").write(text)
           PY
-          fi
+            fi
+          done
 
           sudo nginx -t
           sudo systemctl reload nginx
