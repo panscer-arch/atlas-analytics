@@ -7,6 +7,9 @@ import {
 } from "./telegram-task-store.mjs";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || "whisper-1";
+const MAX_AUDIO_BYTES = Number(process.env.TELEGRAM_TRANSCRIBE_MAX_BYTES || 25 * 1024 * 1024);
 const ALLOWED_CHAT_IDS = new Set(
   String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || "")
     .split(",")
@@ -87,8 +90,30 @@ async function handleUpdate(update) {
   const message = update.message;
   if (!message?.chat?.id || !isAllowedChat(message.chat.id)) return;
 
-  const text = getMessageText(message).trim();
-  if (!text) return;
+  let text = "";
+  try {
+    text = (await getMessageText(message)).trim();
+  } catch (error) {
+    log("transcription error:", error?.message || String(error));
+    if (hasAudioMessage(message)) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: "Не смог распознать голосовое. Проверь OPENAI_API_KEY или отправь текстом.",
+      });
+    }
+    return;
+  }
+  if (!text) {
+    if (hasAudioMessage(message)) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: "Не смог распознать голосовое. Проверь, что на сервере задан OPENAI_API_KEY.",
+      });
+    }
+    return;
+  }
 
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
@@ -101,13 +126,41 @@ async function handleUpdate(update) {
   if (text.startsWith("/remind")) return handleOperationCommand(message, text, "reminders", "Напоминание сохранено");
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
 
+  if (hasAudioMessage(message)) {
+    await askCategoryForMessage(message, {
+      title: firstLine(text) || "Задача из голосового",
+      description: text,
+      assignee: "",
+      dueDate: "",
+    });
+    return;
+  }
+
   if (message.forward_origin || message.forward_from || message.forward_sender_name || message.reply_to_message) {
     await askCategoryForMessage(message);
   }
 }
 
-function getMessageText(message) {
+async function getMessageText(message) {
+  if (!message) return "";
+  if (message.__atlasTranscript) return message.__atlasTranscript;
+  if (hasAudioMessage(message)) {
+    message.__atlasTranscript = await transcribeTelegramAudio(message);
+    return message.__atlasTranscript;
+  }
   return message.text || message.caption || "";
+}
+
+function getPlainMessageText(message) {
+  return message?.text || message?.caption || message?.__atlasTranscript || "";
+}
+
+function hasAudioMessage(message) {
+  return Boolean(message?.voice?.file_id || message?.audio?.file_id || message?.video_note?.file_id);
+}
+
+function getAudioFile(message) {
+  return message.voice || message.audio || message.video_note || null;
 }
 
 function stripBotMention(command = "") {
@@ -118,7 +171,7 @@ function parseArgs(text, command) {
   return stripBotMention(text).replace(command, "").trim();
 }
 
-function parseTaskText(raw = "", message) {
+async function parseTaskText(raw = "", message) {
   const parts = raw.split(/\s+/).filter(Boolean);
   let category = "";
   let assignee = "";
@@ -143,8 +196,8 @@ function parseTaskText(raw = "", message) {
     rest.push(part);
   }
 
-  const replied = message.reply_to_message ? getMessageText(message.reply_to_message) : "";
-  const text = rest.join(" ").trim() || replied || getForwardedText(message);
+  const replied = message.reply_to_message ? await getMessageText(message.reply_to_message) : "";
+  const text = rest.join(" ").trim() || replied || await getForwardedText(message);
   return {
     category,
     title: firstLine(text) || "Задача из Telegram",
@@ -156,7 +209,18 @@ function parseTaskText(raw = "", message) {
 
 async function handleTaskCommand(message, text) {
   const args = parseArgs(text, "/task");
-  const parsed = parseTaskText(args, message);
+  let parsed;
+  try {
+    parsed = await parseTaskText(args, message);
+  } catch (error) {
+    log("task transcription error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Не смог распознать голосовое в reply. Проверь OPENAI_API_KEY или отправь текстом.",
+    });
+    return;
+  }
 
   if (!parsed.category) {
     await askCategoryForMessage(message, parsed);
@@ -175,7 +239,7 @@ async function handleTaskCommand(message, text) {
 }
 
 async function askCategoryForMessage(message, parsed = null) {
-  const rawText = parsed?.description || getMessageText(message.reply_to_message || message) || getForwardedText(message);
+  const rawText = parsed?.description || await getMessageText(message.reply_to_message || message) || await getForwardedText(message);
   const payload = {
     message,
     parsed: {
@@ -264,7 +328,20 @@ async function handleTasksCommand(message, text) {
 
 async function handleOperationCommand(message, text, type, successText) {
   const command = `/${type === "decisions" ? "decision" : type === "questions" ? "question" : type === "reports" ? "report" : "remind"}`;
-  const body = parseArgs(text, command) || (message.reply_to_message ? getMessageText(message.reply_to_message) : "");
+  let body = parseArgs(text, command);
+  if (!body && message.reply_to_message) {
+    try {
+      body = await getMessageText(message.reply_to_message);
+    } catch (error) {
+      log("operation transcription error:", error?.message || String(error));
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: "Не смог распознать голосовое в reply. Проверь OPENAI_API_KEY или отправь текстом.",
+      });
+      return;
+    }
+  }
   if (!body.trim()) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
@@ -308,8 +385,8 @@ function firstLine(value = "") {
   return String(value).split(/\n/).map((line) => line.trim()).find(Boolean) || "";
 }
 
-function getForwardedText(message) {
-  const text = getMessageText(message);
+async function getForwardedText(message) {
+  const text = await getMessageText(message);
   if (text) return text;
   if (message.reply_to_message) return getMessageText(message.reply_to_message);
   return "";
@@ -340,6 +417,44 @@ function buildSource(message, rawText = "") {
     rawText,
     receivedAt: new Date().toISOString(),
   };
+}
+
+async function transcribeTelegramAudio(message) {
+  const audio = getAudioFile(message);
+  if (!audio?.file_id || !OPENAI_API_KEY) return "";
+
+  const size = Number(audio.file_size || 0);
+  if (size > MAX_AUDIO_BYTES) {
+    throw new Error(`audio_too_large:${size}`);
+  }
+
+  const file = await telegram("getFile", { file_id: audio.file_id });
+  if (!file?.file_path) throw new Error("telegram_file_path_missing");
+
+  const extension = file.file_path.split(".").pop() || "ogg";
+  const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
+  const fileResponse = await fetch(fileUrl);
+  if (!fileResponse.ok) throw new Error(`telegram_file_download_failed:${fileResponse.status}`);
+
+  const audioBuffer = await fileResponse.arrayBuffer();
+  const form = new FormData();
+  form.append("model", TRANSCRIPTION_MODEL);
+  form.append("file", new Blob([audioBuffer], { type: audio.mime_type || "audio/ogg" }), `telegram-audio.${extension}`);
+
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: form,
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(`transcription_failed:${payload?.error?.message || response.status}`);
+  }
+
+  return String(payload.text || "").trim();
 }
 
 function formatTaskList(tasks, title) {
