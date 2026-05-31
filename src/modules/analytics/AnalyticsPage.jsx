@@ -888,6 +888,15 @@ function AnalyticsPage() {
   ];
   const crmTaskDoneValue = crmTaskTotals.total ? Math.min((crmTaskTotals.done / crmTaskTotals.total) * 100, 100) : 0;
 
+  function handleMainTabChange(nextTab) {
+    if (nextTab === "quickNotes") {
+      setIsQuickNotesOpen(true);
+      return;
+    }
+
+    setActiveTab(nextTab);
+  }
+
   return (
     <main className="analytics-layout">
       <AnalyticsHeader onAiReview={() => {
