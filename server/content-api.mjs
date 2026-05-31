@@ -1,6 +1,7 @@
 import http from "node:http";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent } from "./telegram-task-store.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
@@ -60,6 +61,41 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/content/health") {
       sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/tasks" && request.method === "GET") {
+      const category = url.searchParams.get("category") || "";
+      const assignee = url.searchParams.get("assignee") || "";
+      const tasks = await collectTasks({ category, assignee, onlyActive: url.searchParams.get("all") !== "1" });
+      sendJson(response, 200, { ok: true, tasks });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/tasks" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const result = await addTelegramTask(parsed);
+      sendJson(response, 201, { ok: true, ...result });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/ops" && request.method === "GET") {
+      const ops = await readContent(CONTENT_KEYS.telegramOps, { decisions: [], questions: [], reports: [], reminders: [] });
+      sendJson(response, 200, { ok: true, value: ops });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/ops" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const type = parsed.type || "";
+      if (!["decisions", "questions", "reports", "reminders"].includes(type)) {
+        sendJson(response, 400, { ok: false, error: "invalid_operation_type" });
+        return;
+      }
+      const entry = await appendTelegramOperation(type, parsed.payload || parsed);
+      sendJson(response, 201, { ok: true, entry });
       return;
     }
 
