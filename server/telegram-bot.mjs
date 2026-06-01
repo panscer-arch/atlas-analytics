@@ -122,6 +122,7 @@ async function handleUpdate(update) {
   if (text.startsWith("/today") || text.startsWith("/dayplan")) return handleTodayCommand(message);
   if (text.startsWith("/tasks")) return handleTasksCommand(message, text);
   if (text.startsWith("/overdue")) return handleTasksCommand(message, "/tasks");
+  if (text.startsWith("/chatid")) return handleChatIdCommand(message);
   if (text.startsWith("/decision")) return handleOperationCommand(message, text, "decisions", "Решение сохранено");
   if (text.startsWith("/question")) return handleOperationCommand(message, text, "questions", "Вопрос сохранён");
   if (text.startsWith("/report")) return handleOperationCommand(message, text, "reports", "Отчёт сохранён");
@@ -328,6 +329,18 @@ async function handleTasksCommand(message, text) {
   });
 }
 
+async function handleChatIdCommand(message) {
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: [
+      `Chat ID: ${message.chat.id}`,
+      message.chat.title ? `Chat title: ${message.chat.title}` : "",
+      "Этот ID можно поставить в TELEGRAM_PUSH_CHAT_ID для кнопки Push.",
+    ].filter(Boolean).join("\n"),
+  });
+}
+
 async function handleOperationCommand(message, text, type, successText) {
   const command = `/${type === "decisions" ? "decision" : type === "questions" ? "question" : type === "reports" ? "report" : "remind"}`;
   let body = parseArgs(text, command);
@@ -376,6 +389,7 @@ async function sendHelp(chatId) {
       "/today — план на день по подзадачам и ответственным",
       "/dayplan — то же самое, удобно отправлять в общий чат",
       "/tasks marketing — активные задачи категории",
+      "/chatid — показать ID текущего Telegram-чата для Push",
       "/decision текст — зафиксировать решение",
       "/question текст — зафиксировать вопрос",
       "/report текст — зафиксировать отчёт",
