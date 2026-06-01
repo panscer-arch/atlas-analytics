@@ -2,7 +2,9 @@ import {
   addTelegramTask,
   appendTelegramOperation,
   collectTasks,
+  CONTENT_KEYS,
   normalizeCategory,
+  readContent,
   STORE_DIR,
 } from "./telegram-task-store.mjs";
 
@@ -117,7 +119,7 @@ async function handleUpdate(update) {
 
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
-  if (text.startsWith("/today")) return handleTodayCommand(message);
+  if (text.startsWith("/today") || text.startsWith("/dayplan")) return handleTodayCommand(message);
   if (text.startsWith("/tasks")) return handleTasksCommand(message, text);
   if (text.startsWith("/overdue")) return handleTasksCommand(message, "/tasks");
   if (text.startsWith("/decision")) return handleOperationCommand(message, text, "decisions", "Решение сохранено");
@@ -307,11 +309,11 @@ async function handleDoneCommand(message, text) {
 }
 
 async function handleTodayCommand(message) {
-  const tasks = await collectTasks({ category: "daily", onlyActive: true });
-  await telegram("sendMessage", {
+  const tasks = await readContent(CONTENT_KEYS.daily, []);
+  await sendLongMessage({
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: formatTaskList(tasks, "Активные задачи на день"),
+    text: formatDailyAssignmentPlan(tasks),
   });
 }
 
@@ -371,7 +373,8 @@ async function sendHelp(chatId) {
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",
       "Reply на сообщение + /task marketing — взять текст из сообщения",
-      "/today — задачи на день",
+      "/today — план на день по подзадачам и ответственным",
+      "/dayplan — то же самое, удобно отправлять в общий чат",
       "/tasks marketing — активные задачи категории",
       "/decision текст — зафиксировать решение",
       "/question текст — зафиксировать вопрос",
@@ -379,6 +382,32 @@ async function sendHelp(chatId) {
       "/remind текст — сохранить напоминание",
     ].join("\n"),
   });
+}
+
+async function sendLongMessage({ text, ...payload }) {
+  const chunks = splitTelegramMessage(text);
+  for (const chunk of chunks) {
+    await telegram("sendMessage", {
+      ...payload,
+      text: chunk,
+      disable_web_page_preview: true,
+    });
+  }
+}
+
+function splitTelegramMessage(text = "", limit = 3900) {
+  const value = String(text || "");
+  if (value.length <= limit) return [value];
+
+  const chunks = [];
+  let rest = value;
+  while (rest.length > limit) {
+    const cut = Math.max(rest.lastIndexOf("\n\n", limit), rest.lastIndexOf("\n", limit), limit);
+    chunks.push(rest.slice(0, cut).trim());
+    rest = rest.slice(cut).trim();
+  }
+  if (rest) chunks.push(rest);
+  return chunks;
 }
 
 function firstLine(value = "") {
@@ -465,4 +494,53 @@ function formatTaskList(tasks, title) {
     ...tasks.slice(0, 20).map((task, index) => `${index + 1}. [${task.boardTitle}] ${task.title || "Без названия"}${task.assignee || task.responsible ? ` — ${task.assignee || task.responsible}` : ""}`),
     tasks.length > 20 ? `\n...и ещё ${tasks.length - 20}` : "",
   ].filter(Boolean).join("\n");
+}
+
+function normalizeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function isDone(value) {
+  return Boolean(value?.done || value?.status === "Готово");
+}
+
+function cleanAssignee(value = "") {
+  const normalized = String(value || "").trim();
+  if (!normalized || /^не назнач/i.test(normalized)) return "Не назначен";
+  return normalized;
+}
+
+function formatDailyAssignmentPlan(tasks) {
+  const activeTasks = normalizeArray(tasks).filter((task) => !isDone(task));
+  if (!activeTasks.length) return "План на день\n\nАктивных задач нет.";
+
+  const lines = [
+    "План на день",
+    `Активные задачи: ${activeTasks.length}`,
+    "",
+  ];
+
+  activeTasks.forEach((task, taskIndex) => {
+    const subtasks = normalizeArray(task.subtasks).filter((subtask) => !isDone(subtask));
+    const taskDeadline = task.deadline ? ` | срок: ${task.deadline}` : "";
+    lines.push(`${taskIndex + 1}. ${task.title || "Без названия"}${taskDeadline}`);
+
+    if (!subtasks.length) {
+      lines.push(`   - ${cleanAssignee(task.responsible || task.assignee)}: ${task.title || "Без названия"} | ${task.status || "В работе"} | ${task.priority || "Средний"}`);
+      lines.push("");
+      return;
+    }
+
+    subtasks.forEach((subtask, subtaskIndex) => {
+      const assignee = cleanAssignee(subtask.responsible || subtask.assignee);
+      const status = subtask.status || "В работе";
+      const priority = subtask.priority || "Средний";
+      const deadline = subtask.deadline ? ` | до ${subtask.deadline}` : "";
+      lines.push(`   ${subtaskIndex + 1}) ${assignee}: ${subtask.title || "Без названия"} | ${status} | ${priority}${deadline}`);
+    });
+    lines.push("");
+  });
+
+  lines.push("Чтобы изменить ответственного, статус или дедлайн, откройте вкладку Задачи на день в аналитике.");
+  return lines.join("\n").trim();
 }
