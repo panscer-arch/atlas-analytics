@@ -5880,7 +5880,7 @@
   opacity: 0.66;
 }
 
-.analytics-daily-subtask.is-done .analytics-launch-input {
+.analytics-daily-subtask.is-done .analytics-daily-subtask-main .analytics-launch-input {
   text-decoration: line-through;
   text-decoration-color: rgba(120, 255, 224, 0.58);
 }
@@ -5906,9 +5906,17 @@
   line-height: 1;
 }
 
+.analytics-daily-subtask-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(120px, 0.8fr) minmax(120px, 0.85fr);
+  gap: 0.55rem;
+  align-items: end;
+}
+
 .analytics-daily-subtask-meta label {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
   color: #8fa3c0;
   font-size: 0.74rem;
   font-weight: 800;
@@ -9576,6 +9584,10 @@
   .analytics-daily-subtask-main {
     grid-template-columns: 22px minmax(0, 1fr) 32px;
     align-items: flex-start;
+  }
+
+  .analytics-daily-subtask-meta {
+    grid-template-columns: 1fr;
   }
 
   .analytics-daily-subtask .analytics-launch-input {

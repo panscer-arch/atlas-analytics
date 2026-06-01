@@ -223,12 +223,31 @@ export default function DailyTaskCard({
                 </div>
                 <div className="analytics-daily-subtask-meta">
                   <label>
-                    <span>Ответственный за подзадачу</span>
+                    <span>Ответственный</span>
                     <input
                       className="analytics-launch-input"
                       value={subtask.responsible || ""}
                       onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
                       placeholder="Имя или роль"
+                    />
+                  </label>
+                  <label>
+                    <span>Статус</span>
+                    <select
+                      className={`analytics-launch-status-select analytics-launch-status-${getLaunchStatusTone(subtask.status || (subtask.done ? "Готово" : "В работе"))}`}
+                      value={subtask.status || (subtask.done ? "Готово" : "В работе")}
+                      onChange={(event) => updateSubtask(task.id, subtask.id, { status: event.target.value })}
+                    >
+                      {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Дедлайн</span>
+                    <input
+                      className="analytics-launch-input"
+                      value={subtask.deadline || ""}
+                      onChange={(event) => updateSubtask(task.id, subtask.id, { deadline: event.target.value })}
+                      placeholder="01.06"
                     />
                   </label>
                 </div>

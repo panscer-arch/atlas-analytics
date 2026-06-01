@@ -98,6 +98,8 @@ function normalizeDailyTasks(tasks) {
       id: subtask.id || `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       title: subtask.title || "",
       responsible: subtask.responsible || "",
+      status: subtask.status || (subtask.done ? "Готово" : "В работе"),
+      deadline: subtask.deadline || "",
       done: Boolean(subtask.done),
       messages: normalizeArray(subtask.messages).map((message) => ({
         id: message.id || `subtask-msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -169,6 +171,8 @@ function createDailySubtask(title = "") {
     id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
     responsible: "",
+    status: "В работе",
+    deadline: "",
     done: false,
     messages: [],
   };
@@ -636,7 +640,15 @@ export default function DailyTasksBoard() {
       task.id === taskId
         ? {
           ...task,
-          subtasks: normalizeArray(task.subtasks).map((subtask) => (subtask.id === subtaskId ? { ...subtask, ...patch } : subtask)),
+          subtasks: normalizeArray(task.subtasks).map((subtask) => {
+            if (subtask.id !== subtaskId) return subtask;
+            const next = { ...subtask, ...patch };
+            if (patch.status === "Готово") next.done = true;
+            if (patch.status && patch.status !== "Готово") next.done = false;
+            if (patch.done === true) next.status = "Готово";
+            if (patch.done === false && subtask.status === "Готово" && !patch.status) next.status = "В работе";
+            return next;
+          }),
           updatedAt: new Date().toISOString(),
         }
         : task
