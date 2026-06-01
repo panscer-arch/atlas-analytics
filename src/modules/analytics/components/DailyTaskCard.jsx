@@ -117,8 +117,6 @@ export default function DailyTaskCard({
   stopVoiceRecording,
   startVoiceRecording,
 }) {
-    const priorityTone = getLaunchPriorityTone(task.priority);
-    const statusTone = getLaunchStatusTone(task.status);
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
     const questions = normalizeArray(task.questions);
@@ -147,54 +145,6 @@ export default function DailyTaskCard({
               </button>
             ) : null}
           </div>
-        </div>
-
-        <div className="analytics-daily-fields">
-          <label>
-            <span>Приоритет</span>
-            <select className={`analytics-launch-priority-select analytics-launch-priority-${priorityTone}`} value={task.priority} onChange={(event) => patchTask(task.id, { priority: event.target.value })}>
-              {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Статус</span>
-            <select className={`analytics-launch-status-select analytics-launch-status-${statusTone}`} value={task.status} onChange={(event) => patchTask(task.id, { status: event.target.value })}>
-              {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Срок выполнения</span>
-            <input className="analytics-launch-input" value={task.duration} onChange={(event) => patchTask(task.id, { duration: event.target.value })} />
-          </label>
-          <label>
-            <span>Дата дедлайна</span>
-            <input className="analytics-launch-input" value={task.deadline} onChange={(event) => patchTask(task.id, { deadline: event.target.value })} />
-          </label>
-          <label>
-            <span>Кто</span>
-            <div className="analytics-daily-responsible-control">
-              <textarea
-                className="analytics-launch-input"
-                rows="2"
-                value={responsibleValue}
-                onChange={(event) => {
-                  setResponsibleSavedTaskId((current) => (current === task.id ? "" : current));
-                  setResponsibleDrafts((current) => ({ ...current, [task.id]: event.target.value }));
-                }}
-                onKeyDown={(event) => {
-                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") commitResponsible(task.id);
-                }}
-              />
-              <button
-                type="button"
-                className={`analytics-daily-responsible-save${isResponsibleSaved ? " is-saved" : ""}`}
-                onClick={() => commitResponsible(task.id)}
-                disabled={!isResponsibleChanged}
-              >
-                {isResponsibleSaved ? "Закреплено" : "Закрепить"}
-              </button>
-            </div>
-          </label>
         </div>
 
         <div className="analytics-daily-subtasks">
@@ -230,6 +180,16 @@ export default function DailyTaskCard({
                       onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
                       placeholder="Имя или роль"
                     />
+                  </label>
+                  <label>
+                    <span>Приоритет</span>
+                    <select
+                      className={`analytics-launch-priority-select analytics-launch-priority-${getLaunchPriorityTone(subtask.priority || "Средний")}`}
+                      value={subtask.priority || "Средний"}
+                      onChange={(event) => updateSubtask(task.id, subtask.id, { priority: event.target.value })}
+                    >
+                      {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                    </select>
                   </label>
                   <label>
                     <span>Статус</span>

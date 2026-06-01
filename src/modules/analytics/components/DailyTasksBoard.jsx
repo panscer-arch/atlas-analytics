@@ -98,6 +98,7 @@ function normalizeDailyTasks(tasks) {
       id: subtask.id || `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       title: subtask.title || "",
       responsible: subtask.responsible || "",
+      priority: subtask.priority || "Средний",
       status: subtask.status || (subtask.done ? "Готово" : "В работе"),
       deadline: subtask.deadline || "",
       done: Boolean(subtask.done),
@@ -171,6 +172,7 @@ function createDailySubtask(title = "") {
     id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
     responsible: "",
+    priority: "Средний",
     status: "В работе",
     deadline: "",
     done: false,
@@ -721,34 +723,13 @@ export default function DailyTasksBoard() {
 
   return (
     <>
-      <Wrapper as="section" marginTop="lg">
-        <div className="analytics-surface analytics-daily-hero">
-        <div>
-          <span className="analytics-kicker">Фокус на день</span>
-          <h3 className="analytics-section-title">Задачи на 22 мая</h3>
-        </div>
-        <div className="analytics-daily-summary">
-          <div><span>Всего</span><strong>{tasks.length}</strong></div>
-          <div><span>Готово</span><strong>{doneCount}</strong></div>
-          <div><span>В работе</span><strong>{activeTasks.length}</strong></div>
-          <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
-            {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
-          </AnalyticsActionButton>
-          <AnalyticsActionButton variant="secondary" onClick={() => setIsDailyArchiveOpen((current) => !current)} disabled={!completedTasks.length}>
-            {isDailyArchiveOpen ? "Скрыть архив" : `Архив задач (${completedTasks.length})`}
-          </AnalyticsActionButton>
-        </div>
-        <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
-        </div>
-      </Wrapper>
-
       {isAddTaskOpen ? (
         <Wrapper as="section" marginTop="lg">
           <div className="analytics-surface analytics-daily-add">
           <div className="analytics-data-table-head">
             <div>
-              <span className="analytics-kicker">Добавить на 22 мая</span>
-              <h3 className="analytics-section-title">Новая дневная задача</h3>
+              <span className="analytics-kicker">Глобальная задача</span>
+              <h3 className="analytics-section-title">Новая задача</h3>
             </div>
             <AnalyticsActionButton variant="secondary" onClick={() => setIsAddTaskOpen(false)}>Свернуть</AnalyticsActionButton>
           </div>
@@ -756,30 +737,6 @@ export default function DailyTasksBoard() {
             <label>
               <span>Название задачи</span>
               <input className="analytics-launch-input" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Например: согласовать первый экран сайта" />
-            </label>
-            <label>
-              <span>Приоритет</span>
-              <select className="analytics-launch-input" value={draft.priority} onChange={(event) => setDraft((current) => ({ ...current, priority: event.target.value }))}>
-                {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Срок выполнения</span>
-              <input className="analytics-launch-input" value={draft.duration} onChange={(event) => setDraft((current) => ({ ...current, duration: event.target.value }))} placeholder="22 мая, до 15:00" />
-            </label>
-            <label>
-              <span>Дата дедлайна</span>
-              <input className="analytics-launch-input" value={draft.deadline} onChange={(event) => setDraft((current) => ({ ...current, deadline: event.target.value }))} placeholder="22.05.2026 15:00" />
-            </label>
-            <label>
-              <span>Ответственный</span>
-              <input className="analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))} placeholder="Имя или роль" />
-            </label>
-            <label>
-              <span>Статус</span>
-              <select className="analytics-launch-input" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
-                {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-              </select>
             </label>
             <label className="analytics-daily-form-wide">
               <span>Доп. описание</span>
@@ -799,6 +756,15 @@ export default function DailyTasksBoard() {
         <div className="analytics-daily-section-head">
           <span className="analytics-kicker">Активные задачи</span>
           <strong>{activeTasks.length}</strong>
+          <div className="analytics-daily-section-actions">
+            <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
+              {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
+            </AnalyticsActionButton>
+            <AnalyticsActionButton variant="secondary" onClick={() => setIsDailyArchiveOpen((current) => !current)} disabled={!completedTasks.length}>
+              {isDailyArchiveOpen ? "Скрыть архив" : `Архив (${completedTasks.length})`}
+            </AnalyticsActionButton>
+          </div>
+          <div className={`analytics-daily-save analytics-daily-save-${saveState === "Ошибка сохранения" ? "error" : "ok"}`}>{saveState}</div>
         </div>
       </Wrapper>
       <Wrapper as="section" marginTop="md">

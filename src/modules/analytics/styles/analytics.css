@@ -5528,7 +5528,7 @@
 
 .analytics-daily-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(130px, 0.55fr) minmax(160px, 0.75fr) minmax(170px, 0.75fr) minmax(170px, 0.8fr) minmax(130px, 0.55fr);
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 0.9rem;
   align-items: end;
   margin-top: 1rem;
@@ -5546,7 +5546,7 @@
 }
 
 .analytics-daily-form-wide {
-  grid-column: span 3;
+  grid-column: auto;
 }
 
 .analytics-daily-grid {
@@ -5557,9 +5557,9 @@
 }
 
 .analytics-daily-section-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   border: 1px solid rgba(47, 217, 255, 0.14);
   border-radius: 18px;
@@ -5567,6 +5567,13 @@
   background:
     linear-gradient(90deg, rgba(47, 217, 255, 0.1), rgba(245, 196, 106, 0.06)),
     rgba(5, 12, 24, 0.72);
+}
+
+.analytics-daily-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 .analytics-daily-section-head strong {
@@ -5935,7 +5942,7 @@
 
 .analytics-daily-subtask-meta {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(120px, 0.8fr) minmax(120px, 0.85fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(116px, 0.72fr) minmax(118px, 0.78fr) minmax(118px, 0.72fr);
   gap: 0.55rem;
   align-items: end;
 }
