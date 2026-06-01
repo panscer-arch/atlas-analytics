@@ -146,129 +146,152 @@ export default function DailyTaskCard({
             <small>{completedSubtasks}/{subtasks.length}</small>
           </div>
           <div className="analytics-daily-subtasks-list">
-            {subtasks.map((subtask) => (
-              <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
-                <div className="analytics-daily-subtask-main">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(subtask.done)}
-                    onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
-                    aria-label="Отметить подзадачу"
-                  />
-                  <textarea
-                    className="analytics-launch-input"
-                    rows="2"
-                    value={subtask.title}
-                    onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
-                    placeholder="Название подзадачи"
-                  />
-                  <button type="button" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
-                </div>
-                <div className="analytics-daily-subtask-meta">
-                  <label>
-                    <span>Ответственный</span>
+            {subtasks.map((subtask) => {
+              const subtaskMessages = normalizeArray(subtask.messages);
+              const audioMessagesCount = subtaskMessages.filter((message) => message.type === "audio").length;
+              const subtaskStatus = subtask.status || (subtask.done ? "Готово" : "В работе");
+              const subtaskPriority = subtask.priority || "Средний";
+              const subtaskDraftKey = `${task.id}:${subtask.id}`;
+
+              return (
+                <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
+                  <div className="analytics-daily-subtask-main">
                     <input
-                      className="analytics-launch-input"
-                      value={subtask.responsible || ""}
-                      onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
-                      placeholder="Имя или роль"
+                      type="checkbox"
+                      checked={Boolean(subtask.done)}
+                      onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
+                      aria-label="Отметить подзадачу"
                     />
-                  </label>
-                  <label>
-                    <span>Приоритет</span>
-                    <select
-                      className={`analytics-launch-priority-select analytics-launch-priority-${getLaunchPriorityTone(subtask.priority || "Средний")}`}
-                      value={subtask.priority || "Средний"}
-                      onChange={(event) => updateSubtask(task.id, subtask.id, { priority: event.target.value })}
-                    >
-                      {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Статус</span>
-                    <select
-                      className={`analytics-launch-status-select analytics-launch-status-${getLaunchStatusTone(subtask.status || (subtask.done ? "Готово" : "В работе"))}`}
-                      value={subtask.status || (subtask.done ? "Готово" : "В работе")}
-                      onChange={(event) => updateSubtask(task.id, subtask.id, { status: event.target.value })}
-                    >
-                      {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Дедлайн</span>
-                    <input
-                      className="analytics-launch-input"
-                      value={subtask.deadline || ""}
-                      onChange={(event) => updateSubtask(task.id, subtask.id, { deadline: event.target.value })}
-                      placeholder="01.06"
+                    <textarea
+                      className="analytics-daily-subtask-title"
+                      rows="2"
+                      value={subtask.title}
+                      onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
+                      placeholder="Название подзадачи"
                     />
-                  </label>
-                </div>
-                <div className="analytics-daily-subtask-chat">
-                  <div className="analytics-daily-subtask-chat-head">
-                    <span>Чат по подзадаче</span>
-                    <small>{normalizeArray(subtask.messages).length}</small>
+                    <div className="analytics-daily-subtask-badges">
+                      <span className={`analytics-daily-subtask-badge analytics-daily-subtask-priority-${getLaunchPriorityTone(subtaskPriority)}`}>{subtaskPriority}</span>
+                      <span className={`analytics-daily-subtask-badge analytics-daily-subtask-status-${getLaunchStatusTone(subtaskStatus)}`}>{subtaskStatus}</span>
+                    </div>
+                    <button type="button" className="analytics-daily-subtask-delete" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
                   </div>
-                  <div className="analytics-daily-subtask-messages">
-                    {normalizeArray(subtask.messages).map((message) => (
-                      <div key={message.id} className="analytics-daily-subtask-message">
-                        <div>
-                          <strong>{message.author || "Команда"}</strong>
-                          <span>{formatDailyMessageTime(message.createdAt)}</span>
-                        </div>
-                        {message.type === "audio" && message.audioDataUrl ? (
-                          <div className="analytics-daily-audio-message">
-                            <audio
-                              controls
-                              preload="auto"
-                              src={normalizeAudioDataUrl(message.audioDataUrl, message.audioMimeType)}
-                              onCanPlay={(event) => {
-                                event.currentTarget.dataset.ready = "true";
-                              }}
-                            />
-                            <small>{message.text || "Голосовое сообщение"}</small>
+
+                  <div className="analytics-daily-subtask-overview">
+                    <span><strong>Ответственный:</strong> {subtask.responsible || "не назначен"}</span>
+                    <span><strong>Дедлайн:</strong> {subtask.deadline || "без даты"}</span>
+                    <span><strong>Чат:</strong> {subtaskMessages.length} сообщений{audioMessagesCount ? `, ${audioMessagesCount} голос.` : ""}</span>
+                  </div>
+
+                  <details className="analytics-daily-subtask-editor">
+                    <summary>Параметры подзадачи</summary>
+                    <div className="analytics-daily-subtask-meta">
+                      <label>
+                        <span>Ответственный</span>
+                        <input
+                          className="analytics-launch-input"
+                          value={subtask.responsible || ""}
+                          onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
+                          placeholder="Имя или роль"
+                        />
+                      </label>
+                      <label>
+                        <span>Приоритет</span>
+                        <select
+                          className={`analytics-launch-priority-select analytics-launch-priority-${getLaunchPriorityTone(subtaskPriority)}`}
+                          value={subtaskPriority}
+                          onChange={(event) => updateSubtask(task.id, subtask.id, { priority: event.target.value })}
+                        >
+                          {LAUNCH_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Статус</span>
+                        <select
+                          className={`analytics-launch-status-select analytics-launch-status-${getLaunchStatusTone(subtaskStatus)}`}
+                          value={subtaskStatus}
+                          onChange={(event) => updateSubtask(task.id, subtask.id, { status: event.target.value })}
+                        >
+                          {LAUNCH_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Дедлайн</span>
+                        <input
+                          className="analytics-launch-input"
+                          value={subtask.deadline || ""}
+                          onChange={(event) => updateSubtask(task.id, subtask.id, { deadline: event.target.value })}
+                          placeholder="01.06"
+                        />
+                      </label>
+                    </div>
+                  </details>
+
+                  <details className="analytics-daily-subtask-chat" defaultOpen={subtaskMessages.length > 0}>
+                    <summary className="analytics-daily-subtask-chat-head">
+                      <span>Чат по подзадаче</span>
+                      <small>{subtaskMessages.length}</small>
+                    </summary>
+                    <div className="analytics-daily-subtask-messages">
+                      {subtaskMessages.map((message) => (
+                        <div key={message.id} className="analytics-daily-subtask-message">
+                          <div>
+                            <strong>{message.author || "Команда"}</strong>
+                            <span>{formatDailyMessageTime(message.createdAt)}</span>
                           </div>
-                        ) : (
-                          <p>{message.text}</p>
-                        )}
-                        <button type="button" onClick={() => removeSubtaskMessage(task.id, subtask.id, message.id)}>Удалить</button>
-                      </div>
-                    ))}
-                    {!normalizeArray(subtask.messages).length ? <div className="analytics-daily-chat-empty">Пока нет переписки по этой подзадаче.</div> : null}
-                  </div>
-                  <div className="analytics-daily-subtask-chat-form">
-                    <input
-                      className="analytics-launch-input"
-                      value={subtaskChatDrafts[`${task.id}:${subtask.id}`] || ""}
-                      onChange={(event) => setSubtaskChatDrafts((current) => ({ ...current, [`${task.id}:${subtask.id}`]: event.target.value }))}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") addSubtaskMessage(task.id, subtask.id);
-                      }}
-                      placeholder="Сообщение по подзадаче"
-                    />
-                    <AnalyticsActionButton
-                      variant="primary"
-                      onClick={() => addSubtaskMessage(task.id, subtask.id)}
-                      disabled={!(subtaskChatDrafts[`${task.id}:${subtask.id}`] || "").trim()}
-                    >
-                      Отправить
-                    </AnalyticsActionButton>
-                  </div>
-                  <div className="analytics-daily-voice-row analytics-daily-subtask-voice-row">
-                    {recordingTaskId === `${task.id}:${subtask.id}` ? (
-                      <button type="button" className="analytics-daily-voice analytics-daily-voice-recording" onClick={stopVoiceRecording}>
-                        Остановить запись
-                      </button>
-                    ) : (
-                      <button type="button" className="analytics-daily-voice" onClick={() => startVoiceRecording(task.id, subtask.id)} disabled={Boolean(recordingTaskId)}>
-                        Записать голосовое
-                      </button>
-                    )}
-                    {recordingTaskId === `${task.id}:${subtask.id}` ? <span>Идёт запись...</span> : null}
-                  </div>
+                          {message.type === "audio" && message.audioDataUrl ? (
+                            <div className="analytics-daily-audio-message">
+                              <audio
+                                controls
+                                preload="auto"
+                                src={normalizeAudioDataUrl(message.audioDataUrl, message.audioMimeType)}
+                                onCanPlay={(event) => {
+                                  event.currentTarget.dataset.ready = "true";
+                                }}
+                              />
+                              <small>{message.text || "Голосовое сообщение"}</small>
+                            </div>
+                          ) : (
+                            <p>{message.text}</p>
+                          )}
+                          <button type="button" onClick={() => removeSubtaskMessage(task.id, subtask.id, message.id)}>Удалить</button>
+                        </div>
+                      ))}
+                      {!subtaskMessages.length ? <div className="analytics-daily-chat-empty">Пока нет переписки по этой подзадаче.</div> : null}
+                    </div>
+                    <div className="analytics-daily-subtask-chat-form">
+                      <input
+                        className="analytics-launch-input"
+                        value={subtaskChatDrafts[subtaskDraftKey] || ""}
+                        onChange={(event) => setSubtaskChatDrafts((current) => ({ ...current, [subtaskDraftKey]: event.target.value }))}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") addSubtaskMessage(task.id, subtask.id);
+                        }}
+                        placeholder="Сообщение по подзадаче"
+                      />
+                      <AnalyticsActionButton
+                        variant="primary"
+                        onClick={() => addSubtaskMessage(task.id, subtask.id)}
+                        disabled={!(subtaskChatDrafts[subtaskDraftKey] || "").trim()}
+                      >
+                        Отправить
+                      </AnalyticsActionButton>
+                    </div>
+                    <div className="analytics-daily-voice-row analytics-daily-subtask-voice-row">
+                      {recordingTaskId === subtaskDraftKey ? (
+                        <button type="button" className="analytics-daily-voice analytics-daily-voice-recording" onClick={stopVoiceRecording}>
+                          Остановить запись
+                        </button>
+                      ) : (
+                        <button type="button" className="analytics-daily-voice" onClick={() => startVoiceRecording(task.id, subtask.id)} disabled={Boolean(recordingTaskId)}>
+                          Записать голосовое
+                        </button>
+                      )}
+                      {recordingTaskId === subtaskDraftKey ? <span>Идёт запись...</span> : null}
+                    </div>
+                  </details>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {!subtasks.length ? <div className="analytics-daily-chat-empty">Разбей большую задачу на конкретные шаги.</div> : null}
           </div>
           <div className="analytics-daily-subtask-add">
