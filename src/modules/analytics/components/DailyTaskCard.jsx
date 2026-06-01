@@ -172,6 +172,7 @@ export default function DailyTaskCard({
                     <div className="analytics-daily-subtask-badges">
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-priority-${getLaunchPriorityTone(subtaskPriority)}`}>{subtaskPriority}</span>
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-status-${getLaunchStatusTone(subtaskStatus)}`}>{subtaskStatus}</span>
+                      <span className="analytics-daily-subtask-badge analytics-daily-subtask-owner">{subtask.responsible || "Не назначен"}</span>
                     </div>
                     <button
                       type="button"

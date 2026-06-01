@@ -6014,6 +6014,15 @@
   color: #d7e5ff;
 }
 
+.analytics-daily-subtask-owner {
+  max-width: 150px;
+  border-color: rgba(255, 196, 107, 0.24);
+  background: rgba(255, 196, 107, 0.08);
+  color: #ffe0a3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .analytics-daily-subtask-delete {
   width: 34px;
   height: 34px;
