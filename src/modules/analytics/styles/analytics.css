@@ -6027,6 +6027,11 @@
   align-items: center;
 }
 
+.analytics-daily-subtask-voice-row {
+  justify-content: flex-start;
+  padding-top: 0.1rem;
+}
+
 .analytics-daily-subtask-add {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

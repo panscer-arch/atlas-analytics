@@ -189,17 +189,6 @@ function createDailySubtaskMessage(text = "", author = "Команда") {
   };
 }
 
-function createDailyQuestion(text = "", author = "Команда") {
-  return {
-    id: `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    author: author || "Команда",
-    text,
-    answered: false,
-    createdAt: new Date().toISOString(),
-    closedAt: "",
-  };
-}
-
 function getSupportedAudioMimeType() {
   if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
 
@@ -274,7 +263,6 @@ export default function DailyTasksBoard() {
   const [subtaskChatDrafts, setSubtaskChatDrafts] = useState({});
   const [messageEditDrafts, setMessageEditDrafts] = useState({});
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
-  const [questionDrafts, setQuestionDrafts] = useState({});
   const [responsibleDrafts, setResponsibleDrafts] = useState({});
   const [responsibleSavedTaskId, setResponsibleSavedTaskId] = useState("");
   const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
@@ -287,6 +275,7 @@ export default function DailyTasksBoard() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioStreamRef = useRef(null);
+  const recordingTargetRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -394,11 +383,6 @@ export default function DailyTasksBoard() {
       });
       return next;
     });
-    setQuestionDrafts((current) => {
-      const next = { ...current };
-      delete next[taskId];
-      return next;
-    });
     setResponsibleDrafts((current) => {
       const next = { ...current };
       delete next[taskId];
@@ -447,6 +431,33 @@ export default function DailyTasksBoard() {
     )));
   }
 
+  function addSubtaskAudioMessage(taskId, subtaskId, audioDataUrl, audioMimeType) {
+    const playbackMimeType = getAudioPlaybackMimeType(audioMimeType);
+    const message = {
+      id: `subtask-msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      author: chatAuthor.trim() || "Команда",
+      text: "Голосовое сообщение",
+      type: "audio",
+      audioDataUrl: normalizeAudioDataUrl(audioDataUrl, playbackMimeType),
+      audioMimeType: playbackMimeType,
+      createdAt: new Date().toISOString(),
+    };
+
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          subtasks: normalizeArray(task.subtasks).map((subtask) => (
+            subtask.id === subtaskId
+              ? { ...subtask, messages: [...normalizeArray(subtask.messages), message] }
+              : subtask
+          )),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+  }
+
   function readBlobAsDataUrl(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -456,15 +467,16 @@ export default function DailyTasksBoard() {
     });
   }
 
-  async function startVoiceRecording(taskId) {
+  async function startVoiceRecording(taskId, subtaskId = "") {
     setRecordingError("");
+    const recordingId = subtaskId ? `${taskId}:${subtaskId}` : taskId;
 
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setRecordingError("Браузер не поддерживает запись голоса.");
       return;
     }
 
-    if (recordingTaskId && recordingTaskId !== taskId) {
+    if (recordingTaskId && recordingTaskId !== recordingId) {
       setRecordingError("Сначала останови текущую запись.");
       return;
     }
@@ -477,6 +489,7 @@ export default function DailyTasksBoard() {
       audioChunksRef.current = [];
       audioStreamRef.current = stream;
       mediaRecorderRef.current = recorder;
+      recordingTargetRef.current = { taskId, subtaskId };
 
       recorder.ondataavailable = (event) => {
         if (event.data?.size) audioChunksRef.current.push(event.data);
@@ -485,11 +498,13 @@ export default function DailyTasksBoard() {
       recorder.onstop = async () => {
         const chunks = audioChunksRef.current;
         const type = recorder.mimeType || "audio/webm";
+        const target = recordingTargetRef.current || { taskId, subtaskId };
 
         audioStreamRef.current?.getTracks().forEach((track) => track.stop());
         audioStreamRef.current = null;
         mediaRecorderRef.current = null;
         audioChunksRef.current = [];
+        recordingTargetRef.current = null;
         setRecordingTaskId("");
 
         if (!chunks.length) return;
@@ -497,15 +512,20 @@ export default function DailyTasksBoard() {
         try {
           const blob = new Blob(chunks, { type });
           const audioDataUrl = await readBlobAsDataUrl(blob);
-          addAudioMessage(taskId, audioDataUrl, type);
+          if (target.subtaskId) {
+            addSubtaskAudioMessage(target.taskId, target.subtaskId, audioDataUrl, type);
+          } else {
+            addAudioMessage(target.taskId, audioDataUrl, type);
+          }
         } catch {
           setRecordingError("Не получилось сохранить голосовое сообщение.");
         }
       };
 
       recorder.start(1000);
-      setRecordingTaskId(taskId);
+      setRecordingTaskId(recordingId);
     } catch {
+      recordingTargetRef.current = null;
       setRecordingError("Не удалось получить доступ к микрофону.");
     }
   }
@@ -591,50 +611,6 @@ export default function DailyTasksBoard() {
       delete next[taskId];
       return next;
     });
-  }
-
-  function addQuestion(taskId) {
-    const text = (questionDrafts[taskId] || "").trim();
-    if (!text) return;
-
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? { ...task, questions: [createDailyQuestion(text, chatAuthor.trim() || "Команда"), ...normalizeArray(task.questions)], updatedAt: new Date().toISOString() }
-        : task
-    )));
-    setQuestionDrafts((current) => ({ ...current, [taskId]: "" }));
-  }
-
-  function toggleQuestion(taskId, questionId) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          questions: normalizeArray(task.questions).map((question) => (
-            question.id === questionId
-              ? {
-                ...question,
-                answered: !question.answered,
-                closedAt: question.answered ? "" : new Date().toISOString(),
-              }
-              : question
-          )),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
-  }
-
-  function removeQuestion(taskId, questionId) {
-    persist((currentTasks) => currentTasks.map((task) => (
-      task.id === taskId
-        ? {
-          ...task,
-          questions: normalizeArray(task.questions).filter((question) => question.id !== questionId),
-          updatedAt: new Date().toISOString(),
-        }
-        : task
-    )));
   }
 
   function updateSubtask(taskId, subtaskId, patch) {
@@ -778,7 +754,6 @@ export default function DailyTasksBoard() {
               responsibleSavedTaskId={responsibleSavedTaskId}
               subtaskDrafts={subtaskDrafts}
               subtaskChatDrafts={subtaskChatDrafts}
-              questionDrafts={questionDrafts}
               chatDrafts={chatDrafts}
               messageEditDrafts={messageEditDrafts}
               chatAuthor={chatAuthor}
@@ -798,10 +773,6 @@ export default function DailyTasksBoard() {
               addSubtask={addSubtask}
               addSubtaskMessage={addSubtaskMessage}
               removeSubtaskMessage={removeSubtaskMessage}
-              setQuestionDrafts={setQuestionDrafts}
-              addQuestion={addQuestion}
-              toggleQuestion={toggleQuestion}
-              removeQuestion={removeQuestion}
               setChatAuthor={setChatAuthor}
               setMessageEditDrafts={setMessageEditDrafts}
               saveEditedMessage={saveEditedMessage}
@@ -844,7 +815,6 @@ export default function DailyTasksBoard() {
                   responsibleSavedTaskId={responsibleSavedTaskId}
                   subtaskDrafts={subtaskDrafts}
                   subtaskChatDrafts={subtaskChatDrafts}
-                  questionDrafts={questionDrafts}
                   chatDrafts={chatDrafts}
                   messageEditDrafts={messageEditDrafts}
                   chatAuthor={chatAuthor}
@@ -864,10 +834,6 @@ export default function DailyTasksBoard() {
                   addSubtask={addSubtask}
                   addSubtaskMessage={addSubtaskMessage}
                   removeSubtaskMessage={removeSubtaskMessage}
-                  setQuestionDrafts={setQuestionDrafts}
-                  addQuestion={addQuestion}
-                  toggleQuestion={toggleQuestion}
-                  removeQuestion={removeQuestion}
                   setChatAuthor={setChatAuthor}
                   setMessageEditDrafts={setMessageEditDrafts}
                   saveEditedMessage={saveEditedMessage}
