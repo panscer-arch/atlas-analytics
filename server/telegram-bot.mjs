@@ -6,6 +6,7 @@ import {
   normalizeCategory,
   readContent,
   STORE_DIR,
+  updateTelegramTaskBySource,
 } from "./telegram-task-store.mjs";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
@@ -20,6 +21,7 @@ const ALLOWED_CHAT_IDS = new Set(
 );
 const POLL_TIMEOUT_SECONDS = 25;
 const TASK_TRIGGER_EMOJI = "💋";
+const TASK_DONE_EMOJI = "✅";
 const RECENT_MESSAGES_LIMIT = 800;
 const CATEGORY_BUTTONS = [
   ["inbox", "launch"],
@@ -131,6 +133,10 @@ async function handleUpdate(update) {
 
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
+  if (text.startsWith("/my")) return handleMyCommand(message, text);
+  if (text.startsWith("/assign")) return handleTaskPatchCommand(message, text, "assign");
+  if (text.startsWith("/status")) return handleTaskPatchCommand(message, text, "status");
+  if (text.startsWith("/deadline")) return handleTaskPatchCommand(message, text, "deadline");
   if (text.startsWith("/today") || text.startsWith("/dayplan")) return handleTodayCommand(message);
   if (text.startsWith("/tasks")) return handleTasksCommand(message, text);
   if (text.startsWith("/overdue")) return handleTasksCommand(message, "/tasks");
@@ -203,7 +209,14 @@ async function handleMessageReaction(reaction) {
   const chatId = reaction.chat?.id;
   const messageId = reaction.message_id;
   if (!chatId || !messageId || !isAllowedChat(chatId)) return;
-  if (!hasEmojiReaction(reaction.new_reaction) || hasEmojiReaction(reaction.old_reaction)) return;
+  const isTaskTrigger = hasEmojiReaction(reaction.new_reaction, TASK_TRIGGER_EMOJI) && !hasEmojiReaction(reaction.old_reaction, TASK_TRIGGER_EMOJI);
+  const isDoneTrigger = hasEmojiReaction(reaction.new_reaction, TASK_DONE_EMOJI) && !hasEmojiReaction(reaction.old_reaction, TASK_DONE_EMOJI);
+  if (!isTaskTrigger && !isDoneTrigger) return;
+
+  if (isDoneTrigger) {
+    await closeTaskFromTelegramSource({ chatId, messageId }, chatId, messageId);
+    return;
+  }
 
   const key = messageKey(chatId, messageId);
   if (pendingCategory.has(key)) return;
@@ -374,6 +387,11 @@ async function handleCallback(callback) {
 
 async function handleDoneCommand(message, text) {
   const args = parseArgs(text, "/done");
+  if (message.reply_to_message) {
+    await closeTaskFromTelegramSource(buildReplySource(message), message.chat.id, message.message_id);
+    return;
+  }
+
   await appendTelegramOperation("reports", {
     kind: "done",
     text: args || "Задача отмечена как выполненная в Telegram. Связать с ID можно вручную в аналитике.",
@@ -383,6 +401,90 @@ async function handleDoneCommand(message, text) {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
     text: "Зафиксировал выполнение. Для точного закрытия в аналитике нужен ID задачи или ручная отметка.",
+  });
+}
+
+async function handleMyCommand(message, text) {
+  const args = parseArgs(text, "/my").trim();
+  const assignee = args || (message.from?.username ? `@${message.from.username}` : getAuthorName(message));
+  const tasks = await collectTasks({ assignee, onlyActive: true });
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: formatTaskList(tasks, `Мои активные задачи: ${assignee}`),
+  });
+}
+
+function buildReplySource(message) {
+  return {
+    chatId: message.reply_to_message?.chat?.id || message.chat?.id,
+    messageId: message.reply_to_message?.message_id,
+  };
+}
+
+async function closeTaskFromTelegramSource(source, chatId, replyToMessageId) {
+  if (!source?.chatId || !source?.messageId) {
+    await telegram("sendMessage", {
+      chat_id: chatId,
+      reply_to_message_id: replyToMessageId,
+      text: "Ответь командой на исходное сообщение задачи или поставь ✅ на сообщение, из которого задача была создана.",
+    });
+    return;
+  }
+
+  const result = await updateTelegramTaskBySource(source, { status: "Готово" }, "Закрыта из Telegram");
+  await telegram("sendMessage", {
+    chat_id: chatId,
+    reply_to_message_id: replyToMessageId,
+    text: result
+      ? `Готово: закрыта задача в ${result.boardTitle}\n${result.task.title || "Без названия"}`
+      : "Не нашёл задачу по этому сообщению. Закрыть можно задачу, которая была создана из этого Telegram-сообщения.",
+  });
+}
+
+async function handleTaskPatchCommand(message, text, kind) {
+  if (!message.reply_to_message) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Эту команду нужно отправить reply на исходное сообщение задачи.",
+    });
+    return;
+  }
+
+  const command = kind === "assign" ? "/assign" : kind === "status" ? "/status" : "/deadline";
+  const value = parseArgs(text, command).trim();
+  if (!value) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: kind === "assign"
+        ? "Напиши ответственного: /assign @username"
+        : kind === "status"
+          ? "Напиши статус: /status В работе"
+          : "Напиши дедлайн: /deadline 05.06",
+    });
+    return;
+  }
+
+  const patch = kind === "assign"
+    ? { assignee: value }
+    : kind === "status"
+      ? { status: value }
+      : { dueDate: value };
+
+  const result = await updateTelegramTaskBySource(
+    buildReplySource(message),
+    patch,
+    kind === "assign" ? `Назначен ответственный: ${value}` : kind === "status" ? `Изменён статус: ${value}` : `Изменён дедлайн: ${value}`,
+  );
+
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: result
+      ? `Обновлено: ${result.boardTitle}\n${result.task.title || "Без названия"}`
+      : "Не нашёл задачу по этому сообщению. Попробуй reply на исходное сообщение, из которого создавали задачу.",
   });
 }
 
@@ -466,6 +568,11 @@ async function sendHelp(chatId) {
       "/today — план на день по подзадачам и ответственным",
       "/dayplan — то же самое, удобно отправлять в общий чат",
       "/tasks marketing — активные задачи категории",
+      "/my — мои активные задачи",
+      "Reply + /assign @user — назначить ответственного",
+      "Reply + /status В работе — поменять статус",
+      "Reply + /deadline 05.06 — поменять дедлайн",
+      "✅ на исходном сообщении задачи — закрыть задачу",
       "/chatid — показать ID текущего Telegram-чата для Push",
       "/decision текст — зафиксировать решение",
       "/question текст — зафиксировать вопрос",

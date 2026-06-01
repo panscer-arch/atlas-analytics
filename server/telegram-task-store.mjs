@@ -82,6 +82,15 @@ const TASK_CATEGORY_META = {
   tech: { key: CONTENT_KEYS.tech, boardId: "techTasks", boardTitle: "Tech" },
 };
 
+const DIRECT_BOARD_META = [
+  { key: CONTENT_KEYS.launch, boardId: "launch", boardTitle: "Задачи запуска" },
+  { key: CONTENT_KEYS.marketing, boardId: "marketing", boardTitle: "Задачи маркетинга" },
+  { key: CONTENT_KEYS.knowledgeBase, boardId: "knowledgeBase", boardTitle: "Задачи по базе знаний" },
+  { key: CONTENT_KEYS.ideas, boardId: "ideas", boardTitle: "Идеи" },
+  { key: CONTENT_KEYS.daily, boardId: "dailyTasks", boardTitle: "Задачи на день" },
+  ...Object.values(TASK_CATEGORY_META),
+];
+
 export function normalizeCategory(value = "") {
   const key = String(value || "").trim().toLowerCase();
   return CATEGORY_ALIASES[key] || key || "other";
@@ -340,4 +349,86 @@ export async function collectTasks({ category = "", assignee = "", onlyActive = 
     if (assignee && !String(task.assignee || task.responsible || "").toLowerCase().includes(String(assignee).toLowerCase())) return false;
     return true;
   });
+}
+
+function sourceMatches(task, source = {}) {
+  if (!task?.telegram || !source?.chatId || !source?.messageId) return false;
+  return String(task.telegram.chatId) === String(source.chatId) && String(task.telegram.messageId) === String(source.messageId);
+}
+
+function patchTaskForBoard(task, patch, boardId) {
+  const now = new Date().toISOString();
+  const next = { ...task, ...patch, updatedAt: now };
+
+  if (Object.prototype.hasOwnProperty.call(patch, "assignee")) {
+    next.responsible = patch.assignee || "Не назначено";
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "dueDate")) {
+    if (boardId === "dailyTasks") next.deadline = patch.dueDate || "";
+    else next.dueDate = patch.dueDate || "";
+  }
+  if (patch.status === "Готово") {
+    next.done = true;
+    if (boardId === "dailyTasks") next.completedAt = now;
+  }
+  if (patch.status && patch.status !== "Готово") {
+    next.done = false;
+    if (boardId === "dailyTasks") next.completedAt = "";
+  }
+
+  return next;
+}
+
+async function updateDirectBoardTaskBySource(meta, source, patch, historyDetails) {
+  const tasks = await readContent(meta.key, []);
+  if (!Array.isArray(tasks)) return null;
+
+  let updatedTask = null;
+  const nextTasks = tasks.map((task) => {
+    if (!sourceMatches(task, source)) return task;
+    updatedTask = patchTaskForBoard(task, patch, meta.boardId);
+    return updatedTask;
+  });
+
+  if (!updatedTask) return null;
+
+  await writeContent(meta.key, nextTasks);
+  await addTelegramHistory("Обновление", updatedTask, historyDetails, meta.boardId, meta.boardTitle);
+  return { task: updatedTask, boardId: meta.boardId, boardTitle: meta.boardTitle };
+}
+
+async function updateCustomTaskBySource(source, patch, historyDetails) {
+  const checklists = await readContent(CONTENT_KEYS.custom, []);
+  if (!Array.isArray(checklists)) return null;
+
+  let result = null;
+  const nextChecklists = checklists.map((checklist) => {
+    const tasks = Array.isArray(checklist.tasks) ? checklist.tasks : [];
+    const nextTasks = tasks.map((task) => {
+      if (!sourceMatches(task, source)) return task;
+      const updatedTask = patchTaskForBoard(task, patch, checklist.id);
+      result = {
+        task: updatedTask,
+        boardId: checklist.id,
+        boardTitle: checklist.title || checklist.id,
+      };
+      return updatedTask;
+    });
+    return { ...checklist, tasks: nextTasks };
+  });
+
+  if (!result) return null;
+
+  await writeContent(CONTENT_KEYS.custom, nextChecklists);
+  await addTelegramHistory("Обновление", result.task, historyDetails, result.boardId, result.boardTitle);
+  return result;
+}
+
+export async function updateTelegramTaskBySource(source, patch, historyDetails = "Обновлено из Telegram") {
+  for (const meta of DIRECT_BOARD_META) {
+    const result = await updateDirectBoardTaskBySource(meta, source, patch, historyDetails);
+    if (result) return result;
+  }
+
+  return updateCustomTaskBySource(source, patch, historyDetails);
 }
