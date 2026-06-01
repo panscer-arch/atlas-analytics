@@ -24,6 +24,7 @@ export const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks
 export const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
 export const TASK_ARCHIVE_STORAGE_KEY = "atlas.analytics.taskArchive.v1";
 export const TASK_HISTORY_STORAGE_KEY = "atlas.analytics.taskHistory.v1";
+const DAILY_TASKS_STORAGE_KEY = "atlas.analytics.dailyTasks.2026-05-22.v1";
 const TASK_CATEGORY_STORAGE_PREFIX = "atlas.analytics.taskCategoryChecklist";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
@@ -801,6 +802,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const [taskCategoryTasks, setTaskCategoryTasks] = useState(() => Object.fromEntries(
     TASK_CATEGORY_BOARDS.map((board) => [board.id, readStoredTasks(board.storageKey, [])]),
   ));
+  const [dailyTasksCount, setDailyTasksCount] = useState(0);
   const [customChecklists, setCustomChecklists] = useState(readStoredCustomChecklists);
   const [newTask, setNewTask] = useState(() => createLaunchTask({ status: "В работе" }));
   const [newChecklistName, setNewChecklistName] = useState("");
@@ -824,6 +826,9 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     });
     loadServerContent(MARKETING_CHECKLIST_STORAGE_KEY).then((tasks) => {
       if (isMounted && tasks) setMarketingTasks(normalizeChecklistTasks(tasks));
+    });
+    loadServerContent(DAILY_TASKS_STORAGE_KEY).then((tasks) => {
+      if (isMounted && Array.isArray(tasks)) setDailyTasksCount(tasks.length);
     });
     TASK_CATEGORY_BOARDS.forEach((board) => {
       loadServerContent(board.storageKey).then((tasks) => {
@@ -983,6 +988,18 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "terminology", label: "Терминология" },
   ];
   const visibleBoardTabs = mode === "content" ? contentBoardTabs : taskBoardTabs;
+
+  function getBoardTaskCount(boardId) {
+    if (boardId === "launch") return launchTasks.length;
+    if (boardId === "marketing") return marketingTasks.length;
+    if (boardId === "knowledgeBase") return knowledgeBaseTasks.length;
+    if (boardId === "ideas") return ideaTasks.length;
+    if (boardId === "dailyTasks") return dailyTasksCount;
+    if (taskCategoryTasks[boardId]) return taskCategoryTasks[boardId].length;
+    const customChecklist = customChecklists.find((checklist) => checklist.id === boardId);
+    return customChecklist ? normalizeArray(customChecklist.tasks).length : null;
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1260,7 +1277,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                 setAssigneeFilter("");
               }}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {mode === "tasks" ? <span className="analytics-launch-tab-count">{getBoardTaskCount(tab.id) ?? 0}</span> : null}
             </button>
           ))}
           {mode === "tasks" ? customChecklists.map((checklist) => (
@@ -1274,7 +1292,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
                 setAssigneeFilter("");
               }}
             >
-              {checklist.title}
+              <span>{checklist.title}</span>
+              <span className="analytics-launch-tab-count">{normalizeArray(checklist.tasks).length}</span>
             </button>
           )) : null}
           {mode === "tasks" && isCreatingChecklist ? (
