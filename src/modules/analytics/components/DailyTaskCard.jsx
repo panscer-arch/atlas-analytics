@@ -173,7 +173,18 @@ export default function DailyTaskCard({
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-priority-${getLaunchPriorityTone(subtaskPriority)}`}>{subtaskPriority}</span>
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-status-${getLaunchStatusTone(subtaskStatus)}`}>{subtaskStatus}</span>
                     </div>
-                    <button type="button" className="analytics-daily-subtask-delete" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
+                    <button
+                      type="button"
+                      className="analytics-daily-subtask-delete"
+                      onClick={() => {
+                        if (window.confirm("Вы уверены, что хотите удалить эту подзадачу?")) {
+                          removeSubtask(task.id, subtask.id);
+                        }
+                      }}
+                      aria-label="Удалить подзадачу"
+                    >
+                      ×
+                    </button>
                   </div>
 
                   <div className="analytics-daily-subtask-overview">

@@ -5953,10 +5953,11 @@
 
 .analytics-daily-subtask-badges {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   justify-content: flex-end;
+  align-items: flex-end;
   gap: 0.42rem;
-  max-width: 270px;
+  max-width: 150px;
   padding-top: 0.18rem;
 }
 
@@ -9778,6 +9779,7 @@
   .analytics-daily-subtask-badges {
     grid-column: 2 / -1;
     justify-content: flex-start;
+    align-items: flex-start;
     max-width: none;
   }
 
