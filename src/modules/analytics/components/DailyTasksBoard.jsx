@@ -97,7 +97,14 @@ function normalizeDailyTasks(tasks) {
     subtasks: normalizeArray(task.subtasks).map((subtask) => ({
       id: subtask.id || `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       title: subtask.title || "",
+      responsible: subtask.responsible || "",
       done: Boolean(subtask.done),
+      messages: normalizeArray(subtask.messages).map((message) => ({
+        id: message.id || `subtask-msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        author: message.author || "Команда",
+        text: message.text || "",
+        createdAt: message.createdAt || "",
+      })),
     })),
     questions: normalizeArray(task.questions).map((question) => ({
       id: question.id || `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -161,7 +168,18 @@ function createDailySubtask(title = "") {
   return {
     id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
+    responsible: "",
     done: false,
+    messages: [],
+  };
+}
+
+function createDailySubtaskMessage(text = "", author = "Команда") {
+  return {
+    id: `subtask-msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    author: author || "Команда",
+    text,
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -247,6 +265,7 @@ export default function DailyTasksBoard() {
   const [tasks, setTasks] = useState(readStoredDailyTasks);
   const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
   const [chatDrafts, setChatDrafts] = useState({});
+  const [subtaskChatDrafts, setSubtaskChatDrafts] = useState({});
   const [messageEditDrafts, setMessageEditDrafts] = useState({});
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
   const [questionDrafts, setQuestionDrafts] = useState({});
@@ -360,6 +379,13 @@ export default function DailyTasksBoard() {
     setSubtaskDrafts((current) => {
       const next = { ...current };
       delete next[taskId];
+      return next;
+    });
+    setSubtaskChatDrafts((current) => {
+      const next = {};
+      Object.entries(current).forEach(([key, value]) => {
+        if (!key.startsWith(`${taskId}:`)) next[key] = value;
+      });
       return next;
     });
     setQuestionDrafts((current) => {
@@ -617,6 +643,49 @@ export default function DailyTasksBoard() {
     )));
   }
 
+  function addSubtaskMessage(taskId, subtaskId) {
+    const draftKey = `${taskId}:${subtaskId}`;
+    const text = (subtaskChatDrafts[draftKey] || "").trim();
+    if (!text) return;
+
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          subtasks: normalizeArray(task.subtasks).map((subtask) => (
+            subtask.id === subtaskId
+              ? {
+                ...subtask,
+                messages: [...normalizeArray(subtask.messages), createDailySubtaskMessage(text, chatAuthor.trim() || "Команда")],
+              }
+              : subtask
+          )),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+    setSubtaskChatDrafts((current) => ({ ...current, [draftKey]: "" }));
+  }
+
+  function removeSubtaskMessage(taskId, subtaskId, messageId) {
+    persist((currentTasks) => currentTasks.map((task) => (
+      task.id === taskId
+        ? {
+          ...task,
+          subtasks: normalizeArray(task.subtasks).map((subtask) => (
+            subtask.id === subtaskId
+              ? {
+                ...subtask,
+                messages: normalizeArray(subtask.messages).filter((message) => message.id !== messageId),
+              }
+              : subtask
+          )),
+          updatedAt: new Date().toISOString(),
+        }
+        : task
+    )));
+  }
+
   function removeSubtask(taskId, subtaskId) {
     persist((currentTasks) => currentTasks.map((task) => (
       task.id === taskId
@@ -627,6 +696,11 @@ export default function DailyTasksBoard() {
         }
         : task
     )));
+    setSubtaskChatDrafts((current) => {
+      const next = { ...current };
+      delete next[`${taskId}:${subtaskId}`];
+      return next;
+    });
   }
 
   const completedTasks = tasks.filter((task) => task.status === "Готово");
@@ -725,6 +799,7 @@ export default function DailyTasksBoard() {
               responsibleDrafts={responsibleDrafts}
               responsibleSavedTaskId={responsibleSavedTaskId}
               subtaskDrafts={subtaskDrafts}
+              subtaskChatDrafts={subtaskChatDrafts}
               questionDrafts={questionDrafts}
               chatDrafts={chatDrafts}
               messageEditDrafts={messageEditDrafts}
@@ -741,7 +816,10 @@ export default function DailyTasksBoard() {
               updateSubtask={updateSubtask}
               removeSubtask={removeSubtask}
               setSubtaskDrafts={setSubtaskDrafts}
+              setSubtaskChatDrafts={setSubtaskChatDrafts}
               addSubtask={addSubtask}
+              addSubtaskMessage={addSubtaskMessage}
+              removeSubtaskMessage={removeSubtaskMessage}
               setQuestionDrafts={setQuestionDrafts}
               addQuestion={addQuestion}
               toggleQuestion={toggleQuestion}
@@ -787,6 +865,7 @@ export default function DailyTasksBoard() {
                   responsibleDrafts={responsibleDrafts}
                   responsibleSavedTaskId={responsibleSavedTaskId}
                   subtaskDrafts={subtaskDrafts}
+                  subtaskChatDrafts={subtaskChatDrafts}
                   questionDrafts={questionDrafts}
                   chatDrafts={chatDrafts}
                   messageEditDrafts={messageEditDrafts}
@@ -803,7 +882,10 @@ export default function DailyTasksBoard() {
                   updateSubtask={updateSubtask}
                   removeSubtask={removeSubtask}
                   setSubtaskDrafts={setSubtaskDrafts}
+                  setSubtaskChatDrafts={setSubtaskChatDrafts}
                   addSubtask={addSubtask}
+                  addSubtaskMessage={addSubtaskMessage}
+                  removeSubtaskMessage={removeSubtaskMessage}
                   setQuestionDrafts={setQuestionDrafts}
                   addQuestion={addQuestion}
                   toggleQuestion={toggleQuestion}

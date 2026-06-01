@@ -24,11 +24,77 @@ export const IDEAS_CHECKLIST_STORAGE_KEY = "atlas.analytics.ideasChecklist.tasks
 export const MARKETING_CHECKLIST_STORAGE_KEY = "atlas.analytics.marketingChecklist.tasks.v1";
 export const TASK_ARCHIVE_STORAGE_KEY = "atlas.analytics.taskArchive.v1";
 export const TASK_HISTORY_STORAGE_KEY = "atlas.analytics.taskHistory.v1";
+const TASK_CATEGORY_STORAGE_PREFIX = "atlas.analytics.taskCategoryChecklist";
 const CUSTOM_CHECKLISTS_STORAGE_KEY = "atlas.analytics.customChecklists.v1";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
 const TASK_ASSIGNEES = ["", "Bruno", "Digitex", "Gem", "Rotenberg"];
 const DEFAULT_BOARD_ID = "launch";
+const TASK_CATEGORY_BOARDS = [
+  {
+    id: "inboxTasks",
+    label: "Входящие",
+    title: "Входящие задачи",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.inbox.v1`,
+    defaultResponsible: "Входящие / разбор",
+    description: "Сюда складываем сырые задачи, если пока непонятно, к какому направлению их отнести.",
+    emptyHint: "Сюда можно быстро закидывать всё неразобранное, а потом переносить формулировки в нужные направления.",
+  },
+  {
+    id: "smmTasks",
+    label: "SMM",
+    title: "Задачи по SMM",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.smm.v1`,
+    defaultResponsible: "SMM / соцсети",
+    description: "Соцсети, прогрев, публикации, аккаунты, комментарии, визуалы и работа с аудиторией.",
+    emptyHint: "Добавляй задачи по X, Instagram, Telegram, прогреву каналов и регулярному постингу.",
+  },
+  {
+    id: "siteTasks",
+    label: "Сайт",
+    title: "Задачи по сайту",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.site.v1`,
+    defaultResponsible: "Сайт / frontend",
+    description: "Личный кабинет, лендинги, публичные страницы, формы, адаптив и пользовательские сценарии.",
+    emptyHint: "Сюда удобно добавлять задачи по кабинету, лендингам, вебинарам, формам и страницам.",
+  },
+  {
+    id: "contentTasks",
+    label: "Контент",
+    title: "Задачи по контенту",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.content.v1`,
+    defaultResponsible: "Контент / редактура",
+    description: "Тексты, ролики, презентации, FAQ, сценарии, посты, переводы и смысловая упаковка.",
+    emptyHint: "Сюда идут задачи по текстам, видео, презентациям, FAQ, переводам и редактуре.",
+  },
+  {
+    id: "designTasks",
+    label: "Дизайн",
+    title: "Задачи по дизайну",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.design.v1`,
+    defaultResponsible: "Дизайн / UI",
+    description: "UI, брендбук, обложки, презентации, иконки, визуальные материалы и согласование макетов.",
+    emptyHint: "Добавляй сюда задачи по UI, брендбуку, презентациям, обложкам и визуальным материалам.",
+  },
+  {
+    id: "legalTasks",
+    label: "Legal",
+    title: "Юридические задачи",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.legal.v1`,
+    defaultResponsible: "Legal / документы",
+    description: "Документы, политики, правила, риски, дисклеймеры, compliance-формулировки и юридическая вычитка.",
+    emptyHint: "Сюда складываем документы, юридические формулировки, риски и вопросы compliance.",
+  },
+  {
+    id: "techTasks",
+    label: "Tech",
+    title: "Технические задачи",
+    storageKey: `${TASK_CATEGORY_STORAGE_PREFIX}.tech.v1`,
+    defaultResponsible: "Tech / разработка",
+    description: "Frontend, backend, smart-contract, деплой, интеграции, боты, инфраструктура, баги и QA.",
+    emptyHint: "Сюда идут задачи по разработке, smart-contract, серверу, боту, API, деплою и проверкам.",
+  },
+];
 const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "marketing"];
 const STATIC_BOARD_META = {
   launch: {
@@ -732,6 +798,9 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const [knowledgeBaseTasks, setKnowledgeBaseTasks] = useState(() => readStoredTasks(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, defaultKnowledgeBaseChecklistTasks));
   const [ideaTasks, setIdeaTasks] = useState(() => readStoredTasks(IDEAS_CHECKLIST_STORAGE_KEY, defaultIdeasChecklistTasks));
   const [marketingTasks, setMarketingTasks] = useState(() => readStoredTasks(MARKETING_CHECKLIST_STORAGE_KEY, defaultMarketingChecklistTasks));
+  const [taskCategoryTasks, setTaskCategoryTasks] = useState(() => Object.fromEntries(
+    TASK_CATEGORY_BOARDS.map((board) => [board.id, readStoredTasks(board.storageKey, [])]),
+  ));
   const [customChecklists, setCustomChecklists] = useState(readStoredCustomChecklists);
   const [newTask, setNewTask] = useState(() => createLaunchTask({ status: "В работе" }));
   const [newChecklistName, setNewChecklistName] = useState("");
@@ -755,6 +824,15 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     });
     loadServerContent(MARKETING_CHECKLIST_STORAGE_KEY).then((tasks) => {
       if (isMounted && tasks) setMarketingTasks(normalizeChecklistTasks(tasks));
+    });
+    TASK_CATEGORY_BOARDS.forEach((board) => {
+      loadServerContent(board.storageKey).then((tasks) => {
+        if (!isMounted || !tasks) return;
+        setTaskCategoryTasks((current) => ({
+          ...current,
+          [board.id]: normalizeChecklistTasks(tasks),
+        }));
+      });
     });
     loadServerContent(CUSTOM_CHECKLISTS_STORAGE_KEY).then((checklists) => {
       if (!isMounted || !Array.isArray(checklists)) return;
@@ -787,10 +865,12 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isLegalDocsBoard = activeBoard === "legalDocs";
   const isTerminologyBoard = activeBoard === "terminology";
   const isMarketingBoard = activeBoard === "marketing";
+  const activeTaskCategoryBoard = TASK_CATEGORY_BOARDS.find((board) => board.id === activeBoard);
+  const isTaskCategoryBoard = Boolean(activeTaskCategoryBoard);
   const isStaticContentBoard = isDailyTasksBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard;
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
-  const visibleTasks = isStaticContentBoard ? [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
+  const visibleTasks = isStaticContentBoard ? [] : isTaskCategoryBoard ? taskCategoryTasks[activeBoard] || [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
   const filteredVisibleTasks = assigneeFilter ? visibleTasks.filter((task) => (task.assignee || "Не назначен") === assigneeFilter) : visibleTasks;
   const completedCount = visibleTasks.filter((task) => task.done || task.status === "Готово").length;
   const progress = visibleTasks.length ? (completedCount / visibleTasks.length) * 100 : 0;
@@ -808,9 +888,11 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     },
     { overdue: 0, today: 0, week: 0, focus: 0 },
   );
-  const boardTitle = isCustomBoard ? activeCustomChecklist.title : isDailyTasksBoard ? "Задачи на день" : isMarketingBoard ? "Задачи маркетинга" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+  const boardTitle = isTaskCategoryBoard ? activeTaskCategoryBoard.title : isCustomBoard ? activeCustomChecklist.title : isDailyTasksBoard ? "Задачи на день" : isMarketingBoard ? "Задачи по маркетингу" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
   const boardSubtitle = isCustomBoard
     ? "Пользовательский чек-лист с собственным набором задач."
+    : isTaskCategoryBoard
+      ? activeTaskCategoryBoard.description
     : isDailyTasksBoard
       ? "Карточки фокуса на 22 мая: дедлайны, ответственные, материалы и чат по каждой задаче."
     : isIdeasBoard
@@ -842,6 +924,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       : "Что нужно закрыть перед стартом";
   const boardDescription = isCustomBoard
     ? `Чек-лист «${activeCustomChecklist.title}»: добавляй задачи, назначай исполнителей и веди статусы.`
+    : isTaskCategoryBoard
+      ? activeTaskCategoryBoard.emptyHint
     : isDailyTasksBoard
       ? "Здесь можно быстро собрать задачи на день, поделиться ими с ребятами и вести обсуждение отдельно внутри каждой задачи."
     : isIdeasBoard
@@ -872,8 +956,15 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       ? "Здесь собраны презентация, FAQ, ролики, White Paper, MLM-материалы, вебинары и инструкции из фото."
       : "Здесь собраны задачи, ответственные, сроки и комментарии по тому, что нужно закрыть перед запуском проекта.";
   const taskBoardTabs = [
+    { id: "inboxTasks", label: "Входящие" },
     { id: "launch", label: "Задачи запуска" },
-    { id: "marketing", label: "Задачи маркетинга" },
+    { id: "marketing", label: "Маркетинг" },
+    { id: "smmTasks", label: "SMM" },
+    { id: "siteTasks", label: "Сайт" },
+    { id: "contentTasks", label: "Контент" },
+    { id: "designTasks", label: "Дизайн" },
+    { id: "legalTasks", label: "Legal" },
+    { id: "techTasks", label: "Tech" },
     { id: "knowledgeBase", label: "Задачи по базе знаний" },
     { id: "ideas", label: "Идеи" },
     { id: "dailyTasks", label: "Задачи на день" },
@@ -952,6 +1043,21 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   }
 
   function getBoardUpdater() {
+    if (isTaskCategoryBoard) {
+      return {
+        storageKey: activeTaskCategoryBoard.storageKey,
+        setTasks: (updater) => {
+          setTaskCategoryTasks((current) => {
+            const currentTasks = current[activeBoard] || [];
+            const nextTasks = typeof updater === "function" ? updater(currentTasks) : updater;
+            return {
+              ...current,
+              [activeBoard]: nextTasks,
+            };
+          });
+        },
+      };
+    }
     if (isMarketingBoard) return { storageKey: MARKETING_CHECKLIST_STORAGE_KEY, setTasks: setMarketingTasks };
     if (isIdeasBoard) return { storageKey: IDEAS_CHECKLIST_STORAGE_KEY, setTasks: setIdeaTasks };
     if (isKnowledgeBaseBoard) return { storageKey: KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY, setTasks: setKnowledgeBaseTasks };
@@ -996,7 +1102,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
 
     const task = createLaunchTask({
       title,
-      responsible: newTask.responsible.trim() || (isMarketingBoard ? "Маркетинг / рост" : isIdeasBoard ? "Идеи / приоритизация" : isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
+      responsible: newTask.responsible.trim() || (isTaskCategoryBoard ? activeTaskCategoryBoard.defaultResponsible : isMarketingBoard ? "Маркетинг / рост" : isIdeasBoard ? "Идеи / приоритизация" : isKnowledgeBaseBoard ? "Контент / продукт" : "Не назначено"),
       assignee: newTask.assignee.trim(),
       comment: newTask.comment.trim(),
       dueDate: newTask.dueDate,
@@ -1026,6 +1132,14 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     if (isMarketingBoard) {
       updateTasks(MARKETING_CHECKLIST_STORAGE_KEY, setMarketingTasks, (current) => [task, ...current]);
       pushTaskHistory("Создание", task, "Добавлена маркетинговая задача");
+      setNewTask(createLaunchTask({ status: "В работе" }));
+      return;
+    }
+
+    if (isTaskCategoryBoard) {
+      const { storageKey, setTasks } = getBoardUpdater();
+      updateTasks(storageKey, setTasks, (current) => [task, ...current]);
+      pushTaskHistory("Создание", task, `Добавлена задача в раздел «${activeTaskCategoryBoard.label}»`);
       setNewTask(createLaunchTask({ status: "В работе" }));
       return;
     }
@@ -1278,7 +1392,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Добавить задачу</span>
-            <h3 className="analytics-section-title">{isMarketingBoard ? "Новая маркетинговая задача" : isIdeasBoard ? "Новая идея" : isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
+            <h3 className="analytics-section-title">{isTaskCategoryBoard ? `Новая задача: ${activeTaskCategoryBoard.label}` : isMarketingBoard ? "Новая маркетинговая задача" : isIdeasBoard ? "Новая идея" : isKnowledgeBaseBoard ? "Новая задача базы знаний" : "Новая задача"}</h3>
             <p className="analytics-page-subtitle">
               Заполни минимум название. Остальные поля можно поправить прямо в таблице.
             </p>
@@ -1291,7 +1405,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
               className="analytics-launch-input"
               value={newTask.title}
               onChange={(event) => setNewTask((current) => ({ ...current, title: event.target.value }))}
-              placeholder={isMarketingBoard ? "Например: парсер Telegram" : isIdeasBoard ? "Например: AMA-сессия" : isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
+              placeholder={isTaskCategoryBoard ? "Например: подготовить задачу и потом распределить" : isMarketingBoard ? "Например: парсер Telegram" : isIdeasBoard ? "Например: AMA-сессия" : isKnowledgeBaseBoard ? "Например: FAQ" : "Например: наполнить базу знаний"}
             />
           </label>
           <label>
@@ -1300,7 +1414,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
               className="analytics-launch-input"
               value={newTask.responsible}
               onChange={(event) => setNewTask((current) => ({ ...current, responsible: event.target.value }))}
-              placeholder={isMarketingBoard ? "Маркетинг / парсеры" : isIdeasBoard ? "Маркетинг / продукт" : isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
+              placeholder={isTaskCategoryBoard ? activeTaskCategoryBoard.defaultResponsible : isMarketingBoard ? "Маркетинг / парсеры" : isIdeasBoard ? "Маркетинг / продукт" : isKnowledgeBaseBoard ? "Контент / продукт" : "Backend / продукт / DevOps"}
             />
           </label>
           <label>
@@ -1375,7 +1489,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
         <div className="analytics-surface analytics-launch-checklist">
         <div className="analytics-data-table-head">
           <div>
-            <span className="analytics-kicker">Задачи запуска</span>
+            <span className="analytics-kicker">Задачи</span>
             <h3 className="analytics-section-title">{boardTitle}</h3>
             <p className="analytics-page-subtitle">
               {boardSubtitle}. Меняй название, направление, исполнителя, комментарий, дату, приоритет и статус прямо здесь. Готовые задачи зачёркиваются.

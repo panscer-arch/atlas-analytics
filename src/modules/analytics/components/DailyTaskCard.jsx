@@ -81,6 +81,7 @@ export default function DailyTaskCard({
   responsibleDrafts,
   responsibleSavedTaskId,
   subtaskDrafts,
+  subtaskChatDrafts,
   questionDrafts,
   chatDrafts,
   messageEditDrafts,
@@ -97,7 +98,10 @@ export default function DailyTaskCard({
   updateSubtask,
   removeSubtask,
   setSubtaskDrafts,
+  setSubtaskChatDrafts,
   addSubtask,
+  addSubtaskMessage,
+  removeSubtaskMessage,
   setQuestionDrafts,
   addQuestion,
   toggleQuestion,
@@ -201,20 +205,70 @@ export default function DailyTaskCard({
           <div className="analytics-daily-subtasks-list">
             {subtasks.map((subtask) => (
               <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(subtask.done)}
-                  onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
-                  aria-label="Отметить подзадачу"
-                />
-                <textarea
-                  className="analytics-launch-input"
-                  rows="2"
-                  value={subtask.title}
-                  onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
-                  placeholder="Название подзадачи"
-                />
-                <button type="button" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
+                <div className="analytics-daily-subtask-main">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(subtask.done)}
+                    onChange={(event) => updateSubtask(task.id, subtask.id, { done: event.target.checked })}
+                    aria-label="Отметить подзадачу"
+                  />
+                  <textarea
+                    className="analytics-launch-input"
+                    rows="2"
+                    value={subtask.title}
+                    onChange={(event) => updateSubtask(task.id, subtask.id, { title: event.target.value })}
+                    placeholder="Название подзадачи"
+                  />
+                  <button type="button" onClick={() => removeSubtask(task.id, subtask.id)} aria-label="Удалить подзадачу">×</button>
+                </div>
+                <div className="analytics-daily-subtask-meta">
+                  <label>
+                    <span>Ответственный за подзадачу</span>
+                    <input
+                      className="analytics-launch-input"
+                      value={subtask.responsible || ""}
+                      onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
+                      placeholder="Имя или роль"
+                    />
+                  </label>
+                </div>
+                <div className="analytics-daily-subtask-chat">
+                  <div className="analytics-daily-subtask-chat-head">
+                    <span>Чат по подзадаче</span>
+                    <small>{normalizeArray(subtask.messages).length}</small>
+                  </div>
+                  <div className="analytics-daily-subtask-messages">
+                    {normalizeArray(subtask.messages).map((message) => (
+                      <div key={message.id} className="analytics-daily-subtask-message">
+                        <div>
+                          <strong>{message.author || "Команда"}</strong>
+                          <span>{formatDailyMessageTime(message.createdAt)}</span>
+                        </div>
+                        <p>{message.text}</p>
+                        <button type="button" onClick={() => removeSubtaskMessage(task.id, subtask.id, message.id)}>Удалить</button>
+                      </div>
+                    ))}
+                    {!normalizeArray(subtask.messages).length ? <div className="analytics-daily-chat-empty">Пока нет переписки по этой подзадаче.</div> : null}
+                  </div>
+                  <div className="analytics-daily-subtask-chat-form">
+                    <input
+                      className="analytics-launch-input"
+                      value={subtaskChatDrafts[`${task.id}:${subtask.id}`] || ""}
+                      onChange={(event) => setSubtaskChatDrafts((current) => ({ ...current, [`${task.id}:${subtask.id}`]: event.target.value }))}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") addSubtaskMessage(task.id, subtask.id);
+                      }}
+                      placeholder="Сообщение по подзадаче"
+                    />
+                    <AnalyticsActionButton
+                      variant="primary"
+                      onClick={() => addSubtaskMessage(task.id, subtask.id)}
+                      disabled={!(subtaskChatDrafts[`${task.id}:${subtask.id}`] || "").trim()}
+                    >
+                      Отправить
+                    </AnalyticsActionButton>
+                  </div>
+                </div>
               </div>
             ))}
             {!subtasks.length ? <div className="analytics-daily-chat-empty">Разбей большую задачу на конкретные шаги.</div> : null}
