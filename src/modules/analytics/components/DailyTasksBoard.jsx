@@ -272,6 +272,10 @@ export default function DailyTasksBoard() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
   const saveRequestRef = useRef(0);
+  const saveTimerRef = useRef(null);
+  const saveInFlightRef = useRef(false);
+  const savePendingRef = useRef(false);
+  const latestTasksRef = useRef(tasks);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioStreamRef = useRef(null);
@@ -306,13 +310,40 @@ export default function DailyTasksBoard() {
   }, [chatAuthor]);
 
   useEffect(() => () => {
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
   }, []);
 
-  function persistDailyTasks(nextTasks) {
-    const normalizedTasks = normalizeDailyTasks(nextTasks);
+  async function flushDailyTasksSave() {
+    if (saveInFlightRef.current) {
+      savePendingRef.current = true;
+      return;
+    }
+
+    const payload = latestTasksRef.current;
     const requestId = saveRequestRef.current + 1;
     saveRequestRef.current = requestId;
+    saveInFlightRef.current = true;
+    savePendingRef.current = false;
+    setSaveState("Сохраняю...");
+
+    const ok = await saveServerContent(DAILY_TASKS_STORAGE_KEY, payload);
+
+    saveInFlightRef.current = false;
+
+    if (savePendingRef.current || latestTasksRef.current !== payload) {
+      flushDailyTasksSave();
+      return;
+    }
+
+    if (saveRequestRef.current === requestId) {
+      setSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
+    }
+  }
+
+  function persistDailyTasks(nextTasks) {
+    const normalizedTasks = normalizeDailyTasks(nextTasks);
+    latestTasksRef.current = normalizedTasks;
     setSaveState("Сохраняю...");
 
     try {
@@ -321,10 +352,8 @@ export default function DailyTasksBoard() {
       // Дневная доска продолжит работать в состоянии страницы.
     }
 
-    saveServerContent(DAILY_TASKS_STORAGE_KEY, normalizedTasks).then((ok) => {
-      if (saveRequestRef.current !== requestId) return;
-      setSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
-    });
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(flushDailyTasksSave, 350);
   }
 
   function persist(updater) {
