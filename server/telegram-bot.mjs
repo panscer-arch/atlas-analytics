@@ -22,10 +22,12 @@ const POLL_TIMEOUT_SECONDS = 25;
 const TASK_TRIGGER_EMOJI = "💋";
 const RECENT_MESSAGES_LIMIT = 800;
 const CATEGORY_BUTTONS = [
-  ["marketing", "launch"],
-  ["landos", "content"],
+  ["inbox", "launch"],
+  ["marketing", "smm"],
+  ["site", "content"],
   ["design", "legal"],
-  ["tech", "daily"],
+  ["tech", "knowledge"],
+  ["ideas", "daily"],
   ["other"],
 ];
 

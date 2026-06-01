@@ -10,6 +10,13 @@ export const CONTENT_KEYS = {
   ideas: "atlas.analytics.ideasChecklist.tasks.v1",
   knowledgeBase: "atlas.analytics.knowledgeBaseChecklist.tasks.v1",
   daily: "atlas.analytics.dailyTasks.2026-05-22.v1",
+  inbox: "atlas.analytics.taskCategoryChecklist.inbox.v1",
+  smm: "atlas.analytics.taskCategoryChecklist.smm.v1",
+  site: "atlas.analytics.taskCategoryChecklist.site.v1",
+  content: "atlas.analytics.taskCategoryChecklist.content.v1",
+  design: "atlas.analytics.taskCategoryChecklist.design.v1",
+  legal: "atlas.analytics.taskCategoryChecklist.legal.v1",
+  tech: "atlas.analytics.taskCategoryChecklist.tech.v1",
   custom: "atlas.analytics.customChecklists.v1",
   archive: "atlas.analytics.taskArchive.v1",
   history: "atlas.analytics.taskHistory.v1",
@@ -21,12 +28,17 @@ export const CATEGORY_ALIASES = {
   запуск: "launch",
   start: "launch",
   marketing: "marketing",
-  smm: "marketing",
   маркетинг: "marketing",
-  landos: "landos",
-  landing: "landos",
-  лендинг: "landos",
-  ландос: "landos",
+  smm: "smm",
+  смм: "smm",
+  соцсети: "smm",
+  social: "smm",
+  site: "site",
+  сайт: "site",
+  landos: "site",
+  landing: "site",
+  лендинг: "site",
+  ландос: "site",
   content: "content",
   контент: "content",
   design: "design",
@@ -36,6 +48,18 @@ export const CATEGORY_ALIASES = {
   tech: "tech",
   dev: "tech",
   разработка: "tech",
+  техника: "tech",
+  knowledge: "knowledgeBase",
+  knowledgebase: "knowledgeBase",
+  база: "knowledgeBase",
+  база_знаний: "knowledgeBase",
+  "база-знаний": "knowledgeBase",
+  ideas: "ideas",
+  идеи: "ideas",
+  idea: "ideas",
+  inbox: "inbox",
+  входящие: "inbox",
+  входящее: "inbox",
   daily: "daily",
   день: "daily",
   today: "daily",
@@ -45,12 +69,17 @@ export const CATEGORY_ALIASES = {
 };
 
 const CUSTOM_CATEGORY_TITLES = {
-  landos: "Ландос",
-  content: "Контент",
-  design: "Дизайн",
-  legal: "Юридика",
-  tech: "Техника",
   other: "Разное",
+};
+
+const TASK_CATEGORY_META = {
+  inbox: { key: CONTENT_KEYS.inbox, boardId: "inboxTasks", boardTitle: "Входящие" },
+  smm: { key: CONTENT_KEYS.smm, boardId: "smmTasks", boardTitle: "SMM" },
+  site: { key: CONTENT_KEYS.site, boardId: "siteTasks", boardTitle: "Сайт" },
+  content: { key: CONTENT_KEYS.content, boardId: "contentTasks", boardTitle: "Контент" },
+  design: { key: CONTENT_KEYS.design, boardId: "designTasks", boardTitle: "Дизайн" },
+  legal: { key: CONTENT_KEYS.legal, boardId: "legalTasks", boardTitle: "Legal" },
+  tech: { key: CONTENT_KEYS.tech, boardId: "techTasks", boardTitle: "Tech" },
 };
 
 export function normalizeCategory(value = "") {
@@ -62,6 +91,9 @@ export function boardTitleForCategory(category) {
   if (category === "launch") return "Задачи запуска";
   if (category === "marketing") return "Задачи маркетинга";
   if (category === "daily") return "Задачи на день";
+  if (category === "knowledgeBase") return "Задачи по базе знаний";
+  if (category === "ideas") return "Идеи";
+  if (TASK_CATEGORY_META[category]) return TASK_CATEGORY_META[category].boardTitle;
   return CUSTOM_CATEGORY_TITLES[category] || category || "Разное";
 }
 
@@ -214,6 +246,25 @@ export async function addTelegramTask({ category: rawCategory, title, descriptio
     return { task, boardId: "launch", boardTitle: "Задачи запуска" };
   }
 
+  if (category === "knowledgeBase") {
+    await appendToList(CONTENT_KEYS.knowledgeBase, task);
+    await addTelegramHistory("Создание", task, "Добавлена задача базы знаний из Telegram", "knowledgeBase", "Задачи по базе знаний");
+    return { task, boardId: "knowledgeBase", boardTitle: "Задачи по базе знаний" };
+  }
+
+  if (category === "ideas") {
+    await appendToList(CONTENT_KEYS.ideas, task);
+    await addTelegramHistory("Создание", task, "Добавлена идея из Telegram", "ideas", "Идеи");
+    return { task, boardId: "ideas", boardTitle: "Идеи" };
+  }
+
+  if (TASK_CATEGORY_META[category]) {
+    const meta = TASK_CATEGORY_META[category];
+    await appendToList(meta.key, task);
+    await addTelegramHistory("Создание", task, `Добавлена задача из Telegram в ${meta.boardTitle}`, meta.boardId, meta.boardTitle);
+    return { task, boardId: meta.boardId, boardTitle: meta.boardTitle };
+  }
+
   const customBoard = await appendToCustomChecklist(category, task);
   await addTelegramHistory("Создание", task, `Добавлена задача из Telegram в ${customBoard.boardTitle}`, customBoard.boardId, customBoard.boardTitle);
   return { task, ...customBoard };
@@ -267,6 +318,11 @@ export async function collectTasks({ category = "", assignee = "", onlyActive = 
   if (!category || categoryKey === "launch") await pushChecklist(CONTENT_KEYS.launch, "launch", "Задачи запуска");
   if (!category || categoryKey === "marketing") await pushChecklist(CONTENT_KEYS.marketing, "marketing", "Задачи маркетинга");
   if (!category || categoryKey === "daily") await pushChecklist(CONTENT_KEYS.daily, "dailyTasks", "Задачи на день");
+  if (!category || categoryKey === "knowledgeBase") await pushChecklist(CONTENT_KEYS.knowledgeBase, "knowledgeBase", "Задачи по базе знаний");
+  if (!category || categoryKey === "ideas") await pushChecklist(CONTENT_KEYS.ideas, "ideas", "Идеи");
+  for (const [taskCategory, meta] of Object.entries(TASK_CATEGORY_META)) {
+    if (!category || categoryKey === taskCategory) await pushChecklist(meta.key, meta.boardId, meta.boardTitle);
+  }
 
   const custom = await readContent(CONTENT_KEYS.custom, []);
   if (Array.isArray(custom)) {

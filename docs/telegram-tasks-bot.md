@@ -69,18 +69,22 @@ Forward-сценарий:
 ## Категории
 
 ```text
-marketing
+inbox
 launch
-landos
+marketing
+smm
+site
 content
 design
 legal
 tech
+knowledge
+ideas
 daily
 other
 ```
 
-`marketing`, `launch`, `daily` пишутся в существующие доски. Остальные создаются как custom checklist.
+`inbox`, `launch`, `marketing`, `smm`, `site`, `content`, `design`, `legal`, `tech`, `knowledge`, `ideas`, `daily` пишутся в существующие доски аналитики. `other` пишется в custom checklist `Разное`.
 
 ## Настройка на сервере
 
