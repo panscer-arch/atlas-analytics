@@ -793,6 +793,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     if (typeof window === "undefined") return fallbackBoard;
 
     const url = new URL(window.location.href);
+    if (url.searchParams.get("b") === "d") return "dailyTasks";
     return url.searchParams.get("board") || fallbackBoard;
   });
   const [launchTasks, setLaunchTasks] = useState(() => readStoredTasks(LAUNCH_CHECKLIST_STORAGE_KEY, defaultLaunchChecklistTasks));

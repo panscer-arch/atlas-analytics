@@ -256,6 +256,16 @@ function getDailyDeadlineMeta(deadline) {
   return { label: `Осталось ${diffDays} дн.`, tone: diffDays <= 3 ? "accent" : "safe" };
 }
 
+function getShortSubtaskId(subtaskId = "") {
+  return String(subtaskId || "").replace(/^daily-subtask-/, "");
+}
+
+function getFullSubtaskId(shortSubtaskId = "") {
+  const normalized = String(shortSubtaskId || "");
+  if (!normalized || normalized.startsWith("daily-subtask-")) return normalized;
+  return `daily-subtask-${normalized}`;
+}
+
 export default function DailyTasksBoard() {
   const [tasks, setTasks] = useState(readStoredDailyTasks);
   const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
@@ -320,7 +330,7 @@ export default function DailyTasksBoard() {
     if (!tasks.length || typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
-    const subtaskId = params.get("subtask");
+    const subtaskId = params.get("subtask") || getFullSubtaskId(params.get("s"));
     if (!subtaskId) return;
 
     const timer = window.setTimeout(() => {
@@ -784,10 +794,10 @@ export default function DailyTasksBoard() {
   async function copySubtaskLink(task, subtask) {
     const linkKey = `${task.id}:${subtask.id}`;
     const url = new URL(window.location.href);
-    url.searchParams.set("board", "dailyTasks");
-    url.searchParams.set("task", task.id);
-    url.searchParams.set("subtask", subtask.id);
-    url.hash = `daily-subtask-${subtask.id}`;
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set("b", "d");
+    url.searchParams.set("s", getShortSubtaskId(subtask.id));
     const link = url.toString();
 
     try {
