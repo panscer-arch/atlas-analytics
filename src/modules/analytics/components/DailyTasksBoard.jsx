@@ -269,6 +269,7 @@ export default function DailyTasksBoard() {
   const [recordingTaskId, setRecordingTaskId] = useState("");
   const [recordingError, setRecordingError] = useState("");
   const [telegramPushState, setTelegramPushState] = useState({});
+  const [subtaskLinkState, setSubtaskLinkState] = useState({});
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
@@ -314,6 +315,24 @@ export default function DailyTasksBoard() {
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
   }, []);
+
+  useEffect(() => {
+    if (!tasks.length || typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const subtaskId = params.get("subtask");
+    if (!subtaskId) return;
+
+    const timer = window.setTimeout(() => {
+      const target = document.getElementById(`daily-subtask-${window.CSS?.escape ? CSS.escape(subtaskId) : subtaskId}`);
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.classList.add("is-linked");
+      window.setTimeout(() => target.classList.remove("is-linked"), 2600);
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [tasks]);
 
   async function flushDailyTasksSave() {
     if (saveInFlightRef.current) {
@@ -762,6 +781,45 @@ export default function DailyTasksBoard() {
     }, 2200);
   }
 
+  async function copySubtaskLink(task, subtask) {
+    const linkKey = `${task.id}:${subtask.id}`;
+    const url = new URL(window.location.href);
+    url.searchParams.set("board", "dailyTasks");
+    url.searchParams.set("task", task.id);
+    url.searchParams.set("subtask", subtask.id);
+    url.hash = `daily-subtask-${subtask.id}`;
+    const link = url.toString();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = link;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setSubtaskLinkState((current) => ({ ...current, [linkKey]: "copied" }));
+    } catch {
+      window.prompt("Скопируй ссылку на подзадачу:", link);
+      setSubtaskLinkState((current) => ({ ...current, [linkKey]: "copied" }));
+    }
+
+    window.setTimeout(() => {
+      setSubtaskLinkState((current) => {
+        if (current[linkKey] !== "copied") return current;
+        const next = { ...current };
+        delete next[linkKey];
+        return next;
+      });
+    }, 1800);
+  }
+
   const completedTasks = tasks.filter((task) => task.status === "Готово");
   const activeTasks = tasks.filter((task) => task.status !== "Готово");
   const doneCount = completedTasks.length;
@@ -829,6 +887,7 @@ export default function DailyTasksBoard() {
               recordingTaskId={recordingTaskId}
               recordingError={recordingError}
               telegramPushState={telegramPushState}
+              subtaskLinkState={subtaskLinkState}
               patchTask={patchTask}
               archiveTask={archiveTask}
               restoreTask={restoreTask}
@@ -854,6 +913,7 @@ export default function DailyTasksBoard() {
               stopVoiceRecording={stopVoiceRecording}
               startVoiceRecording={startVoiceRecording}
               pushSubtaskToTelegram={pushSubtaskToTelegram}
+              copySubtaskLink={copySubtaskLink}
             />
           ))}
         </div>
@@ -892,6 +952,7 @@ export default function DailyTasksBoard() {
                   recordingTaskId={recordingTaskId}
                   recordingError={recordingError}
                   telegramPushState={telegramPushState}
+                  subtaskLinkState={subtaskLinkState}
                   patchTask={patchTask}
                   archiveTask={archiveTask}
                   restoreTask={restoreTask}
@@ -917,6 +978,7 @@ export default function DailyTasksBoard() {
                   stopVoiceRecording={stopVoiceRecording}
                   startVoiceRecording={startVoiceRecording}
                   pushSubtaskToTelegram={pushSubtaskToTelegram}
+                  copySubtaskLink={copySubtaskLink}
                 />
               ))}
             </div>

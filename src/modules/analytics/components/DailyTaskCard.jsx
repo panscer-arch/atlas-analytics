@@ -88,6 +88,7 @@ export default function DailyTaskCard({
   recordingTaskId,
   recordingError,
   telegramPushState,
+  subtaskLinkState,
   patchTask,
   archiveTask,
   restoreTask,
@@ -113,6 +114,7 @@ export default function DailyTaskCard({
   stopVoiceRecording,
   startVoiceRecording,
   pushSubtaskToTelegram,
+  copySubtaskLink,
 }) {
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
@@ -155,9 +157,10 @@ export default function DailyTaskCard({
               const subtaskPriority = subtask.priority || "Средний";
               const subtaskDraftKey = `${task.id}:${subtask.id}`;
               const pushState = telegramPushState?.[subtaskDraftKey] || "";
+              const linkState = subtaskLinkState?.[subtaskDraftKey] || "";
 
               return (
-                <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
+                <div id={`daily-subtask-${subtask.id}`} key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
                   <div className="analytics-daily-subtask-main">
                     <input
                       type="checkbox"
@@ -183,6 +186,13 @@ export default function DailyTaskCard({
                         disabled={pushState === "sending"}
                       >
                         {pushState === "sending" ? "..." : pushState === "sent" ? "OK" : pushState === "error" ? "ERR" : "Push"}
+                      </button>
+                      <button
+                        type="button"
+                        className={`analytics-daily-subtask-link${linkState ? ` is-${linkState}` : ""}`}
+                        onClick={() => copySubtaskLink(task, subtask)}
+                      >
+                        {linkState === "copied" ? "Copied" : "Link"}
                       </button>
                     </div>
                     <button
