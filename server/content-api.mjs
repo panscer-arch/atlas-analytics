@@ -48,12 +48,18 @@ async function readTelegramEnv() {
 async function getTelegramConfig() {
   const fileEnv = await readTelegramEnv();
   const token = process.env.TELEGRAM_BOT_TOKEN || fileEnv.TELEGRAM_BOT_TOKEN || "";
-  const targetChatId = process.env.TELEGRAM_PUSH_CHAT_ID
+  const targetChatIds = (process.env.TELEGRAM_PUSH_CHAT_ID
     || fileEnv.TELEGRAM_PUSH_CHAT_ID
-    || String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || fileEnv.TELEGRAM_ALLOWED_CHAT_IDS || "").split(",").map((item) => item.trim()).find(Boolean)
-    || "";
+    || process.env.TELEGRAM_PUSH_CHAT_IDS
+    || fileEnv.TELEGRAM_PUSH_CHAT_IDS
+    || process.env.TELEGRAM_ALLOWED_CHAT_IDS
+    || fileEnv.TELEGRAM_ALLOWED_CHAT_IDS
+    || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-  return { token, targetChatId };
+  return { token, targetChatIds };
 }
 
 function normalizeTelegramValue(value = "") {
@@ -94,26 +100,38 @@ function formatTelegramSubtaskPush({ task = {}, subtask = {} }) {
   return lines.join("\n");
 }
 
-async function sendTelegramMessage(text, options = {}) {
-  const { token, targetChatId } = await getTelegramConfig();
+async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
+  const { token, targetChatIds } = await getTelegramConfig();
   if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
-  if (!targetChatId) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
-
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: targetChatId,
-      text,
-      ...options,
-      disable_web_page_preview: true,
-    }),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload?.ok === false) {
-    return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed" };
+  if (!targetChatIds.length) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
+  if (requestedChatId && !targetChatIds.includes(requestedChatId)) {
+    return { ok: false, status: 403, error: "telegram_push_chat_not_allowed", chatId: requestedChatId };
   }
-  return { ok: true, status: 200, chatId: targetChatId, messageId: payload?.result?.message_id };
+  if (!requestedChatId && targetChatIds.length > 1) {
+    return { ok: false, status: 400, error: "telegram_push_chat_required" };
+  }
+
+  const chatIdsToSend = requestedChatId ? [requestedChatId] : targetChatIds;
+  const sent = [];
+  for (const chatId of chatIdsToSend) {
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        ...options,
+        disable_web_page_preview: true,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.ok === false) {
+      return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed", chatId };
+    }
+    sent.push({ chatId, messageId: payload?.result?.message_id });
+  }
+
+  return { ok: true, status: 200, sent };
 }
 
 async function readBody(request) {
@@ -198,7 +216,7 @@ const server = http.createServer(async (request, response) => {
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
       const text = formatTelegramSubtaskPush(parsed);
-      const result = await sendTelegramMessage(text, { parse_mode: "HTML" });
+      const result = await sendTelegramMessage(text, { parse_mode: "HTML" }, String(parsed.chatId || "").trim());
       sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
       return;
     }

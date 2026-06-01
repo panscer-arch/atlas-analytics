@@ -752,7 +752,7 @@ export default function DailyTasksBoard() {
     });
   }
 
-  async function pushSubtaskToTelegram(task, subtask) {
+  async function pushSubtaskToTelegram(task, subtask, chatId) {
     const pushKey = `${task.id}:${subtask.id}`;
     setTelegramPushState((current) => ({ ...current, [pushKey]: "sending" }));
 
@@ -770,12 +770,17 @@ export default function DailyTasksBoard() {
         priority: subtask.priority || "Средний",
         deadline: subtask.deadline,
       },
+      chatId,
     });
 
     setTelegramPushState((current) => ({ ...current, [pushKey]: result.ok ? "sent" : "error" }));
     if (!result.ok) {
       const errorText = result.payload?.error === "telegram_push_chat_not_configured"
         ? "Не задан Telegram-чат для Push. Нужно настроить TELEGRAM_PUSH_CHAT_ID."
+        : result.payload?.error === "telegram_push_chat_required"
+          ? "Выберите чат для Push."
+          : result.payload?.error === "telegram_push_chat_not_allowed"
+            ? "Этот чат не разрешён для Push на сервере."
         : result.payload?.error === "telegram_token_not_configured"
           ? "Не задан Telegram-токен для отправки."
           : "Не получилось отправить подзадачу в Telegram.";

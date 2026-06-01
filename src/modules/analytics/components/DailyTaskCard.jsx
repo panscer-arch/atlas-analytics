@@ -1,7 +1,13 @@
+import { useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
+const TELEGRAM_PUSH_CHATS = [
+  { id: "-5158247269", label: "ПУП" },
+  { id: "-4993332821", label: "SMM Atlas" },
+  { id: "-5192533079", label: "Ananas" },
+];
 
 function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
@@ -116,6 +122,7 @@ export default function DailyTaskCard({
   pushSubtaskToTelegram,
   copySubtaskLink,
 }) {
+    const [pushChatBySubtask, setPushChatBySubtask] = useState({});
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
     const deadlineMeta = getDailyDeadlineMeta(task.deadline);
@@ -158,6 +165,7 @@ export default function DailyTaskCard({
               const subtaskDraftKey = `${task.id}:${subtask.id}`;
               const pushState = telegramPushState?.[subtaskDraftKey] || "";
               const linkState = subtaskLinkState?.[subtaskDraftKey] || "";
+              const selectedPushChatId = pushChatBySubtask[subtaskDraftKey] || TELEGRAM_PUSH_CHATS[0].id;
 
               return (
                 <div id={`daily-subtask-${subtask.id}`} key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
@@ -179,10 +187,18 @@ export default function DailyTaskCard({
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-priority-${getLaunchPriorityTone(subtaskPriority)}`}>{subtaskPriority}</span>
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-status-${getLaunchStatusTone(subtaskStatus)}`}>{subtaskStatus}</span>
                       <span className="analytics-daily-subtask-badge analytics-daily-subtask-owner">{subtask.responsible || "Не назначен"}</span>
+                      <select
+                        className="analytics-daily-subtask-push-chat"
+                        value={selectedPushChatId}
+                        onChange={(event) => setPushChatBySubtask((current) => ({ ...current, [subtaskDraftKey]: event.target.value }))}
+                        aria-label="Выбрать Telegram чат для Push"
+                      >
+                        {TELEGRAM_PUSH_CHATS.map((chat) => <option key={chat.id} value={chat.id}>{chat.label}</option>)}
+                      </select>
                       <button
                         type="button"
                         className={`analytics-daily-subtask-push${pushState ? ` is-${pushState}` : ""}`}
-                        onClick={() => pushSubtaskToTelegram(task, subtask)}
+                        onClick={() => pushSubtaskToTelegram(task, subtask, selectedPushChatId)}
                         disabled={pushState === "sending"}
                       >
                         {pushState === "sending" ? "..." : pushState === "sent" ? "OK" : pushState === "error" ? "ERR" : "Push"}
