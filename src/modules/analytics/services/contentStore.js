@@ -5,6 +5,10 @@ function contentApiUrl(key) {
   return CONTENT_API_BASE_URL ? `${CONTENT_API_BASE_URL}${path}` : path;
 }
 
+function apiUrl(path) {
+  return CONTENT_API_BASE_URL ? `${CONTENT_API_BASE_URL}${path}` : path;
+}
+
 export async function loadServerContent(key) {
   try {
     const response = await fetch(contentApiUrl(key), {
@@ -33,5 +37,19 @@ export async function saveServerContent(key, value) {
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+export async function postServerJson(path, value) {
+  try {
+    const response = await fetch(apiUrl(path), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(value),
+    });
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok && payload?.ok !== false, status: response.status, payload };
+  } catch (error) {
+    return { ok: false, status: 0, payload: { error: error?.message || "network_error" } };
   }
 }

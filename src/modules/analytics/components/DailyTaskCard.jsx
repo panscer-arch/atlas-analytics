@@ -87,6 +87,7 @@ export default function DailyTaskCard({
   chatAuthor,
   recordingTaskId,
   recordingError,
+  telegramPushState,
   patchTask,
   archiveTask,
   restoreTask,
@@ -111,6 +112,7 @@ export default function DailyTaskCard({
   addMessage,
   stopVoiceRecording,
   startVoiceRecording,
+  pushSubtaskToTelegram,
 }) {
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
@@ -152,6 +154,7 @@ export default function DailyTaskCard({
               const subtaskStatus = subtask.status || (subtask.done ? "Готово" : "В работе");
               const subtaskPriority = subtask.priority || "Средний";
               const subtaskDraftKey = `${task.id}:${subtask.id}`;
+              const pushState = telegramPushState?.[subtaskDraftKey] || "";
 
               return (
                 <div key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
@@ -173,6 +176,14 @@ export default function DailyTaskCard({
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-priority-${getLaunchPriorityTone(subtaskPriority)}`}>{subtaskPriority}</span>
                       <span className={`analytics-daily-subtask-badge analytics-daily-subtask-status-${getLaunchStatusTone(subtaskStatus)}`}>{subtaskStatus}</span>
                       <span className="analytics-daily-subtask-badge analytics-daily-subtask-owner">{subtask.responsible || "Не назначен"}</span>
+                      <button
+                        type="button"
+                        className={`analytics-daily-subtask-push${pushState ? ` is-${pushState}` : ""}`}
+                        onClick={() => pushSubtaskToTelegram(task, subtask)}
+                        disabled={pushState === "sending"}
+                      >
+                        {pushState === "sending" ? "..." : pushState === "sent" ? "OK" : pushState === "error" ? "ERR" : "Push"}
+                      </button>
                     </div>
                     <button
                       type="button"

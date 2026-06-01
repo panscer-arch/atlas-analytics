@@ -91,9 +91,12 @@ OPENAI_API_KEY=sk-...
 
 ```bash
 TELEGRAM_ALLOWED_CHAT_IDS=-1001111111111,-1002222222222
+TELEGRAM_PUSH_CHAT_ID=-1001111111111
 OPENAI_TRANSCRIPTION_MODEL=whisper-1
 TELEGRAM_TRANSCRIBE_MAX_BYTES=26214400
 ```
+
+`TELEGRAM_PUSH_CHAT_ID` — чат, куда кнопка `Push` из подзадачи отправляет задачу команде. Если не задан, используется первый чат из `TELEGRAM_ALLOWED_CHAT_IDS`.
 
 Перезапустить:
 

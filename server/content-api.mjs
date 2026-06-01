@@ -7,6 +7,9 @@ const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
 const BACKUP_DIR = path.join(STORE_DIR, "_backups");
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
+const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
+
+let telegramEnvCache = null;
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
@@ -19,6 +22,82 @@ function sendJson(response, statusCode, payload) {
 function getContentKey(url) {
   const match = url.pathname.match(/^\/api\/content\/([a-zA-Z0-9._-]+)$/);
   return match?.[1] || "";
+}
+
+async function readTelegramEnv() {
+  if (telegramEnvCache) return telegramEnvCache;
+
+  const env = {};
+  try {
+    const raw = await readFile(TELEGRAM_ENV_FILE, "utf8");
+    raw.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const match = trimmed.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (!match) return;
+      env[match[1]] = match[2].replace(/^['"]|['"]$/g, "").trim();
+    });
+  } catch {
+    // Content API can still work without Telegram push configuration.
+  }
+
+  telegramEnvCache = env;
+  return env;
+}
+
+async function getTelegramConfig() {
+  const fileEnv = await readTelegramEnv();
+  const token = process.env.TELEGRAM_BOT_TOKEN || fileEnv.TELEGRAM_BOT_TOKEN || "";
+  const targetChatId = process.env.TELEGRAM_PUSH_CHAT_ID
+    || fileEnv.TELEGRAM_PUSH_CHAT_ID
+    || String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || fileEnv.TELEGRAM_ALLOWED_CHAT_IDS || "").split(",").map((item) => item.trim()).find(Boolean)
+    || "";
+
+  return { token, targetChatId };
+}
+
+function normalizeTelegramValue(value = "") {
+  return String(value || "").trim();
+}
+
+function formatTelegramSubtaskPush({ task = {}, subtask = {} }) {
+  const responsible = normalizeTelegramValue(subtask.responsible || subtask.assignee);
+  const lines = [
+    "Push по подзадаче",
+    "",
+    responsible ? `${responsible}` : "Не назначен",
+    "",
+    `Задача: ${normalizeTelegramValue(task.title) || "Без названия"}`,
+    `Подзадача: ${normalizeTelegramValue(subtask.title) || "Без названия"}`,
+    `Статус: ${normalizeTelegramValue(subtask.status) || "В работе"}`,
+    `Приоритет: ${normalizeTelegramValue(subtask.priority) || "Средний"}`,
+  ];
+
+  if (normalizeTelegramValue(subtask.deadline)) lines.push(`Дедлайн: ${normalizeTelegramValue(subtask.deadline)}`);
+
+  lines.push("", "Проверьте задачу и отпишитесь по статусу.");
+  return lines.join("\n");
+}
+
+async function sendTelegramMessage(text) {
+  const { token, targetChatId } = await getTelegramConfig();
+  if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
+  if (!targetChatId) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: targetChatId,
+      text,
+      disable_web_page_preview: true,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload?.ok === false) {
+    return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed" };
+  }
+  return { ok: true, status: 200, chatId: targetChatId, messageId: payload?.result?.message_id };
 }
 
 async function readBody(request) {
@@ -96,6 +175,15 @@ const server = http.createServer(async (request, response) => {
       }
       const entry = await appendTelegramOperation(type, parsed.payload || parsed);
       sendJson(response, 201, { ok: true, entry });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/push-subtask" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const text = formatTelegramSubtaskPush(parsed);
+      const result = await sendTelegramMessage(text);
+      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
       return;
     }
 

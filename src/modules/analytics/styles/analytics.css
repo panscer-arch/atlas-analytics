@@ -6023,6 +6023,48 @@
   text-overflow: ellipsis;
 }
 
+.analytics-daily-subtask-push {
+  width: 100%;
+  min-height: 1.9rem;
+  border: 1px solid rgba(255, 196, 107, 0.34);
+  border-radius: 999px;
+  padding: 0 0.68rem;
+  background:
+    linear-gradient(135deg, rgba(255, 196, 107, 0.18), rgba(47, 217, 255, 0.08)),
+    rgba(255, 196, 107, 0.08);
+  color: #ffe6ad;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.analytics-daily-subtask-push:hover {
+  border-color: rgba(255, 196, 107, 0.52);
+  background:
+    linear-gradient(135deg, rgba(255, 196, 107, 0.24), rgba(47, 217, 255, 0.1)),
+    rgba(255, 196, 107, 0.12);
+}
+
+.analytics-daily-subtask-push:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.analytics-daily-subtask-push.is-sent {
+  border-color: rgba(120, 255, 224, 0.42);
+  background: rgba(120, 255, 224, 0.12);
+  color: #c8fff6;
+}
+
+.analytics-daily-subtask-push.is-error {
+  border-color: rgba(255, 122, 122, 0.42);
+  background: rgba(255, 122, 122, 0.1);
+  color: #ffc1c1;
+}
+
 .analytics-daily-subtask-delete {
   width: 34px;
   height: 34px;

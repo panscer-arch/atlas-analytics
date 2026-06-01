@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import DailyTaskCard from "./DailyTaskCard";
 import Wrapper from "./Wrapper";
-import { loadServerContent, saveServerContent } from "../services/contentStore";
+import { loadServerContent, postServerJson, saveServerContent } from "../services/contentStore";
 
 const DAILY_TASKS_STORAGE_KEY = "atlas.analytics.dailyTasks.2026-05-22.v1";
 const DAILY_CHAT_AUTHOR_STORAGE_KEY = "atlas.analytics.dailyTasks.chatAuthor.v1";
@@ -268,6 +268,7 @@ export default function DailyTasksBoard() {
   const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
   const [recordingTaskId, setRecordingTaskId] = useState("");
   const [recordingError, setRecordingError] = useState("");
+  const [telegramPushState, setTelegramPushState] = useState({});
   const [saveState, setSaveState] = useState("Сохранено");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDailyArchiveOpen, setIsDailyArchiveOpen] = useState(false);
@@ -722,6 +723,37 @@ export default function DailyTasksBoard() {
     });
   }
 
+  async function pushSubtaskToTelegram(task, subtask) {
+    const pushKey = `${task.id}:${subtask.id}`;
+    setTelegramPushState((current) => ({ ...current, [pushKey]: "sending" }));
+
+    const result = await postServerJson("/api/telegram/push-subtask", {
+      task: {
+        id: task.id,
+        title: task.title,
+        deadline: task.deadline,
+      },
+      subtask: {
+        id: subtask.id,
+        title: subtask.title,
+        responsible: subtask.responsible,
+        status: subtask.status || (subtask.done ? "Готово" : "В работе"),
+        priority: subtask.priority || "Средний",
+        deadline: subtask.deadline,
+      },
+    });
+
+    setTelegramPushState((current) => ({ ...current, [pushKey]: result.ok ? "sent" : "error" }));
+    window.setTimeout(() => {
+      setTelegramPushState((current) => {
+        if (current[pushKey] !== "sent" && current[pushKey] !== "error") return current;
+        const next = { ...current };
+        delete next[pushKey];
+        return next;
+      });
+    }, 2200);
+  }
+
   const completedTasks = tasks.filter((task) => task.status === "Готово");
   const activeTasks = tasks.filter((task) => task.status !== "Готово");
   const doneCount = completedTasks.length;
@@ -788,6 +820,7 @@ export default function DailyTasksBoard() {
               chatAuthor={chatAuthor}
               recordingTaskId={recordingTaskId}
               recordingError={recordingError}
+              telegramPushState={telegramPushState}
               patchTask={patchTask}
               archiveTask={archiveTask}
               restoreTask={restoreTask}
@@ -812,6 +845,7 @@ export default function DailyTasksBoard() {
               addMessage={addMessage}
               stopVoiceRecording={stopVoiceRecording}
               startVoiceRecording={startVoiceRecording}
+              pushSubtaskToTelegram={pushSubtaskToTelegram}
             />
           ))}
         </div>
@@ -849,6 +883,7 @@ export default function DailyTasksBoard() {
                   chatAuthor={chatAuthor}
                   recordingTaskId={recordingTaskId}
                   recordingError={recordingError}
+                  telegramPushState={telegramPushState}
                   patchTask={patchTask}
                   archiveTask={archiveTask}
                   restoreTask={restoreTask}
@@ -873,6 +908,7 @@ export default function DailyTasksBoard() {
                   addMessage={addMessage}
                   stopVoiceRecording={stopVoiceRecording}
                   startVoiceRecording={startVoiceRecording}
+                  pushSubtaskToTelegram={pushSubtaskToTelegram}
                 />
               ))}
             </div>
