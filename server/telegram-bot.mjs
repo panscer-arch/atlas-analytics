@@ -19,6 +19,8 @@ const ALLOWED_CHAT_IDS = new Set(
     .filter(Boolean),
 );
 const POLL_TIMEOUT_SECONDS = 25;
+const TASK_TRIGGER_EMOJI = "💋";
+const RECENT_MESSAGES_LIMIT = 800;
 const CATEGORY_BUTTONS = [
   ["marketing", "launch"],
   ["landos", "content"],
@@ -29,6 +31,7 @@ const CATEGORY_BUTTONS = [
 
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
 const pendingCategory = new Map();
+const recentMessages = new Map();
 
 function log(message, payload = "") {
   const suffix = payload ? ` ${typeof payload === "string" ? payload : JSON.stringify(payload)}` : "";
@@ -65,7 +68,7 @@ async function pollLoop() {
       const updates = await telegram("getUpdates", {
         offset,
         timeout: POLL_TIMEOUT_SECONDS,
-        allowed_updates: ["message", "callback_query"],
+        allowed_updates: ["message", "message_reaction", "callback_query"],
       });
 
       for (const update of updates) {
@@ -86,6 +89,11 @@ function sleep(ms) {
 async function handleUpdate(update) {
   if (update.callback_query) {
     await handleCallback(update.callback_query);
+    return;
+  }
+
+  if (update.message_reaction) {
+    await handleMessageReaction(update.message_reaction);
     return;
   }
 
@@ -117,6 +125,8 @@ async function handleUpdate(update) {
     return;
   }
 
+  storeRecentMessage(message, text);
+
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
   if (text.startsWith("/today") || text.startsWith("/dayplan")) return handleTodayCommand(message);
@@ -128,6 +138,17 @@ async function handleUpdate(update) {
   if (text.startsWith("/report")) return handleOperationCommand(message, text, "reports", "Отчёт сохранён");
   if (text.startsWith("/remind")) return handleOperationCommand(message, text, "reminders", "Напоминание сохранено");
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
+
+  if (text.includes(TASK_TRIGGER_EMOJI)) {
+    const cleanText = text.replaceAll(TASK_TRIGGER_EMOJI, "").trim() || text;
+    await askCategoryForMessage(message, {
+      title: firstLine(cleanText) || "Задача из Telegram",
+      description: cleanText,
+      assignee: "",
+      dueDate: "",
+    });
+    return;
+  }
 
   if (hasAudioMessage(message)) {
     await askCategoryForMessage(message, {
@@ -142,6 +163,60 @@ async function handleUpdate(update) {
   if (message.forward_origin || message.forward_from || message.forward_sender_name || message.reply_to_message) {
     await askCategoryForMessage(message);
   }
+}
+
+function messageKey(chatId, messageId) {
+  return `${chatId}:${messageId}`;
+}
+
+function storeRecentMessage(message, text = "") {
+  if (!message?.chat?.id || !message?.message_id || message.from?.is_bot || !text.trim()) return;
+
+  const storedMessage = {
+    ...message,
+    __atlasTranscript: text,
+  };
+  const key = messageKey(message.chat.id, message.message_id);
+  recentMessages.set(key, {
+    message: storedMessage,
+    parsed: {
+      title: firstLine(text) || "Задача из Telegram",
+      description: text,
+      assignee: "",
+      dueDate: "",
+    },
+  });
+
+  while (recentMessages.size > RECENT_MESSAGES_LIMIT) {
+    const oldestKey = recentMessages.keys().next().value;
+    recentMessages.delete(oldestKey);
+  }
+}
+
+function hasEmojiReaction(reactions = [], emoji = TASK_TRIGGER_EMOJI) {
+  return Array.isArray(reactions) && reactions.some((reaction) => reaction?.type === "emoji" && reaction.emoji === emoji);
+}
+
+async function handleMessageReaction(reaction) {
+  const chatId = reaction.chat?.id;
+  const messageId = reaction.message_id;
+  if (!chatId || !messageId || !isAllowedChat(chatId)) return;
+  if (!hasEmojiReaction(reaction.new_reaction) || hasEmojiReaction(reaction.old_reaction)) return;
+
+  const key = messageKey(chatId, messageId);
+  if (pendingCategory.has(key)) return;
+
+  const stored = recentMessages.get(key);
+  if (!stored) {
+    await telegram("sendMessage", {
+      chat_id: chatId,
+      reply_to_message_id: messageId,
+      text: "Вижу 💋, но не вижу текст этого сообщения в памяти бота. Перешли сообщение заново или ответь на него командой /task.",
+    });
+    return;
+  }
+
+  await askCategoryForMessage(stored.message, stored.parsed);
 }
 
 async function getMessageText(message) {
