@@ -60,26 +60,41 @@ function normalizeTelegramValue(value = "") {
   return String(value || "").trim();
 }
 
+function escapeTelegramHtml(value = "") {
+  return normalizeTelegramValue(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function formatTelegramSubtaskPush({ task = {}, subtask = {} }) {
-  const responsible = normalizeTelegramValue(subtask.responsible || subtask.assignee);
+  const responsible = escapeTelegramHtml(subtask.responsible || subtask.assignee || "Не назначен");
+  const taskTitle = escapeTelegramHtml(task.title || "Без названия");
+  const subtaskTitle = escapeTelegramHtml(subtask.title || "Без названия");
+  const status = escapeTelegramHtml(subtask.status || "В работе");
+  const priority = escapeTelegramHtml(subtask.priority || "Средний");
+  const deadline = escapeTelegramHtml(subtask.deadline || "");
   const lines = [
-    "Push по подзадаче",
+    "🟠 <b>ATLAS TASK PUSH</b>",
+    "━━━━━━━━━━━━━━━━",
     "",
-    responsible ? `${responsible}` : "Не назначен",
+    `👤 <b>${responsible}</b>`,
     "",
-    `Задача: ${normalizeTelegramValue(task.title) || "Без названия"}`,
-    `Подзадача: ${normalizeTelegramValue(subtask.title) || "Без названия"}`,
-    `Статус: ${normalizeTelegramValue(subtask.status) || "В работе"}`,
-    `Приоритет: ${normalizeTelegramValue(subtask.priority) || "Средний"}`,
+    `📌 <b>Задача</b>\n${taskTitle}`,
+    "",
+    `🎯 <b>Подзадача</b>\n${subtaskTitle}`,
+    "",
+    `📍 <b>Статус:</b> ${status}`,
+    `⚡ <b>Приоритет:</b> ${priority}`,
   ];
 
-  if (normalizeTelegramValue(subtask.deadline)) lines.push(`Дедлайн: ${normalizeTelegramValue(subtask.deadline)}`);
+  if (deadline) lines.push(`⏰ <b>Дедлайн:</b> ${deadline}`);
 
-  lines.push("", "Проверьте задачу и отпишитесь по статусу.");
+  lines.push("", "💬 <i>Проверьте задачу и отпишитесь по статусу.</i>");
   return lines.join("\n");
 }
 
-async function sendTelegramMessage(text) {
+async function sendTelegramMessage(text, options = {}) {
   const { token, targetChatId } = await getTelegramConfig();
   if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
   if (!targetChatId) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
@@ -90,6 +105,7 @@ async function sendTelegramMessage(text) {
     body: JSON.stringify({
       chat_id: targetChatId,
       text,
+      ...options,
       disable_web_page_preview: true,
     }),
   });
@@ -182,7 +198,7 @@ const server = http.createServer(async (request, response) => {
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
       const text = formatTelegramSubtaskPush(parsed);
-      const result = await sendTelegramMessage(text);
+      const result = await sendTelegramMessage(text, { parse_mode: "HTML" });
       sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
       return;
     }
