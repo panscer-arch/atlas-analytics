@@ -744,6 +744,14 @@ export default function DailyTasksBoard() {
     });
 
     setTelegramPushState((current) => ({ ...current, [pushKey]: result.ok ? "sent" : "error" }));
+    if (!result.ok) {
+      const errorText = result.payload?.error === "telegram_push_chat_not_configured"
+        ? "Не задан Telegram-чат для Push. Нужно настроить TELEGRAM_PUSH_CHAT_ID."
+        : result.payload?.error === "telegram_token_not_configured"
+          ? "Не задан Telegram-токен для отправки."
+          : "Не получилось отправить подзадачу в Telegram.";
+      window.alert(errorText);
+    }
     window.setTimeout(() => {
       setTelegramPushState((current) => {
         if (current[pushKey] !== "sent" && current[pushKey] !== "error") return current;
