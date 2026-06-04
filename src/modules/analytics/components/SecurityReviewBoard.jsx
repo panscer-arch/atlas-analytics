@@ -43,6 +43,7 @@ const toolResults = [
   ["Slither", "Запущен", "265 findings: большая часть шум по OZ/Pancake, важные сигналы — Transport reentrancy-events, uninitialized positionRewards, ignored return values, compiler warnings."],
   ["Solhint", "Запущен", "371 warning/error: стиль, NatSpec, compiler-version, глобальные imports, gas-предупреждения. Нужна фильтрация внешних интерфейсов Pancake."],
   ["Foundry build", "Пройден", "29 файлов собраны через solc 0.8.20, via_ir=true. Предупреждения: UnityDaily divide-before-multiply, UnityLockup block.timestamp."],
+  ["Mythril", "Пройден частично", "Transport проверен по bytecode в 60-секундном bounded run: success=true, issues=0. Для остальных контрактов нужен отдельный прогон."],
   ["Invariant tests", "Следующий этап", "Нужно написать тесты на чужой claim, двойной claim, лимит Daily 200 периодов, owner-only Transport и корректный учет выплат."],
 ];
 
