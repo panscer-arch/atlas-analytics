@@ -107,7 +107,7 @@ function WhitePaperBoard() {
       if (isMounted && Array.isArray(savedBlocks)) {
         const mergedBlocks = mergeDefaultBlocks(savedBlocks);
         setBlocks(mergedBlocks);
-        if (mergedBlocks.length !== savedBlocks.length) persistBlocks(mergedBlocks);
+        if (JSON.stringify(mergedBlocks) !== JSON.stringify(savedBlocks.map(normalizeBlock))) persistBlocks(mergedBlocks);
       }
       if (isMounted && !Array.isArray(savedBlocks) && !hasStoredBlocks()) persistBlocks(defaultWhitePaperBlocks);
     });
