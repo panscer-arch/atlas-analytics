@@ -10753,6 +10753,122 @@
   color: #dce8ff;
 }
 
+.analytics-security-review {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.analytics-security-hero-grid,
+.analytics-security-public-grid,
+.analytics-security-two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.analytics-security-check-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.analytics-security-hero-card,
+.analytics-security-check-card,
+.analytics-security-public-card {
+  border: 1px solid rgba(255, 139, 26, 0.24);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 236, 0.88)),
+    radial-gradient(circle at 12% 0%, rgba(255, 193, 44, 0.22), transparent 36%);
+  box-shadow: 0 18px 45px rgba(72, 31, 0, 0.08);
+}
+
+.analytics-security-hero-card {
+  padding: 1.35rem;
+}
+
+.analytics-security-hero-card span,
+.analytics-security-check-card span {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(255, 123, 0, 0.11);
+  color: #e46300;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.analytics-security-hero-card h3,
+.analytics-security-section h3,
+.analytics-security-check-card h4,
+.analytics-security-public-card h4 {
+  color: #2a0c00;
+  font-weight: 900;
+}
+
+.analytics-security-hero-card h3 {
+  margin: 0.8rem 0 0.5rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+.analytics-security-hero-card p,
+.analytics-security-check-card p,
+.analytics-security-public-card p,
+.analytics-security-steps {
+  color: rgba(42, 12, 0, 0.72);
+  line-height: 1.6;
+}
+
+.analytics-security-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.analytics-security-section h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.analytics-security-check-card,
+.analytics-security-public-card {
+  padding: 1rem;
+}
+
+.analytics-security-check-card h4,
+.analytics-security-public-card h4 {
+  margin: 0 0 0.45rem;
+}
+
+.analytics-security-check-card p,
+.analytics-security-public-card p {
+  margin: 0 0 0.85rem;
+}
+
+.analytics-security-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.analytics-security-tags span {
+  border: 1px solid rgba(221, 47, 47, 0.2);
+  border-radius: 999px;
+  background: rgba(221, 47, 47, 0.08);
+  color: #9d1f1f;
+  font-weight: 800;
+  padding: 0.45rem 0.7rem;
+}
+
+.analytics-security-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.analytics-security-steps li + li {
+  margin-top: 0.45rem;
+}
+
 @media (max-width: 767px) {
   .analytics-board-overlay {
     padding: 0.5rem;
@@ -10821,5 +10937,12 @@
 
   .analytics-social-card-head {
     flex-direction: column;
+  }
+
+  .analytics-security-hero-grid,
+  .analytics-security-public-grid,
+  .analytics-security-two-columns,
+  .analytics-security-check-grid {
+    grid-template-columns: 1fr;
   }
 }

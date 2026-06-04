@@ -13,6 +13,7 @@ import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
+import SecurityReviewBoard from "./SecurityReviewBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import Wrapper from "./Wrapper";
 import WhitePaperBoard from "./WhitePaperBoard";
@@ -96,7 +97,7 @@ const TASK_CATEGORY_BOARDS = [
     emptyHint: "Сюда идут задачи по разработке, smart-contract, серверу, боту, API, деплою и проверкам.",
   },
 ];
-const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "marketing"];
+const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "securityReview", "marketing"];
 const STATIC_BOARD_META = {
   launch: {
     title: "Задачи запуска",
@@ -153,6 +154,10 @@ const STATIC_BOARD_META = {
   terminology: {
     title: "Терминология",
     description: "Глоссарий Atlas System: термины, понятные описания, категории и комментарии для вычитки.",
+  },
+  securityReview: {
+    title: "Security Review",
+    description: "Внутренняя проверка smart-contract: взломоустойчивость, owner-полномочия, Transport, LP-риски и публичные формулировки.",
   },
   marketing: {
     title: "Маркетинг",
@@ -870,10 +875,11 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isWhitePaperBoard = activeBoard === "whitePaper";
   const isLegalDocsBoard = activeBoard === "legalDocs";
   const isTerminologyBoard = activeBoard === "terminology";
+  const isSecurityReviewBoard = activeBoard === "securityReview";
   const isMarketingBoard = activeBoard === "marketing";
   const activeTaskCategoryBoard = TASK_CATEGORY_BOARDS.find((board) => board.id === activeBoard);
   const isTaskCategoryBoard = Boolean(activeTaskCategoryBoard);
-  const isStaticContentBoard = isDailyTasksBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard;
+  const isStaticContentBoard = isDailyTasksBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard || isSecurityReviewBoard;
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isStaticContentBoard ? [] : isTaskCategoryBoard ? taskCategoryTasks[activeBoard] || [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
@@ -923,6 +929,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       ? "White Paper разложен по разделам: можно постепенно добавлять текст, редактировать и вычитывать каждый блок отдельно."
     : isTerminologyBoard
       ? "Editable-глоссарий терминов Atlas System по категориям: Web3, циклы, партнерка, DAO, юридика и коммуникации."
+    : isSecurityReviewBoard
+      ? "Security Review V1: отделяем внешний взлом от архитектурных полномочий и собираем доказательную базу проверок."
     : isMarketingBoard
       ? "Маркетинговые задачи с фото: парсеры, рассылки, короткие ролики, почта, адаптация, QA и роли команды."
     : isKnowledgeBaseBoard
@@ -956,6 +964,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       ? "Здесь сохраняется структура White Paper: каждый раздел отдельным блоком, со статусом, основным текстом и заметками для вычитки."
     : isTerminologyBoard
       ? "Здесь можно вычитывать терминологию Atlas: название термина, понятное описание, комментарий и спорные формулировки по категориям."
+    : isSecurityReviewBoard
+      ? "Здесь собираем ручной review, автоматические проверки, инварианты, fuzzing-сценарии, тестнет battle test и публичные формулировки без слова Audited."
     : isMarketingBoard
       ? "Здесь собраны маркетинговые задачи: парсинг YouTube/Telegram/соцсетей, email-рассылки, короткие видео, проверка функционала, AI-сотрудник и роль менеджера."
     : isKnowledgeBaseBoard
@@ -987,6 +997,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "legalDocs", label: "Документы" },
     { id: "videoScripts", label: "Ролики" },
     { id: "terminology", label: "Терминология" },
+    { id: "securityReview", label: "Security Review" },
   ];
   const visibleBoardTabs = mode === "content" ? contentBoardTabs : taskBoardTabs;
 
@@ -1336,6 +1347,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       {isWhitePaperBoard ? <Wrapper as="section" marginTop="lg"><WhitePaperBoard /></Wrapper> : null}
       {isLegalDocsBoard ? <Wrapper as="section" marginTop="lg"><LegalDocumentsBoard /></Wrapper> : null}
       {isTerminologyBoard ? <Wrapper as="section" marginTop="lg"><AgentTerminologyTemplate /></Wrapper> : null}
+      {isSecurityReviewBoard ? <Wrapper as="section" marginTop="lg"><SecurityReviewBoard /></Wrapper> : null}
       {isDailyTasksBoard ? <Wrapper as="section" marginTop="lg"><DailyTasksBoard /></Wrapper> : null}
 
       {!isStaticContentBoard ? (
