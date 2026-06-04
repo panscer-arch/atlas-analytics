@@ -113,21 +113,25 @@ function findCoverValue(lines, label) {
   return lines.find((line) => line.startsWith(prefix))?.slice(prefix.length).trim() || "";
 }
 
+function findFirstCoverValue(lines, labels) {
+  return labels.map((label) => findCoverValue(lines, label)).find(Boolean) || "";
+}
+
 function WhitePaperCoverPreview({ block }) {
   const lines = getWhitePaperCoverLines(block.text);
   const title = lines[0] || "Atlas System White Paper";
-  const subtitle = lines[1] || "Web3 Mutual Support Protocol with DAO-Inspired Mechanics";
-  const version = findCoverValue(lines, "Version") || "0.1";
-  const status = findCoverValue(lines, "Status") || "Working Draft for Review";
-  const date = findCoverValue(lines, "Date") || "June 2026";
-  const network = findCoverValue(lines, "Primary Network") || "BNB Smart Chain";
-  const website = findCoverValue(lines, "Official Website") || "https://atlas-system.io";
-  const telegram = findCoverValue(lines, "Official Telegram Channel") || "@atlas_system_official";
-  const community = findCoverValue(lines, "Official Telegram Community") || "@atlas_system_global_community";
-  const xLink = findCoverValue(lines, "Official X") || "https://x.com/AtlasSystemWeb3";
-  const registry = findCoverValue(lines, "Contract Registry") || "To be confirmed before public release";
-  const repository = findCoverValue(lines, "Technical Repository") || "To be confirmed before public release";
-  const docs = findCoverValue(lines, "Documentation Hub") || "To be confirmed before public release";
+  const subtitle = lines[1] || "Web3-протокол взаимной поддержки с DAO-inspired механиками";
+  const version = findFirstCoverValue(lines, ["Версия", "Version"]) || "0.1";
+  const status = findFirstCoverValue(lines, ["Статус", "Status"]) || "рабочая версия для вычитки";
+  const date = findFirstCoverValue(lines, ["Дата", "Date"]) || "июнь 2026";
+  const network = findFirstCoverValue(lines, ["Основная сеть", "Primary Network"]) || "BNB Smart Chain";
+  const website = findFirstCoverValue(lines, ["Официальный сайт", "Official Website"]) || "https://atlas-system.io";
+  const telegram = findFirstCoverValue(lines, ["Официальный Telegram-канал", "Official Telegram Channel"]) || "@atlas_system_official";
+  const community = findFirstCoverValue(lines, ["Официальное Telegram-сообщество", "Official Telegram Community"]) || "@atlas_system_global_community";
+  const xLink = findFirstCoverValue(lines, ["Официальный X", "Official X"]) || "https://x.com/AtlasSystemWeb3";
+  const registry = findFirstCoverValue(lines, ["Реестр смарт-контрактов", "Contract Registry"]) || "будет подтвержден перед публичным релизом";
+  const repository = findFirstCoverValue(lines, ["Технический репозиторий", "Technical Repository"]) || "будет подтвержден перед публичным релизом";
+  const docs = findFirstCoverValue(lines, ["Центр документации", "Documentation Hub"]) || "будет подтвержден перед публичным релизом";
 
   return (
     <section className="analytics-whitepaper-cover-preview" aria-label="Предпросмотр обложки White Paper">
@@ -152,28 +156,28 @@ function WhitePaperCoverPreview({ block }) {
           <p>{subtitle}</p>
           <div className="analytics-whitepaper-cover-tags">
             <span>Smart Cycle</span>
-            <span>Referral Layer</span>
-            <span>Risk Disclosure</span>
-            <span>DAO-inspired Mechanics</span>
+            <span>Партнерский слой</span>
+            <span>Раскрытие рисков</span>
+            <span>DAO-inspired механики</span>
           </div>
         </div>
 
         <div className="analytics-whitepaper-cover-card">
           <dl>
             <div>
-              <dt>Version</dt>
+              <dt>Версия</dt>
               <dd>{version}</dd>
             </div>
             <div>
-              <dt>Date</dt>
+              <dt>Дата</dt>
               <dd>{date}</dd>
             </div>
             <div>
-              <dt>Network</dt>
+              <dt>Сеть</dt>
               <dd>{network}</dd>
             </div>
             <div>
-              <dt>Registry</dt>
+              <dt>Реестр</dt>
               <dd>{registry}</dd>
             </div>
           </dl>
@@ -182,7 +186,7 @@ function WhitePaperCoverPreview({ block }) {
 
       <div className="analytics-whitepaper-cover-footer">
         <div>
-          <span>Official Links</span>
+          <span>Официальный сайт</span>
           <strong>{website}</strong>
         </div>
         <div>
@@ -198,11 +202,11 @@ function WhitePaperCoverPreview({ block }) {
           <strong>{xLink}</strong>
         </div>
         <div>
-          <span>Docs</span>
+          <span>Документация</span>
           <strong>{docs}</strong>
         </div>
         <div>
-          <span>Repository</span>
+          <span>Репозиторий</span>
           <strong>{repository}</strong>
         </div>
       </div>
@@ -212,18 +216,18 @@ function WhitePaperCoverPreview({ block }) {
 
 function WhitePaperLegalPreview({ block }) {
   const lines = getWhitePaperCoverLines(block.text);
-  const title = lines[0] || "Legal Notice and Reader Guide";
+  const title = lines[0] || "Юридическое уведомление и как читать документ";
   const paragraphs = String(block.text || "")
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
     .slice(1);
-  const lead = paragraphs[0] || "This White Paper is provided for informational and technical review purposes only.";
+  const lead = paragraphs[0] || "Этот White Paper подготовлен для информационной, технической и редакционной вычитки.";
   const coreItems = [
-    "Not a token sale, ICO, prospectus or guaranteed-return document.",
-    "Not financial, investment, legal, tax, accounting or regulatory advice.",
-    "On-chain actions must be verified and confirmed by the participant's own wallet.",
-    "Official website, contract registry and latest published version remain the source of truth.",
+    "Не является токенсейлом, ICO, проспектом или документом с гарантированной доходностью.",
+    "Не является финансовой, инвестиционной, юридической, налоговой или регуляторной рекомендацией.",
+    "Любые on-chain действия проверяются и подтверждаются участником через собственный кошелек.",
+    "Официальный сайт, реестр контрактов и последняя опубликованная версия остаются источником истины.",
   ];
 
   return (
@@ -235,7 +239,7 @@ function WhitePaperLegalPreview({ block }) {
       </div>
 
       <div className="analytics-whitepaper-page-title">
-        <span>Legal Notice</span>
+        <span>Юридическая рамка</span>
         <h3>{title}</h3>
         <p>{lead}</p>
       </div>
@@ -251,16 +255,16 @@ function WhitePaperLegalPreview({ block }) {
 
       <div className="analytics-whitepaper-reader-guide">
         <div>
-          <span>Read This As</span>
-          <strong>Technical and informational disclosure</strong>
+          <span>Как читать</span>
+          <strong>Техническое и информационное раскрытие</strong>
         </div>
         <div>
-          <span>Do Not Read This As</span>
-          <strong>Investment promise, token sale or guarantee</strong>
+          <span>Как не читать</span>
+          <strong>Инвестиционное обещание, токенсейл или гарантию</strong>
         </div>
         <div>
-          <span>Verify Before Action</span>
-          <strong>Network, contract address, transaction details and current version</strong>
+          <span>Проверить перед действием</span>
+          <strong>Сеть, адрес контракта, параметры транзакции и текущую версию</strong>
         </div>
       </div>
     </section>

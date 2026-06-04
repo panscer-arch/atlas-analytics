@@ -123,52 +123,52 @@ const WHITE_PAPER_20_SECTIONS = [
     role: "Версия, дата, статус, сеть, official links",
     text: `Atlas System White Paper
 
-Web3 Mutual Support Protocol with DAO-Inspired Mechanics
+Web3-протокол взаимной поддержки с DAO-inspired механиками
 
-Version: 0.1
-Status: Working Draft for Review
-Date: June 2026
-Primary Network: BNB Smart Chain
+Версия: 0.1
+Статус: рабочая версия для вычитки
+Дата: июнь 2026
+Основная сеть: BNB Smart Chain
 
-Official Website: https://atlas-system.io
-Official Telegram Channel: @atlas_system_official
-Official Telegram Community: @atlas_system_global_community
-Official X: https://x.com/AtlasSystemWeb3
+Официальный сайт: https://atlas-system.io
+Официальный Telegram-канал: @atlas_system_official
+Официальное Telegram-сообщество: @atlas_system_global_community
+Официальный X: https://x.com/AtlasSystemWeb3
 
-Contract Registry: To be confirmed before public release
-Technical Repository: To be confirmed before public release
-Documentation Hub: To be confirmed before public release
+Реестр смарт-контрактов: будет подтвержден перед публичным релизом
+Технический репозиторий: будет подтвержден перед публичным релизом
+Центр документации: будет подтвержден перед публичным релизом
 
-This document describes the current working structure of Atlas System, including the Smart Cycle mechanism, the Web3/on-chain layer, the off-chain referral layer, DAO-inspired community mechanics, transparency standards, limitations and risk disclosures.
+Этот документ описывает текущую рабочую структуру Atlas System: механику Smart Cycle, Web3/on-chain слой, off-chain партнерский слой, DAO-inspired механики сообщества, стандарты прозрачности, ограничения и раскрытие рисков.
 
-This document is provided for review and coordination. It is not a token sale document, not an ICO document, not financial advice and not a guarantee of any result.`,
-    notes: "Согласовать: версию, статус, сеть, final official links, contract registry, GitHub/repository и docs-hub. На обложке не писать WhitePaper 2.0; это название рабочей вкладки, а не публичной версии документа.",
+Документ подготовлен для вычитки и согласования. Он не является документом токенсейла, ICO, финансовой рекомендацией или гарантией какого-либо результата.`,
+    notes: "Вычитано: обложка должна быть короткой и презентационной. Фото/визуал нужны: логотип, светлая Web3-графика, сетка/орбита, без людей, денег и агрессивных обещаний. Перед публикацией согласовать версию, дату, сеть, official links, contract registry, GitHub/repository и docs-hub. На обложке не писать WhitePaper 2.0; это название рабочей вкладки, а не публичной версии документа.",
   },
   {
     id: "wp20-legal-disclaimer",
     title: "Legal Notice и Reader Guide",
     role: "Юридическая рамка и как читать документ",
-    text: `Legal Notice and Reader Guide
+    text: `Юридическое уведомление и как читать документ
 
-This White Paper is provided for informational and technical review purposes only. It describes the current working structure of Atlas System, including the Smart Cycle mechanism, the Web3/on-chain layer, the off-chain referral layer, selected DAO-inspired mechanics, transparency standards, limitations and risk disclosures.
+Этот White Paper подготовлен для информационной, технической и редакционной вычитки. Он описывает текущую рабочую структуру Atlas System: механику Smart Cycle, Web3/on-chain слой, off-chain партнерский слой, отдельные DAO-inspired механики, стандарты прозрачности, ограничения и ключевые риски.
 
-This document is not an offer to sell or purchase any token, security, share, debt instrument, investment product, deposit product or right to future revenue. Atlas System does not use this White Paper as an ICO document, token sale document, prospectus or guaranteed-return document.
+Этот документ не является предложением купить или продать токен, ценную бумагу, долю, долговой инструмент, инвестиционный продукт, депозитный продукт или право на будущую выручку. Atlas System не использует этот White Paper как документ ICO, токенсейла, проспект эмиссии или документ с гарантированной доходностью.
 
-Nothing in this document should be interpreted as financial, investment, legal, tax, accounting or regulatory advice. Participants, partners, reviewers and readers should make their own independent assessment and, where appropriate, consult qualified professional advisers before taking any action.
+Ничто в этом документе не должно восприниматься как финансовая, инвестиционная, юридическая, налоговая, бухгалтерская или регуляторная рекомендация. Участники, партнеры, reviewer-ы и читатели должны самостоятельно оценивать информацию и при необходимости обращаться к квалифицированным специалистам до совершения каких-либо действий.
 
-Atlas System may involve smart-contract, blockchain, liquidity, operational, technical, legal and user-error risks. Any on-chain action is confirmed by the participant through their own wallet. Atlas should never request a seed phrase, private key, wallet password or remote access to a participant's device.
+Участие в Atlas System может быть связано со smart-contract, blockchain, liquidity, operational, technical, legal и user-error рисками. Любое on-chain действие подтверждается самим участником через его собственный кошелек. Atlas никогда не должен запрашивать seed phrase, private key, пароль от кошелька или удаленный доступ к устройству участника.
 
-This White Paper distinguishes between:
+В этом White Paper отдельно рассматриваются:
 
-1. the on-chain Smart Cycle layer, where contract-defined actions may be independently inspected through the relevant blockchain explorer;
-2. the off-chain service layer, including interface, analytics, documentation, referral attribution and operational workflows;
-3. live documentation, including contract registry, official links, audit status, changelog and technical references;
-4. legal, risk and security disclosures that may be updated as the project, contracts, jurisdictions and review status evolve.
+1. on-chain слой Smart Cycle, где действия, определенные смарт-контрактом, могут проверяться через соответствующий blockchain explorer;
+2. off-chain сервисный слой, включая интерфейс, аналитику, документацию, referral attribution и операционные процессы;
+3. live-документация, включая реестр контрактов, официальные ссылки, статус аудита, changelog и технические справки;
+4. юридические, риск- и security-disclosures, которые могут обновляться по мере развития проекта, контрактов, юрисдикций и статуса проверки.
 
-Readers should not rely on screenshots, private messages, unofficial translations or outdated PDF copies as the source of truth. Before any wallet action, readers should verify the current official website, contract registry, network, contract address, transaction details and the latest published version of this document.
+Читатель не должен считать источником истины скриншоты, личные сообщения, неофициальные переводы или устаревшие PDF-копии. Перед любым действием с кошельком необходимо проверить актуальный официальный сайт, реестр контрактов, сеть, адрес контракта, параметры транзакции и последнюю опубликованную версию документа.
 
-This document is a working draft unless expressly marked as a final public release. Parameters, terminology, risk disclosures, contract references, official links and operational processes may be updated before publication.`,
-    notes: "Согласовать с Web3-юристом: тон должен быть жесткий, но не превращать документ в отказ от всего. Проверить no token sale, no investment advice, no guarantee, source-of-truth, wallet safety и разграничение on-chain/off-chain.",
+Если документ прямо не отмечен как финальный публичный релиз, он считается рабочей версией. Параметры, терминология, раскрытие рисков, ссылки на контракты, официальные ссылки и операционные процессы могут быть обновлены до публикации.`,
+    notes: "Вычитано: страница должна быть юридически жесткой, но не выглядеть как полный отказ от проекта. Проверить с Web3-юристом: no token sale, no investment advice, no guarantee, source-of-truth, wallet safety, разграничение on-chain/off-chain. Визуал нужен спокойный: юридическая/документальная страница без декоративных фото, достаточно логотипа, нумерованных карточек и аккуратной типографики.",
   },
   {
     id: "wp20-abstract",
