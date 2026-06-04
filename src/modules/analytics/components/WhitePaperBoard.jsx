@@ -36,10 +36,23 @@ function normalizeBlock(block, index = 0) {
 
 function mergeDefaultBlocks(savedBlocks = []) {
   const defaultBlocksById = new Map(defaultWhitePaperBlocks.map((block) => [block.id, normalizeBlock(block)]));
+  const defaultOrderById = new Map(defaultWhitePaperBlocks.map((block, index) => [block.id, index]));
   const normalizedSavedBlocks = savedBlocks.map((block) => {
     const normalizedBlock = normalizeBlock(block);
     const defaultBlock = defaultBlocksById.get(normalizedBlock.id);
     if (!defaultBlock) return normalizedBlock;
+    if (normalizedBlock.id.startsWith("wp20-")) {
+      return {
+        ...normalizedBlock,
+        title: defaultBlock.title,
+        sourceTitle: defaultBlock.sourceTitle,
+        sectionNumber: defaultBlock.sectionNumber,
+        view: defaultBlock.view,
+        role: defaultBlock.role,
+        text: normalizedBlock.text || defaultBlock.text,
+        notes: defaultBlock.notes || normalizedBlock.notes,
+      };
+    }
     return {
       ...normalizedBlock,
       text: normalizedBlock.text || defaultBlock.text,
@@ -50,7 +63,12 @@ function mergeDefaultBlocks(savedBlocks = []) {
   const missingDefaults = defaultWhitePaperBlocks
     .filter((block) => !savedIds.has(block.id))
     .map(normalizeBlock);
-  return [...normalizedSavedBlocks, ...missingDefaults];
+  return [...normalizedSavedBlocks, ...missingDefaults].sort((a, b) => {
+    const aOrder = defaultOrderById.has(a.id) ? defaultOrderById.get(a.id) : Number.POSITIVE_INFINITY;
+    const bOrder = defaultOrderById.has(b.id) ? defaultOrderById.get(b.id) : Number.POSITIVE_INFINITY;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return 0;
+  });
 }
 
 function readStoredBlocks() {
