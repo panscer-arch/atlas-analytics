@@ -7875,6 +7875,162 @@
   overflow-wrap: anywhere;
 }
 
+.analytics-whitepaper-page-preview {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: clamp(1.1rem, 2vw, 2rem);
+  width: min(100%, 940px);
+  min-height: min(74vw, 1120px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 138, 43, 0.22);
+  border-radius: 18px;
+  padding: clamp(1.4rem, 3vw, 3.2rem);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255, 138, 43, 0.14), transparent 26%),
+    linear-gradient(135deg, #fffaf4 0%, #fff6ec 42%, #ffe4cd 100%);
+  box-shadow: 0 28px 70px rgba(20, 11, 5, 0.22);
+  color: #281006;
+}
+
+.analytics-whitepaper-page-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(90deg, rgba(255, 111, 28, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 111, 28, 0.06) 1px, transparent 1px);
+  background-size: 58px 58px;
+  mask-image: linear-gradient(135deg, black, transparent 78%);
+}
+
+.analytics-whitepaper-page-watermark {
+  position: absolute;
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: clamp(0.5rem, 2vw, 1.5rem);
+  z-index: -1;
+  color: rgba(255, 111, 28, 0.12);
+  font-size: clamp(8rem, 24vw, 20rem);
+  font-weight: 950;
+  line-height: 0.8;
+}
+
+.analytics-whitepaper-page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.analytics-whitepaper-page-header img {
+  width: clamp(8rem, 15vw, 12rem);
+  height: auto;
+}
+
+.analytics-whitepaper-page-header span {
+  color: rgba(82, 45, 21, 0.62);
+  font-size: 0.75rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.analytics-whitepaper-page-title {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 52rem;
+  padding-top: clamp(1rem, 3vw, 2.5rem);
+}
+
+.analytics-whitepaper-page-title > span {
+  color: #ff6f1c;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.analytics-whitepaper-page-title h3 {
+  max-width: 12ch;
+  margin: 0;
+  color: #2a1006;
+  font-size: clamp(2.7rem, 6vw, 6rem);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 0.9;
+}
+
+.analytics-whitepaper-page-title p {
+  max-width: 46rem;
+  margin: 0;
+  color: #4e2a17;
+  font-size: clamp(1rem, 1.65vw, 1.35rem);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.analytics-whitepaper-legal-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-whitepaper-legal-card {
+  display: grid;
+  gap: 0.6rem;
+  min-height: 9.5rem;
+  border: 1px solid rgba(255, 111, 28, 0.18);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: 0 16px 36px rgba(136, 66, 20, 0.09);
+}
+
+.analytics-whitepaper-legal-card span {
+  color: #ff6f1c;
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.analytics-whitepaper-legal-card strong {
+  color: #2a1006;
+  font-size: clamp(0.98rem, 1.5vw, 1.25rem);
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.analytics-whitepaper-reader-guide {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: auto;
+}
+
+.analytics-whitepaper-reader-guide div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.28fr) minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+  border-top: 1px solid rgba(255, 111, 28, 0.18);
+  padding-top: 0.7rem;
+}
+
+.analytics-whitepaper-reader-guide span {
+  color: rgba(82, 45, 21, 0.68);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-whitepaper-reader-guide strong {
+  color: #2a1006;
+  font-size: clamp(0.88rem, 1.25vw, 1rem);
+  font-weight: 900;
+}
+
 @media (max-width: 720px) {
   .analytics-agent-dataset-stats {
     grid-template-columns: 1fr;
@@ -7911,6 +8067,15 @@
 
   .analytics-whitepaper-cover-card {
     max-width: none;
+  }
+
+  .analytics-whitepaper-page-preview {
+    min-height: 980px;
+  }
+
+  .analytics-whitepaper-legal-grid,
+  .analytics-whitepaper-reader-guide div {
+    grid-template-columns: 1fr;
   }
 }
 

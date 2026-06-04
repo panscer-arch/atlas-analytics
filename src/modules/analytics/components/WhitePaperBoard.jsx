@@ -210,6 +210,63 @@ function WhitePaperCoverPreview({ block }) {
   );
 }
 
+function WhitePaperLegalPreview({ block }) {
+  const lines = getWhitePaperCoverLines(block.text);
+  const title = lines[0] || "Legal Notice and Reader Guide";
+  const paragraphs = String(block.text || "")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .slice(1);
+  const lead = paragraphs[0] || "This White Paper is provided for informational and technical review purposes only.";
+  const coreItems = [
+    "Not a token sale, ICO, prospectus or guaranteed-return document.",
+    "Not financial, investment, legal, tax, accounting or regulatory advice.",
+    "On-chain actions must be verified and confirmed by the participant's own wallet.",
+    "Official website, contract registry and latest published version remain the source of truth.",
+  ];
+
+  return (
+    <section className="analytics-whitepaper-page-preview analytics-whitepaper-legal-preview" aria-label="Предпросмотр Legal Notice">
+      <div className="analytics-whitepaper-page-watermark" aria-hidden="true">02</div>
+      <div className="analytics-whitepaper-page-header">
+        <img src="/generated/atlas-logo-new-transparent.png" alt="Atlas System" />
+        <span>Atlas System White Paper</span>
+      </div>
+
+      <div className="analytics-whitepaper-page-title">
+        <span>Legal Notice</span>
+        <h3>{title}</h3>
+        <p>{lead}</p>
+      </div>
+
+      <div className="analytics-whitepaper-legal-grid">
+        {coreItems.map((item, index) => (
+          <div key={item} className="analytics-whitepaper-legal-card">
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{item}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div className="analytics-whitepaper-reader-guide">
+        <div>
+          <span>Read This As</span>
+          <strong>Technical and informational disclosure</strong>
+        </div>
+        <div>
+          <span>Do Not Read This As</span>
+          <strong>Investment promise, token sale or guarantee</strong>
+        </div>
+        <div>
+          <span>Verify Before Action</span>
+          <strong>Network, contract address, transaction details and current version</strong>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function WhitePaperBoard() {
   const [blocks, setBlocks] = useState(readStoredBlocks);
   const [activeBlockId, setActiveBlockId] = useState(() => {
@@ -386,6 +443,13 @@ function WhitePaperBoard() {
             <div className="analytics-program-field">
               <span className="analytics-whitepaper-preview-label">Предпросмотр первой страницы</span>
               <WhitePaperCoverPreview block={activeBlock} />
+            </div>
+          ) : null}
+
+          {activeBlock.id === "wp20-legal-disclaimer" ? (
+            <div className="analytics-program-field">
+              <span className="analytics-whitepaper-preview-label">Предпросмотр второй страницы</span>
+              <WhitePaperLegalPreview block={activeBlock} />
             </div>
           ) : null}
 

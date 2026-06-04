@@ -148,7 +148,27 @@ This document is provided for review and coordination. It is not a token sale do
     id: "wp20-legal-disclaimer",
     title: "Legal Notice и Reader Guide",
     role: "Юридическая рамка и как читать документ",
-    notes: "Согласовать: informational only, not investment/legal/tax advice, no guarantee, no token sale/ICO, who should read this paper, ссылки на docs/repo.",
+    text: `Legal Notice and Reader Guide
+
+This White Paper is provided for informational and technical review purposes only. It describes the current working structure of Atlas System, including the Smart Cycle mechanism, the Web3/on-chain layer, the off-chain referral layer, selected DAO-inspired mechanics, transparency standards, limitations and risk disclosures.
+
+This document is not an offer to sell or purchase any token, security, share, debt instrument, investment product, deposit product or right to future revenue. Atlas System does not use this White Paper as an ICO document, token sale document, prospectus or guaranteed-return document.
+
+Nothing in this document should be interpreted as financial, investment, legal, tax, accounting or regulatory advice. Participants, partners, reviewers and readers should make their own independent assessment and, where appropriate, consult qualified professional advisers before taking any action.
+
+Atlas System may involve smart-contract, blockchain, liquidity, operational, technical, legal and user-error risks. Any on-chain action is confirmed by the participant through their own wallet. Atlas should never request a seed phrase, private key, wallet password or remote access to a participant's device.
+
+This White Paper distinguishes between:
+
+1. the on-chain Smart Cycle layer, where contract-defined actions may be independently inspected through the relevant blockchain explorer;
+2. the off-chain service layer, including interface, analytics, documentation, referral attribution and operational workflows;
+3. live documentation, including contract registry, official links, audit status, changelog and technical references;
+4. legal, risk and security disclosures that may be updated as the project, contracts, jurisdictions and review status evolve.
+
+Readers should not rely on screenshots, private messages, unofficial translations or outdated PDF copies as the source of truth. Before any wallet action, readers should verify the current official website, contract registry, network, contract address, transaction details and the latest published version of this document.
+
+This document is a working draft unless expressly marked as a final public release. Parameters, terminology, risk disclosures, contract references, official links and operational processes may be updated before publication.`,
+    notes: "Согласовать с Web3-юристом: тон должен быть жесткий, но не превращать документ в отказ от всего. Проверить no token sale, no investment advice, no guarantee, source-of-truth, wallet safety и разграничение on-chain/off-chain.",
   },
   {
     id: "wp20-abstract",
