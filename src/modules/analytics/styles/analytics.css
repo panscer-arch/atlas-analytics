@@ -7658,6 +7658,223 @@
   white-space: pre-wrap;
 }
 
+.analytics-whitepaper-preview-label {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #9fb2cf;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.analytics-whitepaper-cover-preview {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: clamp(1.2rem, 2.2vw, 2.1rem);
+  width: min(100%, 940px);
+  min-height: min(78vw, 1180px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 138, 43, 0.24);
+  border-radius: 18px;
+  padding: clamp(1.4rem, 3vw, 3.2rem);
+  background:
+    radial-gradient(circle at 74% 18%, rgba(255, 138, 43, 0.22), transparent 22%),
+    radial-gradient(circle at 88% 64%, rgba(255, 203, 116, 0.24), transparent 26%),
+    linear-gradient(135deg, #fffaf4 0%, #fff4e6 38%, #ffe0c6 100%);
+  box-shadow: 0 28px 70px rgba(20, 11, 5, 0.24);
+  color: #281006;
+}
+
+.analytics-whitepaper-cover-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background-image:
+    linear-gradient(30deg, rgba(255, 111, 28, 0.11) 1px, transparent 1px),
+    linear-gradient(150deg, rgba(255, 111, 28, 0.1) 1px, transparent 1px);
+  background-size: 150px 86px;
+  opacity: 0.72;
+}
+
+.analytics-whitepaper-cover-mark {
+  position: absolute;
+  right: clamp(1.2rem, 5vw, 4.8rem);
+  top: clamp(5rem, 9vw, 7.2rem);
+  z-index: -1;
+  width: clamp(14rem, 30vw, 26rem);
+  aspect-ratio: 1;
+  border: 1.5px solid rgba(255, 111, 28, 0.42);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 40%, rgba(255, 255, 255, 0.92), rgba(255, 241, 217, 0.72) 48%, transparent 49%),
+    conic-gradient(from 120deg, rgba(255, 111, 28, 0.08), rgba(255, 111, 28, 0.32), rgba(43, 20, 9, 0.08), rgba(255, 111, 28, 0.08));
+  box-shadow: inset 0 0 0 28px rgba(255, 255, 255, 0.26);
+}
+
+.analytics-whitepaper-cover-orbit {
+  position: absolute;
+  right: -7%;
+  bottom: 11%;
+  z-index: -2;
+  width: min(52%, 430px);
+  opacity: 0.26;
+  transform: rotate(-7deg);
+}
+
+.analytics-whitepaper-cover-orbit img {
+  width: 100%;
+  height: auto;
+  filter: saturate(1.08) contrast(1.08);
+}
+
+.analytics-whitepaper-cover-header,
+.analytics-whitepaper-cover-body,
+.analytics-whitepaper-cover-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.analytics-whitepaper-cover-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.analytics-whitepaper-cover-header img {
+  width: clamp(9rem, 18vw, 14rem);
+  height: auto;
+}
+
+.analytics-whitepaper-cover-header div {
+  display: grid;
+  gap: 0.22rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.analytics-whitepaper-cover-header span,
+.analytics-whitepaper-cover-footer span,
+.analytics-whitepaper-cover-card dt,
+.analytics-whitepaper-cover-kicker {
+  color: rgba(82, 45, 21, 0.72);
+  font-size: clamp(0.62rem, 0.9vw, 0.78rem);
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-whitepaper-cover-header strong {
+  max-width: 18rem;
+  color: #ff6f1c;
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  font-weight: 950;
+}
+
+.analytics-whitepaper-cover-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.42fr);
+  gap: clamp(1rem, 4vw, 3.5rem);
+  align-items: end;
+  min-height: clamp(25rem, 44vw, 37rem);
+}
+
+.analytics-whitepaper-cover-copy {
+  display: grid;
+  gap: 1rem;
+  align-self: center;
+  max-width: 39rem;
+}
+
+.analytics-whitepaper-cover-copy h3 {
+  max-width: 11ch;
+  margin: 0;
+  color: #2a1006;
+  font-size: clamp(3rem, 8vw, 7.5rem);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 0.9;
+}
+
+.analytics-whitepaper-cover-copy p {
+  max-width: 35rem;
+  margin: 0;
+  color: #4e2a17;
+  font-size: clamp(1.08rem, 2.1vw, 1.75rem);
+  font-weight: 850;
+  line-height: 1.18;
+}
+
+.analytics-whitepaper-cover-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  max-width: 42rem;
+  padding-top: 0.65rem;
+}
+
+.analytics-whitepaper-cover-tags span {
+  border: 1px solid rgba(255, 111, 28, 0.22);
+  border-radius: 999px;
+  padding: 0.55rem 0.78rem;
+  background: rgba(255, 255, 255, 0.58);
+  color: #5a2f18;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.analytics-whitepaper-cover-card {
+  border: 1px solid rgba(255, 111, 28, 0.2);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 18px 42px rgba(136, 66, 20, 0.13);
+  backdrop-filter: blur(10px);
+}
+
+.analytics-whitepaper-cover-card dl {
+  display: grid;
+  gap: 0.82rem;
+  margin: 0;
+}
+
+.analytics-whitepaper-cover-card div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.analytics-whitepaper-cover-card dd {
+  margin: 0;
+  color: #2a1006;
+  font-size: clamp(0.88rem, 1.25vw, 1rem);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.analytics-whitepaper-cover-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  align-self: end;
+}
+
+.analytics-whitepaper-cover-footer div {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+  border-top: 1px solid rgba(255, 111, 28, 0.18);
+  padding-top: 0.62rem;
+}
+
+.analytics-whitepaper-cover-footer strong {
+  color: #2a1006;
+  font-size: clamp(0.72rem, 1.05vw, 0.9rem);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 720px) {
   .analytics-agent-dataset-stats {
     grid-template-columns: 1fr;
@@ -7677,6 +7894,23 @@
 
   .analytics-dataset-sidebar {
     position: static;
+  }
+
+  .analytics-whitepaper-cover-preview {
+    min-height: 980px;
+  }
+
+  .analytics-whitepaper-cover-body,
+  .analytics-whitepaper-cover-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-whitepaper-cover-copy h3 {
+    max-width: 10ch;
+  }
+
+  .analytics-whitepaper-cover-card {
+    max-width: none;
   }
 }
 

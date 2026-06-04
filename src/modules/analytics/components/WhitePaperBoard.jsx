@@ -83,6 +83,115 @@ function persistBlocks(blocks) {
   }
 }
 
+function getWhitePaperCoverLines(text = "") {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function findCoverValue(lines, label) {
+  const prefix = `${label}:`;
+  return lines.find((line) => line.startsWith(prefix))?.slice(prefix.length).trim() || "";
+}
+
+function WhitePaperCoverPreview({ block }) {
+  const lines = getWhitePaperCoverLines(block.text);
+  const title = lines[0] || "Atlas System White Paper";
+  const subtitle = lines[1] || "Web3 Mutual Support Protocol with DAO-Inspired Mechanics";
+  const version = findCoverValue(lines, "Version") || "0.1";
+  const status = findCoverValue(lines, "Status") || "Working Draft for Review";
+  const date = findCoverValue(lines, "Date") || "June 2026";
+  const network = findCoverValue(lines, "Primary Network") || "BNB Smart Chain";
+  const website = findCoverValue(lines, "Official Website") || "https://atlas-system.io";
+  const telegram = findCoverValue(lines, "Official Telegram Channel") || "@atlas_system_official";
+  const community = findCoverValue(lines, "Official Telegram Community") || "@atlas_system_global_community";
+  const xLink = findCoverValue(lines, "Official X") || "https://x.com/AtlasSystemWeb3";
+  const registry = findCoverValue(lines, "Contract Registry") || "To be confirmed before public release";
+  const repository = findCoverValue(lines, "Technical Repository") || "To be confirmed before public release";
+  const docs = findCoverValue(lines, "Documentation Hub") || "To be confirmed before public release";
+
+  return (
+    <section className="analytics-whitepaper-cover-preview" aria-label="Предпросмотр обложки White Paper">
+      <div className="analytics-whitepaper-cover-grid" aria-hidden="true" />
+      <div className="analytics-whitepaper-cover-mark" aria-hidden="true" />
+      <div className="analytics-whitepaper-cover-orbit" aria-hidden="true">
+        <img src="/generated/atlas-network-reference.png" alt="" />
+      </div>
+
+      <div className="analytics-whitepaper-cover-header">
+        <img src="/generated/atlas-logo-new-transparent.png" alt="Atlas System" />
+        <div>
+          <span>White Paper</span>
+          <strong>{status}</strong>
+        </div>
+      </div>
+
+      <div className="analytics-whitepaper-cover-body">
+        <div className="analytics-whitepaper-cover-copy">
+          <span className="analytics-whitepaper-cover-kicker">Atlas System</span>
+          <h3>{title}</h3>
+          <p>{subtitle}</p>
+          <div className="analytics-whitepaper-cover-tags">
+            <span>Smart Cycle</span>
+            <span>Referral Layer</span>
+            <span>Risk Disclosure</span>
+            <span>DAO-inspired Mechanics</span>
+          </div>
+        </div>
+
+        <div className="analytics-whitepaper-cover-card">
+          <dl>
+            <div>
+              <dt>Version</dt>
+              <dd>{version}</dd>
+            </div>
+            <div>
+              <dt>Date</dt>
+              <dd>{date}</dd>
+            </div>
+            <div>
+              <dt>Network</dt>
+              <dd>{network}</dd>
+            </div>
+            <div>
+              <dt>Registry</dt>
+              <dd>{registry}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <div className="analytics-whitepaper-cover-footer">
+        <div>
+          <span>Official Links</span>
+          <strong>{website}</strong>
+        </div>
+        <div>
+          <span>Telegram</span>
+          <strong>{telegram}</strong>
+        </div>
+        <div>
+          <span>Community</span>
+          <strong>{community}</strong>
+        </div>
+        <div>
+          <span>X</span>
+          <strong>{xLink}</strong>
+        </div>
+        <div>
+          <span>Docs</span>
+          <strong>{docs}</strong>
+        </div>
+        <div>
+          <span>Repository</span>
+          <strong>{repository}</strong>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function WhitePaperBoard() {
   const [blocks, setBlocks] = useState(readStoredBlocks);
   const [activeBlockId, setActiveBlockId] = useState(() => {
@@ -254,6 +363,13 @@ function WhitePaperBoard() {
             Текст блока
             <textarea className="analytics-agent-template-input analytics-dataset-source" value={activeBlock.text} onChange={(event) => updateBlock(activeBlock.id, { text: event.target.value })} rows="20" />
           </label>
+
+          {activeBlock.id === "wp20-cover-metadata" ? (
+            <div className="analytics-program-field">
+              <span className="analytics-whitepaper-preview-label">Предпросмотр первой страницы</span>
+              <WhitePaperCoverPreview block={activeBlock} />
+            </div>
+          ) : null}
 
           <label className="analytics-program-field">
             Заметки для вычитки
