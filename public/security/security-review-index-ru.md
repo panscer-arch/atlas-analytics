@@ -13,13 +13,16 @@ Date: 2026-06-04
 2. Public Security Text RU
    Безопасные публичные формулировки для сайта, FAQ и коммуникации с партнерами.
 
-3. Slither Report
+3. Code Safety Summary RU
+   Короткая читаемая версия для сайта, лидеров и внутренней вычитки: что именно делает код безопаснее, что можно сказать сейчас и что нельзя обещать.
+
+4. Slither Report
    Машинный отчет автоматического анализа Solidity-кода.
 
-4. Solhint Report
+5. Solhint Report
    Отчет по качеству Solidity-кода, стилю, предупреждениям компилятора и технической гигиене.
 
-5. Mythril Transport Result
+6. Mythril Transport Result
    Ограниченный bytecode-прогон Transport: success=true, issues=0. Это не заменяет полный аудит.
 
 ## Важно

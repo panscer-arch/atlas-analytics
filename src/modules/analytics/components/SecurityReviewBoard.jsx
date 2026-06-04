@@ -8,6 +8,14 @@ const documentCards = [
     cta: "Открыть документ",
   },
   {
+    title: "Code Safety Summary",
+    type: "Короткая версия",
+    status: "Для сайта / лидеров",
+    description: "Читаемая выжимка: что защищено в коде, что можно сказать сейчас и что еще нельзя обещать.",
+    href: "/security/code-safety-summary-ru.md",
+    cta: "Открыть summary",
+  },
+  {
     title: "Public Security Text",
     type: "Публичный текст",
     status: "Для сайта / FAQ",
