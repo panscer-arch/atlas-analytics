@@ -10957,6 +10957,145 @@
   gap: 0.85rem;
 }
 
+.analytics-security-answer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.analytics-security-answer-main,
+.analytics-security-answer-side {
+  border: 1px solid rgba(255, 139, 26, 0.24);
+  border-radius: 24px;
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 245, 232, 0.9)),
+    radial-gradient(circle at 90% 0%, rgba(255, 123, 0, 0.14), transparent 34%);
+  box-shadow: 0 18px 45px rgba(72, 31, 0, 0.08);
+}
+
+.analytics-security-answer-main h3 {
+  margin: 0.45rem 0 0;
+  color: #2a0c00;
+  font-size: clamp(1.55rem, 3vw, 2.7rem);
+  line-height: 1.04;
+  font-weight: 950;
+}
+
+.analytics-security-answer-main p,
+.analytics-security-answer-side p {
+  margin: 0.85rem 0 0;
+  color: rgba(42, 12, 0, 0.7);
+  line-height: 1.62;
+  font-weight: 680;
+}
+
+.analytics-security-answer-side {
+  display: grid;
+  align-content: center;
+  background:
+    linear-gradient(145deg, rgba(42, 12, 0, 0.96), rgba(94, 36, 0, 0.92)),
+    radial-gradient(circle at 90% 0%, rgba(255, 152, 20, 0.34), transparent 36%);
+}
+
+.analytics-security-answer-side strong {
+  color: #ffffff;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.analytics-security-answer-side p {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.analytics-security-claim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.analytics-security-claim-card {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+  min-height: 250px;
+  border: 1px solid rgba(255, 139, 26, 0.23);
+  border-radius: 22px;
+  padding: 1.05rem;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(255, 246, 234, 0.9)),
+    radial-gradient(circle at 100% 0%, rgba(255, 123, 0, 0.12), transparent 34%);
+  box-shadow: 0 16px 42px rgba(72, 31, 0, 0.08);
+}
+
+.analytics-security-claim-strong {
+  border-color: rgba(32, 150, 93, 0.28);
+}
+
+.analytics-security-claim-caution {
+  border-color: rgba(255, 139, 26, 0.34);
+}
+
+.analytics-security-claim-pending {
+  border-color: rgba(94, 112, 140, 0.22);
+}
+
+.analytics-security-claim-card h4 {
+  margin: 0;
+  color: #2a0c00;
+  font-size: 1.18rem;
+  line-height: 1.18;
+  font-weight: 950;
+}
+
+.analytics-security-claim-card p {
+  margin: 0;
+  color: rgba(42, 12, 0, 0.7);
+  line-height: 1.52;
+  font-weight: 700;
+}
+
+.analytics-security-claim-card > div:last-child {
+  border-top: 1px solid rgba(255, 139, 26, 0.15);
+  padding-top: 0.65rem;
+  color: rgba(42, 12, 0, 0.58);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  font-weight: 650;
+}
+
+.analytics-security-trust-ladder {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.analytics-security-trust-ladder article {
+  border: 1px solid rgba(255, 139, 26, 0.22);
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 34px rgba(72, 31, 0, 0.06);
+}
+
+.analytics-security-trust-ladder h4 {
+  margin: 0;
+  color: #2a0c00;
+  font-size: 1rem;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.analytics-security-trust-ladder p {
+  margin: 0.55rem 0 0;
+  color: rgba(42, 12, 0, 0.66);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
 .analytics-security-doc-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -11318,6 +11457,9 @@
   .analytics-security-check-grid,
   .analytics-security-role-grid,
   .analytics-security-doc-grid,
+  .analytics-security-answer,
+  .analytics-security-claim-grid,
+  .analytics-security-trust-ladder,
   .analytics-security-verify-panel,
   .analytics-security-verify-steps,
   .analytics-security-hero {

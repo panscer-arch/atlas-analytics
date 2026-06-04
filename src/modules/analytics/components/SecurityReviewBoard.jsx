@@ -51,60 +51,112 @@ const documentCards = [
 
 const verificationSteps = [
   {
-    title: "1. Открыть рабочий review",
-    text: "Начать с Security Review V1: там видно, какие риски относятся к внешнему взлому, а какие к архитектуре управления.",
+    title: "1. Сначала смотрим кодовые защиты",
+    text: "Есть ли проверка владельца ордера, защита от повторного claim, reentrancy-защита и безопасные ERC20-операции.",
   },
   {
-    title: "2. Сверить автоотчеты",
-    text: "Slither и Solhint показывают сигналы, но их нельзя публиковать как вывод без ручной фильтрации security-специалистом.",
+    title: "2. Потом сверяем автоотчеты",
+    text: "Slither, Solhint и Mythril не дают рекламный статус, но показывают, что код уже прогоняется через security-инструменты.",
   },
   {
-    title: "3. Проверить claim-сценарии",
-    text: "Главные тесты: чужой claim, двойной claim, превышение разрешенной суммы, owner-only Transport и корректность учета выплат.",
+    title: "3. Затем доказываем сценариями",
+    text: "Главные тесты: чужой claim, двойной claim, превышение суммы, owner-only Transport и корректность учета выплат.",
   },
   {
-    title: "4. Зафиксировать публичный статус",
-    text: "Пока писать только Security Review in progress. Статус Audited можно использовать только после внешнего аудита.",
+    title: "4. Только потом даем публичный статус",
+    text: "Пока корректно писать: Security Review in progress. Audited можно писать только после полноценного внешнего аудита.",
   },
 ];
 
 const reviewRoles = [
   {
     role: "Project Lead",
-    verdict: "Собрать процесс в понятную дорожную карту.",
-    note: "Страница должна отвечать на вопрос: что уже сделано, что проверяется сейчас, какие документы есть и какой следующий шаг.",
-    action: "Оставить visible-статусы: готово, в работе, следующий этап.",
+    verdict: "Показываем не обещания, а проверяемые факты.",
+    note: "Пользователь должен сразу увидеть: какие защиты уже есть в коде, какие отчеты доступны и что еще не завершено.",
+    action: "Главный статус: базовая кодовая защита проверяется, полный аудит еще не заявляется.",
   },
   {
     role: "Security Expert",
-    verdict: "Разделить внешний взлом и owner-полномочия.",
-    note: "Для пользователя это разные риски: один относится к коду, второй к архитектуре управления. В интерфейсе они должны идти отдельно.",
-    action: "Добавить invariant/fuzzing как обязательный следующий слой.",
+    verdict: "Нельзя смешивать защиту кода и полномочия владельца.",
+    note: "Код может иметь защиту от чужого claim, но при этом система может иметь owner-функции. Это разные типы риска.",
+    action: "Показывать отдельно: external attack protection и owner powers disclosure.",
   },
   {
     role: "Content",
-    verdict: "Сделать понятным для новичка.",
-    note: "Сначала человеческий смысл: проверяем, может ли посторонний вмешаться, и какие полномочия есть у владельца. Термины объяснять ниже.",
-    action: "В публичных блоках избегать слов, которые звучат как гарантия.",
+    verdict: "Писать как для человека без Web3-опыта.",
+    note: "Не начинать с названий инструментов. Начать с вопроса: может ли чужой человек забрать не свое?",
+    action: "Все термины объяснять через бытовой смысл: чей ордер, чей доступ, кто может вызвать действие.",
   },
   {
     role: "Legal",
-    verdict: "Не обещать безопасность и доходность.",
-    note: "Корректная позиция: процесс проверки запущен, отчеты доступны, часть этапов еще в работе. Не писать guarantee, risk-free, audited.",
+    verdict: "Нельзя писать абсолютные гарантии.",
+    note: "Корректная позиция: в коде есть защитные механизмы, проверка запущена, часть этапов еще в работе.",
     action: "Отдельно закрепить дисклеймер для сайта и презентаций.",
   },
   {
     role: "Marketing",
-    verdict: "Превратить security в доверие, а не страх.",
-    note: "Показываем зрелость: мы не прячем риски, а раскладываем их по полкам и фиксируем процесс проверки.",
-    action: "Для сайта сделать короткий блок и кнопку Подробнее.",
+    verdict: "Доверие строится через прозрачность.",
+    note: "Формулировка должна звучать уверенно: мы не прячем риски, а показываем, как они проверяются.",
+    action: "Для сайта: Код проверяется. Отчеты доступны. Следующий этап опубликован.",
   },
   {
     role: "Design",
-    verdict: "Дать пользователю понятные действия.",
-    note: "Не только текстовые карточки: нужны кнопки, документы, статусы, прогресс и путь проверки.",
-    action: "Документы вывести сразу после hero, до технических деталей.",
+    verdict: "Сначала ответ, потом доказательства.",
+    note: "Верх страницы должен отвечать на вопрос, ниже идут доказательства, затем документы и технические детали.",
+    action: "Сделать блоки: что защищено, чем доказано, что еще не доказано.",
   },
+];
+
+const safetyClaims = [
+  {
+    title: "Чужой claim закрыт проверкой владельца",
+    status: "Проверено вручную",
+    level: "strong",
+    plain: "Посторонний адрес не должен иметь возможность запросить выплату по чужому ордеру.",
+    proof: "В UnityLockup.claim и UnityDaily.claim есть проверка владельца ордера: действие доступно только адресу owner.",
+  },
+  {
+    title: "Повторный claim ограничен логикой ордера",
+    status: "Проверено вручную",
+    level: "strong",
+    plain: "Один и тот же lockup-ордер не должен быть выведен повторно.",
+    proof: "В UnityLockup используется notClaimed, а в Daily логика опирается на started, lastClaimed и лимит периодов.",
+  },
+  {
+    title: "Пользовательские операции защищены от reentrancy",
+    status: "Базовая защита есть",
+    level: "strong",
+    plain: "Контракт снижает риск повторного входа во время lockup/claim.",
+    proof: "Ключевые пользовательские lockup и claim используют nonReentrant. Transport нужно привести к такому же стандарту.",
+  },
+  {
+    title: "ERC20-переводы идут через SafeERC20",
+    status: "Проверено вручную",
+    level: "strong",
+    plain: "Работа с токеном выполняется через безопасные helper-функции, а не через голые transfer-вызовы.",
+    proof: "В контрактах используются SafeERC20-операции, что снижает риск ошибок при нестандартном поведении токена.",
+  },
+  {
+    title: "Owner-функции вынесены как отдельный риск",
+    status: "Раскрыть публично",
+    level: "caution",
+    plain: "Это не внешний взлом, а управленческие полномочия системы.",
+    proof: "Treasury, fee, tokenId и Transport относятся к owner-полномочиям. Их нужно описывать отдельно от взломоустойчивости.",
+  },
+  {
+    title: "LP-логика требует дополнительных тестов",
+    status: "Следующий этап",
+    level: "pending",
+    plain: "Исполнение выплат зависит не только от кода claim, но и от состояния Pancake V3 LP-позиции.",
+    proof: "Нужны slippage/min-output правила, stress-test LP-позиции и мониторинг доступности claim.",
+  },
+];
+
+const trustLadder = [
+  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения."],
+  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Часть автоматических отчетов уже собрана, часть тестов еще готовится."],
+  ["Нельзя говорить сейчас", "Нельзя писать Audited, 100% secure, невозможно взломать, выплаты гарантированы или участие без риска."],
+  ["Что даст сильный статус", "Invariant tests, fuzzing, testnet battle test и отдельный документ по owner-полномочиям."],
 ];
 
 const securityChecks = [
@@ -161,16 +213,16 @@ function SecurityReviewBoard() {
     <section className="analytics-surface analytics-security-review">
       <div className="analytics-security-hero">
         <div className="analytics-security-hero-copy">
-          <span className="analytics-kicker">Security Review in progress</span>
-          <h2>Безопасность Atlas System уже запущена в работу</h2>
+          <span className="analytics-kicker">Code Safety Review</span>
+          <h2>Как мы показываем, что код Atlas проверяется на безопасность</h2>
           <p>
-            Мы собираем доказательную базу по смарт-контрактам: автоматический анализ, ручная вычитка,
-            проверка claim-логики, owner-полномочий, Transport-модуля, LP-рисков и будущих testnet-сценариев.
+            Простая версия: мы не просим верить словам. Мы показываем, какие защитные механизмы есть в коде,
+            какие отчеты уже собраны, какие риски раскрываются отдельно и какие проверки еще нужно завершить.
           </p>
           <div className="analytics-security-status-row">
-            <span>Не аудит</span>
-            <span>Не гарантия дохода</span>
-            <span>Публичный процесс проверки</span>
+            <span>Чужой claim проверяется</span>
+            <span>Owner-полномочия отдельно</span>
+            <span>Не внешний аудит</span>
           </div>
           <div className="analytics-security-hero-actions">
             <a href="/security/atlas-security-review-v1-ru.md" target="_blank" rel="noreferrer">Открыть Security Review</a>
@@ -182,21 +234,66 @@ function SecurityReviewBoard() {
             <span>Current Status</span>
             <small>V1</small>
           </div>
-          <strong>Review started</strong>
-          <p>Собраны первые автоотчеты и карта рисков. Следующий этап — invariant tests, fuzzing и testnet battle test.</p>
+          <strong>Code review in progress</strong>
+          <p>Базовые защитные механизмы найдены и описаны. Полный публичный статус появится после invariant tests, fuzzing и testnet battle test.</p>
           <div className="analytics-security-progress-list" aria-label="Этапы проверки">
-            <em>Auto tools</em>
-            <em>Manual review</em>
+            <em>Manual code review</em>
+            <em>Auto-analysis reports</em>
             <em>Invariant tests</em>
-            <em>Testnet battle</em>
+            <em>External audit</em>
           </div>
+        </div>
+      </div>
+
+      <div className="analytics-security-section analytics-security-answer">
+        <div className="analytics-security-answer-main">
+          <span className="analytics-kicker">Главный ответ</span>
+          <h3>Пока корректно говорить так: код имеет базовые защитные механизмы и проходит Security Review.</h3>
+          <p>
+            Это сильнее, чем просто “мы безопасные”, потому что показывает конкретику: проверка владельца ордера,
+            защита от повторного входа, безопасные ERC20-операции, owner-only ограничения и опубликованные отчеты.
+            Но это еще не статус Audited.
+          </p>
+        </div>
+        <div className="analytics-security-answer-side">
+          <strong>Формула для сайта</strong>
+          <p>Код Atlas проходит поэтапную проверку безопасности. Уже проверяются права доступа, claim-логика, reentrancy-защита и owner-полномочия. Отчеты доступны, следующие тесты опубликованы.</p>
         </div>
       </div>
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>00</span>
-          <h3>Документы и отчеты</h3>
+          <span>01</span>
+          <h3>Что именно делает код безопаснее</h3>
+        </div>
+        <div className="analytics-security-claim-grid">
+          {safetyClaims.map((item) => (
+            <article key={item.title} className={`analytics-security-claim-card analytics-security-claim-${item.level}`}>
+              <div className="analytics-security-doc-top">
+                <span>{item.status}</span>
+                <small>{item.level === "strong" ? "есть основание" : item.level === "caution" ? "раскрыть риск" : "доказать тестами"}</small>
+              </div>
+              <h4>{item.title}</h4>
+              <p>{item.plain}</p>
+              <div>{item.proof}</div>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-trust-ladder">
+        {trustLadder.map(([title, text]) => (
+          <article key={title}>
+            <h4>{title}</h4>
+            <p>{text}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
+          <span>02</span>
+          <h3>Документы и отчеты для проверки</h3>
         </div>
         <div className="analytics-security-doc-grid">
           {documentCards.map((item) => (
@@ -216,7 +313,7 @@ function SecurityReviewBoard() {
       <div className="analytics-security-verify-panel">
         <div>
           <span className="analytics-kicker">How to verify</span>
-          <h3>Как проверить, что работа по безопасности реально идет</h3>
+          <h3>Как человек может проверить это сам</h3>
           <p>
             Не просим верить на слово: открываются документы, отчеты авто-инструментов и список следующих тестов.
             Финальный публичный статус появится только после дополнительных проверок.
@@ -258,8 +355,8 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>01</span>
-          <h3>Что именно проверяем</h3>
+          <span>03</span>
+          <h3>Техническая карта проверки</h3>
         </div>
         <div className="analytics-security-check-grid">
           {securityChecks.map(([title, description, status]) => (
@@ -274,7 +371,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>02</span>
+          <span>04</span>
           <h3>Авто-инструменты</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -290,7 +387,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>03</span>
+          <span>05</span>
           <h3>Как говорить публично</h3>
         </div>
         <div className="analytics-security-public-grid">
@@ -306,7 +403,7 @@ function SecurityReviewBoard() {
       <div className="analytics-security-section analytics-security-two-columns">
         <div>
           <div className="analytics-security-section-head">
-            <span>04</span>
+            <span>06</span>
             <h3>Нельзя писать</h3>
           </div>
           <div className="analytics-security-tags">
@@ -315,7 +412,7 @@ function SecurityReviewBoard() {
         </div>
         <div>
           <div className="analytics-security-section-head">
-            <span>05</span>
+            <span>07</span>
             <h3>Следующие шаги</h3>
           </div>
           <ol className="analytics-security-steps">
