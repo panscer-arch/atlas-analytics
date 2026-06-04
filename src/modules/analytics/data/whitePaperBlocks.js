@@ -121,7 +121,28 @@ const WHITE_PAPER_20_SECTIONS = [
     id: "wp20-cover-metadata",
     title: "Обложка и метаданные",
     role: "Версия, дата, статус, сеть, official links",
-    notes: "Согласовать: название документа, версию, дату, статус Draft/Public, сеть, ссылку на docs-хаб, registry и репозиторий.",
+    text: `Atlas System White Paper
+
+Web3 Mutual Support Protocol with DAO-Inspired Mechanics
+
+Version: 0.1
+Status: Working Draft for Review
+Date: June 2026
+Primary Network: BNB Smart Chain
+
+Official Website: https://atlas-system.io
+Official Telegram Channel: @atlas_system_official
+Official Telegram Community: @atlas_system_global_community
+Official X: https://x.com/AtlasSystemWeb3
+
+Contract Registry: To be confirmed before public release
+Technical Repository: To be confirmed before public release
+Documentation Hub: To be confirmed before public release
+
+This document describes the current working structure of Atlas System, including the Smart Cycle mechanism, the Web3/on-chain layer, the off-chain referral layer, DAO-inspired community mechanics, transparency standards, limitations and risk disclosures.
+
+This document is provided for review and coordination. It is not a token sale document, not an ICO document, not financial advice and not a guarantee of any result.`,
+    notes: "Согласовать: версию, статус, сеть, final official links, contract registry, GitHub/repository и docs-hub. На обложке не писать WhitePaper 2.0; это название рабочей вкладки, а не публичной версии документа.",
   },
   {
     id: "wp20-legal-disclaimer",

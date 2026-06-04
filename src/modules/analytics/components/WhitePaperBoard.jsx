@@ -35,11 +35,22 @@ function normalizeBlock(block, index = 0) {
 }
 
 function mergeDefaultBlocks(savedBlocks = []) {
-  const savedIds = new Set(savedBlocks.map((block) => block.id));
+  const defaultBlocksById = new Map(defaultWhitePaperBlocks.map((block) => [block.id, normalizeBlock(block)]));
+  const normalizedSavedBlocks = savedBlocks.map((block) => {
+    const normalizedBlock = normalizeBlock(block);
+    const defaultBlock = defaultBlocksById.get(normalizedBlock.id);
+    if (!defaultBlock) return normalizedBlock;
+    return {
+      ...normalizedBlock,
+      text: normalizedBlock.text || defaultBlock.text,
+      notes: normalizedBlock.notes || defaultBlock.notes,
+    };
+  });
+  const savedIds = new Set(normalizedSavedBlocks.map((block) => block.id));
   const missingDefaults = defaultWhitePaperBlocks
     .filter((block) => !savedIds.has(block.id))
     .map(normalizeBlock);
-  return [...savedBlocks.map(normalizeBlock), ...missingDefaults];
+  return [...normalizedSavedBlocks, ...missingDefaults];
 }
 
 function readStoredBlocks() {
