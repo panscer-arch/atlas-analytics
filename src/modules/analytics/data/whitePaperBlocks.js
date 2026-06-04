@@ -115,6 +115,141 @@ const ARCHIVE_BLOCK_META = {
   "49": { id: "glossary", title: "Глоссарий", role: "Терминология" },
   "50": { id: "conclusion", title: "Заключение", role: "Финальная рамка" },
 };
+
+const WHITE_PAPER_20_SECTIONS = [
+  {
+    id: "wp20-cover-metadata",
+    title: "Обложка и метаданные",
+    role: "Версия, дата, статус, сеть, official links",
+    notes: "Согласовать: название документа, версию, дату, статус Draft/Public, сеть, ссылку на docs-хаб, registry и репозиторий.",
+  },
+  {
+    id: "wp20-legal-disclaimer",
+    title: "Юридический дисклеймер",
+    role: "Рамка документа и ограничения обещаний",
+    notes: "Согласовать тон: документ информационный, без гарантий, без токенсейла/ICO, без обещания дохода и без замены пользовательской проверки.",
+  },
+  {
+    id: "wp20-executive-summary",
+    title: "Краткое резюме",
+    role: "1-2 страницы: что такое Atlas и зачем он нужен",
+    notes: "Согласовать пять тезисов: Atlas, проблема, Smart Cycle, граница on-chain/off-chain, главные риски.",
+  },
+  {
+    id: "wp20-context-problem",
+    title: "Контекст и проблема",
+    role: "Problem statement без агрессивного маркетинга",
+    notes: "Согласовать, какую структурную проблему решает Atlas: непрозрачные правила, зависимость от оператора, отсутствие проверяемой архитектуры.",
+  },
+  {
+    id: "wp20-design-principles",
+    title: "Принципы проектирования",
+    role: "Архитектурная конституция Atlas",
+    notes: "Согласовать принципы: on-chain transparency, deterministic rules, off-chain disclosure, access control, source-of-truth, versioned updates.",
+  },
+  {
+    id: "wp20-product-overview",
+    title: "Обзор продукта Atlas",
+    role: "Что видит и делает участник",
+    notes: "Согласовать термины UI: входящая помощь, исходящая помощь, баланс пула, выплаченная дельта, Smart Cycle, Claim/request.",
+  },
+  {
+    id: "wp20-system-architecture",
+    title: "Архитектура системы",
+    role: "Карта компонентов",
+    notes: "Согласовать схему: wallet, interface, core contracts, referral backend, indexer, dashboards, admin/support, explorer verification.",
+  },
+  {
+    id: "wp20-roles-actors",
+    title: "Роли и акторы",
+    role: "Кто что может и не может делать",
+    notes: "Согласовать роли: participant, smart contract, backend referral engine, operator/maintainer, auditor, interface provider, admin/multisig.",
+  },
+  {
+    id: "wp20-smart-contract-layer",
+    title: "Смарт-контрактный слой",
+    role: "Core contracts, functions, events, permissions",
+    notes: "Согласовать: адреса, immutable/upgradeable, owner/admin, pause/emergency, public functions, events, invariants, verified source.",
+  },
+  {
+    id: "wp20-smart-cycle-mechanics",
+    title: "Механика Smart Cycle",
+    role: "Lifecycle цикла и state transitions",
+    notes: "Согласовать: вход в цикл, сроки, право запроса, claim/request, actual payout, очередность, недостаток ликвидности, повторное участие.",
+  },
+  {
+    id: "wp20-economics-liquidity",
+    title: "Экономика и ликвидность",
+    role: "Потоки средств, дельта, fee, сценарии",
+    notes: "Согласовать: источник дельты, Platform Fee, входящий/исходящий поток, баланс пула, частичные выплаты, таблицы сценариев без гарантий.",
+  },
+  {
+    id: "wp20-partner-backend",
+    title: "Партнёрский off-chain слой",
+    role: "Referral backend и границы доверия",
+    notes: "Согласовать: какие данные читаются с chain, что хранится off-chain, уровни, статусы, проценты, matching, anti-fraud, dispute flow.",
+  },
+  {
+    id: "wp20-governance",
+    title: "DAO-inspired управление",
+    role: "Механики сообщества без заявления full DAO",
+    notes: "Согласовать формулировку: Atlas is not a full DAO, but uses DAO-inspired mechanics for selected governance/community decisions.",
+  },
+  {
+    id: "wp20-security",
+    title: "Безопасность и аудит",
+    role: "Security posture",
+    notes: "Согласовать: audit status, test coverage, compiler policy, bug bounty, incident response, upgrade review, security contact.",
+  },
+  {
+    id: "wp20-risks",
+    title: "Риски и ограничения",
+    role: "Risk matrix",
+    notes: "Согласовать матрицу: smart-contract, admin-key, liquidity, network, UI/backend, reconciliation, legal, user comprehension risks.",
+  },
+  {
+    id: "wp20-verification",
+    title: "Прозрачность и проверка",
+    role: "Как проверить Atlas независимо",
+    notes: "Согласовать: contract registry, explorer links, verified source, events, dashboards, on-chain/off-chain verification boundaries.",
+  },
+  {
+    id: "wp20-roadmap-versioning",
+    title: "Roadmap и versioning",
+    role: "Версии протокола и будущие изменения",
+    notes: "Согласовать: current production, planned modules, Smart Cycle 2, migration rules, changelog, addendum policy.",
+  },
+  {
+    id: "wp20-legal-compliance",
+    title: "Legal / compliance рамка",
+    role: "Юрисдикции, ограничения, terms/privacy",
+    notes: "Согласовать: restricted jurisdictions, no prohibited promises, user rights, data handling, marketing restrictions, linked documents.",
+  },
+  {
+    id: "wp20-appendices",
+    title: "Приложения и референсы",
+    role: "Глоссарий, формулы, таблицы, адреса, схемы",
+    notes: "Согласовать список приложений: glossary, formulas, event glossary, permissions matrix, audit links, dashboards, changelog.",
+  },
+  {
+    id: "wp20-missing-inputs",
+    title: "Missing inputs / backlog",
+    role: "Что нужно закрыть перед наполнением",
+    notes: "Согласовать открытые вопросы по smart-contract, Smart Cycle, off-chain партнёрке, безопасности, legal и источникам истины.",
+  },
+];
+
+const whitePaper20Blocks = WHITE_PAPER_20_SECTIONS.map((section, index) => ({
+  id: section.id,
+  title: section.title,
+  sourceTitle: section.title,
+  sectionNumber: String(index + 1).padStart(2, "0"),
+  view: "whitepaper20",
+  role: section.role,
+  status: "Согласовать",
+  text: "",
+  notes: section.notes,
+}));
 function normalizeTitle(title) {
   return title.trim().replace(/\s+/g, " ");
 }
@@ -208,4 +343,4 @@ const archiveWhitePaperBlocks = createWhitePaperBlocks(atlasWhitePaperArchiveMar
   coverNotes: "Обложка архивной рабочей версии v6.4. Это не чистовая публичная версия, а большая редакция для сверки.",
 });
 
-export const defaultWhitePaperBlocks = [...publicWhitePaperBlocks, ...archiveWhitePaperBlocks];
+export const defaultWhitePaperBlocks = [...publicWhitePaperBlocks, ...archiveWhitePaperBlocks, ...whitePaper20Blocks];

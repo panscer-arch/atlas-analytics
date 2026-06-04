@@ -5,9 +5,10 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v8";
 
-const BLOCK_STATUSES = ["Черновик", "На вычитке", "Готово", "Переписать"];
+const BLOCK_STATUSES = ["Согласовать", "Черновик", "На вычитке", "Готово", "Переписать"];
 const WHITE_PAPER_VIEWS = [
   { id: "document", label: "Документ" },
+  { id: "whitepaper20", label: "WhitePaper 2.0" },
   { id: "manifest", label: "Манифест" },
   { id: "archive", label: "Архив v6.4" },
 ];
@@ -33,12 +34,20 @@ function normalizeBlock(block, index = 0) {
   };
 }
 
+function mergeDefaultBlocks(savedBlocks = []) {
+  const savedIds = new Set(savedBlocks.map((block) => block.id));
+  const missingDefaults = defaultWhitePaperBlocks
+    .filter((block) => !savedIds.has(block.id))
+    .map(normalizeBlock);
+  return [...savedBlocks.map(normalizeBlock), ...missingDefaults];
+}
+
 function readStoredBlocks() {
   if (typeof window === "undefined") return defaultWhitePaperBlocks;
 
   try {
     const saved = window.localStorage.getItem(WHITE_PAPER_STORAGE_KEY);
-    return saved ? JSON.parse(saved).map(normalizeBlock) : defaultWhitePaperBlocks;
+    return saved ? mergeDefaultBlocks(JSON.parse(saved)) : defaultWhitePaperBlocks;
   } catch {
     return defaultWhitePaperBlocks;
   }
@@ -84,7 +93,11 @@ function WhitePaperBoard() {
     let isMounted = true;
 
     loadServerContent(WHITE_PAPER_STORAGE_KEY).then((savedBlocks) => {
-      if (isMounted && Array.isArray(savedBlocks)) setBlocks(savedBlocks.map(normalizeBlock));
+      if (isMounted && Array.isArray(savedBlocks)) {
+        const mergedBlocks = mergeDefaultBlocks(savedBlocks);
+        setBlocks(mergedBlocks);
+        if (mergedBlocks.length !== savedBlocks.length) persistBlocks(mergedBlocks);
+      }
       if (isMounted && !Array.isArray(savedBlocks) && !hasStoredBlocks()) persistBlocks(defaultWhitePaperBlocks);
     });
 
@@ -138,6 +151,7 @@ function WhitePaperBoard() {
   function addBlock() {
     const defaultsByView = {
       document: { title: "Новый блок White Paper", role: "Рабочий раздел" },
+      whitepaper20: { title: "Новый блок WhitePaper 2.0", role: "Структурный раздел" },
       manifest: { title: "Новый блок манифеста", role: "Манифест" },
       archive: { title: "Новый блок архива v6.4", role: "Архив v6.4" },
     };
@@ -163,7 +177,7 @@ function WhitePaperBoard() {
           <span className="analytics-kicker">White Paper</span>
           <h2 className="analytics-agent-template-title">White Paper: публичная версия</h2>
           <p className="analytics-page-subtitle">
-            Чистая версия для чтения и сверки. Большая старая редакция v6.4 вынесена отдельно, чтобы можно было спокойно вычитывать и переносить сильные блоки.
+            Чистая версия для чтения и сверки. В WhitePaper 2.0 собираем новую структуру без наполнения: сначала согласуем каркас, затем будем заполнять блоки постепенно.
           </p>
         </div>
         <div className="analytics-agent-template-review-actions">
