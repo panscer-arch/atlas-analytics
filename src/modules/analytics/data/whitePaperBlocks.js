@@ -288,6 +288,121 @@ This document is a working draft unless expressly marked as a final public relea
     id: "wp20-verification",
     title: "Transparency and Independent Verification",
     role: "Как проверить Atlas независимо",
+    text: `Transparency Center
+
+Verify. Study. Make your own conclusions.
+
+Atlas is built around the principle of maximum practical transparency. Trust should not be based on marketing statements alone. Trust should be based on an open understanding of how the system works, which parts can be independently verified, which parts are operated by the project team, and which risks remain with the participant.
+
+This section summarizes the current transparency model of Atlas, including the protocol status, system architecture, automated processes, team-operated components, administrative functions, the Transport mechanism, key risks and the ways a participant can independently verify information.
+
+System Status
+
+Protocol version: Atlas Core V1
+Network: BNB Smart Chain
+Status: Active version
+Smart contracts: intended to be open for independent review through official contract registry and blockchain explorer references
+
+Atlas Architecture
+
+Atlas is composed of several components that perform different roles within the system:
+
+- Smart Cycle;
+- referral / partner program;
+- status system;
+- community voting and DAO-inspired mechanics;
+- infrastructure services.
+
+Each component has its own function and interacts with other parts of the system according to defined rules. Atlas should not be described as a fully decentralized system in its current version. It is more accurate to describe Atlas Core V1 as a hybrid Web3 architecture with an on-chain Smart Cycle layer and off-chain service layers.
+
+Automated Processes
+
+The following processes are intended to be performed by software logic without manual intervention by the project team:
+
+- creation of cycles;
+- recording of cycle parameters;
+- execution of cycle conditions according to the relevant logic;
+- calculation of displayed indicators;
+- recording of blockchain operations;
+- formation of the participant's operation history.
+
+After a cycle is created, its recorded conditions should not be changed retroactively. Participants should verify the actual transaction, contract interaction and recorded parameters through the official interface and blockchain explorer before relying on any displayed information.
+
+Team-Operated Components
+
+Atlas does not claim that all parts of the current system are fully decentralized or fully autonomous. To maintain, operate and improve the platform, some functions require participation by the project team or authorized infrastructure.
+
+These functions may include:
+
+- platform development;
+- infrastructure maintenance;
+- protocol or interface updates;
+- partner program administration;
+- organization of community voting processes;
+- technical support;
+- publication and maintenance of official documentation.
+
+This distinction is important. The on-chain layer may provide independently inspectable contract interactions, while off-chain components may require operational controls, reconciliation, monitoring and support processes.
+
+Administrative Functions and System Permissions
+
+The current version of Atlas may contain administrative or permissioned functions that are required for infrastructure operation. Some actions may be performed only by authorized system addresses.
+
+Such functions may be used for:
+
+- operation and maintenance of the partner program;
+- infrastructure support;
+- system updates;
+- implementation of decisions approved through community or governance-related processes;
+- technical actions required to maintain system continuity.
+
+All material administrative permissions, privileged addresses, upgrade rights, emergency powers, Transport-related controls and other system-level functions should be disclosed through the official contract registry, technical appendix, access-control matrix or live documentation before public release.
+
+Transport Mechanism
+
+Atlas Core V1 uses a dedicated mechanism referred to as Transport.
+
+The Transport mechanism may be used for:
+
+- servicing the partner program;
+- distributing partner rewards;
+- supporting selected infrastructure processes.
+
+Transport is part of the first-version Atlas architecture and should be treated as a conscious engineering decision rather than hidden decentralization. The purpose, limits, authorized addresses, operational rules and risk implications of Transport should be described in the technical appendix and contract registry.
+
+Why This Architecture Was Chosen
+
+The Atlas team considered different ways to implement the partner program and related operational logic. A fully on-chain implementation of every referral and partner-program process may significantly increase contract complexity, transaction costs, attack surface and the risk of technical errors.
+
+For Atlas Core V1, the selected architecture aims to balance automation, scalability, cost efficiency and operational maintainability. This design choice also creates trust boundaries that must be clearly disclosed: some parts may be verified directly on-chain, while some parts must be evaluated through published rules, backend records, reconciliation, official documentation and operational controls.
+
+Key Risks
+
+Each participant should understand the following points before taking any action:
+
+- participation is voluntary;
+- provided support is not a bank deposit;
+- return of support is not guaranteed;
+- additional support / delta is not guaranteed;
+- Atlas is not an investment product;
+- the participant independently decides whether to participate;
+- smart-contract, blockchain, liquidity, backend, administrative, legal and user-error risks may exist;
+- off-chain referral and infrastructure layers introduce additional operational trust assumptions.
+
+Independent Verification
+
+Each participant or external reviewer should be able to verify, where applicable:
+
+- smart-contract addresses;
+- transaction history;
+- cycle parameters;
+- movement of funds;
+- community voting history;
+- system changes and version history;
+- official links and current document version;
+- the boundary between on-chain evidence and off-chain operational records.
+
+Atlas should not ask participants to rely only on the words of the team. Atlas should provide an open description of its architecture, rules, permissions, risks and key mechanisms so that each participant can study the project independently and make their own decision.`,
     notes: "Согласовать: contract registry, explorer links, verified source, events, public dashboards, sample tx hashes, what cannot be verified on-chain.",
   },
   {
