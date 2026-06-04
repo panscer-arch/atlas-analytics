@@ -1,24 +1,47 @@
+const reviewRoles = [
+  {
+    role: "Project",
+    verdict: "Сделать страницу доверия, а не страницу обещаний.",
+    note: "Показываем процесс проверки, статус этапов и следующие действия. Не используем формулировки, которые выглядят как завершенный аудит.",
+  },
+  {
+    role: "Security",
+    verdict: "Разделить внешний взлом и owner-полномочия.",
+    note: "Для пользователя это разные риски: один относится к коду, второй к архитектуре управления. В интерфейсе они должны идти отдельно.",
+  },
+  {
+    role: "Marketing",
+    verdict: "Говорить просто и уверенно, без перегруза терминами.",
+    note: "Сначала объясняем: что проверяется и зачем. Технические инструменты показываем как подтверждение процесса, а не как главный текст.",
+  },
+  {
+    role: "Design",
+    verdict: "Сделать блок похожим на публичный trust-center.",
+    note: "Больше воздуха, статусы, акценты, карточки, четкая иерархия. Меньше ощущения внутренней таблицы для разработчиков.",
+  },
+];
+
 const securityChecks = [
-  ["Access Control", "Claim чужого ордера должен быть невозможен. Owner-функции отдельно раскрываются как архитектурные полномочия.", "В ручном review прямой публичный claim чужого ордера не выявлен."],
-  ["Reentrancy", "Пользовательские lockup/claim используют nonReentrant. Transport нужно привести к такому же стандарту.", "Добавить nonReentrant в Transport.claimReferral."],
-  ["Claim Logic", "Проверить, что пользователь не может вывести больше расчетной суммы по своему ордеру.", "Нужны Foundry invariant tests и fuzzing."],
-  ["Transport Logic", "Referral-claim вызывается owner-адресом, а не произвольным пользователем.", "Публично описать как административный модуль исполнения."],
-  ["LP / Pancake V3", "Вывод зависит от LP-position, tick, liquidity и collect/decreaseLiquidity.", "Нужны slippage/min-output правила и мониторинг позиции."],
-  ["Owner Powers", "Treasury, fee и tokenId меняются owner-функциями.", "Рекомендуется multisig/timelock и события изменений."],
+  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "Первичный review"],
+  ["Reentrancy", "Проверяем повторные вызовы и сценарии, где внешний контракт пытается вмешаться в выполнение операции.", "В работе"],
+  ["Claim Logic", "Проверяем, что пользователь не может запросить больше суммы, разрешенной правилами выбранного цикла.", "Нужны инварианты"],
+  ["Transport Logic", "Отдельно описываем административный модуль исполнения и границы его полномочий.", "Раскрыть публично"],
+  ["LP / Pancake V3", "Проверяем зависимость выплат от LP-position, ликвидности, tick-диапазона и правил вывода.", "Нужен stress-test"],
+  ["Owner Powers", "Фиксируем, какие параметры может менять владелец, и какие меры контроля нужны: multisig, timelock, события.", "Risk disclosure"],
 ];
 
 const publicTexts = [
   {
-    title: "Короткая публичная формулировка",
-    text: "Atlas System отдельно проверяет безопасность кода и отдельно раскрывает архитектурные полномочия системы. Пользовательские claim-операции защищены проверкой владельца ордера, а ключевые пользовательские функции используют reentrancy-защиту.",
+    title: "Для главной страницы",
+    text: "Atlas System проходит многоэтапную проверку безопасности: автоматический анализ, ручной review, инвариантные тесты, fuzzing и тестирование в testnet. Мы отдельно показываем безопасность кода и отдельно раскрываем архитектурные полномочия системы.",
   },
   {
     title: "Для FAQ",
-    text: "Посторонний адрес не должен иметь возможность вызвать claim по чужому ордеру. Эта логика проверяется через access-control review, fuzzing, инвариантные тесты и тестнет-испытание.",
+    text: "Мы не называем систему абсолютно безрисковой. Вместо этого показываем, какие проверки уже запущены, какие зоны риска изучаются и какие дополнительные этапы должны быть завершены перед публичным статусом Security Review.",
   },
   {
-    title: "Про owner-полномочия",
-    text: "В системе есть административные функции и Transport-модуль. Это не внешний взлом, а управленческий риск, который должен быть описан отдельно и понятен участникам заранее.",
+    title: "Для лидеров и партнеров",
+    text: "Безопасность Atlas объясняется честно: внешний взлом, логика claim, ликвидность и административные полномочия рассматриваются отдельно. Это помогает не смешивать техническую защиту контракта и управленческие риски.",
   },
 ];
 
@@ -32,39 +55,69 @@ const forbiddenTexts = [
 ];
 
 const nextSteps = [
-  "Установить и прогнать Slither, Solhint, Aderyn/Mythril по финальной версии контрактов.",
-  "Подготовить Foundry-проект и invariant-тесты для UnityLockup, UnityDaily, Transport.",
-  "Проверить сценарии: 1000 пользователей, 50000 lockup, 100000 claim, random суммы и сроки.",
+  "Прогнать Aderyn/Mythril по финальной версии всех контрактов и сохранить отчеты.",
+  "Подготовить Foundry invariant-тесты для UnityLockup, UnityDaily и Transport.",
+  "Проверить сценарии: 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки.",
   "Запустить BNB Testnet battle test на 100-200 человек с bounty за воспроизводимый exploit.",
-  "Собрать публичный Security Review без слова Audited и отдельный документ owner-полномочий.",
+  "Собрать публичный Security Review и отдельный документ по owner-полномочиям.",
 ];
 
 const toolResults = [
-  ["Slither", "Запущен", "265 findings: большая часть шум по OZ/Pancake, важные сигналы — Transport reentrancy-events, uninitialized positionRewards, ignored return values, compiler warnings."],
-  ["Solhint", "Запущен", "371 warning/error: стиль, NatSpec, compiler-version, глобальные imports, gas-предупреждения. Нужна фильтрация внешних интерфейсов Pancake."],
-  ["Foundry build", "Пройден", "29 файлов собраны через solc 0.8.20, via_ir=true. Предупреждения: UnityDaily divide-before-multiply, UnityLockup block.timestamp."],
-  ["Mythril", "Пройден частично", "Transport проверен по bytecode в 60-секундном bounded run: success=true, issues=0. Для остальных контрактов нужен отдельный прогон."],
-  ["Invariant tests", "Следующий этап", "Нужно написать тесты на чужой claim, двойной claim, лимит Daily 200 периодов, owner-only Transport и корректный учет выплат."],
+  ["Slither", "Запущен", "Автоматический анализ выявил зоны для ручной проверки: Transport-события, return values, compiler warnings и места, где нужен явный контроль логики."],
+  ["Solhint", "Запущен", "Проверка качества Solidity-кода: стиль, NatSpec, версии компилятора, imports и gas-предупреждения. Отдельно фильтруются внешние библиотеки."],
+  ["Foundry build", "Пройден", "Проект собирается через solc 0.8.20 с via_ir=true. Предупреждения вынесены в технический review."],
+  ["Mythril", "Пройден частично", "Transport проверен по bytecode в ограниченном прогоне: success=true, issues=0. Остальные контракты идут следующим этапом."],
+  ["Invariant tests", "Следующий этап", "Нужны тесты на чужой claim, двойной claim, лимит Daily, owner-only Transport и корректный учет выплат."],
 ];
 
 function SecurityReviewBoard() {
   return (
     <section className="analytics-surface analytics-security-review">
-      <div className="analytics-data-table-head">
-        <div>
-          <span className="analytics-kicker">Security Review</span>
-          <h2 className="analytics-agent-template-title">Безопасность smart-contract Atlas</h2>
-          <p className="analytics-page-subtitle">
-            Рабочая вкладка для проверки взломоустойчивости, owner-полномочий, Transport-логики, LP-рисков и публичных формулировок. Не внешний аудит и не статус Audited.
+      <div className="analytics-security-hero">
+        <div className="analytics-security-hero-copy">
+          <span className="analytics-kicker">Security Review in progress</span>
+          <h2>Безопасность Atlas System уже запущена в работу</h2>
+          <p>
+            Мы собираем доказательную базу по смарт-контрактам: автоматический анализ, ручная вычитка,
+            проверка claim-логики, owner-полномочий, Transport-модуля, LP-рисков и будущих testnet-сценариев.
           </p>
+          <div className="analytics-security-status-row">
+            <span>Не аудит</span>
+            <span>Не гарантия дохода</span>
+            <span>Публичный процесс проверки</span>
+          </div>
         </div>
+        <div className="analytics-security-score-card" aria-label="Статус проверки">
+          <div className="analytics-security-score-top">
+            <span>Current Status</span>
+            <small>V1</small>
+          </div>
+          <strong>Review started</strong>
+          <p>Собраны первые автоотчеты и карта рисков. Следующий этап — invariant tests, fuzzing и testnet battle test.</p>
+          <div className="analytics-security-progress-list" aria-label="Этапы проверки">
+            <em>Auto tools</em>
+            <em>Manual review</em>
+            <em>Invariant tests</em>
+            <em>Testnet battle</em>
+          </div>
+        </div>
+      </div>
+
+      <div className="analytics-security-role-grid">
+        {reviewRoles.map((item) => (
+          <article key={item.role} className="analytics-security-role-card">
+            <span>{item.role}</span>
+            <h3>{item.verdict}</h3>
+            <p>{item.note}</p>
+          </article>
+        ))}
       </div>
 
       <div className="analytics-security-hero-grid">
         <article className="analytics-security-hero-card">
           <span>Вопрос 1</span>
           <h3>Может ли посторонний украсть деньги?</h3>
-          <p>Это проверка кода: access control, claim logic, reentrancy, арифметика, DoS, внешние вызовы и fuzzing.</p>
+          <p>Это проверка кода: права доступа, claim-логика, reentrancy, арифметика, DoS, внешние вызовы и fuzzing.</p>
         </article>
         <article className="analytics-security-hero-card">
           <span>Вопрос 2</span>
@@ -74,7 +127,10 @@ function SecurityReviewBoard() {
       </div>
 
       <div className="analytics-security-section">
-        <h3>Проверяемые блоки</h3>
+        <div className="analytics-security-section-head">
+          <span>01</span>
+          <h3>Что именно проверяем</h3>
+        </div>
         <div className="analytics-security-check-grid">
           {securityChecks.map(([title, description, status]) => (
             <article key={title} className="analytics-security-check-card">
@@ -87,7 +143,10 @@ function SecurityReviewBoard() {
       </div>
 
       <div className="analytics-security-section">
-        <h3>Авто-инструменты</h3>
+        <div className="analytics-security-section-head">
+          <span>02</span>
+          <h3>Авто-инструменты</h3>
+        </div>
         <div className="analytics-security-check-grid">
           {toolResults.map(([title, status, description]) => (
             <article key={title} className="analytics-security-check-card">
@@ -100,7 +159,10 @@ function SecurityReviewBoard() {
       </div>
 
       <div className="analytics-security-section">
-        <h3>Публичные формулировки</h3>
+        <div className="analytics-security-section-head">
+          <span>03</span>
+          <h3>Как говорить публично</h3>
+        </div>
         <div className="analytics-security-public-grid">
           {publicTexts.map((item) => (
             <article key={item.title} className="analytics-security-public-card">
@@ -113,13 +175,19 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section analytics-security-two-columns">
         <div>
-          <h3>Нельзя писать</h3>
+          <div className="analytics-security-section-head">
+            <span>04</span>
+            <h3>Нельзя писать</h3>
+          </div>
           <div className="analytics-security-tags">
             {forbiddenTexts.map((text) => <span key={text}>{text}</span>)}
           </div>
         </div>
         <div>
-          <h3>Следующие шаги</h3>
+          <div className="analytics-security-section-head">
+            <span>05</span>
+            <h3>Следующие шаги</h3>
+          </div>
           <ol className="analytics-security-steps">
             {nextSteps.map((step) => <li key={step}>{step}</li>)}
           </ol>
