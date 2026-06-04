@@ -10838,6 +10838,41 @@
   line-height: 1;
 }
 
+.analytics-security-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+.analytics-security-hero-actions a,
+.analytics-security-doc-card a {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 123, 0, 0.32);
+  background: linear-gradient(135deg, #ff7a00, #ffc331);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 950;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: 0 12px 24px rgba(255, 122, 0, 0.16);
+}
+
+.analytics-security-hero-actions a {
+  min-height: 2.6rem;
+  padding: 0.72rem 0.95rem;
+}
+
+.analytics-security-hero-actions a + a {
+  background: rgba(255, 255, 255, 0.72);
+  color: #ad4a00;
+  box-shadow: none;
+}
+
 .analytics-security-score-card {
   display: grid;
   align-content: space-between;
@@ -10918,8 +10953,134 @@
 
 .analytics-security-role-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+.analytics-security-doc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.analytics-security-doc-card {
+  display: grid;
+  gap: 0.7rem;
+  min-height: 260px;
+  align-content: space-between;
+  border: 1px solid rgba(255, 139, 26, 0.26);
+  border-radius: 22px;
+  padding: 1.05rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 244, 229, 0.88)),
+    radial-gradient(circle at 92% 0%, rgba(255, 122, 0, 0.13), transparent 34%);
+  box-shadow: 0 16px 42px rgba(72, 31, 0, 0.08);
+}
+
+.analytics-security-doc-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+
+.analytics-security-doc-top span,
+.analytics-security-doc-top small {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.35rem 0.58rem;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.analytics-security-doc-top span {
+  background: rgba(255, 123, 0, 0.1);
+  color: #e46300;
+}
+
+.analytics-security-doc-top small {
+  background: rgba(42, 12, 0, 0.06);
+  color: rgba(42, 12, 0, 0.64);
+  text-align: right;
+}
+
+.analytics-security-doc-card h4 {
+  margin: 0;
+  color: #2a0c00;
+  font-size: 1.22rem;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.analytics-security-doc-card p {
+  margin: 0;
+  color: rgba(42, 12, 0, 0.68);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.analytics-security-doc-card a {
+  min-height: 2.35rem;
+  padding: 0.64rem 0.82rem;
+}
+
+.analytics-security-verify-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.42fr) minmax(0, 0.58fr);
+  gap: 1rem;
+  border: 1px solid rgba(255, 139, 26, 0.22);
+  border-radius: 24px;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  background:
+    linear-gradient(135deg, rgba(42, 12, 0, 0.96), rgba(93, 33, 0, 0.92)),
+    radial-gradient(circle at 90% 12%, rgba(255, 148, 20, 0.28), transparent 34%);
+  box-shadow: 0 22px 58px rgba(42, 12, 0, 0.16);
+}
+
+.analytics-security-verify-panel h3 {
+  margin: 0.45rem 0 0;
+  color: #ffffff;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  line-height: 1.02;
+  font-weight: 950;
+}
+
+.analytics-security-verify-panel > div > p {
+  margin: 0.8rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.6;
+  font-weight: 650;
+}
+
+.analytics-security-verify-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.analytics-security-verify-steps article {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 0.9rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.analytics-security-verify-steps h4 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.analytics-security-verify-steps p {
+  margin: 0.45rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  font-size: 0.85rem;
+  font-weight: 650;
 }
 
 .analytics-security-hero-grid,
@@ -11046,6 +11207,17 @@
   line-height: 1.25;
 }
 
+.analytics-security-role-card small {
+  display: block;
+  border-top: 1px solid rgba(255, 139, 26, 0.16);
+  margin-top: 0.8rem;
+  padding-top: 0.75rem;
+  color: #d75f00;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  font-weight: 850;
+}
+
 .analytics-security-tags {
   display: flex;
   flex-wrap: wrap;
@@ -11145,6 +11317,9 @@
   .analytics-security-two-columns,
   .analytics-security-check-grid,
   .analytics-security-role-grid,
+  .analytics-security-doc-grid,
+  .analytics-security-verify-panel,
+  .analytics-security-verify-steps,
   .analytics-security-hero {
     grid-template-columns: 1fr;
   }

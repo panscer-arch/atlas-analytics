@@ -1,23 +1,109 @@
-const reviewRoles = [
+const documentCards = [
   {
-    role: "Project",
-    verdict: "Сделать страницу доверия, а не страницу обещаний.",
-    note: "Показываем процесс проверки, статус этапов и следующие действия. Не используем формулировки, которые выглядят как завершенный аудит.",
+    title: "Security Review V1",
+    type: "Документ",
+    status: "Готов к вычитке",
+    description: "Рабочий документ: взломоустойчивость, owner-полномочия, Transport, LP-риски и план проверки.",
+    href: "/security/atlas-security-review-v1-ru.md",
+    cta: "Открыть документ",
   },
   {
-    role: "Security",
+    title: "Public Security Text",
+    type: "Публичный текст",
+    status: "Для сайта / FAQ",
+    description: "Безопасные формулировки без слов Audited, 100% secure, guaranteed и других опасных обещаний.",
+    href: "/security/public-security-text-ru.md",
+    cta: "Открыть текст",
+  },
+  {
+    title: "Slither Report",
+    type: "Auto-analysis",
+    status: "Запущен",
+    description: "Машинный отчет Solidity-анализатора. Нужен security-специалисту для ручной фильтрации сигналов.",
+    href: "/security/slither-report.json",
+    cta: "Скачать JSON",
+  },
+  {
+    title: "Solhint Report",
+    type: "Code quality",
+    status: "Запущен",
+    description: "Предупреждения по стилю, NatSpec, imports, compiler-version и технической гигиене Solidity-кода.",
+    href: "/security/solhint-report.txt",
+    cta: "Открыть отчет",
+  },
+  {
+    title: "Mythril Transport",
+    type: "Bytecode check",
+    status: "Частично пройден",
+    description: "Ограниченный прогон Transport bytecode: success=true, issues=0. Не заменяет полный аудит.",
+    href: "/security/mythril-transport.json",
+    cta: "Открыть результат",
+  },
+  {
+    title: "Review Index",
+    type: "Навигация",
+    status: "Для команды",
+    description: "Короткий индекс: какой файл зачем нужен и что уже можно показывать внутри команды.",
+    href: "/security/security-review-index-ru.md",
+    cta: "Открыть индекс",
+  },
+];
+
+const verificationSteps = [
+  {
+    title: "1. Открыть рабочий review",
+    text: "Начать с Security Review V1: там видно, какие риски относятся к внешнему взлому, а какие к архитектуре управления.",
+  },
+  {
+    title: "2. Сверить автоотчеты",
+    text: "Slither и Solhint показывают сигналы, но их нельзя публиковать как вывод без ручной фильтрации security-специалистом.",
+  },
+  {
+    title: "3. Проверить claim-сценарии",
+    text: "Главные тесты: чужой claim, двойной claim, превышение разрешенной суммы, owner-only Transport и корректность учета выплат.",
+  },
+  {
+    title: "4. Зафиксировать публичный статус",
+    text: "Пока писать только Security Review in progress. Статус Audited можно использовать только после внешнего аудита.",
+  },
+];
+
+const reviewRoles = [
+  {
+    role: "Project Lead",
+    verdict: "Собрать процесс в понятную дорожную карту.",
+    note: "Страница должна отвечать на вопрос: что уже сделано, что проверяется сейчас, какие документы есть и какой следующий шаг.",
+    action: "Оставить visible-статусы: готово, в работе, следующий этап.",
+  },
+  {
+    role: "Security Expert",
     verdict: "Разделить внешний взлом и owner-полномочия.",
     note: "Для пользователя это разные риски: один относится к коду, второй к архитектуре управления. В интерфейсе они должны идти отдельно.",
+    action: "Добавить invariant/fuzzing как обязательный следующий слой.",
+  },
+  {
+    role: "Content",
+    verdict: "Сделать понятным для новичка.",
+    note: "Сначала человеческий смысл: проверяем, может ли посторонний вмешаться, и какие полномочия есть у владельца. Термины объяснять ниже.",
+    action: "В публичных блоках избегать слов, которые звучат как гарантия.",
+  },
+  {
+    role: "Legal",
+    verdict: "Не обещать безопасность и доходность.",
+    note: "Корректная позиция: процесс проверки запущен, отчеты доступны, часть этапов еще в работе. Не писать guarantee, risk-free, audited.",
+    action: "Отдельно закрепить дисклеймер для сайта и презентаций.",
   },
   {
     role: "Marketing",
-    verdict: "Говорить просто и уверенно, без перегруза терминами.",
-    note: "Сначала объясняем: что проверяется и зачем. Технические инструменты показываем как подтверждение процесса, а не как главный текст.",
+    verdict: "Превратить security в доверие, а не страх.",
+    note: "Показываем зрелость: мы не прячем риски, а раскладываем их по полкам и фиксируем процесс проверки.",
+    action: "Для сайта сделать короткий блок и кнопку Подробнее.",
   },
   {
     role: "Design",
-    verdict: "Сделать блок похожим на публичный trust-center.",
-    note: "Больше воздуха, статусы, акценты, карточки, четкая иерархия. Меньше ощущения внутренней таблицы для разработчиков.",
+    verdict: "Дать пользователю понятные действия.",
+    note: "Не только текстовые карточки: нужны кнопки, документы, статусы, прогресс и путь проверки.",
+    action: "Документы вывести сразу после hero, до технических деталей.",
   },
 ];
 
@@ -86,6 +172,10 @@ function SecurityReviewBoard() {
             <span>Не гарантия дохода</span>
             <span>Публичный процесс проверки</span>
           </div>
+          <div className="analytics-security-hero-actions">
+            <a href="/security/atlas-security-review-v1-ru.md" target="_blank" rel="noreferrer">Открыть Security Review</a>
+            <a href="/security/security-review-index-ru.md" target="_blank" rel="noreferrer">Индекс документов</a>
+          </div>
         </div>
         <div className="analytics-security-score-card" aria-label="Статус проверки">
           <div className="analytics-security-score-top">
@@ -103,12 +193,52 @@ function SecurityReviewBoard() {
         </div>
       </div>
 
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
+          <span>00</span>
+          <h3>Документы и отчеты</h3>
+        </div>
+        <div className="analytics-security-doc-grid">
+          {documentCards.map((item) => (
+            <article key={item.title} className="analytics-security-doc-card">
+              <div className="analytics-security-doc-top">
+                <span>{item.type}</span>
+                <small>{item.status}</small>
+              </div>
+              <h4>{item.title}</h4>
+              <p>{item.description}</p>
+              <a href={item.href} target="_blank" rel="noreferrer">{item.cta}</a>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-verify-panel">
+        <div>
+          <span className="analytics-kicker">How to verify</span>
+          <h3>Как проверить, что работа по безопасности реально идет</h3>
+          <p>
+            Не просим верить на слово: открываются документы, отчеты авто-инструментов и список следующих тестов.
+            Финальный публичный статус появится только после дополнительных проверок.
+          </p>
+        </div>
+        <div className="analytics-security-verify-steps">
+          {verificationSteps.map((item) => (
+            <article key={item.title}>
+              <h4>{item.title}</h4>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+
       <div className="analytics-security-role-grid">
         {reviewRoles.map((item) => (
           <article key={item.role} className="analytics-security-role-card">
             <span>{item.role}</span>
             <h3>{item.verdict}</h3>
             <p>{item.note}</p>
+            <small>{item.action}</small>
           </article>
         ))}
       </div>
