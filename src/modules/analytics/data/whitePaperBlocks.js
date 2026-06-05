@@ -294,6 +294,8 @@ Verify. Study. Make your own conclusions.
 
 Atlas is built around the principle of maximum practical transparency. Trust should not be based on marketing statements alone. Trust should be based on an open understanding of how the system works, which parts can be independently verified, which parts are operated by the project team, and which risks remain with the participant.
 
+For smart-contract security, Atlas should use a machine-readable report plus human-readable explanation model. First, the project shows which program was used to check the contract. Second, it publishes what the program returned. Third, it explains how a participant or specialist can repeat the check independently. Fourth, it translates the technical output into plain language so a non-technical participant can understand what the finding means and what it does not mean.
+
 This section summarizes the current transparency model of Atlas, including the protocol status, system architecture, automated processes, team-operated components, administrative functions, the Transport mechanism, key risks and the ways a participant can independently verify information.
 
 System Status

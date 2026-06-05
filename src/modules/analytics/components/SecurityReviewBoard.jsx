@@ -115,6 +115,45 @@ const reviewRoles = [
   },
 ];
 
+const programEvidence = [
+  {
+    program: "Slither",
+    status: "Отчет получен",
+    report: "/security/slither-report.json",
+    command: "slither . --solc-remaps @openzeppelin=node_modules/@openzeppelin --via-ir --optimize --json slither-report.json",
+    output: "Программа выдала 265 findings. Основные сигналы для ручной проверки: Transport-события, return values, compiler warnings, LP/PositionHandler и отдельные места claim-логики.",
+    human:
+      "Это не означает, что код взломан. Это означает: автоматическая программа нашла места, которые security-специалист обязан проверить руками. Самое важное для обычного человека: чужой claim проверяется отдельно от owner-полномочий.",
+  },
+  {
+    program: "Foundry build",
+    status: "Сборка пройдена",
+    report: "/security/code-safety-summary-ru.md",
+    command: "forge build",
+    output: "Проект собран через solc 0.8.20, via_ir=true. Контракты компилируются, критической ошибки сборки нет.",
+    human:
+      "Это базовая техническая проверка: код можно собрать как смарт-контракт. Это еще не аудит, но без успешной сборки дальнейшая проверка безопасности невозможна.",
+  },
+  {
+    program: "Mythril",
+    status: "Transport проверен частично",
+    report: "/security/mythril-transport.json",
+    command: "myth analyze -f transport-bytecode.hex --execution-timeout 60 --max-depth 22 --no-onchain-data -o json",
+    output: "Для Transport bytecode программа вернула success=true, issues=0 в ограниченном 60-секундном прогоне.",
+    human:
+      "В этом конкретном ограниченном прогоне Mythril не нашел exploit в Transport. Это хороший сигнал, но не финальное доказательство безопасности всех контрактов.",
+  },
+  {
+    program: "Solhint",
+    status: "Отчет получен",
+    report: "/security/solhint-report.txt",
+    command: "solhint 'contracts/**/*.sol' > solhint-report.txt",
+    output: "Программа выдала предупреждения по стилю, NatSpec, imports, compiler-version и технической гигиене Solidity-кода.",
+    human:
+      "Это проверка качества кода. Она не отвечает напрямую на вопрос 'украдут ли деньги', но помогает привести код к стандарту, чтобы security-review был чище и понятнее.",
+  },
+];
+
 const safetyClaims = [
   {
     title: "Чужой claim закрыт проверкой владельца",
@@ -272,7 +311,40 @@ function SecurityReviewBoard() {
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
           <span>01</span>
-          <h3>Что именно делает код безопаснее</h3>
+          <h3>Что выдала программа и как это читать</h3>
+        </div>
+        <div className="analytics-security-program-grid">
+          {programEvidence.map((item) => (
+            <article key={item.program} className="analytics-security-program-card">
+              <div className="analytics-security-program-head">
+                <div>
+                  <span>Программа</span>
+                  <h4>{item.program}</h4>
+                </div>
+                <small>{item.status}</small>
+              </div>
+              <div className="analytics-security-program-command">
+                <strong>Как повторить проверку</strong>
+                <code>{item.command}</code>
+              </div>
+              <div className="analytics-security-program-output">
+                <strong>Что выдала программа</strong>
+                <p>{item.output}</p>
+              </div>
+              <div className="analytics-security-program-human">
+                <strong>Перевод на человеческий язык</strong>
+                <p>{item.human}</p>
+              </div>
+              <a href={item.report} target="_blank" rel="noreferrer">Открыть отчет</a>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
+          <span>02</span>
+          <h3>Перевод кода на обычный язык</h3>
         </div>
         <div className="analytics-security-claim-grid">
           {safetyClaims.map((item) => (
@@ -300,7 +372,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>02</span>
+          <span>03</span>
           <h3>Документы и отчеты для проверки</h3>
         </div>
         <div className="analytics-security-doc-grid">
@@ -363,7 +435,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>03</span>
+          <span>04</span>
           <h3>Техническая карта проверки</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -379,7 +451,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>04</span>
+          <span>05</span>
           <h3>Авто-инструменты</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -395,7 +467,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>05</span>
+          <span>06</span>
           <h3>Как говорить публично</h3>
         </div>
         <div className="analytics-security-public-grid">
@@ -411,7 +483,7 @@ function SecurityReviewBoard() {
       <div className="analytics-security-section analytics-security-two-columns">
         <div>
           <div className="analytics-security-section-head">
-            <span>06</span>
+            <span>07</span>
             <h3>Нельзя писать</h3>
           </div>
           <div className="analytics-security-tags">
@@ -420,7 +492,7 @@ function SecurityReviewBoard() {
         </div>
         <div>
           <div className="analytics-security-section-head">
-            <span>07</span>
+            <span>08</span>
             <h3>Следующие шаги</h3>
           </div>
           <ol className="analytics-security-steps">
