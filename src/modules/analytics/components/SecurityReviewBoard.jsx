@@ -154,6 +154,45 @@ const programEvidence = [
   },
 ];
 
+const externalTrustGaps = [
+  {
+    title: "Публичный репозиторий",
+    status: "Нужно опубликовать",
+    why: "Без исходного кода внешний человек не сможет самостоятельно прогнать Slither, Foundry или Mythril и сверить наши выводы.",
+    next: "Добавить ссылку на GitHub / verified source до публичного статуса.",
+  },
+  {
+    title: "Адрес deployed-контракта",
+    status: "Нужно указать",
+    why: "Пользователь должен иметь возможность открыть контракт в BscScan и убедиться, что проверяемый код соответствует работающей версии.",
+    next: "Добавить contract registry: network, address, explorer, version, date.",
+  },
+  {
+    title: "Полные прогоны Mythril / Aderyn",
+    status: "В работе",
+    why: "Сейчас Mythril показан только для Transport в ограниченном прогоне. Для сильного вывода нужны отчеты по финальной версии всех контрактов.",
+    next: "Опубликовать полные отчеты и короткий human-readable summary.",
+  },
+  {
+    title: "Invariant tests и fuzzing",
+    status: "Следующий этап",
+    why: "Именно эти тесты доказывают сценарии: чужой claim, двойной claim, превышение суммы, owner-only Transport и корректный учет выплат.",
+    next: "Добавить Foundry tests, сценарии и результаты прогонов.",
+  },
+  {
+    title: "Owner control policy",
+    status: "Раскрыть отдельно",
+    why: "Owner-полномочия — это не внешний взлом, но это важный архитектурный риск. Нужны multisig/timelock или честное раскрытие текущей модели.",
+    next: "Опубликовать документ owner-полномочий: treasury, fee, tokenId, Transport.",
+  },
+  {
+    title: "Testnet battle test",
+    status: "Не проведен",
+    why: "Публичное testnet-испытание показывает, что сценарии проверяются не только командой, но и внешними участниками.",
+    next: "Запустить testnet challenge с правилами, bounty и отчетом по найденным проблемам.",
+  },
+];
+
 const safetyClaims = [
   {
     title: "Чужой claim закрыт проверкой владельца",
@@ -373,6 +412,29 @@ function SecurityReviewBoard() {
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
           <span>03</span>
+          <h3>Что нужно добавить для полного внешнего доверия</h3>
+        </div>
+        <div className="analytics-security-gap-grid">
+          {externalTrustGaps.map((item) => (
+            <article key={item.title} className="analytics-security-gap-card">
+              <div className="analytics-security-doc-top">
+                <span>{item.status}</span>
+                <small>external check</small>
+              </div>
+              <h4>{item.title}</h4>
+              <p>{item.why}</p>
+              <div>
+                <strong>Следующий шаг</strong>
+                <span>{item.next}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
+          <span>04</span>
           <h3>Документы и отчеты для проверки</h3>
         </div>
         <div className="analytics-security-doc-grid">
@@ -435,7 +497,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>04</span>
+          <span>05</span>
           <h3>Техническая карта проверки</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -451,7 +513,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>05</span>
+          <span>06</span>
           <h3>Авто-инструменты</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -467,7 +529,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>06</span>
+          <span>07</span>
           <h3>Как говорить публично</h3>
         </div>
         <div className="analytics-security-public-grid">
@@ -483,7 +545,7 @@ function SecurityReviewBoard() {
       <div className="analytics-security-section analytics-security-two-columns">
         <div>
           <div className="analytics-security-section-head">
-            <span>07</span>
+            <span>08</span>
             <h3>Нельзя писать</h3>
           </div>
           <div className="analytics-security-tags">
@@ -492,7 +554,7 @@ function SecurityReviewBoard() {
         </div>
         <div>
           <div className="analytics-security-section-head">
-            <span>08</span>
+            <span>09</span>
             <h3>Следующие шаги</h3>
           </div>
           <ol className="analytics-security-steps">

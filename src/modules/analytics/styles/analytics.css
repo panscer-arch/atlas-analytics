@@ -11215,6 +11215,60 @@
   font-weight: 650;
 }
 
+.analytics-security-gap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.analytics-security-gap-card {
+  display: grid;
+  gap: 0.72rem;
+  align-content: start;
+  border: 1px solid rgba(155, 74, 0, 0.18);
+  border-radius: 22px;
+  padding: 1rem;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 243, 0.92)),
+    radial-gradient(circle at 0% 0%, rgba(255, 123, 0, 0.1), transparent 34%);
+  box-shadow: 0 16px 40px rgba(72, 31, 0, 0.07);
+}
+
+.analytics-security-gap-card h4 {
+  margin: 0;
+  color: #2a0c00;
+  font-size: 1.12rem;
+  line-height: 1.18;
+  font-weight: 950;
+}
+
+.analytics-security-gap-card p {
+  margin: 0;
+  color: rgba(42, 12, 0, 0.68);
+  line-height: 1.52;
+  font-weight: 650;
+}
+
+.analytics-security-gap-card > div:last-child {
+  display: grid;
+  gap: 0.35rem;
+  border-top: 1px solid rgba(255, 139, 26, 0.15);
+  padding-top: 0.7rem;
+}
+
+.analytics-security-gap-card > div:last-child strong {
+  color: #d75f00;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.analytics-security-gap-card > div:last-child span {
+  color: rgba(42, 12, 0, 0.62);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
 .analytics-security-doc-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -11580,6 +11634,7 @@
   .analytics-security-program-grid,
   .analytics-security-claim-grid,
   .analytics-security-trust-ladder,
+  .analytics-security-gap-grid,
   .analytics-security-verify-panel,
   .analytics-security-verify-steps,
   .analytics-security-hero {
