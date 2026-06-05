@@ -37,43 +37,46 @@ Date: 2026-06-05
 10. Foundry Daily/Transport Stress Report
    Human-readable отчет: Daily Flow на 1000 пользователей / 5000 ордеров / 10000 claim-попыток и Transport на 1000 owner-claim / 1000 non-owner попыток.
 
-11. Aderyn Reports
+11. Foundry Accounting Invariants Report
+   Human-readable и машинный отчет: Lockup, Daily и Transport accounting checks по user net payout, treasury fee и amountUnclaimed delta.
+
+12. Aderyn Reports
    Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
 
-12. Testnet Battle Test Plan RU
+13. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-13. Testnet Battle Kit RU
+14. Testnet Battle Kit RU
    Рабочий комплект для запуска BNB Testnet Battle Test: условия, порядок запуска, публичные формулировки и границы статуса.
 
-14. Testnet Contract Registry Template
+15. Testnet Contract Registry Template
    JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
 
-15. Testnet Deployment Runbook RU
+16. Testnet Deployment Runbook RU
    Технический порядок testnet deployment: env-переменные, Pancake V3 tokenId, `forge create`, generated registry и smoke-check.
 
-16. Testnet Deploy Script
+17. Testnet Deploy Script
    Bash-скрипт для deploy `UnityLockup`, `UnityDaily` и `Transport` на BNB Testnet.
 
-17. Testnet Env Template
+18. Testnet Env Template
    Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
 
-18. Testnet Smoke Test Runbook RU
+19. Testnet Smoke Test Runbook RU
    Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.
 
-19. Testnet Smoke Test Script
+20. Testnet Smoke Test Script
    Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.
 
-20. Testnet Participant Guide RU
+21. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-21. Testnet Bug Report Template RU
+22. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-22. Testnet Final Report Template RU
+23. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-23. Mythril Results
+24. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
@@ -86,7 +89,7 @@ Date: 2026-06-05
    Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам.
 
 2. Foundry access-control tests — частично сделано.
-   Foundry suite пройден: 9/9. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test, Daily stress-test и Transport stress-test пройдены в mock-окружении. LP-testnet и финальные invariant-тесты по экономической модели еще нужно расширить.
+   Foundry suite пройден: 12/12. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test, Daily stress-test, Transport stress-test и accounting invariant checks пройдены в mock-окружении. LP-testnet еще нужно расширить на реальной testnet-ликвидности.
 
 3. Большой fuzzing / stress-сценарии — частично сделано.
    Lockup stress, Daily stress и Transport stress пройдены локально в mock-окружении. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.

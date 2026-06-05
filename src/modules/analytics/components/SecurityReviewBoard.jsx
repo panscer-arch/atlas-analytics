@@ -56,6 +56,14 @@ const documentCards = [
     cta: "Открыть отчет",
   },
   {
+    title: "Accounting Invariants",
+    type: "Invariant tests",
+    status: "3/3 пройдено",
+    description: "Lockup, Daily и Transport accounting: user net payout, treasury fee и изменение amountUnclaimed проверены Foundry.",
+    href: "/security/foundry-accounting-invariants-report-ru.md",
+    cta: "Открыть отчет",
+  },
+  {
     title: "Aderyn Core Report",
     type: "Static analysis",
     status: "Запущен",
@@ -305,12 +313,12 @@ const programEvidence = [
   },
   {
     program: "Foundry tests",
-    status: "9/9, fuzz до 1000 runs",
+    status: "12/12, fuzz до 1000 runs",
     report: "/security/foundry-access-control-report-ru.md",
     command: "forge test -vv",
-    output: "Пройдены 9 тестов: access-control/fuzz, Lockup stress, Daily stress и Transport stress в mock-окружении.",
+    output: "Пройдены 12 тестов: access-control/fuzz, Lockup stress, Daily stress, Transport stress и accounting invariant checks в mock-окружении.",
     human:
-      "Это подтверждает базовую защиту доступа и массовые mock-сценарии: чужой человек не может выполнить claim за другого пользователя, повторные claim блокируются, а административный Transport закрыт owner-проверкой.",
+      "Это подтверждает базовую защиту доступа, массовые mock-сценарии и базовый учет выплат: чужой claim блокируется, повторные claim блокируются, Transport закрыт owner-проверкой, user/treasury суммы сходятся.",
   },
   {
     program: "Aderyn",
@@ -353,9 +361,9 @@ const externalTrustGaps = [
   },
   {
     title: "Invariant tests и fuzzing",
-    status: "Stress mock расширен",
-    why: "Foundry проверил чужой claim, повторный claim, owner-only Transport, 2 fuzz-сценария с 1000 runs, Lockup stress, Daily stress и Transport stress. Общий suite: 9/9.",
-    next: "Расширить проверку на реальную Pancake V3 testnet-ликвидность и финальные invariant-тесты по экономической модели.",
+    status: "Mock invariants пройдены",
+    why: "Foundry проверил чужой claim, повторный claim, owner-only Transport, 2 fuzz-сценария с 1000 runs, Lockup/Daily/Transport stress и accounting invariants. Общий suite: 12/12.",
+    next: "Расширить проверку на реальную Pancake V3 testnet-ликвидность и публичный BNB Testnet battle.",
   },
   {
     title: "Owner control policy",
@@ -417,14 +425,14 @@ const safetyClaims = [
 ];
 
 const trustLadder = [
-  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Foundry suite 9/9, fuzz 1000 runs и mock stress-сценарии пройдены."],
+  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Foundry suite 12/12, fuzz 1000 runs, mock stress и accounting invariants пройдены."],
   ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты, Aderyn, Mythril, Foundry fuzz и локальный stress-test собраны, Testnet Battle Kit подготовлен, но публичный battle еще не проведен."],
   ["Нельзя говорить сейчас", "Нельзя писать Audited, 100% secure, невозможно взломать, выплаты гарантированы или участие без риска."],
   ["Что даст сильный статус", "Invariant tests, fuzzing, testnet battle test и отдельный документ по owner-полномочиям."],
 ];
 
 const securityChecks = [
-  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "9/9 Foundry"],
+  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "12/12 Foundry"],
   ["Reentrancy", "Проверяем повторные вызовы и сценарии, где внешний контракт пытается вмешаться в выполнение операции.", "В работе"],
   ["Claim Logic", "Проверяем, что пользователь не может запросить больше суммы, разрешенной правилами выбранного цикла.", "Нужны инварианты"],
   ["Transport Logic", "Отдельно описываем административный модуль исполнения и границы его полномочий.", "Раскрыть публично"],
@@ -465,7 +473,7 @@ const completionItems = [
   {
     status: "Частично",
     title: "Foundry tests / invariant-тесты",
-    text: "Foundry suite пройден: 9/9, включая 2 fuzz-сценария. Отдельный прогон с 1000 fuzz-runs пройден. Lockup, Daily и Transport stress пройдены в mock-окружении. LP-testnet и финальные invariant-тесты по экономической модели еще нужно расширить.",
+    text: "Foundry suite пройден: 12/12, включая 2 fuzz-сценария, Lockup/Daily/Transport stress и accounting invariant checks. Отдельный прогон с 1000 fuzz-runs пройден. LP-testnet еще нужно расширить на реальной testnet-ликвидности.",
   },
   {
     status: "Пройдено mock",
@@ -490,9 +498,9 @@ const toolResults = [
   ["Foundry build", "Пройден", "Проект собирается через solc 0.8.20 с via_ir=true. Предупреждения вынесены в технический review."],
   ["Mythril", "Bounded-прогон", "Transport, UnityLockup, UnityDaily и PositionHandler проверены по bytecode в ограниченном режиме: success=true, issues=[]."],
   ["Aderyn", "Запущен", "Core-прогон дал 2 High и 6 Low сигналов для ручной проверки; подготовлен перевод на человеческий язык."],
-  ["Foundry access-control", "9/9 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport, 2 fuzz-сценария и stress-тесты Lockup/Daily/Transport."],
+  ["Foundry access-control", "12/12 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport, 2 fuzz-сценария, stress-тесты Lockup/Daily/Transport и accounting invariant checks."],
   ["Foundry stress", "Пройдено mock", "Lockup: 1000 users / 50000 orders / 100000 claims. Daily: 1000 users / 5000 orders / 10000 claims. Transport: 1000 owner claims / 1000 non-owner attempts."],
-  ["Invariant tests", "Следующий этап", "Нужны расширенные тесты на массовые сценарии, случайные суммы, сроки, Daily-лимиты и корректный учет выплат."],
+  ["Accounting invariants", "3/3 пройдено", "Проверены user net payout, treasury fee и amountUnclaimed delta для Lockup, Daily и Transport в mock-окружении."],
 ];
 
 function SecurityReviewBoard() {

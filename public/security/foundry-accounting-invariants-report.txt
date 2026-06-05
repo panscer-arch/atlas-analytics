@@ -1,0 +1,8 @@
+Ran 3 tests for test/AtlasAccountingInvariants.t.sol:AtlasAccountingInvariantsTest
+[PASS] testDailyAccountingInvariantOneDayClaimPaysNetRewardAndFee() (gas: 325804)
+[PASS] testLockupAccountingInvariantUserReceivesNetAndTreasuryReceivesFee() (gas: 345745)
+[PASS] testTransportAccountingInvariantOwnerClaimPaysNetAndFee() (gas: 96059)
+Suite result: ok. 3 passed; 0 failed; 0 skipped.
+
+Full suite after adding accounting tests:
+Ran 4 test suites: 12 tests passed, 0 failed, 0 skipped.

@@ -52,5 +52,4 @@ Ran 3 test suites: 9 tests passed, 0 failed, 0 skipped.
 - BNB Testnet Battle Test;
 - проверку на реальной testnet LP / Pancake V3 позиции;
 - внешний аудит;
-- финальные invariant-тесты по всей экономической модели.
-
+- accounting invariant checks выполнены отдельно; остаются BNB Testnet deployment, реальные Pancake V3 testnet транзакции, внешний аудит и публичный battle test.

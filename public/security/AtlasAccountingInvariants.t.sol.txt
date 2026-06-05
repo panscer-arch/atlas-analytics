@@ -1,0 +1,200 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "../contracts/IUnityDaily.sol";
+import "../contracts/IUnityLockup.sol";
+import "../contracts/Transport.sol";
+import "../contracts/UnityDaily.sol";
+import "../contracts/UnityLockup.sol";
+
+interface VmAccounting {
+    function prank(address) external;
+    function startPrank(address) external;
+    function stopPrank() external;
+    function warp(uint256) external;
+    function mockCall(address callee, bytes calldata data, bytes calldata returnData) external;
+}
+
+contract AtlasAccountingMockToken {
+    string public constant name = "Mock USDT";
+    string public constant symbol = "mUSDT";
+    uint8 public constant decimals = 18;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        require(balanceOf[from] >= amount, "balance");
+        uint256 allowed = allowance[from][msg.sender];
+        require(allowed >= amount, "allowance");
+        allowance[from][msg.sender] = allowed - amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+}
+
+contract AtlasAccountingInvariantsTest {
+    VmAccounting private constant vm = VmAccounting(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    address private constant NFPM = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
+    address private constant FACTORY = 0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865;
+    address private constant POOL = address(0xBEEF);
+    address private constant OTHER_TOKEN = address(0xCAFE);
+
+    uint256 private constant TOKEN_ID = 1;
+    uint256 private constant PRECISION = 10 ** 25;
+    uint256 private constant PLATFORM_FEE = PRECISION / 10;
+    uint256 private constant AMOUNT = 100 ether;
+    uint256 private constant LOCKUP_REWARD = 0.03 ether;
+    uint256 private constant DAILY_REWARD = 1.1 ether;
+    uint256 private constant TRANSPORT_AMOUNT = 10 ether;
+
+    address private user = address(0xA11CE);
+    address private treasury = address(0xCA5);
+
+    AtlasAccountingMockToken private token;
+    UnityLockup private lockup;
+    UnityDaily private daily;
+    Transport private transport;
+
+    function setUp() public {
+        token = new AtlasAccountingMockToken();
+        _mockPancakePosition(AMOUNT);
+
+        lockup = new UnityLockup(treasury, PLATFORM_FEE, address(token), TOKEN_ID);
+        daily = new UnityDaily(treasury, PLATFORM_FEE, address(token), TOKEN_ID);
+        transport = new Transport(treasury, PLATFORM_FEE, address(token), TOKEN_ID);
+    }
+
+    function testLockupAccountingInvariantUserReceivesNetAndTreasuryReceivesFee() public {
+        uint256 grossEarned = AMOUNT + LOCKUP_REWARD;
+        uint256 fee = (LOCKUP_REWARD * PLATFORM_FEE) / PRECISION;
+        uint256 userExpected = grossEarned - fee;
+
+        _createLockupOrder();
+        _mockWithdraw(grossEarned);
+        token.mint(address(lockup), LOCKUP_REWARD);
+
+        vm.warp(block.timestamp + 2 minutes);
+        vm.prank(user);
+        lockup.claim(0);
+
+        require(token.balanceOf(user) == userExpected, "wrong lockup user payout");
+        require(token.balanceOf(treasury) == fee, "wrong lockup treasury fee");
+        require(token.balanceOf(user) + token.balanceOf(treasury) == grossEarned, "wrong lockup total payout");
+    }
+
+    function testDailyAccountingInvariantOneDayClaimPaysNetRewardAndFee() public {
+        uint256 fee = (DAILY_REWARD * PLATFORM_FEE) / PRECISION;
+        uint256 userExpected = DAILY_REWARD - fee;
+
+        _createDailyOrder();
+        IUnityDaily.OrderInfoView memory beforeClaim = daily.getOrder(0);
+        _mockWithdraw(DAILY_REWARD);
+
+        vm.warp(block.timestamp + 1 days + 1);
+        vm.prank(user);
+        daily.claim(0);
+
+        IUnityDaily.OrderInfoView memory afterClaim = daily.getOrder(0);
+        require(token.balanceOf(user) == userExpected, "wrong daily user payout");
+        require(token.balanceOf(treasury) == fee, "wrong daily treasury fee");
+        require(beforeClaim.amountUnclaimed - afterClaim.amountUnclaimed == DAILY_REWARD, "wrong daily unclaimed delta");
+    }
+
+    function testTransportAccountingInvariantOwnerClaimPaysNetAndFee() public {
+        uint256 fee = (TRANSPORT_AMOUNT * PLATFORM_FEE) / PRECISION;
+        uint256 userExpected = TRANSPORT_AMOUNT - fee;
+
+        _mockWithdraw(TRANSPORT_AMOUNT);
+        token.mint(address(transport), TRANSPORT_AMOUNT);
+
+        transport.claimReferral(user, TRANSPORT_AMOUNT);
+
+        require(token.balanceOf(user) == userExpected, "wrong transport user payout");
+        require(token.balanceOf(treasury) == fee, "wrong transport treasury fee");
+        require(token.balanceOf(user) + token.balanceOf(treasury) == TRANSPORT_AMOUNT, "wrong transport total payout");
+    }
+
+    function _createLockupOrder() private {
+        token.mint(user, AMOUNT);
+        vm.startPrank(user);
+        token.approve(address(lockup), AMOUNT);
+        lockup.lockup(AMOUNT, IUnityLockup.UnityLockupTier.Launch);
+        vm.stopPrank();
+    }
+
+    function _createDailyOrder() private {
+        token.mint(user, AMOUNT);
+        vm.startPrank(user);
+        token.approve(address(daily), AMOUNT);
+        daily.lockup(AMOUNT);
+        vm.stopPrank();
+    }
+
+    function _mockPancakePosition(uint256 amountOut) private {
+        bytes memory position = abi.encode(
+            uint96(0),
+            address(0),
+            address(token),
+            OTHER_TOKEN,
+            uint24(2500),
+            int24(100),
+            int24(200),
+            uint128(1_000_000),
+            uint256(0),
+            uint256(0),
+            uint128(0),
+            uint128(0)
+        );
+
+        vm.mockCall(NFPM, abi.encodeWithSignature("positions(uint256)", TOKEN_ID), position);
+        vm.mockCall(
+            FACTORY,
+            abi.encodeWithSignature("getPool(address,address,uint24)", address(token), OTHER_TOKEN, uint24(2500)),
+            abi.encode(POOL)
+        );
+        vm.mockCall(
+            POOL,
+            abi.encodeWithSignature("slot0()"),
+            abi.encode(uint160(1 << 96), int24(50), uint16(0), uint16(0), uint16(0), uint32(0), true)
+        );
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(
+                bytes4(keccak256("increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))"))
+            ),
+            abi.encode(uint128(1), amountOut, uint256(0))
+        );
+    }
+
+    function _mockWithdraw(uint256 amountOut) private {
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))"))),
+            abi.encode(amountOut, uint256(0))
+        );
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("collect((uint256,address,uint128,uint128))"))),
+            abi.encode(amountOut, uint256(0))
+        );
+    }
+}

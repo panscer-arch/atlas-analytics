@@ -92,6 +92,18 @@ Status: рабочая публичная версия для вычитки
 >
 > Transport выдержал массовый mock-сценарий: owner-вызовы прошли, а 1000 попыток посторонних адресов были отклонены owner-проверкой.
 
+### Foundry accounting invariant checks
+
+Машинный вывод:
+
+> 3 tests passed; 0 failed; 0 skipped. Общий Foundry suite после добавления accounting tests: 12 tests passed; 0 failed; 0 skipped.
+
+Перевод:
+
+> Проверена базовая арифметика выплат: в Lockup, Daily и Transport пользователь получает net payout, treasury получает platform fee, а в Daily `amountUnclaimed` уменьшается на gross reward.
+>
+> Важно: тест использует code-level формулу контракта. Если публичные материалы обещают другую reward-логику, это нужно отдельно сверять как product/content mismatch.
+
 ### Aderyn
 
 Машинный вывод:
@@ -225,7 +237,7 @@ Status: рабочая публичная версия для вычитки
    Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам.
 
 2. Foundry access-control tests — частично сделано.
-   Foundry suite пройден: 9/9. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test, Daily stress-test и Transport stress-test пройдены в mock-окружении. LP-testnet и финальные invariant-тесты по экономической модели еще нужно расширить.
+   Foundry suite пройден: 12/12. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test, Daily stress-test, Transport stress-test и accounting invariant checks пройдены в mock-окружении. LP-testnet еще нужно расширить на реальной testnet-ликвидности.
 
 3. Большой fuzzing / stress-сценарии — частично сделано.
    Lockup stress: 1000 пользователей, 50000 lockup и 100000 claim-попыток. Daily stress: 1000 пользователей, 5000 Daily-ордеров и 10000 claim-попыток. Transport stress: 1000 owner-claim и 1000 non-owner попыток. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
