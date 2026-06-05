@@ -58,16 +58,22 @@ Date: 2026-06-05
 17. Testnet Env Template
    Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
 
-18. Testnet Participant Guide RU
+18. Testnet Smoke Test Runbook RU
+   Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.
+
+19. Testnet Smoke Test Script
+   Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.
+
+20. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-19. Testnet Bug Report Template RU
+21. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-20. Testnet Final Report Template RU
+22. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-21. Mythril Results
+23. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
@@ -86,7 +92,7 @@ Date: 2026-06-05
    Lockup stress, Daily stress и Transport stress пройдены локально в mock-окружении. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
 4. BNB Testnet battle test — подготовлено / не проведено.
-   Battle Kit, deployment runbook, env template, deploy script, registry template, participant guide, bug report template и final report template подготовлены. Публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
+   Battle Kit, deployment runbook, env template, deploy script, registry template, smoke-test runbook/script, participant guide, bug report template и final report template подготовлены. Публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
 
 5. Публичный Security Review и owner-документ — подготовлено.
    Публичный Security Review draft собран. Owner Powers Disclosure оформлен как отдельный документ для вычитки.

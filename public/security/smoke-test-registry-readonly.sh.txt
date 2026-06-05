@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${1:-$ROOT_DIR/.env.testnet}"
+REGISTRY_FILE="${2:-$ROOT_DIR/testnet-contract-registry.generated.json}"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing env file: $ENV_FILE" >&2
+  exit 1
+fi
+
+if [[ ! -f "$REGISTRY_FILE" ]]; then
+  echo "Missing registry file: $REGISTRY_FILE" >&2
+  exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
+
+if [[ -z "${BNB_TESTNET_RPC_URL:-}" ]]; then
+  echo "Missing BNB_TESTNET_RPC_URL" >&2
+  exit 1
+fi
+
+extract_address() {
+  local key="$1"
+  sed -n "/\"$key\"/,/}/s/.*\"address\": \"\\([^\"]*\\)\".*/\\1/p" "$REGISTRY_FILE" | head -1
+}
+
+LOCKUP_ADDRESS="$(extract_address UnityLockup)"
+DAILY_ADDRESS="$(extract_address UnityDaily)"
+TRANSPORT_ADDRESS="$(extract_address Transport)"
+
+require_code() {
+  local name="$1"
+  local address="$2"
+  local code
+  code="$(cast code "$address" --rpc-url "$BNB_TESTNET_RPC_URL")"
+  if [[ "$code" == "0x" ]]; then
+    echo "FAIL: $name has no bytecode at $address" >&2
+    exit 1
+  fi
+  echo "OK: $name bytecode exists at $address"
+}
+
+read_value() {
+  local name="$1"
+  local address="$2"
+  local signature="$3"
+  cast call "$address" "$signature" --rpc-url "$BNB_TESTNET_RPC_URL"
+}
+
+for pair in "UnityLockup:$LOCKUP_ADDRESS" "UnityDaily:$DAILY_ADDRESS" "Transport:$TRANSPORT_ADDRESS"; do
+  name="${pair%%:*}"
+  address="${pair#*:}"
+  if [[ -z "$address" ]]; then
+    echo "FAIL: missing $name address in registry" >&2
+    exit 1
+  fi
+  require_code "$name" "$address"
+done
+
+echo ""
+echo "UnityLockup"
+echo "  owner:       $(read_value UnityLockup "$LOCKUP_ADDRESS" 'owner()(address)')"
+echo "  treasury:    $(read_value UnityLockup "$LOCKUP_ADDRESS" 'treasury()(address)')"
+echo "  platformFee: $(read_value UnityLockup "$LOCKUP_ADDRESS" 'platformFee()(uint256)')"
+echo "  tokenId:     $(read_value UnityLockup "$LOCKUP_ADDRESS" 'tokenId()(uint256)')"
+echo "  nextOrderId: $(read_value UnityLockup "$LOCKUP_ADDRESS" 'nextOrderId()(uint256)')"
+
+echo ""
+echo "UnityDaily"
+echo "  owner:       $(read_value UnityDaily "$DAILY_ADDRESS" 'owner()(address)')"
+echo "  treasury:    $(read_value UnityDaily "$DAILY_ADDRESS" 'treasury()(address)')"
+echo "  platformFee: $(read_value UnityDaily "$DAILY_ADDRESS" 'platformFee()(uint256)')"
+echo "  tokenId:     $(read_value UnityDaily "$DAILY_ADDRESS" 'tokenId()(uint256)')"
+echo "  nextOrderId: $(read_value UnityDaily "$DAILY_ADDRESS" 'nextOrderId()(uint256)')"
+
+echo ""
+echo "Transport"
+echo "  owner:       $(read_value Transport "$TRANSPORT_ADDRESS" 'owner()(address)')"
+echo "  treasury:    $(read_value Transport "$TRANSPORT_ADDRESS" 'treasury()(address)')"
+echo "  platformFee: $(read_value Transport "$TRANSPORT_ADDRESS" 'platformFee()(uint256)')"
+echo "  tokenId:     $(read_value Transport "$TRANSPORT_ADDRESS" 'tokenId()(uint256)')"
+
+echo ""
+echo "Read-only smoke-test passed. Transaction smoke-test still required before public challenge."
+

@@ -36,7 +36,7 @@
 - Foundry Daily/Transport stress-test пройден: Daily 1000 пользователей, 5000 ордеров, 10000 claim-попыток; Transport 1000 owner-claim и 1000 non-owner попыток.
 - Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам; подготовлен human-readable summary.
 - Owner Powers Disclosure оформлен отдельным документом для вычитки.
-- BNB Testnet Battle Test пока не проведен. Подготовлены plan, Battle Kit, deployment runbook, env template, deploy script, registry template, participant guide, bug report template и final report template.
+- BNB Testnet Battle Test пока не проведен. Подготовлены plan, Battle Kit, deployment runbook, env template, deploy script, registry template, smoke-test runbook/script, participant guide, bug report template и final report template.
 
 ### Архитектурные риски
 

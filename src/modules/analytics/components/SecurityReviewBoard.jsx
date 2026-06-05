@@ -120,6 +120,22 @@ const documentCards = [
     cta: "Открыть env",
   },
   {
+    title: "Smoke Test Runbook",
+    type: "Runbook",
+    status: "Подготовлено",
+    description: "Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.",
+    href: "/security/testnet-smoke-test-runbook-ru.md",
+    cta: "Открыть smoke",
+  },
+  {
+    title: "Smoke Test Script",
+    type: "Script",
+    status: "Готов к запуску",
+    description: "Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.",
+    href: "/security/smoke-test-registry-readonly.sh.txt",
+    cta: "Открыть script",
+  },
+  {
     title: "Participant Guide",
     type: "Инструкция",
     status: "Подготовлено",
@@ -326,8 +342,8 @@ const externalTrustGaps = [
   {
     title: "Адрес deployed-контракта",
     status: "Runbook готов / ждет deployment",
-    why: "Пользователь должен иметь возможность открыть контракт в BscScan и убедиться, что проверяемый код соответствует работающей версии. Для этого подготовлены deployment runbook, env template, deploy script и registry template.",
-    next: "Заполнить `.env.testnet`, подготовить Pancake V3 testnet tokenId, развернуть контракты и заменить template на публичный registry с адресами.",
+    why: "Пользователь должен иметь возможность открыть контракт в BscScan и убедиться, что проверяемый код соответствует работающей версии. Для этого подготовлены deployment runbook, env template, deploy script, registry template и smoke-test kit.",
+    next: "Заполнить `.env.testnet`, подготовить Pancake V3 testnet tokenId, развернуть контракты, выполнить smoke-test и заменить template на публичный registry с адресами и tx hash.",
   },
   {
     title: "Полные прогоны Mythril / Aderyn",
@@ -459,7 +475,7 @@ const completionItems = [
   {
     status: "Подготовлено / не проведено",
     title: "BNB Testnet battle test",
-    text: "Battle Kit, deployment runbook, env template, deploy script, registry template, participant guide, bug report template и final report template подготовлены. Сам публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
+    text: "Battle Kit, deployment runbook, env template, deploy script, registry template, smoke-test runbook/script, participant guide, bug report template и final report template подготовлены. Сам публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
   },
   {
     status: "Подготовлено",

@@ -11,6 +11,8 @@
 - Deployment Runbook: `/security/testnet-deployment-runbook-ru.md`
 - Deploy Script: `/security/deploy-testnet-battle.sh.txt`
 - Env Template: `/security/testnet-env-example.txt`
+- Smoke Test Runbook: `/security/testnet-smoke-test-runbook-ru.md`
+- Smoke Test Script: `/security/smoke-test-registry-readonly.sh.txt`
 - Participant Guide: `/security/testnet-participant-guide-ru.md`
 - Bug Report Template: `/security/testnet-bug-report-template-ru.md`
 - Final Report Template: `/security/testnet-final-report-template-ru.md`

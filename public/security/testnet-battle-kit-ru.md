@@ -21,9 +21,11 @@ Testnet Battle Kit готов. Само публичное испытание б
 3. Deployment runbook — как развернуть testnet-контракты через Foundry.
 4. Env template — какие переменные нужны для BNB Testnet.
 5. Deploy script — технический скрипт `forge create`.
-6. Participant guide — инструкция для внешних участников.
-7. Bug report template — как подать воспроизводимый exploit-report.
-8. Final report template — как оформить итоги после завершения.
+6. Smoke-test runbook — как проверить deployment перед challenge.
+7. Smoke-test script — read-only проверка registry.
+8. Participant guide — инструкция для внешних участников.
+9. Bug report template — как подать воспроизводимый exploit-report.
+10. Final report template — как оформить итоги после завершения.
 
 ## Минимальные условия запуска
 
@@ -41,12 +43,14 @@ Testnet Battle Kit готов. Само публичное испытание б
 1. Развернуть testnet-контракты.
 2. Verify source code в explorer, если это технически возможно.
 3. Заполнить contract registry.
-4. Опубликовать ABI, адреса и правила challenge.
-5. Выдать участникам test tokens.
-6. Открыть прием отчетов.
-7. Принимать только воспроизводимые баги с tx hash и шагами.
-8. Провести triage: подтвердить, отклонить или запросить уточнение.
-9. После завершения опубликовать final report.
+4. Выполнить read-only smoke-test.
+5. Выполнить transaction smoke-test.
+6. Опубликовать ABI, адреса и правила challenge.
+7. Выдать участникам test tokens.
+8. Открыть прием отчетов.
+9. Принимать только воспроизводимые баги с tx hash и шагами.
+10. Провести triage: подтвердить, отклонить или запросить уточнение.
+11. После завершения опубликовать final report.
 
 ## Что проверяют участники
 
