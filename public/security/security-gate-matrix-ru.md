@@ -70,7 +70,8 @@ node scripts/verify-security-evidence.mjs
 | Owner powers disclosure | Draft подготовлен | `/security/owner-powers-disclosure-ru.md` | Утвердить policy: EOA / multisig / timelock / governance |
 | Public Security Review | Draft подготовлен | `/security/atlas-security-review-v1-ru.md` | Обновить после tariff decision, testnet deployment и battle |
 | Testnet Battle Plan | Подготовлено | `/security/testnet-battle-plan-ru.md` | Закрыть tariff gate и выполнить deployment |
-| Testnet Deployment Runbook | Подготовлено | `/security/testnet-deployment-runbook-ru.md` | Заполнить `.env.testnet`, подготовить Pancake V3 tokenId и deployer wallet |
+| Testnet Deployment Preflight | Выполнено на template, not-ready | `/security/testnet-preflight-output.json`, `/security/preflight-testnet-deployment.mjs.txt` | Заполнить реальные env-значения и закрыть tariff gate |
+| Testnet Deployment Runbook | Подготовлено | `/security/testnet-deployment-runbook-ru.md` | Заполнить `.env.testnet`, пройти preflight, подготовить Pancake V3 tokenId и deployer wallet |
 | Testnet Smoke Kit | Подготовлено | `/security/testnet-smoke-test-runbook-ru.md`, `/security/smoke-test-registry-readonly.sh.txt` | Выполнить после реального deployment |
 | Testnet Registry | Template подготовлен | `/security/testnet-contract-registry-template.json` | Заменить template на реальные адреса, tx hashes и explorer links |
 | BNB Testnet Battle Test | Не проведено | Есть kit и templates, но нет участников / tx / final report | Провести challenge 3-7 дней, собрать reports, triage, final report |

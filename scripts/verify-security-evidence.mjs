@@ -60,6 +60,14 @@ assert(
   "Daily tariff output must show current mismatch.",
 );
 
+const preflightOutputPath = path.join(root, "public/security/testnet-preflight-output.json");
+const preflightOutput = JSON.parse(fs.readFileSync(preflightOutputPath, "utf8"));
+assert(preflightOutput.status === "not-ready", "Testnet preflight output must remain not-ready until required deployment inputs are provided.");
+assert(
+  preflightOutput.errors.includes("Tariff gate is still open. Choose Option A or Option B before deployment."),
+  "Testnet preflight must block deployment while tariff gate is open.",
+);
+
 if (errors.length > 0) {
   console.error("Security evidence verification failed:");
   for (const error of errors) console.error(`- ${error}`);

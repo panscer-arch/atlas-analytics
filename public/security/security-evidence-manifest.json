@@ -11,7 +11,7 @@
   "summary": {
     "foundrySuite": "12 tests passed, 0 failed, 0 skipped",
     "tariffConsistency": "MISMATCH found",
-    "testnetDeployment": "not completed",
+    "testnetDeployment": "preflight not-ready",
     "testnetBattle": "not completed",
     "externalAudit": "not completed"
   },
@@ -125,10 +125,12 @@
         "/security/testnet-deployment-runbook-ru.md",
         "/security/deploy-testnet-battle.sh.txt",
         "/security/testnet-env-example.txt",
+        "/security/preflight-testnet-deployment.mjs.txt",
+        "/security/testnet-preflight-output.json",
         "/security/testnet-contract-registry-template.json",
         "/security/verify-testnet-registry.sh.txt"
       ],
-      "next": "Requires tariff gate decision, deployer wallet, testnet token, Pancake V3 tokenId, treasury address"
+      "next": "Preflight is not-ready: requires tariff gate decision, deployer wallet, testnet token, Pancake V3 tokenId, treasury address"
     },
     {
       "id": "testnet-smoke",

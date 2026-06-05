@@ -82,22 +82,25 @@ Date: 2026-06-05
 25. Testnet Env Template
    Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
 
-26. Testnet Smoke Test Runbook RU
+26. Testnet Preflight
+   Скрипт и JSON-output preflight-проверки перед deployment: обязательные env-переменные, формат адресов, tokenId, platformFee и открытый tariff gate.
+
+27. Testnet Smoke Test Runbook RU
    Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.
 
-27. Testnet Smoke Test Script
+28. Testnet Smoke Test Script
    Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.
 
-28. Testnet Participant Guide RU
+29. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-29. Testnet Bug Report Template RU
+30. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-30. Testnet Final Report Template RU
+31. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-31. Mythril Results
+32. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно

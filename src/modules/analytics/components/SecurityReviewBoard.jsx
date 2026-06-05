@@ -26,7 +26,7 @@ const documentCards = [
   {
     title: "Evidence Manifest",
     type: "Machine-readable",
-    status: "13 gates / 41 evidence",
+    status: "13 gates / 43 evidence",
     description: "JSON-manifest со статусами gates, evidence-ссылками и незакрытыми условиями: tariff decision, testnet deployment, battle и external audit.",
     href: "/security/security-evidence-manifest.json",
     cta: "Открыть manifest",
@@ -182,6 +182,14 @@ const documentCards = [
     description: "Шаблон `.env.testnet`: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.",
     href: "/security/testnet-env-example.txt",
     cta: "Открыть env",
+  },
+  {
+    title: "Testnet Preflight",
+    type: "Readiness check",
+    status: "not-ready",
+    description: "Проверка перед deployment: обязательные env-переменные, формат адресов, tokenId, platformFee и открытый tariff gate.",
+    href: "/security/testnet-preflight-output.json",
+    cta: "Открыть output",
   },
   {
     title: "Smoke Test Runbook",

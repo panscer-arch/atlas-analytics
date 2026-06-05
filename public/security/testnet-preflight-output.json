@@ -1,0 +1,21 @@
+{
+  "envFile": "public/security/testnet-env-example.txt",
+  "status": "not-ready",
+  "requiredValuesChecked": [
+    "BNB_TESTNET_RPC_URL",
+    "DEPLOYER_PRIVATE_KEY",
+    "MAIN_TOKEN_ADDRESS",
+    "PANCAKE_V3_TOKEN_ID",
+    "TESTNET_TREASURY_ADDRESS",
+    "PLATFORM_FEE"
+  ],
+  "errors": [
+    "Missing required env value: DEPLOYER_PRIVATE_KEY",
+    "Missing required env value: MAIN_TOKEN_ADDRESS",
+    "Missing required env value: PANCAKE_V3_TOKEN_ID",
+    "Missing required env value: TESTNET_TREASURY_ADDRESS",
+    "Tariff gate is still open. Choose Option A or Option B before deployment."
+  ],
+  "warnings": [],
+  "next": "Fix preflight errors before running deploy-testnet-battle.sh."
+}

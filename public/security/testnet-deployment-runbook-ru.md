@@ -33,6 +33,7 @@
 ## Файлы комплекта
 
 - `.env.testnet.example` — шаблон переменных.
+- `scripts/preflight-testnet-deployment.mjs` — preflight-проверка готовности `.env.testnet` и tariff gate перед deployment.
 - `scripts/deploy-testnet-battle.sh` — deploy `UnityLockup`, `UnityDaily`, `Transport` через `forge create`.
 - `scripts/verify-testnet-registry.sh` — проверка, что в registry адреса имеют bytecode.
 - `testnet-contract-registry.generated.json` — создается после успешного deploy.
@@ -43,20 +44,26 @@
 2. Создать testnet wallet и пополнить test BNB.
 3. Подготовить testnet token и Pancake V3 testnet NFT-position.
 4. Заполнить `.env.testnet`.
-5. Выполнить:
+5. Выполнить preflight:
+
+```text
+node scripts/preflight-testnet-deployment.mjs .env.testnet
+```
+
+6. Выполнить:
 
 ```text
 ./scripts/deploy-testnet-battle.sh
 ```
 
-6. Проверить registry:
+7. Проверить registry:
 
 ```text
 ./scripts/verify-testnet-registry.sh
 ```
 
-7. Перенести адреса из `testnet-contract-registry.generated.json` в публичный registry.
-8. Выполнить smoke-test транзакции:
+8. Перенести адреса из `testnet-contract-registry.generated.json` в публичный registry.
+9. Выполнить smoke-test транзакции:
    - Lockup create;
    - Daily create;
    - claim before time должен revert;
@@ -64,7 +71,7 @@
    - double claim должен revert;
    - non-owner claim должен revert;
    - Transport non-owner должен revert.
-9. Только после этого открывать challenge window.
+10. Только после этого открывать challenge window.
 
 ## Что считается закрытым после runbook
 
