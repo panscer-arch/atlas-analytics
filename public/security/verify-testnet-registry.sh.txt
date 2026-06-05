@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${1:-$ROOT_DIR/.env.testnet}"
+REGISTRY_FILE="${2:-$ROOT_DIR/testnet-contract-registry.generated.json}"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing env file: $ENV_FILE" >&2
+  exit 1
+fi
+
+if [[ ! -f "$REGISTRY_FILE" ]]; then
+  echo "Missing registry file: $REGISTRY_FILE" >&2
+  exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
+
+if [[ -z "${BNB_TESTNET_RPC_URL:-}" ]]; then
+  echo "Missing BNB_TESTNET_RPC_URL" >&2
+  exit 1
+fi
+
+extract_address() {
+  local key="$1"
+  sed -n "/\"$key\"/,/}/s/.*\"address\": \"\\([^\"]*\\)\".*/\\1/p" "$REGISTRY_FILE" | head -1
+}
+
+LOCKUP_ADDRESS="$(extract_address UnityLockup)"
+DAILY_ADDRESS="$(extract_address UnityDaily)"
+TRANSPORT_ADDRESS="$(extract_address Transport)"
+
+for pair in "UnityLockup:$LOCKUP_ADDRESS" "UnityDaily:$DAILY_ADDRESS" "Transport:$TRANSPORT_ADDRESS"; do
+  name="${pair%%:*}"
+  address="${pair#*:}"
+  if [[ -z "$address" ]]; then
+    echo "Missing address for $name in registry" >&2
+    exit 1
+  fi
+
+  code="$(cast code "$address" --rpc-url "$BNB_TESTNET_RPC_URL")"
+  if [[ "$code" == "0x" ]]; then
+    echo "$name has no bytecode at $address" >&2
+    exit 1
+  fi
+
+  echo "$name bytecode exists: $address"
+done
+
+echo "Registry deployment smoke-check passed."
+

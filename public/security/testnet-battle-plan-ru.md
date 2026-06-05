@@ -8,6 +8,9 @@
 
 - Battle Kit: `/security/testnet-battle-kit-ru.md`
 - Contract Registry Template: `/security/testnet-contract-registry-template.json`
+- Deployment Runbook: `/security/testnet-deployment-runbook-ru.md`
+- Deploy Script: `/security/deploy-testnet-battle.sh.txt`
+- Env Template: `/security/testnet-env-example.txt`
 - Participant Guide: `/security/testnet-participant-guide-ru.md`
 - Bug Report Template: `/security/testnet-bug-report-template-ru.md`
 - Final Report Template: `/security/testnet-final-report-template-ru.md`

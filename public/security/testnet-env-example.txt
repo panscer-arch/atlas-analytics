@@ -1,0 +1,21 @@
+# Atlas System BNB Testnet deployment environment.
+# Copy to .env.testnet and fill values locally. Do not commit real keys.
+
+BNB_TESTNET_RPC_URL=https://data-seed-prebsc-1-s1.bnbchain.org:8545
+DEPLOYER_PRIVATE_KEY=
+
+# Required: token used by the Pancake V3 testnet NFT position.
+# The contracts check that this token belongs to PANCAKE_V3_TOKEN_ID.
+MAIN_TOKEN_ADDRESS=
+
+# Required: existing Pancake V3 testnet NFT position id.
+# This must be created before Atlas contracts are deployed.
+PANCAKE_V3_TOKEN_ID=
+
+# Required project addresses.
+TESTNET_TREASURY_ADDRESS=
+PLATFORM_FEE=0
+
+# Optional explorer key for verification.
+BSCSCAN_API_KEY=
+

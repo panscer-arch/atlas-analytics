@@ -96,6 +96,30 @@ const documentCards = [
     cta: "Открыть JSON",
   },
   {
+    title: "Deployment Runbook",
+    type: "Runbook",
+    status: "Подготовлено",
+    description: "Технический порядок testnet deployment: env-переменные, Pancake V3 tokenId, forge create, registry и smoke-check.",
+    href: "/security/testnet-deployment-runbook-ru.md",
+    cta: "Открыть runbook",
+  },
+  {
+    title: "Deploy Script",
+    type: "Script",
+    status: "Готов к запуску",
+    description: "Bash-скрипт для deploy UnityLockup, UnityDaily и Transport на BNB Testnet через forge create.",
+    href: "/security/deploy-testnet-battle.sh.txt",
+    cta: "Открыть script",
+  },
+  {
+    title: "Env Template",
+    type: "Template",
+    status: "Подготовлено",
+    description: "Шаблон `.env.testnet`: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.",
+    href: "/security/testnet-env-example.txt",
+    cta: "Открыть env",
+  },
+  {
     title: "Participant Guide",
     type: "Инструкция",
     status: "Подготовлено",
@@ -301,9 +325,9 @@ const externalTrustGaps = [
   },
   {
     title: "Адрес deployed-контракта",
-    status: "Нужно указать",
-    why: "Пользователь должен иметь возможность открыть контракт в BscScan и убедиться, что проверяемый код соответствует работающей версии.",
-    next: "Добавить contract registry: network, address, explorer, version, date.",
+    status: "Runbook готов / ждет deployment",
+    why: "Пользователь должен иметь возможность открыть контракт в BscScan и убедиться, что проверяемый код соответствует работающей версии. Для этого подготовлены deployment runbook, env template, deploy script и registry template.",
+    next: "Заполнить `.env.testnet`, подготовить Pancake V3 testnet tokenId, развернуть контракты и заменить template на публичный registry с адресами.",
   },
   {
     title: "Полные прогоны Mythril / Aderyn",
@@ -327,7 +351,7 @@ const externalTrustGaps = [
     title: "Testnet battle test",
     status: "Kit готов / не проведен",
     why: "Публичное testnet-испытание показывает, что сценарии проверяются не только командой, но и внешними участниками.",
-    next: "Развернуть testnet-контракты, заполнить registry, выдать test tokens, открыть challenge window и после triage выпустить final report.",
+    next: "Запустить deployment runbook, заполнить registry, выдать test tokens, открыть challenge window и после triage выпустить final report.",
   },
 ];
 
@@ -435,7 +459,7 @@ const completionItems = [
   {
     status: "Подготовлено / не проведено",
     title: "BNB Testnet battle test",
-    text: "Battle Kit, registry template, participant guide, bug report template и final report template подготовлены. Сам публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
+    text: "Battle Kit, deployment runbook, env template, deploy script, registry template, participant guide, bug report template и final report template подготовлены. Сам публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
   },
   {
     status: "Подготовлено",

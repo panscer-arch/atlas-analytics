@@ -18,9 +18,12 @@ Testnet Battle Kit готов. Само публичное испытание б
 
 1. Deployment checklist — что нужно сделать перед запуском.
 2. Contract registry template — какие адреса и параметры публикуются.
-3. Participant guide — инструкция для внешних участников.
-4. Bug report template — как подать воспроизводимый exploit-report.
-5. Final report template — как оформить итоги после завершения.
+3. Deployment runbook — как развернуть testnet-контракты через Foundry.
+4. Env template — какие переменные нужны для BNB Testnet.
+5. Deploy script — технический скрипт `forge create`.
+6. Participant guide — инструкция для внешних участников.
+7. Bug report template — как подать воспроизводимый exploit-report.
+8. Final report template — как оформить итоги после завершения.
 
 ## Минимальные условия запуска
 
@@ -68,4 +71,3 @@ Testnet Battle Kit готов. Само публичное испытание б
 - `External users confirmed security`
 - `Bounty completed`
 - `Exploit impossible`
-

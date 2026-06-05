@@ -49,16 +49,25 @@ Date: 2026-06-05
 14. Testnet Contract Registry Template
    JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
 
-15. Testnet Participant Guide RU
+15. Testnet Deployment Runbook RU
+   Технический порядок testnet deployment: env-переменные, Pancake V3 tokenId, `forge create`, generated registry и smoke-check.
+
+16. Testnet Deploy Script
+   Bash-скрипт для deploy `UnityLockup`, `UnityDaily` и `Transport` на BNB Testnet.
+
+17. Testnet Env Template
+   Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
+
+18. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-16. Testnet Bug Report Template RU
+19. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-17. Testnet Final Report Template RU
+20. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-18. Mythril Results
+21. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
@@ -77,7 +86,7 @@ Date: 2026-06-05
    Lockup stress, Daily stress и Transport stress пройдены локально в mock-окружении. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
 4. BNB Testnet battle test — подготовлено / не проведено.
-   Battle Kit, registry template, participant guide, bug report template и final report template подготовлены. Публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
+   Battle Kit, deployment runbook, env template, deploy script, registry template, participant guide, bug report template и final report template подготовлены. Публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
 
 5. Публичный Security Review и owner-документ — подготовлено.
    Публичный Security Review draft собран. Owner Powers Disclosure оформлен как отдельный документ для вычитки.

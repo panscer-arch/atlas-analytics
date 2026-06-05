@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${1:-$ROOT_DIR/.env.testnet}"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing env file: $ENV_FILE" >&2
+  echo "Copy .env.testnet.example to .env.testnet and fill values." >&2
+  exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
+
+required_vars=(
+  BNB_TESTNET_RPC_URL
+  DEPLOYER_PRIVATE_KEY
+  MAIN_TOKEN_ADDRESS
+  PANCAKE_V3_TOKEN_ID
+  TESTNET_TREASURY_ADDRESS
+  PLATFORM_FEE
+)
+
+for name in "${required_vars[@]}"; do
+  if [[ -z "${!name:-}" ]]; then
+    echo "Missing required env value: $name" >&2
+    exit 1
+  fi
+done
+
+cd "$ROOT_DIR"
+
+echo "Building contracts..."
+forge build
+
+echo "Deploying UnityLockup..."
+LOCKUP_ADDRESS=$(
+  forge create contracts/UnityLockup.sol:UnityLockup \
+    --rpc-url "$BNB_TESTNET_RPC_URL" \
+    --private-key "$DEPLOYER_PRIVATE_KEY" \
+    --constructor-args "$TESTNET_TREASURY_ADDRESS" "$PLATFORM_FEE" "$MAIN_TOKEN_ADDRESS" "$PANCAKE_V3_TOKEN_ID" \
+    --json | sed -n 's/.*"deployedTo"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+)
+
+echo "Deploying UnityDaily..."
+DAILY_ADDRESS=$(
+  forge create contracts/UnityDaily.sol:UnityDaily \
+    --rpc-url "$BNB_TESTNET_RPC_URL" \
+    --private-key "$DEPLOYER_PRIVATE_KEY" \
+    --constructor-args "$TESTNET_TREASURY_ADDRESS" "$PLATFORM_FEE" "$MAIN_TOKEN_ADDRESS" "$PANCAKE_V3_TOKEN_ID" \
+    --json | sed -n 's/.*"deployedTo"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+)
+
+echo "Deploying Transport..."
+TRANSPORT_ADDRESS=$(
+  forge create contracts/Transport.sol:Transport \
+    --rpc-url "$BNB_TESTNET_RPC_URL" \
+    --private-key "$DEPLOYER_PRIVATE_KEY" \
+    --constructor-args "$TESTNET_TREASURY_ADDRESS" "$PLATFORM_FEE" "$MAIN_TOKEN_ADDRESS" "$PANCAKE_V3_TOKEN_ID" \
+    --json | sed -n 's/.*"deployedTo"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+)
+
+if [[ -z "$LOCKUP_ADDRESS" || -z "$DAILY_ADDRESS" || -z "$TRANSPORT_ADDRESS" ]]; then
+  echo "Deployment output did not include all contract addresses." >&2
+  exit 1
+fi
+
+REGISTRY_FILE="$ROOT_DIR/testnet-contract-registry.generated.json"
+DEPLOYMENT_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+GIT_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+cat > "$REGISTRY_FILE" <<EOF
+{
+  "status": "deployed-not-battle-tested",
+  "network": {
+    "name": "BNB Smart Chain Testnet",
+    "chainId": 97,
+    "rpcUrl": "$BNB_TESTNET_RPC_URL",
+    "explorer": "https://testnet.bscscan.com"
+  },
+  "version": "Atlas Testnet Battle V1",
+  "deploymentDate": "$DEPLOYMENT_DATE",
+  "gitCommit": "$GIT_COMMIT",
+  "contracts": {
+    "UnityLockup": {
+      "address": "$LOCKUP_ADDRESS",
+      "explorer": "https://testnet.bscscan.com/address/$LOCKUP_ADDRESS"
+    },
+    "UnityDaily": {
+      "address": "$DAILY_ADDRESS",
+      "explorer": "https://testnet.bscscan.com/address/$DAILY_ADDRESS"
+    },
+    "Transport": {
+      "address": "$TRANSPORT_ADDRESS",
+      "explorer": "https://testnet.bscscan.com/address/$TRANSPORT_ADDRESS"
+    }
+  },
+  "tokens": {
+    "mainToken": "$MAIN_TOKEN_ADDRESS"
+  },
+  "lp": {
+    "mode": "real-pancake-v3-testnet-position",
+    "tokenId": "$PANCAKE_V3_TOKEN_ID"
+  },
+  "adminValues": {
+    "treasury": "$TESTNET_TREASURY_ADDRESS",
+    "platformFee": "$PLATFORM_FEE"
+  },
+  "bounty": {
+    "status": "not-started"
+  }
+}
+EOF
+
+echo "Deployment registry written: $REGISTRY_FILE"
+echo "UnityLockup: $LOCKUP_ADDRESS"
+echo "UnityDaily: $DAILY_ADDRESS"
+echo "Transport: $TRANSPORT_ADDRESS"

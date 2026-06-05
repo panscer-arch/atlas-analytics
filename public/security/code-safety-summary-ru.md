@@ -231,7 +231,7 @@ Status: рабочая публичная версия для вычитки
    Lockup stress: 1000 пользователей, 50000 lockup и 100000 claim-попыток. Daily stress: 1000 пользователей, 5000 Daily-ордеров и 10000 claim-попыток. Transport stress: 1000 owner-claim и 1000 non-owner попыток. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
 4. BNB Testnet battle test — подготовлено / не проведено.
-   Battle Kit, contract registry template, participant guide, bug report template и final report template подготовлены. Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
+   Battle Kit, deployment runbook, env template, deploy script, contract registry template, participant guide, bug report template и final report template подготовлены. Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
 
 5. Публичный Security Review и owner-документ — подготовлено.
    Публичный Security Review draft собран. Owner Powers Disclosure оформлен как отдельный документ для вычитки.
