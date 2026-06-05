@@ -278,12 +278,32 @@ const forbiddenTexts = [
   "Risk-free participation",
 ];
 
-const nextSteps = [
-  "Прогнать Aderyn/Mythril по финальной версии всех контрактов и сохранить отчеты.",
-  "Подготовить Foundry invariant-тесты для UnityLockup, UnityDaily и Transport.",
-  "Проверить сценарии: 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки.",
-  "Запустить BNB Testnet battle test на 100-200 человек с bounty за воспроизводимый exploit.",
-  "Собрать публичный Security Review и отдельный документ по owner-полномочиям.",
+const completionItems = [
+  {
+    status: "Частично",
+    title: "Aderyn / Mythril по всем контрактам",
+    text: "Mythril прогнан только по Transport bytecode в ограниченном режиме. Aderyn и полный Mythril по UnityLockup, UnityDaily, Transport и PositionHandler еще не завершены.",
+  },
+  {
+    status: "Не сделано",
+    title: "Foundry invariant-тесты",
+    text: "Пока сделан build через Foundry. Invariant-тесты для UnityLockup, UnityDaily и Transport еще нужно написать и прогнать.",
+  },
+  {
+    status: "Не сделано",
+    title: "Большой fuzzing / stress-сценарии",
+    text: "Сценарии на 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки еще не прогонялись.",
+  },
+  {
+    status: "Не сделано",
+    title: "BNB Testnet battle test",
+    text: "Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
+  },
+  {
+    status: "Частично",
+    title: "Публичный Security Review и owner-документ",
+    text: "Публичный Security Review draft уже собран. Отдельный документ по owner-полномочиям еще нужно оформить отдельно.",
+  },
 ];
 
 const toolResults = [
@@ -555,11 +575,17 @@ function SecurityReviewBoard() {
         <div>
           <div className="analytics-security-section-head">
             <span>09</span>
-            <h3>Следующие шаги</h3>
+            <h3>Что еще не завершено</h3>
           </div>
-          <ol className="analytics-security-steps">
-            {nextSteps.map((step) => <li key={step}>{step}</li>)}
-          </ol>
+          <div className="analytics-security-completion-list">
+            {completionItems.map((item) => (
+              <article key={item.title}>
+                <span>{item.status}</span>
+                <h4>{item.title}</h4>
+                <p>{item.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

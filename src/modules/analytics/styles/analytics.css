@@ -11554,6 +11554,47 @@
   margin-top: 0.45rem;
 }
 
+.analytics-security-completion-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.analytics-security-completion-list article {
+  border: 1px solid rgba(255, 139, 26, 0.2);
+  border-radius: 18px;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 12px 28px rgba(72, 31, 0, 0.06);
+}
+
+.analytics-security-completion-list span {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.28rem 0.5rem;
+  background: rgba(255, 123, 0, 0.1);
+  color: #d75f00;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.analytics-security-completion-list h4 {
+  margin: 0.48rem 0 0;
+  color: #2a0c00;
+  font-size: 0.98rem;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.analytics-security-completion-list p {
+  margin: 0.35rem 0 0;
+  color: rgba(42, 12, 0, 0.66);
+  font-size: 0.86rem;
+  line-height: 1.48;
+  font-weight: 650;
+}
+
 @media (max-width: 767px) {
   .analytics-board-overlay {
     padding: 0.5rem;
