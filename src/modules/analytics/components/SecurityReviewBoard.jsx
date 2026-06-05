@@ -72,6 +72,14 @@ const documentCards = [
     cta: "Открыть review",
   },
   {
+    title: "Tariff Decision Packet",
+    type: "Action packet",
+    status: "Gate перед deployment",
+    description: "Практический пакет решения: править контракт под публичные тарифы или править материалы под фактический код, плюс чеклист повторных проверок.",
+    href: "/security/tariff-consistency-decision-packet-ru.md",
+    cta: "Открыть packet",
+  },
+  {
     title: "Aderyn Core Report",
     type: "Static analysis",
     status: "Запущен",
@@ -365,7 +373,7 @@ const externalTrustGaps = [
     title: "Product / contract consistency",
     status: "Требует решения",
     why: "Accounting invariant test подсветил расхождение: публичные Lockup тарифы в white paper в 10 раз выше текущей code-level формулы. Daily Flow также требует сверки публичных 0.6/0.8% с текущими 1.1/1.3% в коде.",
-    next: "До deployment выбрать источник истины: править контракт под публичные тарифы или править публичные материалы под код.",
+    next: "Открыть Tariff Decision Packet, выбрать источник истины, повторить проверки после правки и только потом переходить к deployment.",
   },
   {
     title: "Полные прогоны Mythril / Aderyn",
@@ -497,7 +505,7 @@ const completionItems = [
   {
     status: "Требует решения",
     title: "Product / Contract consistency",
-    text: "Найдено расхождение: публичные Lockup ставки в 10 раз выше текущей формулы UnityLockup; Daily публичные 0.6/0.8% отличаются от кода 1.1/1.3%. Нужно выбрать: править контракт или публичные материалы до deployment.",
+    text: "Найдено расхождение: публичные Lockup ставки в 10 раз выше текущей формулы UnityLockup; Daily публичные 0.6/0.8% отличаются от кода 1.1/1.3%. Подготовлен Tariff Decision Packet: команда должна выбрать, править контракт или публичные материалы, затем повторить проверки.",
   },
   {
     status: "Подготовлено / не проведено",

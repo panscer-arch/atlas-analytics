@@ -112,6 +112,8 @@ Status: рабочая публичная версия для вычитки
 
 Решение команды требуется до deployment: либо править контракт под публичные тарифы, либо править публичные материалы под контракт.
 
+Для закрытия этого пункта подготовлен отдельный decision packet: `/security/tariff-consistency-decision-packet-ru.md`.
+
 ### Aderyn
 
 Машинный вывод:
@@ -251,7 +253,7 @@ Status: рабочая публичная версия для вычитки
    Lockup stress: 1000 пользователей, 50000 lockup и 100000 claim-попыток. Daily stress: 1000 пользователей, 5000 Daily-ордеров и 10000 claim-попыток. Transport stress: 1000 owner-claim и 1000 non-owner попыток. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
 4. Product / contract consistency — требует решения.
-   Найдено x10 расхождение между публичными Lockup тарифами и текущей code-level формулой. Daily Flow также требует решения команды.
+   Найдено x10 расхождение между публичными Lockup тарифами и текущей code-level формулой. Daily Flow также требует решения команды. Следующий документ для команды: `/security/tariff-consistency-decision-packet-ru.md`.
 
 5. BNB Testnet battle test — подготовлено / не проведено.
    Battle Kit, deployment runbook, env template, deploy script, contract registry template, smoke-test runbook/script, participant guide, bug report template и final report template подготовлены. Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
