@@ -16,6 +16,14 @@ const documentCards = [
     cta: "Открыть summary",
   },
   {
+    title: "Security Gate Matrix",
+    type: "Status matrix",
+    status: "Рабочая карта",
+    description: "Единая матрица: какие проверки закрыты, какие только подготовлены, какие gates требуют решения перед deployment.",
+    href: "/security/security-gate-matrix-ru.md",
+    cta: "Открыть matrix",
+  },
+  {
     title: "Owner Powers Disclosure",
     type: "Risk disclosure",
     status: "Готов к вычитке",
