@@ -1,0 +1,196 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "../contracts/Transport.sol";
+import "../contracts/UnityDaily.sol";
+
+interface VmDailyTransportStress {
+    function prank(address) external;
+    function startPrank(address) external;
+    function stopPrank() external;
+    function warp(uint256) external;
+    function expectRevert(bytes calldata) external;
+    function expectRevert(bytes4) external;
+    function mockCall(address callee, bytes calldata data, bytes calldata returnData) external;
+    function pauseGasMetering() external;
+    function resumeGasMetering() external;
+}
+
+contract AtlasDailyTransportStressMockToken {
+    string public constant name = "Mock USDT";
+    string public constant symbol = "mUSDT";
+    uint8 public constant decimals = 18;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        require(balanceOf[from] >= amount, "balance");
+        uint256 allowed = allowance[from][msg.sender];
+        require(allowed >= amount, "allowance");
+        allowance[from][msg.sender] = allowed - amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+}
+
+contract AtlasDailyTransportStressTest {
+    VmDailyTransportStress private constant vm =
+        VmDailyTransportStress(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    address private constant NFPM = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
+    address private constant FACTORY = 0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865;
+    address private constant POOL = address(0xBEEF);
+    address private constant OTHER_TOKEN = address(0xCAFE);
+
+    uint256 private constant TOKEN_ID = 1;
+    uint256 private constant DAILY_USERS = 1_000;
+    uint256 private constant DAILY_ORDERS_PER_USER = 5;
+    uint256 private constant DAILY_TOTAL_ORDERS = DAILY_USERS * DAILY_ORDERS_PER_USER;
+    uint256 private constant DAILY_AMOUNT = 10 ether;
+    uint256 private constant DAILY_REWARD = 0.11 ether;
+
+    uint256 private constant TRANSPORT_CLAIMS = 1_000;
+    uint256 private constant TRANSPORT_AMOUNT = 5 ether;
+
+    AtlasDailyTransportStressMockToken private token;
+    UnityDaily private daily;
+    Transport private transport;
+
+    function setUp() public {
+        token = new AtlasDailyTransportStressMockToken();
+        _mockPancakePosition();
+        daily = new UnityDaily(address(0xCA5), 0, address(token), TOKEN_ID);
+        transport = new Transport(address(0xCA5), 0, address(token), TOKEN_ID);
+    }
+
+    function testStress1000Users5000DailyOrders10000ClaimAttempts() public {
+        vm.pauseGasMetering();
+
+        for (uint256 userIndex = 0; userIndex < DAILY_USERS; userIndex++) {
+            address user = _user(userIndex);
+            uint256 balance = DAILY_AMOUNT * DAILY_ORDERS_PER_USER;
+            token.mint(user, balance);
+
+            vm.startPrank(user);
+            token.approve(address(daily), balance);
+            for (uint256 orderIndex = 0; orderIndex < DAILY_ORDERS_PER_USER; orderIndex++) {
+                daily.lockup(DAILY_AMOUNT);
+            }
+            vm.stopPrank();
+        }
+
+        require(daily.nextOrderId() == DAILY_TOTAL_ORDERS, "wrong daily order count");
+
+        vm.warp(block.timestamp + 1 days + 1);
+        _mockWithdraw(DAILY_REWARD);
+
+        uint256 attempts;
+        for (uint256 orderId = 0; orderId < DAILY_TOTAL_ORDERS; orderId++) {
+            address owner = _user(orderId / DAILY_ORDERS_PER_USER);
+            vm.prank(owner);
+            daily.claim(orderId);
+            attempts++;
+        }
+
+        for (uint256 orderId = 0; orderId < DAILY_TOTAL_ORDERS; orderId++) {
+            address owner = _user(orderId / DAILY_ORDERS_PER_USER);
+            vm.prank(owner);
+            vm.expectRevert(bytes("No unclaimed rewards"));
+            daily.claim(orderId);
+            attempts++;
+        }
+
+        require(attempts == DAILY_TOTAL_ORDERS * 2, "wrong daily claim attempt count");
+        vm.resumeGasMetering();
+    }
+
+    function testStressTransport1000OwnerClaimsAnd1000NonOwnerAttempts() public {
+        vm.pauseGasMetering();
+
+        _mockWithdraw(TRANSPORT_AMOUNT);
+        token.mint(address(transport), TRANSPORT_AMOUNT * TRANSPORT_CLAIMS);
+
+        for (uint256 claimIndex = 0; claimIndex < TRANSPORT_CLAIMS; claimIndex++) {
+            transport.claimReferral(_user(claimIndex), TRANSPORT_AMOUNT);
+        }
+
+        for (uint256 claimIndex = 0; claimIndex < TRANSPORT_CLAIMS; claimIndex++) {
+            address attacker = address(uint160(0xB00000 + claimIndex));
+            vm.prank(attacker);
+            vm.expectRevert("Ownable: caller is not the owner");
+            transport.claimReferral(_user(claimIndex), TRANSPORT_AMOUNT);
+        }
+
+        vm.resumeGasMetering();
+    }
+
+    function _user(uint256 index) private pure returns (address) {
+        return address(uint160(0x100000 + index));
+    }
+
+    function _mockPancakePosition() private {
+        bytes memory position = abi.encode(
+            uint96(0),
+            address(0),
+            address(token),
+            OTHER_TOKEN,
+            uint24(2500),
+            int24(100),
+            int24(200),
+            uint128(1_000_000),
+            uint256(0),
+            uint256(0),
+            uint128(0),
+            uint128(0)
+        );
+
+        vm.mockCall(NFPM, abi.encodeWithSignature("positions(uint256)", TOKEN_ID), position);
+        vm.mockCall(
+            FACTORY,
+            abi.encodeWithSignature("getPool(address,address,uint24)", address(token), OTHER_TOKEN, uint24(2500)),
+            abi.encode(POOL)
+        );
+        vm.mockCall(
+            POOL,
+            abi.encodeWithSignature("slot0()"),
+            abi.encode(uint160(1 << 96), int24(50), uint16(0), uint16(0), uint16(0), uint32(0), true)
+        );
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))"))),
+            abi.encode(uint128(1), DAILY_AMOUNT, uint256(0))
+        );
+    }
+
+    function _mockWithdraw(uint256 amountOut) private {
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))"))),
+            abi.encode(amountOut, uint256(0))
+        );
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("collect((uint256,address,uint128,uint128))"))),
+            abi.encode(amountOut, uint256(0))
+        );
+    }
+}
+

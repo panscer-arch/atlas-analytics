@@ -34,28 +34,31 @@ Date: 2026-06-05
 9. Foundry Stress 1000 Users Report
    Human-readable и машинный отчет: 1000 пользователей, 50000 Lockup-ордеров, 100000 claim-попыток в mock-окружении.
 
-10. Aderyn Reports
+10. Foundry Daily/Transport Stress Report
+   Human-readable отчет: Daily Flow на 1000 пользователей / 5000 ордеров / 10000 claim-попыток и Transport на 1000 owner-claim / 1000 non-owner попыток.
+
+11. Aderyn Reports
    Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
 
-11. Testnet Battle Test Plan RU
+12. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-12. Testnet Battle Kit RU
+13. Testnet Battle Kit RU
    Рабочий комплект для запуска BNB Testnet Battle Test: условия, порядок запуска, публичные формулировки и границы статуса.
 
-13. Testnet Contract Registry Template
+14. Testnet Contract Registry Template
    JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
 
-14. Testnet Participant Guide RU
+15. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-15. Testnet Bug Report Template RU
+16. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-16. Testnet Final Report Template RU
+17. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-17. Mythril Results
+18. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
@@ -68,10 +71,10 @@ Date: 2026-06-05
    Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам.
 
 2. Foundry access-control tests — частично сделано.
-   Foundry suite пройден: 6/6. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден в mock-окружении. Daily/Transport stress и LP-testnet еще нужно расширить.
+   Foundry suite пройден: 9/9. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test, Daily stress-test и Transport stress-test пройдены в mock-окружении. LP-testnet и финальные invariant-тесты по экономической модели еще нужно расширить.
 
 3. Большой fuzzing / stress-сценарии — частично сделано.
-   Lockup stress-сценарий на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден локально. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
+   Lockup stress, Daily stress и Transport stress пройдены локально в mock-окружении. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
 4. BNB Testnet battle test — подготовлено / не проведено.
    Battle Kit, registry template, participant guide, bug report template и final report template подготовлены. Публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.

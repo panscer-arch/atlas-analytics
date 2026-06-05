@@ -31,8 +31,9 @@
 Обновление от 05.06.2026:
 
 - Mythril bounded bytecode-прогон выполнен по `Transport`, `UnityLockup`, `UnityDaily` и `PositionHandler`: `success=true`, `issues=[]`.
-- Foundry access-control/fuzz тесты пройдены: 6/6, отдельный прогон `--fuzz-runs 1000` пройден.
+- Foundry access-control/fuzz/stress тесты пройдены: 9/9, отдельный прогон `--fuzz-runs 1000` пройден.
 - Foundry Lockup stress-test пройден: 1000 пользователей, 50000 lockup, 100000 claim-попыток в mock-окружении.
+- Foundry Daily/Transport stress-test пройден: Daily 1000 пользователей, 5000 ордеров, 10000 claim-попыток; Transport 1000 owner-claim и 1000 non-owner попыток.
 - Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам; подготовлен human-readable summary.
 - Owner Powers Disclosure оформлен отдельным документом для вычитки.
 - BNB Testnet Battle Test пока не проведен. Подготовлены plan, Battle Kit, registry template, participant guide, bug report template и final report template.

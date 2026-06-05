@@ -1,0 +1,7 @@
+Ran 2 tests for test/AtlasDailyTransportStress.t.sol:AtlasDailyTransportStressTest
+[PASS] testStress1000Users5000DailyOrders10000ClaimAttempts() (gas: 3153)
+[PASS] testStressTransport1000OwnerClaimsAnd1000NonOwnerAttempts() (gas: 3170)
+Suite result: ok. 2 passed; 0 failed; 0 skipped.
+
+Full suite after adding Daily/Transport stress:
+Ran 3 test suites: 9 tests passed, 0 failed, 0 skipped.
