@@ -93,7 +93,7 @@ contract AtlasAccessControlTest {
 
     function testLockupRejectsDoubleClaim() public {
         uint256 orderId = _createLockupOrder();
-        uint256 amountEarned = 100.3 ether;
+        uint256 amountEarned = 100.03 ether;
         _mockWithdraw(amountEarned);
         token.mint(address(lockup), amountEarned - AMOUNT);
 

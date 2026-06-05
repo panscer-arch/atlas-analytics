@@ -88,6 +88,22 @@ const documentCards = [
     cta: "Открыть packet",
   },
   {
+    title: "Option A: Contract Patch",
+    type: "Patch plan",
+    status: "Draft",
+    description: "План правки UnityLockup/UnityDaily под публичные тарифы, ожидаемые значения тестов и список повторных security-проверок.",
+    href: "/security/tariff-option-a-contract-patch-plan-ru.md",
+    cta: "Открыть option A",
+  },
+  {
+    title: "Option B: Content Rewrite",
+    type: "Content checklist",
+    status: "Draft",
+    description: "Чеклист обновления White Paper, FAQ, сайта, презентаций, PDF и tariff-check под текущую code-level экономику.",
+    href: "/security/tariff-option-b-content-rewrite-checklist-ru.md",
+    cta: "Открыть option B",
+  },
+  {
     title: "Tariff Machine Check",
     type: "Program output",
     status: "MISMATCH найден",

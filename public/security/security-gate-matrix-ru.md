@@ -48,7 +48,9 @@
 | Accounting invariants | Закрыто для текущего среза | `/security/foundry-accounting-invariants-report-ru.md` | Повторить после решения tariff gate |
 | Tariff machine check | Выполнено, найден mismatch | `/security/tariff-consistency-check-output.json` | Выбрать: править контракт или публичные материалы |
 | Product / contract consistency | Не закрыто | `/security/product-contract-consistency-review-ru.md` | Закрыть Tariff Decision Packet |
-| Tariff decision packet | Подготовлено, ждет решения | `/security/tariff-consistency-decision-packet-ru.md` | Заполнить decision checklist: кто утвердил, что правим, какие проверки повторены |
+| Tariff decision packet | Подготовлено, ждет решения | `/security/tariff-consistency-decision-packet-ru.md` | Выбрать Option A или Option B |
+| Option A contract patch plan | Подготовлено | `/security/tariff-option-a-contract-patch-plan-ru.md` | Если выбран A: внести patch, повторить проверки, обновить reports |
+| Option B content rewrite checklist | Подготовлено | `/security/tariff-option-b-content-rewrite-checklist-ru.md` | Если выбран B: обновить все материалы, tariff-check model и reports |
 | Slither | Выполнено для текущего среза | `/security/slither-report.json` | Повторить после финальной версии кода |
 | Solhint | Выполнено для текущего среза | `/security/solhint-report.txt` | Повторить после финальной версии кода |
 | Aderyn | Выполнено для текущего среза | `/security/aderyn-report.md`, `/security/aderyn-core-report.md` | Повторить после финальной версии кода |

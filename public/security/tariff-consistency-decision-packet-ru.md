@@ -88,6 +88,8 @@ DAILY_REWARDS_COUNT = 200
 
 Выбирается, если публичная экономика уже утверждена командой и должна быть источником истины.
 
+Подробный patch plan: `/security/tariff-option-a-contract-patch-plan-ru.md`.
+
 ### Что нужно изменить в Lockup
 
 При текущих `BP` и `PRECISION` значения `N` должны быть:
@@ -124,6 +126,8 @@ DAILY_REWARDS_COUNT = 200
 ## Вариант B — править публичные материалы под контракт
 
 Выбирается, если текущая code-level экономика уже утверждена командой и является источником истины.
+
+Подробный content checklist: `/security/tariff-option-b-content-rewrite-checklist-ru.md`.
 
 ### Что нужно обновить
 

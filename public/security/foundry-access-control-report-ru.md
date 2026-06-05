@@ -11,7 +11,7 @@
 ## Результат
 
 ```text
-Ran 4 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
+Ran 6 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
 [PASS] testDailyRejectsClaimFromNonOwner()
 [PASS] testFuzzLockupRejectsClaimFromNonOwner(uint96,uint8,address)
 [PASS] testFuzzTransportClaimReferralIsOwnerOnly(address,address,uint96)
@@ -40,6 +40,8 @@ Fuzz-сценарии: 1000 runs
 ### Повторный Lockup claim
 
 После успешного claim повторный вызов по тому же ордеру не прошел. Контракт остановил действие состоянием `Order already claimed or not exist`.
+
+Важно: этот тест проверяет именно запрет повторного claim. Он использует текущую code-level сумму Lockup Launch (`100.03` при `100` principal) и не утверждает публичную тарифную модель. Тарифное расхождение вынесено отдельно в Product / Contract Consistency Review.
 
 ### Чужой Daily claim
 

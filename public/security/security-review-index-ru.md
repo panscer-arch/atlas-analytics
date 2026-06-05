@@ -49,46 +49,52 @@ Date: 2026-06-05
 14. Tariff Consistency Decision Packet
    Практический packet для решения: править контракт под публичные тарифы или публичные материалы под текущий код, плюс checklist повторных проверок.
 
-15. Tariff Consistency Machine Check
+15. Tariff Option A Contract Patch Plan
+   Draft-план правки `UnityLockup` и `UnityDaily` под публичные тарифы, включая ожидаемые значения тестов и список повторных проверок.
+
+16. Tariff Option B Content Rewrite Checklist
+   Draft-чеклист обновления White Paper, FAQ, сайта, презентаций, PDF, tariff-check model и публичных материалов под текущую code-level экономику.
+
+17. Tariff Consistency Machine Check
    Скрипт и JSON-output, который машинно сравнивает публичные Lockup/Daily тарифы с формулами `UnityLockup.sol` и `UnityDaily.sol`.
 
-16. Aderyn Reports
+18. Aderyn Reports
    Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
 
-17. Testnet Battle Test Plan RU
+19. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-18. Testnet Battle Kit RU
+20. Testnet Battle Kit RU
    Рабочий комплект для запуска BNB Testnet Battle Test: условия, порядок запуска, публичные формулировки и границы статуса.
 
-19. Testnet Contract Registry Template
+21. Testnet Contract Registry Template
    JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
 
-20. Testnet Deployment Runbook RU
+22. Testnet Deployment Runbook RU
    Технический порядок testnet deployment: env-переменные, Pancake V3 tokenId, `forge create`, generated registry и smoke-check.
 
-21. Testnet Deploy Script
+23. Testnet Deploy Script
    Bash-скрипт для deploy `UnityLockup`, `UnityDaily` и `Transport` на BNB Testnet.
 
-22. Testnet Env Template
+24. Testnet Env Template
    Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
 
-23. Testnet Smoke Test Runbook RU
+25. Testnet Smoke Test Runbook RU
    Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.
 
-24. Testnet Smoke Test Script
+26. Testnet Smoke Test Script
    Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.
 
-25. Testnet Participant Guide RU
+27. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-26. Testnet Bug Report Template RU
+28. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-27. Testnet Final Report Template RU
+29. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-28. Mythril Results
+30. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
