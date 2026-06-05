@@ -80,6 +80,14 @@ const documentCards = [
     cta: "Открыть packet",
   },
   {
+    title: "Tariff Machine Check",
+    type: "Program output",
+    status: "MISMATCH найден",
+    description: "Скрипт читает Solidity-код, достает BP/PRECISION и tier-значения, затем выдает JSON-сравнение с публичными тарифами.",
+    href: "/security/tariff-consistency-check-output.json",
+    cta: "Открыть output",
+  },
+  {
     title: "Aderyn Core Report",
     type: "Static analysis",
     status: "Запущен",
@@ -528,7 +536,7 @@ const toolResults = [
   ["Foundry access-control", "12/12 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport, 2 fuzz-сценария, stress-тесты Lockup/Daily/Transport и accounting invariant checks."],
   ["Foundry stress", "Пройдено mock", "Lockup: 1000 users / 50000 orders / 100000 claims. Daily: 1000 users / 5000 orders / 10000 claims. Transport: 1000 owner claims / 1000 non-owner attempts."],
   ["Accounting invariants", "3/3 пройдено", "Проверены user net payout, treasury fee и amountUnclaimed delta для Lockup, Daily и Transport в mock-окружении."],
-  ["Product / contract consistency", "Требует решения", "Проверка сравнила публичные тарифы с формулами в коде: Lockup сейчас считает reward в 10 раз ниже публичных материалов, Daily также не совпадает с опубликованными 0.6/0.8%."],
+  ["Product / contract consistency", "Требует решения", "Машинный tariff-check сравнил публичные тарифы с формулами в коде: Lockup сейчас считает reward в 10 раз ниже публичных материалов, Daily также не совпадает с опубликованными 0.6/0.8%."],
 ];
 
 function SecurityReviewBoard() {

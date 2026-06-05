@@ -14,6 +14,11 @@ Security Review проверяет не только вопрос “может 
 
 Найдено расхождение между публичными Lockup Flow тарифами и текущей code-level формулой `UnityLockup`.
 
+Машинная проверка опубликована отдельно:
+
+- script: `/security/tariff-consistency-check.js.txt`
+- output: `/security/tariff-consistency-check-output.json`
+
 Публичные материалы описывают:
 
 - Launch: `+0.3%`

@@ -46,43 +46,46 @@ Date: 2026-06-05
 13. Tariff Consistency Decision Packet
    Практический packet для решения: править контракт под публичные тарифы или публичные материалы под текущий код, плюс checklist повторных проверок.
 
-14. Aderyn Reports
+14. Tariff Consistency Machine Check
+   Скрипт и JSON-output, который машинно сравнивает публичные Lockup/Daily тарифы с формулами `UnityLockup.sol` и `UnityDaily.sol`.
+
+15. Aderyn Reports
    Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
 
-15. Testnet Battle Test Plan RU
+16. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-16. Testnet Battle Kit RU
+17. Testnet Battle Kit RU
    Рабочий комплект для запуска BNB Testnet Battle Test: условия, порядок запуска, публичные формулировки и границы статуса.
 
-17. Testnet Contract Registry Template
+18. Testnet Contract Registry Template
    JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
 
-18. Testnet Deployment Runbook RU
+19. Testnet Deployment Runbook RU
    Технический порядок testnet deployment: env-переменные, Pancake V3 tokenId, `forge create`, generated registry и smoke-check.
 
-19. Testnet Deploy Script
+20. Testnet Deploy Script
    Bash-скрипт для deploy `UnityLockup`, `UnityDaily` и `Transport` на BNB Testnet.
 
-20. Testnet Env Template
+21. Testnet Env Template
    Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
 
-21. Testnet Smoke Test Runbook RU
+22. Testnet Smoke Test Runbook RU
    Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.
 
-22. Testnet Smoke Test Script
+23. Testnet Smoke Test Script
    Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.
 
-23. Testnet Participant Guide RU
+24. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-24. Testnet Bug Report Template RU
+25. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-25. Testnet Final Report Template RU
+26. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-26. Mythril Results
+27. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно

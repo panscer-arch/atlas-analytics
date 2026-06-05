@@ -19,6 +19,11 @@ Security tools проверяют, может ли код сломаться, п
 
 ## Что именно не совпадает
 
+Проверка выполнена отдельным скриптом, который читает `UnityLockup.sol` и `UnityDaily.sol`, вытаскивает `BP`, `PRECISION` и tier-значения из кода, затем сравнивает их с публичными тарифами.
+
+- script: `/security/tariff-consistency-check.js.txt`
+- output: `/security/tariff-consistency-check-output.json`
+
 ### Lockup Flow
 
 Публичные материалы показывают:

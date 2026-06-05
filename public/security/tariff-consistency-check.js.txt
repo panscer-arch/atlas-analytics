@@ -1,0 +1,118 @@
+#!/usr/bin/env node
+const fs = require("fs");
+const path = require("path");
+
+const root = path.resolve(__dirname, "..");
+
+function readContract(name) {
+  return fs.readFileSync(path.join(root, "contracts", name), "utf8");
+}
+
+function extractPowerConstant(source, name) {
+  const match = source.match(new RegExp(`uint256\\s+constant\\s+${name}\\s*=\\s*10\\s*\\*\\*\\s*(\\d+)\\s*;`));
+  if (!match) throw new Error(`Cannot find ${name}`);
+  return Number(match[1]);
+}
+
+function extractLockupN(source, tier) {
+  const functionStart = source.indexOf("function _getRewards");
+  if (functionStart === -1) throw new Error("Cannot find Lockup _getRewards");
+  const body = source.slice(functionStart);
+  const pattern = new RegExp(
+    `tier\\s*==\\s*IUnityLockup\\.UnityLockupTier\\.${tier}[\\s\\S]*?rewards\\s*=\\s*\\(amount\\s*\\*\\s*\\((\\d+)\\s*\\*\\s*BP\\)\\)\\s*/\\s*PRECISION`,
+  );
+  const match = body.match(pattern);
+  if (!match) throw new Error(`Cannot find Lockup tier ${tier}`);
+  return Number(match[1]);
+}
+
+function extractDailyN(source, tier) {
+  const functionMatch = source.match(/function\s+_getRewardRate[\s\S]*?returns\s*\(uint256\s+rewardRate\)\s*\{([\s\S]*?)\n\s*function\s+/);
+  if (!functionMatch) throw new Error("Cannot find Daily _getRewardRate");
+  const body = functionMatch[1];
+
+  const explicitPattern = new RegExp(
+    `tier\\s*==\\s*IUnityDaily\\.UnityDailyTier\\.${tier}[\\s\\S]*?return\\s+(\\d+)\\s*\\*\\s*BP\\s*;`,
+  );
+  const explicitMatch = body.match(explicitPattern);
+  if (explicitMatch) return Number(explicitMatch[1]);
+
+  const elseMatch = body.match(/else\s*\{\s*return\s+(\d+)\s*\*\s*BP\s*;\s*\}/);
+  if (tier === "Elite" && elseMatch) return Number(elseMatch[1]);
+
+  throw new Error(`Cannot find Daily tier ${tier}`);
+}
+
+function percentFromN(n, bpPower, precisionPower) {
+  return n * 10 ** bpPower / 10 ** precisionPower * 100;
+}
+
+function fixed(value) {
+  return Number(value.toFixed(10));
+}
+
+const lockupSource = readContract("UnityLockup.sol");
+const dailySource = readContract("UnityDaily.sol");
+
+const lockupBpPower = extractPowerConstant(lockupSource, "BP");
+const lockupPrecisionPower = extractPowerConstant(lockupSource, "PRECISION");
+const dailyBpPower = extractPowerConstant(dailySource, "BP");
+const dailyPrecisionPower = extractPowerConstant(dailySource, "PRECISION");
+
+const publicLockup = {
+  Launch: 0.3,
+  Momentum: 2,
+  Premiere: 5,
+  President: 12,
+  Imperium: 22.5,
+};
+
+const publicDaily = {
+  Core: 0.6,
+  Elite: 0.8,
+};
+
+const lockup = Object.entries(publicLockup).map(([tier, publicRate]) => {
+  const n = extractLockupN(lockupSource, tier);
+  const contractRate = percentFromN(n, lockupBpPower, lockupPrecisionPower);
+  return {
+    tier,
+    publicRatePercent: publicRate,
+    contractN: n,
+    contractRatePercent: fixed(contractRate),
+    multiplier: fixed(publicRate / contractRate),
+    status: Math.abs(publicRate - contractRate) < 1e-9 ? "OK" : "MISMATCH",
+  };
+});
+
+const daily = Object.entries(publicDaily).map(([tier, publicDailyRate]) => {
+  const n = extractDailyN(dailySource, tier);
+  const contractDailyRate = percentFromN(n, dailyBpPower, dailyPrecisionPower);
+  return {
+    tier,
+    publicDailyRatePercent: publicDailyRate,
+    contractN: n,
+    contractDailyRatePercent: fixed(contractDailyRate),
+    public200DayGrossPercent: fixed(publicDailyRate * 200),
+    contract200DayGrossPercent: fixed(contractDailyRate * 200),
+    status: Math.abs(publicDailyRate - contractDailyRate) < 1e-9 ? "OK" : "MISMATCH",
+  };
+});
+
+const result = {
+  date: "2026-06-05",
+  sourceFiles: ["contracts/UnityLockup.sol", "contracts/UnityDaily.sol"],
+  formula: {
+    percent: "N * BP / PRECISION * 100",
+    lockup: { BP: `10 ** ${lockupBpPower}`, PRECISION: `10 ** ${lockupPrecisionPower}` },
+    daily: { BP: `10 ** ${dailyBpPower}`, PRECISION: `10 ** ${dailyPrecisionPower}` },
+  },
+  lockup,
+  daily,
+  conclusion:
+    lockup.some((item) => item.status !== "OK") || daily.some((item) => item.status !== "OK")
+      ? "Product/contract tariff mismatch found. Team decision required before deployment."
+      : "Public tariff model matches current contract formulas.",
+};
+
+console.log(JSON.stringify(result, null, 2));
