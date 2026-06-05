@@ -1,7 +1,7 @@
 # Atlas System Security Review Index
 
 Status: Security Review in progress
-Date: 2026-06-04
+Date: 2026-06-05
 
 Этот индекс объясняет, какие материалы уже собраны по проверке безопасности Atlas System.
 
@@ -22,8 +22,17 @@ Date: 2026-06-04
 5. Solhint Report
    Отчет по качеству Solidity-кода, стилю, предупреждениям компилятора и технической гигиене.
 
-6. Mythril Transport Result
-   Ограниченный bytecode-прогон Transport: success=true, issues=0. Это не заменяет полный аудит.
+6. Owner Powers Disclosure RU
+   Отдельное раскрытие owner-полномочий: treasury, fee, tokenId, Transport, риски и рекомендуемые меры контроля.
+
+7. Foundry Access Control Report RU
+   Читаемый отчет по Foundry-тестам: чужой Lockup/Daily claim, повторный Lockup claim и owner-only Transport.
+
+8. Testnet Battle Test Plan RU
+   План публичного BNB Testnet challenge. Сам challenge еще не проведен.
+
+9. Mythril Results
+   Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
 

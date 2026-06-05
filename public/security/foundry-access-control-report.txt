@@ -1,0 +1,10 @@
+No files changed, compilation skipped
+
+Ran 4 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
+[PASS] testDailyRejectsClaimFromNonOwner() (gas: 253492)
+[PASS] testLockupRejectsClaimFromNonOwner() (gas: 320302)
+[PASS] testLockupRejectsDoubleClaim() (gas: 345243)
+[PASS] testTransportClaimReferralIsOwnerOnly() (gas: 15528)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 15.32ms (9.62ms CPU time)
+
+Ran 1 test suite in 27.28ms (15.32ms CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)

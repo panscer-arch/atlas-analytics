@@ -1,13 +1,13 @@
 # Atlas System Code Safety Summary
 
 Status: рабочая публичная версия для вычитки  
-Дата: 04.06.2026
+Дата: 05.06.2026
 
 ## Короткий ответ
 
 Корректная формулировка на текущем этапе:
 
-> Код Atlas System имеет базовые защитные механизмы и проходит Security Review. Уже проверяются права доступа, claim-логика, reentrancy-защита, ERC20-операции, owner-полномочия и LP-риски. Отчеты авто-инструментов доступны, следующие этапы проверки опубликованы.
+> Код Atlas System имеет базовые защитные механизмы и проходит Security Review. Уже проверяются права доступа, claim-логика, reentrancy-защита, ERC20-операции, owner-полномочия и LP-риски. Mythril bounded-прогон и базовые Foundry access-control тесты опубликованы, следующие этапы проверки вынесены отдельно.
 
 Это не означает статус `Audited` и не означает отсутствие всех рисков.
 
@@ -54,11 +54,21 @@ Status: рабочая публичная версия для вычитки
 
 Машинный вывод:
 
-> Для Transport bytecode в ограниченном прогоне: success=true, issues=0.
+> Для Transport, UnityLockup, UnityDaily и PositionHandler bytecode в ограниченном прогоне: success=true, issues=[].
 
 Перевод:
 
-> В этом ограниченном сценарии программа не нашла exploit в Transport. Это хороший сигнал, но не полный аудит всех контрактов.
+> В этом ограниченном сценарии программа не нашла exploit-сигналы в четырех основных контрактах. Это хороший сигнал, но не полный аудит и не proof отсутствия всех рисков.
+
+### Foundry access-control tests
+
+Машинный вывод:
+
+> 4 tests passed; 0 failed; 0 skipped.
+
+Перевод:
+
+> Тестами подтверждены базовые сценарии: чужой Lockup claim не проходит, чужой Daily claim не проходит, повторный Lockup claim не проходит, Transport.claimReferral доступен только owner.
 
 ### Solhint
 
@@ -180,10 +190,10 @@ Status: рабочая публичная версия для вычитки
 Текущий статус по этапам:
 
 1. Aderyn / Mythril по всем контрактам — частично.
-   Mythril прогнан только по Transport bytecode в ограниченном режиме. Полные прогоны по всем контрактам еще не завершены.
+   Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn еще не запущен.
 
-2. Foundry invariant tests — не сделано.
-   Build через Foundry проходит, но invariant-тесты для UnityLockup, UnityDaily и Transport еще нужно написать и прогнать.
+2. Foundry access-control tests — частично сделано.
+   Базовые Foundry-тесты доступа пройдены: 4/4. Полные invariant/fuzz тесты для массовых сценариев еще нужно расширить.
 
 3. Большой fuzzing / stress-сценарии — не сделано.
    Сценарии на 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки еще не прогонялись.
@@ -191,8 +201,8 @@ Status: рабочая публичная версия для вычитки
 4. BNB Testnet battle test — не сделано.
    Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
 
-5. Публичный Security Review и owner-документ — частично.
-   Публичный Security Review draft собран. Отдельный документ по owner-полномочиям еще нужно оформить.
+5. Публичный Security Review и owner-документ — подготовлено.
+   Публичный Security Review draft собран. Owner Powers Disclosure оформлен как отдельный документ для вычитки.
 
 6. Внешний аудит — не сделано.
    Статус `Audited` можно использовать только после внешнего аудита.

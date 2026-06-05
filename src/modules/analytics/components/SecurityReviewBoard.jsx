@@ -16,6 +16,30 @@ const documentCards = [
     cta: "Открыть summary",
   },
   {
+    title: "Owner Powers Disclosure",
+    type: "Risk disclosure",
+    status: "Готов к вычитке",
+    description: "Отдельный документ по owner-полномочиям: treasury, fee, tokenId, Transport и меры контроля.",
+    href: "/security/owner-powers-disclosure-ru.md",
+    cta: "Открыть disclosure",
+  },
+  {
+    title: "Foundry Access Control",
+    type: "Тесты",
+    status: "4/4 пройдено",
+    description: "Чужой Lockup/Daily claim, повторный Lockup claim и owner-only Transport проверены локальными Foundry-тестами.",
+    href: "/security/foundry-access-control-report-ru.md",
+    cta: "Открыть отчет",
+  },
+  {
+    title: "Testnet Battle Plan",
+    type: "План",
+    status: "Запланировано",
+    description: "План публичного BNB Testnet challenge: сценарии, bounty-уровни, правила приема воспроизводимых exploit-отчетов.",
+    href: "/security/testnet-battle-plan-ru.md",
+    cta: "Открыть план",
+  },
+  {
     title: "Public Security Text",
     type: "Публичный текст",
     status: "Для сайта / FAQ",
@@ -42,10 +66,26 @@ const documentCards = [
   {
     title: "Mythril Transport",
     type: "Bytecode check",
-    status: "Частично пройден",
-    description: "Ограниченный прогон Transport bytecode: success=true, issues=0. Не заменяет полный аудит.",
+    status: "Пройдено bounded",
+    description: "Ограниченный bytecode-прогон: success=true, issues=0. Также подготовлены отчеты по UnityLockup, UnityDaily и PositionHandler.",
     href: "/security/mythril-transport.json",
     cta: "Открыть результат",
+  },
+  {
+    title: "Mythril UnityLockup",
+    type: "Bytecode check",
+    status: "Пройдено bounded",
+    description: "Ограниченный Mythril-прогон UnityLockup bytecode: success=true, issues=0. Не заменяет внешний аудит.",
+    href: "/security/mythril-unitylockup.json",
+    cta: "Открыть JSON",
+  },
+  {
+    title: "Mythril UnityDaily",
+    type: "Bytecode check",
+    status: "Пройдено bounded",
+    description: "Ограниченный Mythril-прогон UnityDaily bytecode: success=true, issues=0. Не заменяет invariant fuzzing.",
+    href: "/security/mythril-unitydaily.json",
+    cta: "Открыть JSON",
   },
   {
     title: "Review Index",
@@ -136,12 +176,21 @@ const programEvidence = [
   },
   {
     program: "Mythril",
-    status: "Transport проверен частично",
+    status: "Bounded-прогон по 4 контрактам",
     report: "/security/mythril-transport.json",
-    command: "myth analyze -f transport-bytecode.hex --execution-timeout 60 --max-depth 22 --no-onchain-data -o json",
-    output: "Для Transport bytecode программа вернула success=true, issues=0 в ограниченном 60-секундном прогоне.",
+    command: "myth analyze -f <contract-bytecode.hex> --execution-timeout 120 --max-depth 22 --no-onchain-data -o json",
+    output: "Для Transport, UnityLockup, UnityDaily и PositionHandler bytecode программа вернула success=true, issues=[] в ограниченном прогоне.",
     human:
-      "В этом конкретном ограниченном прогоне Mythril не нашел exploit в Transport. Это хороший сигнал, но не финальное доказательство безопасности всех контрактов.",
+      "В этом конкретном ограниченном прогоне Mythril не нашел exploit-сигналы в четырех основных контрактах. Это хороший технический сигнал, но не финальное доказательство безопасности и не внешний аудит.",
+  },
+  {
+    program: "Foundry tests",
+    status: "4/4 пройдено",
+    report: "/security/foundry-access-control-report-ru.md",
+    command: "forge test -vv",
+    output: "Пройдены тесты: чужой Lockup claim, чужой Daily claim, повторный Lockup claim и Transport.claimReferral только для owner.",
+    human:
+      "Это подтверждает базовую защиту доступа: чужой человек не может выполнить claim за другого пользователя, а административный Transport закрыт owner-проверкой.",
   },
   {
     program: "Solhint",
@@ -169,21 +218,21 @@ const externalTrustGaps = [
   },
   {
     title: "Полные прогоны Mythril / Aderyn",
-    status: "В работе",
-    why: "Сейчас Mythril показан только для Transport в ограниченном прогоне. Для сильного вывода нужны отчеты по финальной версии всех контрактов.",
-    next: "Опубликовать полные отчеты и короткий human-readable summary.",
+    status: "Mythril расширен, Aderyn впереди",
+    why: "Mythril bounded-прогон уже опубликован по Transport, UnityLockup, UnityDaily и PositionHandler. Aderyn еще нужно установить и прогнать по финальной версии.",
+    next: "Добавить Aderyn-отчет и обновить human-readable summary.",
   },
   {
     title: "Invariant tests и fuzzing",
-    status: "Следующий этап",
-    why: "Именно эти тесты доказывают сценарии: чужой claim, двойной claim, превышение суммы, owner-only Transport и корректный учет выплат.",
-    next: "Добавить Foundry tests, сценарии и результаты прогонов.",
+    status: "Access-control тесты пройдены",
+    why: "Foundry уже проверил чужой claim, повторный Lockup claim и owner-only Transport. Большие invariant/fuzz сценарии с тысячами действий еще нужны отдельно.",
+    next: "Добавить invariant fuzzing на суммы, сроки, массовые lockup/claim и LP-состояния.",
   },
   {
     title: "Owner control policy",
-    status: "Раскрыть отдельно",
+    status: "Draft подготовлен",
     why: "Owner-полномочия — это не внешний взлом, но это важный архитектурный риск. Нужны multisig/timelock или честное раскрытие текущей модели.",
-    next: "Опубликовать документ owner-полномочий: treasury, fee, tokenId, Transport.",
+    next: "Вычитать owner-powers disclosure и принять финальную policy: EOA, multisig, timelock или governance.",
   },
   {
     title: "Testnet battle test",
@@ -239,14 +288,14 @@ const safetyClaims = [
 ];
 
 const trustLadder = [
-  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения."],
-  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Часть автоматических отчетов уже собрана, часть тестов еще готовится."],
+  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Access-control тесты 4/4 пройдены."],
+  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты и базовые Foundry-тесты собраны, расширенный fuzzing и testnet battle еще впереди."],
   ["Нельзя говорить сейчас", "Нельзя писать Audited, 100% secure, невозможно взломать, выплаты гарантированы или участие без риска."],
   ["Что даст сильный статус", "Invariant tests, fuzzing, testnet battle test и отдельный документ по owner-полномочиям."],
 ];
 
 const securityChecks = [
-  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "Первичный review"],
+  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "4/4 Foundry"],
   ["Reentrancy", "Проверяем повторные вызовы и сценарии, где внешний контракт пытается вмешаться в выполнение операции.", "В работе"],
   ["Claim Logic", "Проверяем, что пользователь не может запросить больше суммы, разрешенной правилами выбранного цикла.", "Нужны инварианты"],
   ["Transport Logic", "Отдельно описываем административный модуль исполнения и границы его полномочий.", "Раскрыть публично"],
@@ -282,12 +331,12 @@ const completionItems = [
   {
     status: "Частично",
     title: "Aderyn / Mythril по всем контрактам",
-    text: "Mythril прогнан только по Transport bytecode в ограниченном режиме. Aderyn и полный Mythril по UnityLockup, UnityDaily, Transport и PositionHandler еще не завершены.",
+    text: "Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn еще не запущен, потому что на машине нет cargo/Rust окружения.",
   },
   {
-    status: "Не сделано",
-    title: "Foundry invariant-тесты",
-    text: "Пока сделан build через Foundry. Invariant-тесты для UnityLockup, UnityDaily и Transport еще нужно написать и прогнать.",
+    status: "Частично",
+    title: "Foundry tests / invariant-тесты",
+    text: "Access-control тесты пройдены: 4/4. Полные invariant-тесты на массовые сценарии, суммы, сроки и LP-поведение еще нужно расширить.",
   },
   {
     status: "Не сделано",
@@ -300,9 +349,9 @@ const completionItems = [
     text: "Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
   },
   {
-    status: "Частично",
+    status: "Подготовлено",
     title: "Публичный Security Review и owner-документ",
-    text: "Публичный Security Review draft уже собран. Отдельный документ по owner-полномочиям еще нужно оформить отдельно.",
+    text: "Публичный Security Review draft и owner-powers disclosure подготовлены. До статуса внешнего аудита нужны testnet battle, invariant/fuzzing и внешний review.",
   },
 ];
 
@@ -310,8 +359,9 @@ const toolResults = [
   ["Slither", "Запущен", "Автоматический анализ выявил зоны для ручной проверки: Transport-события, return values, compiler warnings и места, где нужен явный контроль логики."],
   ["Solhint", "Запущен", "Проверка качества Solidity-кода: стиль, NatSpec, версии компилятора, imports и gas-предупреждения. Отдельно фильтруются внешние библиотеки."],
   ["Foundry build", "Пройден", "Проект собирается через solc 0.8.20 с via_ir=true. Предупреждения вынесены в технический review."],
-  ["Mythril", "Пройден частично", "Transport проверен по bytecode в ограниченном прогоне: success=true, issues=0. Остальные контракты идут следующим этапом."],
-  ["Invariant tests", "Следующий этап", "Нужны тесты на чужой claim, двойной claim, лимит Daily, owner-only Transport и корректный учет выплат."],
+  ["Mythril", "Bounded-прогон", "Transport, UnityLockup, UnityDaily и PositionHandler проверены по bytecode в ограниченном режиме: success=true, issues=[]."],
+  ["Foundry access-control", "4/4 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim и owner-only Transport."],
+  ["Invariant tests", "Следующий этап", "Нужны расширенные тесты на массовые сценарии, случайные суммы, сроки, Daily-лимиты и корректный учет выплат."],
 ];
 
 function SecurityReviewBoard() {
@@ -341,7 +391,7 @@ function SecurityReviewBoard() {
             <small>V1</small>
           </div>
           <strong>Code review in progress</strong>
-          <p>Базовые защитные механизмы найдены и описаны. Полный публичный статус появится после invariant tests, fuzzing и testnet battle test.</p>
+          <p>Базовые защитные механизмы найдены, описаны и частично подтверждены Foundry-тестами. Полный публичный статус появится после расширенного fuzzing и testnet battle test.</p>
           <div className="analytics-security-progress-list" aria-label="Этапы проверки">
             <em>Manual code review</em>
             <em>Auto-analysis reports</em>
@@ -357,7 +407,7 @@ function SecurityReviewBoard() {
           <h3>Пока корректно говорить так: код имеет базовые защитные механизмы и проходит Security Review.</h3>
           <p>
             Это сильнее, чем просто “мы безопасные”, потому что показывает конкретику: проверка владельца ордера,
-            защита от повторного входа, безопасные ERC20-операции, owner-only ограничения и опубликованные отчеты.
+            защита от повторного входа, безопасные ERC20-операции, owner-only ограничения, Foundry-тесты и опубликованные отчеты.
             Но это еще не статус Audited.
           </p>
         </div>
