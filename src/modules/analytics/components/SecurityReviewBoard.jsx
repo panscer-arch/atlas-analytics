@@ -66,10 +66,50 @@ const documentCards = [
   {
     title: "Testnet Battle Plan",
     type: "План",
-    status: "Запланировано",
+    status: "План готов",
     description: "План публичного BNB Testnet challenge: сценарии, bounty-уровни, правила приема воспроизводимых exploit-отчетов.",
     href: "/security/testnet-battle-plan-ru.md",
     cta: "Открыть план",
+  },
+  {
+    title: "Testnet Battle Kit",
+    type: "Комплект запуска",
+    status: "Подготовлено",
+    description: "Рабочий пакет для запуска challenge: условия, порядок запуска, допустимые формулировки и границы публичного статуса.",
+    href: "/security/testnet-battle-kit-ru.md",
+    cta: "Открыть kit",
+  },
+  {
+    title: "Contract Registry",
+    type: "Шаблон",
+    status: "Ждет deployment",
+    description: "JSON-шаблон для публичных адресов testnet-контрактов, explorer-ссылок, ABI, owner-значений и smoke-test транзакций.",
+    href: "/security/testnet-contract-registry-template.json",
+    cta: "Открыть JSON",
+  },
+  {
+    title: "Participant Guide",
+    type: "Инструкция",
+    status: "Подготовлено",
+    description: "Что должен проверить внешний участник: чужой claim, double claim, owner-only, accounting, LP и DoS-сценарии.",
+    href: "/security/testnet-participant-guide-ru.md",
+    cta: "Открыть guide",
+  },
+  {
+    title: "Bug Report Template",
+    type: "Шаблон",
+    status: "Подготовлено",
+    description: "Форма для воспроизводимого exploit-report: tx hashes, шаги, ожидаемое и фактическое поведение, impact и severity.",
+    href: "/security/testnet-bug-report-template-ru.md",
+    cta: "Открыть шаблон",
+  },
+  {
+    title: "Final Report Template",
+    type: "Шаблон итогов",
+    status: "Ждет challenge",
+    description: "Структура финального отчета после testnet battle: участники, адреса, проверенные сценарии, подтвержденные findings и вывод.",
+    href: "/security/testnet-final-report-template-ru.md",
+    cta: "Открыть шаблон",
   },
   {
     title: "Public Security Text",
@@ -277,9 +317,9 @@ const externalTrustGaps = [
   },
   {
     title: "Testnet battle test",
-    status: "Не проведен",
+    status: "Kit готов / не проведен",
     why: "Публичное testnet-испытание показывает, что сценарии проверяются не только командой, но и внешними участниками.",
-    next: "Запустить testnet challenge с правилами, bounty и отчетом по найденным проблемам.",
+    next: "Развернуть testnet-контракты, заполнить registry, выдать test tokens, открыть challenge window и после triage выпустить final report.",
   },
 ];
 
@@ -330,7 +370,7 @@ const safetyClaims = [
 
 const trustLadder = [
   ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Foundry 6/6 и fuzz 1000 runs пройдены."],
-  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты, Aderyn, Mythril, Foundry fuzz и локальный stress-test собраны, testnet battle еще впереди."],
+  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты, Aderyn, Mythril, Foundry fuzz и локальный stress-test собраны, Testnet Battle Kit подготовлен, но публичный battle еще не проведен."],
   ["Нельзя говорить сейчас", "Нельзя писать Audited, 100% secure, невозможно взломать, выплаты гарантированы или участие без риска."],
   ["Что даст сильный статус", "Invariant tests, fuzzing, testnet battle test и отдельный документ по owner-полномочиям."],
 ];
@@ -385,9 +425,9 @@ const completionItems = [
     text: "Lockup stress-сценарий на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден локально. Это mock-окружение без реальной Pancake V3 ликвидности и не gas benchmark.",
   },
   {
-    status: "Не сделано",
+    status: "Подготовлено / не проведено",
     title: "BNB Testnet battle test",
-    text: "Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
+    text: "Battle Kit, registry template, participant guide, bug report template и final report template подготовлены. Сам публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.",
   },
   {
     status: "Подготовлено",
@@ -434,7 +474,7 @@ function SecurityReviewBoard() {
             <small>V1</small>
           </div>
           <strong>Code review in progress</strong>
-          <p>Базовые защитные механизмы найдены, описаны и частично подтверждены Foundry-тестами. Полный публичный статус появится после расширенного fuzzing и testnet battle test.</p>
+          <p>Базовые защитные механизмы найдены, описаны и частично подтверждены Foundry-тестами. Testnet Battle Kit подготовлен; полный публичный статус появится после реального challenge и итогового отчета.</p>
           <div className="analytics-security-progress-list" aria-label="Этапы проверки">
             <em>Manual code review</em>
             <em>Auto-analysis reports</em>

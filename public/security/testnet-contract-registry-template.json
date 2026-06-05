@@ -1,0 +1,103 @@
+{
+  "status": "template-not-deployed",
+  "network": {
+    "name": "BNB Smart Chain Testnet",
+    "chainId": 97,
+    "rpcUrl": null,
+    "explorer": "https://testnet.bscscan.com"
+  },
+  "version": "Atlas Testnet Battle V1",
+  "deploymentDate": null,
+  "gitCommit": null,
+  "securityReviewVersion": "Security Review V1",
+  "contracts": {
+    "MockUSDT": {
+      "address": null,
+      "verifiedSource": null,
+      "abi": null,
+      "notes": "Test token for participants"
+    },
+    "UnityLockup": {
+      "address": null,
+      "verifiedSource": null,
+      "abi": null,
+      "notes": "Lockup Flow"
+    },
+    "UnityDaily": {
+      "address": null,
+      "verifiedSource": null,
+      "abi": null,
+      "notes": "Daily Flow"
+    },
+    "Transport": {
+      "address": null,
+      "verifiedSource": null,
+      "abi": null,
+      "notes": "Owner-only referral/admin claim"
+    },
+    "PositionHandler": {
+      "address": null,
+      "verifiedSource": null,
+      "abi": null,
+      "notes": "LP / Pancake V3 helper"
+    }
+  },
+  "lp": {
+    "mode": "real-pancake-v3-or-mock",
+    "tokenId": null,
+    "pool": null,
+    "notes": null
+  },
+  "adminValues": {
+    "owner": null,
+    "treasury": null,
+    "platformFee": null,
+    "activeTokenId": null
+  },
+  "smokeTests": [
+    {
+      "scenario": "Lockup create",
+      "txHash": null,
+      "expected": "Order created",
+      "actual": null
+    },
+    {
+      "scenario": "Claim before time",
+      "txHash": null,
+      "expected": "Revert",
+      "actual": null
+    },
+    {
+      "scenario": "Claim by owner",
+      "txHash": null,
+      "expected": "Success",
+      "actual": null
+    },
+    {
+      "scenario": "Double claim",
+      "txHash": null,
+      "expected": "Revert",
+      "actual": null
+    },
+    {
+      "scenario": "Claim by non-owner",
+      "txHash": null,
+      "expected": "Revert",
+      "actual": null
+    },
+    {
+      "scenario": "Transport by non-owner",
+      "txHash": null,
+      "expected": "Revert",
+      "actual": null
+    }
+  ],
+  "bounty": {
+    "status": "not-started",
+    "submissionUrl": null,
+    "startsAt": null,
+    "endsAt": null,
+    "rulesUrl": "/security/testnet-battle-kit-ru.md"
+  }
+}
+

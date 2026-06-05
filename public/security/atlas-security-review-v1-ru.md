@@ -35,7 +35,7 @@
 - Foundry Lockup stress-test пройден: 1000 пользователей, 50000 lockup, 100000 claim-попыток в mock-окружении.
 - Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам; подготовлен human-readable summary.
 - Owner Powers Disclosure оформлен отдельным документом для вычитки.
-- BNB Testnet Battle Test пока не проведен, подготовлен только план.
+- BNB Testnet Battle Test пока не проведен. Подготовлены plan, Battle Kit, registry template, participant guide, bug report template и final report template.
 
 ### Архитектурные риски
 

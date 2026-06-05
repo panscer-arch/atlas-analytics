@@ -40,9 +40,44 @@ Date: 2026-06-05
 11. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-12. Mythril Results
+12. Testnet Battle Kit RU
+   Рабочий комплект для запуска BNB Testnet Battle Test: условия, порядок запуска, публичные формулировки и границы статуса.
+
+13. Testnet Contract Registry Template
+   JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
+
+14. Testnet Participant Guide RU
+   Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
+
+15. Testnet Bug Report Template RU
+   Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
+
+16. Testnet Final Report Template RU
+   Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
+
+17. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
 
 Эти материалы не являются полноценным внешним аудитом и не дают гарантии отсутствия рисков. Они фиксируют запущенный процесс проверки и помогают отделить безопасность кода от архитектурных полномочий системы.
+
+## Текущий статус по этапам
+
+1. Aderyn / Mythril по всем контрактам — выполнено для текущего среза.
+   Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам.
+
+2. Foundry access-control tests — частично сделано.
+   Foundry suite пройден: 6/6. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден в mock-окружении. Daily/Transport stress и LP-testnet еще нужно расширить.
+
+3. Большой fuzzing / stress-сценарии — частично сделано.
+   Lockup stress-сценарий на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден локально. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
+
+4. BNB Testnet battle test — подготовлено / не проведено.
+   Battle Kit, registry template, participant guide, bug report template и final report template подготовлены. Публичный challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
+
+5. Публичный Security Review и owner-документ — подготовлено.
+   Публичный Security Review draft собран. Owner Powers Disclosure оформлен как отдельный документ для вычитки.
+
+6. Внешний аудит — не сделано.
+   Статус `Audited` можно использовать только после внешнего аудита.

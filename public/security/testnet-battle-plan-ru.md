@@ -2,7 +2,15 @@
 
 Версия: V1 draft  
 Дата: 2026-06-05  
-Статус: план испытания, само испытание еще не проведено
+Статус: план и launch-kit подготовлены, публичное испытание еще не проведено
+
+Связанные документы:
+
+- Battle Kit: `/security/testnet-battle-kit-ru.md`
+- Contract Registry Template: `/security/testnet-contract-registry-template.json`
+- Participant Guide: `/security/testnet-participant-guide-ru.md`
+- Bug Report Template: `/security/testnet-bug-report-template-ru.md`
+- Final Report Template: `/security/testnet-final-report-template-ru.md`
 
 ## Цель
 
@@ -92,4 +100,3 @@
 ## Корректная публичная формулировка сейчас
 
 BNB Testnet Battle Test запланирован как следующий этап проверки Atlas System. Его цель — дать внешним участникам возможность воспроизвести потенциальные exploit-сценарии в testnet-среде и получить вознаграждение за подтвержденные критические находки.
-
