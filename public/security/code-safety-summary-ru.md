@@ -7,7 +7,7 @@ Status: рабочая публичная версия для вычитки
 
 Корректная формулировка на текущем этапе:
 
-> Код Atlas System имеет базовые защитные механизмы и проходит Security Review. Уже проверяются права доступа, claim-логика, reentrancy-защита, ERC20-операции, owner-полномочия и LP-риски. Mythril bounded-прогон и базовые Foundry access-control тесты опубликованы, следующие этапы проверки вынесены отдельно.
+> Код Atlas System имеет базовые защитные механизмы и проходит Security Review. Уже проверяются права доступа, claim-логика, reentrancy-защита, ERC20-операции, owner-полномочия и LP-риски. Mythril bounded-прогон, Aderyn static analysis и Foundry access-control/fuzz тесты опубликованы, следующие этапы проверки вынесены отдельно.
 
 Это не означает статус `Audited` и не означает отсутствие всех рисков.
 
@@ -64,11 +64,21 @@ Status: рабочая публичная версия для вычитки
 
 Машинный вывод:
 
-> 4 tests passed; 0 failed; 0 skipped.
+> 6 tests passed; 0 failed; 0 skipped. Отдельный прогон `--fuzz-runs 1000` также прошел.
 
 Перевод:
 
-> Тестами подтверждены базовые сценарии: чужой Lockup claim не проходит, чужой Daily claim не проходит, повторный Lockup claim не проходит, Transport.claimReferral доступен только owner.
+> Тестами подтверждены базовые сценарии: чужой Lockup claim не проходит, чужой Daily claim не проходит, повторный Lockup claim не проходит, Transport.claimReferral доступен только owner. Fuzz-сценарии дополнительно проверяют случайные суммы, тарифы и адреса.
+
+### Aderyn
+
+Машинный вывод:
+
+> Core-прогон Aderyn 0.6.8: 4 файла, 448 nSLOC, 2 High и 6 Low сигналов. Полный прогон: 20 файлов, 1233 nSLOC, 3 High и 8 Low сигналов.
+
+Перевод:
+
+> Aderyn не выдал статус “безопасно”. Он показал места для ручной проверки: owner-полномочия, deployment-внешние вызовы, quality-сигналы и интерпретацию lockup-функций. Эти сигналы опубликованы и переведены на обычный язык.
 
 ### Solhint
 
@@ -189,11 +199,11 @@ Status: рабочая публичная версия для вычитки
 
 Текущий статус по этапам:
 
-1. Aderyn / Mythril по всем контрактам — частично.
-   Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn еще не запущен.
+1. Aderyn / Mythril по всем контрактам — выполнено для текущего среза.
+   Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам.
 
 2. Foundry access-control tests — частично сделано.
-   Базовые Foundry-тесты доступа пройдены: 4/4. Полные invariant/fuzz тесты для массовых сценариев еще нужно расширить.
+   Foundry suite пройден: 6/6. Отдельный прогон `--fuzz-runs 1000` пройден. Полные invariant/stress тесты для массовых сценариев еще нужно расширить.
 
 3. Большой fuzzing / stress-сценарии — не сделано.
    Сценарии на 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки еще не прогонялись.

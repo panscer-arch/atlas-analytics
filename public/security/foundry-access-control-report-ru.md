@@ -13,11 +13,22 @@
 ```text
 Ran 4 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
 [PASS] testDailyRejectsClaimFromNonOwner()
+[PASS] testFuzzLockupRejectsClaimFromNonOwner(uint96,uint8,address)
+[PASS] testFuzzTransportClaimReferralIsOwnerOnly(address,address,uint96)
 [PASS] testLockupRejectsClaimFromNonOwner()
 [PASS] testLockupRejectsDoubleClaim()
 [PASS] testTransportClaimReferralIsOwnerOnly()
 
-4 tests passed; 0 failed; 0 skipped
+6 tests passed; 0 failed; 0 skipped
+```
+
+Отдельный прогон:
+
+```text
+forge test -vv --fuzz-runs 1000
+
+6 tests passed; 0 failed; 0 skipped
+Fuzz-сценарии: 1000 runs
 ```
 
 ## Перевод на человеческий язык
@@ -38,6 +49,14 @@ Ran 4 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
 
 Посторонний адрес не смог вызвать `Transport.claimReferral`. Контракт остановил действие через `Ownable`.
 
+### Fuzz: чужой Lockup claim
+
+Foundry прогнал случайные суммы, тарифы и адреса атакующего. В каждом сценарии адрес, не являющийся владельцем ордера, не смог выполнить claim.
+
+### Fuzz: Transport owner-only
+
+Foundry прогнал случайные адреса вызывающего, получателя и суммы. В каждом сценарии не-owner адрес не смог вызвать `Transport.claimReferral`.
+
 ## Что это доказывает
 
 Эти тесты подтверждают базовую access-control защиту:
@@ -45,11 +64,12 @@ Ran 4 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
 - пользовательский claim привязан к владельцу ордера;
 - повторный Lockup claim не проходит;
 - Transport не вызывается посторонним адресом.
+- базовые access-control свойства сохраняются на fuzz-наборе случайных входных данных.
 
 ## Что это не доказывает
 
 - Это не доказывает полную безопасность экономической модели.
 - Это не заменяет invariant fuzzing на тысячи случайных сценариев.
+- Это не заменяет большой stress-test на 1000 пользователей, 50000 lockup и 100000 claim.
 - Это не заменяет testnet battle test.
 - Это не заменяет внешний аудит.
-

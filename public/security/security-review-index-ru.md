@@ -26,12 +26,18 @@ Date: 2026-06-05
    Отдельное раскрытие owner-полномочий: treasury, fee, tokenId, Transport, риски и рекомендуемые меры контроля.
 
 7. Foundry Access Control Report RU
-   Читаемый отчет по Foundry-тестам: чужой Lockup/Daily claim, повторный Lockup claim и owner-only Transport.
+   Читаемый отчет по Foundry-тестам: чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport и fuzz-сценарии.
 
-8. Testnet Battle Test Plan RU
+8. Foundry Fuzz 1000 Report
+   Машинный отчет отдельного прогона `forge test -vv --fuzz-runs 1000`.
+
+9. Aderyn Reports
+   Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
+
+10. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-9. Mythril Results
+11. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно

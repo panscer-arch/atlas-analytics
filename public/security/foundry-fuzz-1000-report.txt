@@ -1,0 +1,12 @@
+No files changed, compilation skipped
+
+Ran 6 tests for test/AtlasAccessControl.t.sol:AtlasAccessControlTest
+[PASS] testDailyRejectsClaimFromNonOwner() (gas: 253490)
+[PASS] testFuzzLockupRejectsClaimFromNonOwner(uint96,uint8,address) (runs: 1000, μ: 316598, ~: 321651)
+[PASS] testFuzzTransportClaimReferralIsOwnerOnly(address,address,uint96) (runs: 1000, μ: 14973, ~: 14973)
+[PASS] testLockupRejectsClaimFromNonOwner() (gas: 320285)
+[PASS] testLockupRejectsDoubleClaim() (gas: 345239)
+[PASS] testTransportClaimReferralIsOwnerOnly() (gas: 15554)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 60.37ms (105.10ms CPU time)
+
+Ran 1 test suite in 72.66ms (60.37ms CPU time): 6 tests passed, 0 failed, 0 skipped (6 total tests)

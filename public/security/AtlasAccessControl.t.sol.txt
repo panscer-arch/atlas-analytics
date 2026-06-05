@@ -1,0 +1,198 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "../contracts/IUnityLockup.sol";
+import "../contracts/Transport.sol";
+import "../contracts/UnityDaily.sol";
+import "../contracts/UnityLockup.sol";
+
+interface Vm {
+    function prank(address) external;
+    function startPrank(address) external;
+    function stopPrank() external;
+    function warp(uint256) external;
+    function expectRevert(bytes calldata) external;
+    function expectRevert(bytes4) external;
+    function mockCall(address callee, bytes calldata data, bytes calldata returnData) external;
+    function assume(bool condition) external;
+}
+
+contract MockToken {
+    string public constant name = "Mock USDT";
+    string public constant symbol = "mUSDT";
+    uint8 public constant decimals = 18;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        require(balanceOf[from] >= amount, "balance");
+        uint256 allowed = allowance[from][msg.sender];
+        require(allowed >= amount, "allowance");
+        allowance[from][msg.sender] = allowed - amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+}
+
+contract AtlasAccessControlTest {
+    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    address private constant NFPM = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
+    address private constant FACTORY = 0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865;
+    address private constant POOL = address(0xBEEF);
+    address private constant OTHER_TOKEN = address(0xCAFE);
+
+    address private owner = address(this);
+    address private user = address(0xA11CE);
+    address private stranger = address(0xB0B);
+    address private treasury = address(0xCA5);
+
+    MockToken private token;
+    UnityLockup private lockup;
+    UnityDaily private daily;
+    Transport private transport;
+
+    uint256 private constant TOKEN_ID = 1;
+    uint256 private constant AMOUNT = 100 ether;
+
+    function setUp() public {
+        token = new MockToken();
+        _mockPancakePosition(AMOUNT);
+
+        lockup = new UnityLockup(treasury, 0, address(token), TOKEN_ID);
+        daily = new UnityDaily(treasury, 0, address(token), TOKEN_ID);
+        transport = new Transport(treasury, 0, address(token), TOKEN_ID);
+    }
+
+    function testLockupRejectsClaimFromNonOwner() public {
+        uint256 orderId = _createLockupOrder();
+
+        vm.warp(block.timestamp + 2 minutes);
+        vm.prank(stranger);
+        vm.expectRevert(bytes("Not the owner"));
+        lockup.claim(orderId);
+    }
+
+    function testLockupRejectsDoubleClaim() public {
+        uint256 orderId = _createLockupOrder();
+        uint256 amountEarned = 100.3 ether;
+        _mockWithdraw(amountEarned);
+        token.mint(address(lockup), amountEarned - AMOUNT);
+
+        vm.warp(block.timestamp + 2 minutes);
+        vm.prank(user);
+        lockup.claim(orderId);
+
+        vm.prank(user);
+        vm.expectRevert(bytes("Order already claimed or not exist"));
+        lockup.claim(orderId);
+    }
+
+    function testDailyRejectsClaimFromNonOwner() public {
+        uint256 orderId = _createDailyOrder();
+
+        vm.warp(block.timestamp + 1 days + 1);
+        vm.prank(stranger);
+        vm.expectRevert(bytes("Not the owner"));
+        daily.claim(orderId);
+    }
+
+    function testTransportClaimReferralIsOwnerOnly() public {
+        vm.prank(stranger);
+        vm.expectRevert("Ownable: caller is not the owner");
+        transport.claimReferral(user, 10 ether);
+    }
+
+    function testFuzzLockupRejectsClaimFromNonOwner(uint96 rawAmount, uint8 rawTier, address attacker) public {
+        vm.assume(attacker != user);
+        vm.assume(attacker != address(0));
+
+        uint256 amount = 10 ether + (uint256(rawAmount) % 990 ether);
+        IUnityLockup.UnityLockupTier tier = IUnityLockup.UnityLockupTier(rawTier % 6);
+        _mockPancakePosition(amount);
+        uint256 orderId = _createLockupOrder(amount, tier);
+
+        vm.warp(block.timestamp + 31 minutes);
+        vm.prank(attacker);
+        vm.expectRevert(bytes("Not the owner"));
+        lockup.claim(orderId);
+    }
+
+    function testFuzzTransportClaimReferralIsOwnerOnly(address caller, address recipient, uint96 rawAmount) public {
+        vm.assume(caller != owner);
+        vm.assume(caller != address(0));
+        vm.assume(recipient != address(0));
+        uint256 amount = 1 + (uint256(rawAmount) % 1_000 ether);
+
+        vm.prank(caller);
+        vm.expectRevert("Ownable: caller is not the owner");
+        transport.claimReferral(recipient, amount);
+    }
+
+    function _createLockupOrder() private returns (uint256) {
+        return _createLockupOrder(AMOUNT, IUnityLockup.UnityLockupTier.Launch);
+    }
+
+    function _createLockupOrder(uint256 amount, IUnityLockup.UnityLockupTier tier) private returns (uint256) {
+        token.mint(user, amount);
+        vm.startPrank(user);
+        token.approve(address(lockup), amount);
+        lockup.lockup(amount, tier);
+        vm.stopPrank();
+        return 0;
+    }
+
+    function _createDailyOrder() private returns (uint256) {
+        token.mint(user, AMOUNT);
+        vm.startPrank(user);
+        token.approve(address(daily), AMOUNT);
+        daily.lockup(AMOUNT);
+        vm.stopPrank();
+        return 0;
+    }
+
+    function _mockPancakePosition(uint256 amountOut) private {
+        bytes memory position = abi.encode(
+            uint96(0),
+            address(0),
+            address(token),
+            OTHER_TOKEN,
+            uint24(2500),
+            int24(100),
+            int24(200),
+            uint128(1_000_000),
+            uint256(0),
+            uint256(0),
+            uint128(0),
+            uint128(0)
+        );
+
+        vm.mockCall(NFPM, abi.encodeWithSignature("positions(uint256)", TOKEN_ID), position);
+        vm.mockCall(FACTORY, abi.encodeWithSignature("getPool(address,address,uint24)", address(token), OTHER_TOKEN, uint24(2500)), abi.encode(POOL));
+        vm.mockCall(POOL, abi.encodeWithSignature("slot0()"), abi.encode(uint160(1 << 96), int24(50), uint16(0), uint16(0), uint16(0), uint32(0), true));
+        vm.mockCall(NFPM, abi.encodeWithSelector(bytes4(keccak256("increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))"))), abi.encode(uint128(1), amountOut, uint256(0)));
+    }
+
+    function _mockWithdraw(uint256 amountOut) private {
+        vm.mockCall(NFPM, abi.encodeWithSelector(bytes4(keccak256("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))"))), abi.encode(amountOut, uint256(0)));
+        vm.mockCall(NFPM, abi.encodeWithSelector(bytes4(keccak256("collect((uint256,address,uint128,uint128))"))), abi.encode(amountOut, uint256(0)));
+    }
+}

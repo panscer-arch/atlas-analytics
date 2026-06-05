@@ -26,10 +26,34 @@ const documentCards = [
   {
     title: "Foundry Access Control",
     type: "Тесты",
-    status: "4/4 пройдено",
-    description: "Чужой Lockup/Daily claim, повторный Lockup claim и owner-only Transport проверены локальными Foundry-тестами.",
+    status: "6/6 пройдено",
+    description: "Чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport и fuzz-сценарии проверены Foundry.",
     href: "/security/foundry-access-control-report-ru.md",
     cta: "Открыть отчет",
+  },
+  {
+    title: "Foundry Fuzz 1000",
+    type: "Fuzzing",
+    status: "Пройдено",
+    description: "Отдельный прогон с 1000 fuzz-runs по чужому Lockup claim и owner-only Transport.",
+    href: "/security/foundry-fuzz-1000-report.txt",
+    cta: "Открыть отчет",
+  },
+  {
+    title: "Aderyn Core Report",
+    type: "Static analysis",
+    status: "Запущен",
+    description: "Aderyn 0.6.8 по core-контрактам: 4 файла, 448 nSLOC, 2 High и 6 Low сигналов для ручной проверки.",
+    href: "/security/aderyn-core-report.md",
+    cta: "Открыть отчет",
+  },
+  {
+    title: "Aderyn Human Summary",
+    type: "Перевод",
+    status: "Готов к вычитке",
+    description: "Перевод сигналов Aderyn на обычный язык: что является риском, что требует review, что не является exploit-доказательством.",
+    href: "/security/aderyn-human-summary-ru.md",
+    cta: "Открыть summary",
   },
   {
     title: "Testnet Battle Plan",
@@ -185,12 +209,21 @@ const programEvidence = [
   },
   {
     program: "Foundry tests",
-    status: "4/4 пройдено",
+    status: "6/6, fuzz до 1000 runs",
     report: "/security/foundry-access-control-report-ru.md",
     command: "forge test -vv",
-    output: "Пройдены тесты: чужой Lockup claim, чужой Daily claim, повторный Lockup claim и Transport.claimReferral только для owner.",
+    output: "Пройдены 6 тестов: чужой Lockup claim, чужой Daily claim, повторный Lockup claim, Transport.claimReferral только для owner и 2 fuzz-сценария.",
     human:
-      "Это подтверждает базовую защиту доступа: чужой человек не может выполнить claim за другого пользователя, а административный Transport закрыт owner-проверкой.",
+      "Это подтверждает базовую защиту доступа: чужой человек не может выполнить claim за другого пользователя, а административный Transport закрыт owner-проверкой. Fuzz-прогон расширяет проверку на случайные суммы, тарифы и адреса.",
+  },
+  {
+    program: "Aderyn",
+    status: "Отчет получен",
+    report: "/security/aderyn-human-summary-ru.md",
+    command: "aderyn . --src contracts --path-includes contracts/Transport.sol,contracts/UnityDaily.sol,contracts/UnityLockup.sol,contracts/PositionHandler.sol --output aderyn-core-report.md",
+    output: "Core-прогон: 4 Solidity files, 448 nSLOC, 2 High и 6 Low сигналов. Полный прогон: 20 файлов, 1233 nSLOC, 3 High и 8 Low сигналов.",
+    human:
+      "Aderyn не подтвердил 'все безопасно'. Он дал список мест для ручной проверки: owner-полномочия, deployment-внешние вызовы, quality-сигналы и интерпретацию lockup-функций.",
   },
   {
     program: "Solhint",
@@ -218,15 +251,15 @@ const externalTrustGaps = [
   },
   {
     title: "Полные прогоны Mythril / Aderyn",
-    status: "Mythril расширен, Aderyn впереди",
-    why: "Mythril bounded-прогон уже опубликован по Transport, UnityLockup, UnityDaily и PositionHandler. Aderyn еще нужно установить и прогнать по финальной версии.",
-    next: "Добавить Aderyn-отчет и обновить human-readable summary.",
+    status: "Выполнено для текущего среза",
+    why: "Mythril bounded-прогон опубликован по Transport, UnityLockup, UnityDaily и PositionHandler. Aderyn 0.6.8 выполнен по всем контрактам и отдельно по core-файлам.",
+    next: "Повторить прогоны после финальных правок кода и deployment-адресов.",
   },
   {
     title: "Invariant tests и fuzzing",
-    status: "Access-control тесты пройдены",
-    why: "Foundry уже проверил чужой claim, повторный Lockup claim и owner-only Transport. Большие invariant/fuzz сценарии с тысячами действий еще нужны отдельно.",
-    next: "Добавить invariant fuzzing на суммы, сроки, массовые lockup/claim и LP-состояния.",
+    status: "Fuzz частично пройден",
+    why: "Foundry проверил чужой claim, повторный Lockup claim, owner-only Transport и 2 fuzz-сценария с 1000 runs. Массовые invariant/stress сценарии еще нужны отдельно.",
+    next: "Добавить stress/invariant на суммы, сроки, массовые lockup/claim и LP-состояния.",
   },
   {
     title: "Owner control policy",
@@ -288,14 +321,14 @@ const safetyClaims = [
 ];
 
 const trustLadder = [
-  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Access-control тесты 4/4 пройдены."],
-  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты и базовые Foundry-тесты собраны, расширенный fuzzing и testnet battle еще впереди."],
+  ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Foundry 6/6 и fuzz 1000 runs пройдены."],
+  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты, Aderyn, Mythril и Foundry собраны, большой stress-test и testnet battle еще впереди."],
   ["Нельзя говорить сейчас", "Нельзя писать Audited, 100% secure, невозможно взломать, выплаты гарантированы или участие без риска."],
   ["Что даст сильный статус", "Invariant tests, fuzzing, testnet battle test и отдельный документ по owner-полномочиям."],
 ];
 
 const securityChecks = [
-  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "4/4 Foundry"],
+  ["Access Control", "Проверяем, что посторонний адрес не может вызвать claim по чужому ордеру или выполнить owner-действия.", "6/6 Foundry"],
   ["Reentrancy", "Проверяем повторные вызовы и сценарии, где внешний контракт пытается вмешаться в выполнение операции.", "В работе"],
   ["Claim Logic", "Проверяем, что пользователь не может запросить больше суммы, разрешенной правилами выбранного цикла.", "Нужны инварианты"],
   ["Transport Logic", "Отдельно описываем административный модуль исполнения и границы его полномочий.", "Раскрыть публично"],
@@ -329,14 +362,14 @@ const forbiddenTexts = [
 
 const completionItems = [
   {
-    status: "Частично",
+    status: "Выполнено",
     title: "Aderyn / Mythril по всем контрактам",
-    text: "Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn еще не запущен, потому что на машине нет cargo/Rust окружения.",
+    text: "Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по 20 файлам и отдельно по 4 core-контрактам.",
   },
   {
     status: "Частично",
     title: "Foundry tests / invariant-тесты",
-    text: "Access-control тесты пройдены: 4/4. Полные invariant-тесты на массовые сценарии, суммы, сроки и LP-поведение еще нужно расширить.",
+    text: "Foundry suite пройден: 6/6, включая 2 fuzz-сценария. Отдельный прогон с 1000 fuzz-runs пройден. Полные invariant-тесты на массовые сценарии, суммы, сроки и LP-поведение еще нужно расширить.",
   },
   {
     status: "Не сделано",
@@ -360,7 +393,8 @@ const toolResults = [
   ["Solhint", "Запущен", "Проверка качества Solidity-кода: стиль, NatSpec, версии компилятора, imports и gas-предупреждения. Отдельно фильтруются внешние библиотеки."],
   ["Foundry build", "Пройден", "Проект собирается через solc 0.8.20 с via_ir=true. Предупреждения вынесены в технический review."],
   ["Mythril", "Bounded-прогон", "Transport, UnityLockup, UnityDaily и PositionHandler проверены по bytecode в ограниченном режиме: success=true, issues=[]."],
-  ["Foundry access-control", "4/4 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim и owner-only Transport."],
+  ["Aderyn", "Запущен", "Core-прогон дал 2 High и 6 Low сигналов для ручной проверки; подготовлен перевод на человеческий язык."],
+  ["Foundry access-control", "6/6 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport и 2 fuzz-сценария."],
   ["Invariant tests", "Следующий этап", "Нужны расширенные тесты на массовые сценарии, случайные суммы, сроки, Daily-лимиты и корректный учет выплат."],
 ];
 
