@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "../contracts/IUnityLockup.sol";
+import "../contracts/UnityLockup.sol";
+
+interface VmStress {
+    function prank(address) external;
+    function startPrank(address) external;
+    function stopPrank() external;
+    function warp(uint256) external;
+    function expectRevert(bytes calldata) external;
+    function mockCall(address callee, bytes calldata data, bytes calldata returnData) external;
+    function pauseGasMetering() external;
+    function resumeGasMetering() external;
+}
+
+contract AtlasStressMockToken {
+    string public constant name = "Mock USDT";
+    string public constant symbol = "mUSDT";
+    uint8 public constant decimals = 18;
+
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    function mint(address to, uint256 amount) external {
+        balanceOf[to] += amount;
+    }
+
+    function approve(address spender, uint256 amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        return true;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "balance");
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        require(balanceOf[from] >= amount, "balance");
+        uint256 allowed = allowance[from][msg.sender];
+        require(allowed >= amount, "allowance");
+        allowance[from][msg.sender] = allowed - amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
+        return true;
+    }
+}
+
+contract AtlasStressTest {
+    VmStress private constant vm = VmStress(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    address private constant NFPM = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
+    address private constant FACTORY = 0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865;
+    address private constant POOL = address(0xBEEF);
+    address private constant OTHER_TOKEN = address(0xCAFE);
+
+    uint256 private constant TOKEN_ID = 1;
+    uint256 private constant USERS = 1_000;
+    uint256 private constant ORDERS_PER_USER = 50;
+    uint256 private constant TOTAL_ORDERS = USERS * ORDERS_PER_USER;
+    uint256 private constant CLAIM_ATTEMPTS = TOTAL_ORDERS * 2;
+    uint256 private constant AMOUNT = 10 ether;
+
+    AtlasStressMockToken private token;
+    UnityLockup private lockup;
+
+    function setUp() public {
+        token = new AtlasStressMockToken();
+        _mockPancakePosition();
+        lockup = new UnityLockup(address(0xCA5), 0, address(token), TOKEN_ID);
+    }
+
+    function testStress1000Users50000Lockups100000ClaimAttempts() public {
+        vm.pauseGasMetering();
+
+        for (uint256 userIndex = 0; userIndex < USERS; userIndex++) {
+            address user = _user(userIndex);
+            uint256 balance = AMOUNT * ORDERS_PER_USER;
+            token.mint(user, balance);
+
+            vm.startPrank(user);
+            token.approve(address(lockup), balance);
+            for (uint256 orderIndex = 0; orderIndex < ORDERS_PER_USER; orderIndex++) {
+                lockup.lockup(AMOUNT, IUnityLockup.UnityLockupTier.Test);
+            }
+            vm.stopPrank();
+        }
+
+        require(lockup.nextOrderId() == TOTAL_ORDERS, "wrong order count after lockups");
+
+        vm.warp(block.timestamp + 11 minutes);
+        _mockWithdraw();
+
+        uint256 attempts;
+        for (uint256 orderId = 0; orderId < TOTAL_ORDERS; orderId++) {
+            address owner = _user(orderId / ORDERS_PER_USER);
+            vm.prank(owner);
+            lockup.claim(orderId);
+            attempts++;
+        }
+
+        for (uint256 orderId = 0; orderId < TOTAL_ORDERS; orderId++) {
+            address owner = _user(orderId / ORDERS_PER_USER);
+            vm.prank(owner);
+            vm.expectRevert(bytes("Order already claimed or not exist"));
+            lockup.claim(orderId);
+            attempts++;
+        }
+
+        require(attempts == CLAIM_ATTEMPTS, "wrong claim attempt count");
+        vm.resumeGasMetering();
+    }
+
+    function _user(uint256 index) private pure returns (address) {
+        return address(uint160(0x100000 + index));
+    }
+
+    function _mockPancakePosition() private {
+        bytes memory position = abi.encode(
+            uint96(0),
+            address(0),
+            address(token),
+            OTHER_TOKEN,
+            uint24(2500),
+            int24(100),
+            int24(200),
+            uint128(1_000_000),
+            uint256(0),
+            uint256(0),
+            uint128(0),
+            uint128(0)
+        );
+
+        vm.mockCall(NFPM, abi.encodeWithSignature("positions(uint256)", TOKEN_ID), position);
+        vm.mockCall(
+            FACTORY,
+            abi.encodeWithSignature("getPool(address,address,uint24)", address(token), OTHER_TOKEN, uint24(2500)),
+            abi.encode(POOL)
+        );
+        vm.mockCall(
+            POOL,
+            abi.encodeWithSignature("slot0()"),
+            abi.encode(uint160(1 << 96), int24(50), uint16(0), uint16(0), uint16(0), uint32(0), true)
+        );
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))"))),
+            abi.encode(uint128(1), AMOUNT, uint256(0))
+        );
+    }
+
+    function _mockWithdraw() private {
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))"))),
+            abi.encode(AMOUNT, uint256(0))
+        );
+        vm.mockCall(
+            NFPM,
+            abi.encodeWithSelector(bytes4(keccak256("collect((uint256,address,uint128,uint128))"))),
+            abi.encode(AMOUNT, uint256(0))
+        );
+    }
+}

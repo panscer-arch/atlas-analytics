@@ -40,6 +40,14 @@ const documentCards = [
     cta: "Открыть отчет",
   },
   {
+    title: "Stress 1000 Users",
+    type: "Stress-test",
+    status: "Пройдено mock",
+    description: "Локальный Foundry stress-test: 1000 пользователей, 50000 Lockup-ордеров, 100000 claim-попыток.",
+    href: "/security/foundry-stress-1000-users-report-ru.md",
+    cta: "Открыть отчет",
+  },
+  {
     title: "Aderyn Core Report",
     type: "Static analysis",
     status: "Запущен",
@@ -257,9 +265,9 @@ const externalTrustGaps = [
   },
   {
     title: "Invariant tests и fuzzing",
-    status: "Fuzz частично пройден",
-    why: "Foundry проверил чужой claim, повторный Lockup claim, owner-only Transport и 2 fuzz-сценария с 1000 runs. Массовые invariant/stress сценарии еще нужны отдельно.",
-    next: "Добавить stress/invariant на суммы, сроки, массовые lockup/claim и LP-состояния.",
+    status: "Stress mock пройден",
+    why: "Foundry проверил чужой claim, повторный Lockup claim, owner-only Transport, 2 fuzz-сценария с 1000 runs и большой Lockup stress-test: 1000 users, 50000 lockup, 100000 claim attempts.",
+    next: "Расширить stress на Daily/Transport и реальную Pancake V3 testnet-ликвидность.",
   },
   {
     title: "Owner control policy",
@@ -322,7 +330,7 @@ const safetyClaims = [
 
 const trustLadder = [
   ["Можно сказать сейчас", "В коде есть базовые защитные механизмы: проверка владельца ордера, защита пользовательских claim от reentrancy, SafeERC20 и owner-only ограничения. Foundry 6/6 и fuzz 1000 runs пройдены."],
-  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты, Aderyn, Mythril и Foundry собраны, большой stress-test и testnet battle еще впереди."],
+  ["Нужно говорить честно", "Это Security Review in progress, а не внешний аудит. Автоотчеты, Aderyn, Mythril, Foundry fuzz и локальный stress-test собраны, testnet battle еще впереди."],
   ["Нельзя говорить сейчас", "Нельзя писать Audited, 100% secure, невозможно взломать, выплаты гарантированы или участие без риска."],
   ["Что даст сильный статус", "Invariant tests, fuzzing, testnet battle test и отдельный документ по owner-полномочиям."],
 ];
@@ -369,12 +377,12 @@ const completionItems = [
   {
     status: "Частично",
     title: "Foundry tests / invariant-тесты",
-    text: "Foundry suite пройден: 6/6, включая 2 fuzz-сценария. Отдельный прогон с 1000 fuzz-runs пройден. Полные invariant-тесты на массовые сценарии, суммы, сроки и LP-поведение еще нужно расширить.",
+    text: "Foundry suite пройден: 6/6, включая 2 fuzz-сценария. Отдельный прогон с 1000 fuzz-runs пройден. Локальный Lockup stress-test на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден в mock-окружении. Daily/Transport stress и LP-testnet еще нужно расширить.",
   },
   {
-    status: "Не сделано",
+    status: "Пройдено mock",
     title: "Большой fuzzing / stress-сценарии",
-    text: "Сценарии на 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки еще не прогонялись.",
+    text: "Lockup stress-сценарий на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден локально. Это mock-окружение без реальной Pancake V3 ликвидности и не gas benchmark.",
   },
   {
     status: "Не сделано",
@@ -395,6 +403,7 @@ const toolResults = [
   ["Mythril", "Bounded-прогон", "Transport, UnityLockup, UnityDaily и PositionHandler проверены по bytecode в ограниченном режиме: success=true, issues=[]."],
   ["Aderyn", "Запущен", "Core-прогон дал 2 High и 6 Low сигналов для ручной проверки; подготовлен перевод на человеческий язык."],
   ["Foundry access-control", "6/6 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport и 2 fuzz-сценария."],
+  ["Foundry stress", "Пройдено mock", "1000 пользователей, 50000 Lockup-ордеров и 100000 claim-попыток прошли в локальном mock-окружении."],
   ["Invariant tests", "Следующий этап", "Нужны расширенные тесты на массовые сценарии, случайные суммы, сроки, Daily-лимиты и корректный учет выплат."],
 ];
 

@@ -70,6 +70,16 @@ Status: рабочая публичная версия для вычитки
 
 > Тестами подтверждены базовые сценарии: чужой Lockup claim не проходит, чужой Daily claim не проходит, повторный Lockup claim не проходит, Transport.claimReferral доступен только owner. Fuzz-сценарии дополнительно проверяют случайные суммы, тарифы и адреса.
 
+### Foundry stress-test
+
+Машинный вывод:
+
+> 1000 пользователей, 50000 Lockup-ордеров, 100000 claim-попыток. Suite result: ok. 1 passed; 0 failed; 0 skipped.
+
+Перевод:
+
+> В локальной mock-симуляции Lockup выдержал массовый сценарий: первая волна claim прошла по владельцам ордеров, повторная волна claim была остановлена проверкой `Order already claimed or not exist`. Это логический stress-test, а не gas benchmark и не testnet battle.
+
 ### Aderyn
 
 Машинный вывод:
@@ -203,10 +213,10 @@ Status: рабочая публичная версия для вычитки
    Mythril bounded-прогон выполнен по Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам.
 
 2. Foundry access-control tests — частично сделано.
-   Foundry suite пройден: 6/6. Отдельный прогон `--fuzz-runs 1000` пройден. Полные invariant/stress тесты для массовых сценариев еще нужно расширить.
+   Foundry suite пройден: 6/6. Отдельный прогон `--fuzz-runs 1000` пройден. Lockup stress-test на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден в mock-окружении. Daily/Transport stress и LP-testnet еще нужно расширить.
 
-3. Большой fuzzing / stress-сценарии — не сделано.
-   Сценарии на 1000 пользователей, 50000 lockup, 100000 claim, случайные суммы и сроки еще не прогонялись.
+3. Большой fuzzing / stress-сценарии — частично сделано.
+   Lockup stress-сценарий на 1000 пользователей, 50000 lockup и 100000 claim-попыток пройден локально. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
 4. BNB Testnet battle test — не сделано.
    Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.

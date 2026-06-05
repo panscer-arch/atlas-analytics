@@ -73,6 +73,7 @@
 - Повторный claim в UnityLockup закрыт состоянием `notClaimed`.
 - Transport claimReferral закрыт `onlyOwner`.
 - Базовые access-control/fuzz сценарии прогнаны в Foundry: 6 тестов пройдены; отдельный прогон `--fuzz-runs 1000` пройден.
+- Lockup stress-test прогнан в Foundry mock-окружении: 1000 пользователей, 50000 lockup, 100000 claim-попыток.
 - Mythril bounded bytecode-прогон по Transport, UnityLockup, UnityDaily и PositionHandler вернул `success=true`, `issues=[]`.
 - Aderyn 0.6.8 выполнен; owner-полномочия отмечены как centralization risk и вынесены в этот документ.
 

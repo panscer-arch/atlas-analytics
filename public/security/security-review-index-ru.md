@@ -31,13 +31,16 @@ Date: 2026-06-05
 8. Foundry Fuzz 1000 Report
    Машинный отчет отдельного прогона `forge test -vv --fuzz-runs 1000`.
 
-9. Aderyn Reports
+9. Foundry Stress 1000 Users Report
+   Human-readable и машинный отчет: 1000 пользователей, 50000 Lockup-ордеров, 100000 claim-попыток в mock-окружении.
+
+10. Aderyn Reports
    Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
 
-10. Testnet Battle Test Plan RU
+11. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-11. Mythril Results
+12. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно
