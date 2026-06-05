@@ -27,13 +27,20 @@ jobs:
           ${{ secrets.VPS_SSH_KEY }}
           EOF
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            echo "ssh-keyscan failed, retrying in 5s..."
+            sleep 5
+          done
 
       - name: Deploy on VPS
         shell: bash
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             "/opt/atlas-analytics/deploy.sh"
 
@@ -42,26 +49,31 @@ jobs:
         run: |
           scp -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             server/content-api.mjs \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-api.mjs"
 
           scp -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             server/telegram-task-store.mjs \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-telegram-task-store.mjs"
 
           scp -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             server/telegram-bot.mjs \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-telegram-bot.mjs"
 
           scp -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             server/backup-content.sh \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-backup.sh"
 
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             'bash -s' <<'REMOTE'
           set -euo pipefail
