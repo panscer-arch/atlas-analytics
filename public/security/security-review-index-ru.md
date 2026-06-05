@@ -19,82 +19,85 @@ Date: 2026-06-05
 4. Security Gate Matrix RU
    Единая матрица статусов: что закрыто доказательствами, что подготовлено как kit, какие gates требуют решения перед deployment.
 
-5. Slither Report
+5. Security Evidence Manifest
+   Machine-readable JSON со статусами 13 gates и 41 evidence-файлом. Локальная проверка: `node scripts/verify-security-evidence.mjs`.
+
+6. Slither Report
    Машинный отчет автоматического анализа Solidity-кода.
 
-6. Solhint Report
+7. Solhint Report
    Отчет по качеству Solidity-кода, стилю, предупреждениям компилятора и технической гигиене.
 
-7. Owner Powers Disclosure RU
+8. Owner Powers Disclosure RU
    Отдельное раскрытие owner-полномочий: treasury, fee, tokenId, Transport, риски и рекомендуемые меры контроля.
 
-8. Foundry Access Control Report RU
+9. Foundry Access Control Report RU
    Читаемый отчет по Foundry-тестам: чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport и fuzz-сценарии.
 
-9. Foundry Fuzz 1000 Report
+10. Foundry Fuzz 1000 Report
    Машинный отчет отдельного прогона `forge test -vv --fuzz-runs 1000`.
 
-10. Foundry Stress 1000 Users Report
+11. Foundry Stress 1000 Users Report
    Human-readable и машинный отчет: 1000 пользователей, 50000 Lockup-ордеров, 100000 claim-попыток в mock-окружении.
 
-11. Foundry Daily/Transport Stress Report
+12. Foundry Daily/Transport Stress Report
    Human-readable отчет: Daily Flow на 1000 пользователей / 5000 ордеров / 10000 claim-попыток и Transport на 1000 owner-claim / 1000 non-owner попыток.
 
-12. Foundry Accounting Invariants Report
+13. Foundry Accounting Invariants Report
    Human-readable и машинный отчет: Lockup, Daily и Transport accounting checks по user net payout, treasury fee и amountUnclaimed delta.
 
-13. Product / Contract Consistency Review
+14. Product / Contract Consistency Review
    Сравнение публичных тарифов с code-level формулами Lockup/Daily. Найдено x10 расхождение по Lockup и вопрос по Daily.
 
-14. Tariff Consistency Decision Packet
+15. Tariff Consistency Decision Packet
    Практический packet для решения: править контракт под публичные тарифы или публичные материалы под текущий код, плюс checklist повторных проверок.
 
-15. Tariff Option A Contract Patch Plan
+16. Tariff Option A Contract Patch Plan
    Draft-план правки `UnityLockup` и `UnityDaily` под публичные тарифы, включая ожидаемые значения тестов и список повторных проверок.
 
-16. Tariff Option B Content Rewrite Checklist
+17. Tariff Option B Content Rewrite Checklist
    Draft-чеклист обновления White Paper, FAQ, сайта, презентаций, PDF, tariff-check model и публичных материалов под текущую code-level экономику.
 
-17. Tariff Consistency Machine Check
+18. Tariff Consistency Machine Check
    Скрипт и JSON-output, который машинно сравнивает публичные Lockup/Daily тарифы с формулами `UnityLockup.sol` и `UnityDaily.sol`.
 
-18. Aderyn Reports
+19. Aderyn Reports
    Полный Aderyn report, core Aderyn report и human-readable summary по найденным сигналам.
 
-19. Testnet Battle Test Plan RU
+20. Testnet Battle Test Plan RU
    План публичного BNB Testnet challenge. Сам challenge еще не проведен.
 
-20. Testnet Battle Kit RU
+21. Testnet Battle Kit RU
    Рабочий комплект для запуска BNB Testnet Battle Test: условия, порядок запуска, публичные формулировки и границы статуса.
 
-21. Testnet Contract Registry Template
+22. Testnet Contract Registry Template
    JSON-шаблон для deployment-адресов, explorer-ссылок, ABI, owner-значений, LP-параметров и smoke-test транзакций.
 
-22. Testnet Deployment Runbook RU
+23. Testnet Deployment Runbook RU
    Технический порядок testnet deployment: env-переменные, Pancake V3 tokenId, `forge create`, generated registry и smoke-check.
 
-23. Testnet Deploy Script
+24. Testnet Deploy Script
    Bash-скрипт для deploy `UnityLockup`, `UnityDaily` и `Transport` на BNB Testnet.
 
-24. Testnet Env Template
+25. Testnet Env Template
    Шаблон `.env.testnet` без секретов: RPC, deployer key, main token, Pancake V3 tokenId, treasury и platform fee.
 
-25. Testnet Smoke Test Runbook RU
+26. Testnet Smoke Test Runbook RU
    Read-only и transaction smoke-test после deployment: bytecode, owner/treasury/tokenId, create/claim/revert сценарии.
 
-26. Testnet Smoke Test Script
+27. Testnet Smoke Test Script
    Read-only script для проверки registry: bytecode и публичные параметры контрактов на BNB Testnet.
 
-27. Testnet Participant Guide RU
+28. Testnet Participant Guide RU
    Инструкция для внешних участников: что проверять, что считается валидным report и какие severity-уровни использовать.
 
-28. Testnet Bug Report Template RU
+29. Testnet Bug Report Template RU
    Шаблон воспроизводимого exploit-report: tx hashes, шаги, expected/actual behavior, impact и severity.
 
-29. Testnet Final Report Template RU
+30. Testnet Final Report Template RU
    Шаблон итогового отчета после challenge: участники, адреса, сценарии, findings, remediation и финальная формулировка.
 
-30. Mythril Results
+31. Mythril Results
    Ограниченные bytecode-прогоны Transport, UnityLockup, UnityDaily и PositionHandler: success=true, issues=[]. Это не заменяет полный аудит.
 
 ## Важно

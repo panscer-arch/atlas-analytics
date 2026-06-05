@@ -1,0 +1,164 @@
+{
+  "project": "Atlas System",
+  "date": "2026-06-05",
+  "status": "Security Review in progress",
+  "notStatus": [
+    "Audited",
+    "Battle-tested",
+    "External audit completed",
+    "100% secure"
+  ],
+  "summary": {
+    "foundrySuite": "12 tests passed, 0 failed, 0 skipped",
+    "tariffConsistency": "MISMATCH found",
+    "testnetDeployment": "not completed",
+    "testnetBattle": "not completed",
+    "externalAudit": "not completed"
+  },
+  "gates": [
+    {
+      "id": "solidity-build",
+      "title": "Solidity build",
+      "status": "closed-current-snapshot",
+      "evidence": [
+        "/security/foundry-access-control-report.txt"
+      ],
+      "next": "Repeat after final code changes"
+    },
+    {
+      "id": "access-control",
+      "title": "Access control tests",
+      "status": "closed-current-snapshot",
+      "evidence": [
+        "/security/foundry-access-control-report-ru.md",
+        "/security/AtlasAccessControl.t.sol.txt"
+      ],
+      "next": "Repeat after tariff decision and final code changes"
+    },
+    {
+      "id": "fuzz-1000",
+      "title": "Foundry fuzz 1000",
+      "status": "closed-current-snapshot",
+      "evidence": [
+        "/security/foundry-fuzz-1000-report.txt"
+      ],
+      "next": "Repeat after final code changes"
+    },
+    {
+      "id": "lockup-stress",
+      "title": "Lockup stress test",
+      "status": "closed-mock",
+      "evidence": [
+        "/security/foundry-stress-1000-users-report-ru.md",
+        "/security/foundry-stress-1000-users-report.txt",
+        "/security/AtlasStress.t.sol.txt"
+      ],
+      "next": "Repeat after final code changes; does not replace real liquidity test"
+    },
+    {
+      "id": "daily-transport-stress",
+      "title": "Daily / Transport stress test",
+      "status": "closed-mock",
+      "evidence": [
+        "/security/foundry-daily-transport-stress-report-ru.md",
+        "/security/foundry-daily-transport-stress-report.txt",
+        "/security/AtlasDailyTransportStress.t.sol.txt"
+      ],
+      "next": "Repeat after final code changes"
+    },
+    {
+      "id": "accounting-invariants",
+      "title": "Accounting invariants",
+      "status": "closed-current-snapshot",
+      "evidence": [
+        "/security/foundry-accounting-invariants-report-ru.md",
+        "/security/foundry-accounting-invariants-report.txt",
+        "/security/AtlasAccountingInvariants.t.sol.txt"
+      ],
+      "next": "Repeat after tariff decision"
+    },
+    {
+      "id": "static-analysis",
+      "title": "Slither / Solhint / Aderyn / Mythril",
+      "status": "closed-current-snapshot",
+      "evidence": [
+        "/security/slither-report.json",
+        "/security/solhint-report.txt",
+        "/security/aderyn-report.md",
+        "/security/aderyn-core-report.md",
+        "/security/aderyn-human-summary-ru.md",
+        "/security/mythril-transport.json",
+        "/security/mythril-unitylockup.json",
+        "/security/mythril-unitydaily.json",
+        "/security/mythril-positionhandler.json"
+      ],
+      "next": "Repeat after final code changes"
+    },
+    {
+      "id": "tariff-consistency",
+      "title": "Product / contract tariff consistency",
+      "status": "open-decision-required",
+      "evidence": [
+        "/security/product-contract-consistency-review-ru.md",
+        "/security/tariff-consistency-decision-packet-ru.md",
+        "/security/tariff-consistency-check-output.json",
+        "/security/tariff-consistency-check.js.txt",
+        "/security/tariff-option-a-contract-patch-plan-ru.md",
+        "/security/tariff-option-b-content-rewrite-checklist-ru.md"
+      ],
+      "next": "Team must choose Option A contract patch or Option B content rewrite"
+    },
+    {
+      "id": "owner-powers",
+      "title": "Owner powers disclosure",
+      "status": "draft-prepared",
+      "evidence": [
+        "/security/owner-powers-disclosure-ru.md"
+      ],
+      "next": "Approve final owner policy: EOA, multisig, timelock, or governance"
+    },
+    {
+      "id": "testnet-deployment",
+      "title": "BNB Testnet deployment",
+      "status": "prepared-not-executed",
+      "evidence": [
+        "/security/testnet-deployment-runbook-ru.md",
+        "/security/deploy-testnet-battle.sh.txt",
+        "/security/testnet-env-example.txt",
+        "/security/testnet-contract-registry-template.json",
+        "/security/verify-testnet-registry.sh.txt"
+      ],
+      "next": "Requires tariff gate decision, deployer wallet, testnet token, Pancake V3 tokenId, treasury address"
+    },
+    {
+      "id": "testnet-smoke",
+      "title": "Testnet smoke test",
+      "status": "prepared-not-executed",
+      "evidence": [
+        "/security/testnet-smoke-test-runbook-ru.md",
+        "/security/smoke-test-registry-readonly.sh.txt"
+      ],
+      "next": "Execute after real testnet deployment"
+    },
+    {
+      "id": "testnet-battle",
+      "title": "BNB Testnet Battle Test",
+      "status": "prepared-not-executed",
+      "evidence": [
+        "/security/testnet-battle-plan-ru.md",
+        "/security/testnet-battle-kit-ru.md",
+        "/security/testnet-participant-guide-ru.md",
+        "/security/testnet-bug-report-template-ru.md",
+        "/security/testnet-final-report-template-ru.md"
+      ],
+      "next": "Run public challenge, triage reports, publish final report"
+    },
+    {
+      "id": "external-audit",
+      "title": "External audit",
+      "status": "not-started",
+      "evidence": [],
+      "next": "Order independent audit and publish report"
+    }
+  ]
+}

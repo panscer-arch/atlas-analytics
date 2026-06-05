@@ -29,6 +29,18 @@
 - Aderyn / Slither / Solhint отчеты опубликованы;
 - Testnet Battle Kit, deployment runbook, smoke-test kit и templates подготовлены.
 
+Дополнительно опубликован machine-readable manifest:
+
+```text
+/security/security-evidence-manifest.json
+```
+
+Локальная команда проверки manifest:
+
+```text
+node scripts/verify-security-evidence.mjs
+```
+
 Но все шаги еще нельзя считать закрытыми, потому что:
 
 - найден product/contract tariff mismatch;

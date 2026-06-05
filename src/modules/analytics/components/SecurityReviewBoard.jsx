@@ -24,6 +24,14 @@ const documentCards = [
     cta: "Открыть matrix",
   },
   {
+    title: "Evidence Manifest",
+    type: "Machine-readable",
+    status: "13 gates / 41 evidence",
+    description: "JSON-manifest со статусами gates, evidence-ссылками и незакрытыми условиями: tariff decision, testnet deployment, battle и external audit.",
+    href: "/security/security-evidence-manifest.json",
+    cta: "Открыть manifest",
+  },
+  {
     title: "Owner Powers Disclosure",
     type: "Risk disclosure",
     status: "Готов к вычитке",
