@@ -104,6 +104,14 @@ Status: рабочая публичная версия для вычитки
 >
 > Важно: тест использует code-level формулу контракта. Если публичные материалы обещают другую reward-логику, это нужно отдельно сверять как product/content mismatch.
 
+### Product / contract consistency
+
+Машинная проверка и ручная сверка показали:
+
+> Публичные Lockup Flow тарифы (`0.3%`, `2%`, `5%`, `12%`, `22.5%`) сейчас не совпадают с code-level формулой `UnityLockup.sol`, которая дает `0.03%`, `0.2%`, `0.5%`, `1.2%`, `2.25%`.
+
+Решение команды требуется до deployment: либо править контракт под публичные тарифы, либо править публичные материалы под контракт.
+
 ### Aderyn
 
 Машинный вывод:
@@ -242,11 +250,14 @@ Status: рабочая публичная версия для вычитки
 3. Большой fuzzing / stress-сценарии — частично сделано.
    Lockup stress: 1000 пользователей, 50000 lockup и 100000 claim-попыток. Daily stress: 1000 пользователей, 5000 Daily-ордеров и 10000 claim-попыток. Transport stress: 1000 owner-claim и 1000 non-owner попыток. Это не заменяет testnet battle и реальную Pancake V3 ликвидность.
 
-4. BNB Testnet battle test — подготовлено / не проведено.
+4. Product / contract consistency — требует решения.
+   Найдено x10 расхождение между публичными Lockup тарифами и текущей code-level формулой. Daily Flow также требует решения команды.
+
+5. BNB Testnet battle test — подготовлено / не проведено.
    Battle Kit, deployment runbook, env template, deploy script, contract registry template, smoke-test runbook/script, participant guide, bug report template и final report template подготовлены. Публичный testnet challenge на 100-200 человек с bounty за воспроизводимый exploit еще не запускался.
 
-5. Публичный Security Review и owner-документ — подготовлено.
+6. Публичный Security Review и owner-документ — подготовлено.
    Публичный Security Review draft собран. Owner Powers Disclosure оформлен как отдельный документ для вычитки.
 
-6. Внешний аудит — не сделано.
+7. Внешний аудит — не сделано.
    Статус `Audited` можно использовать только после внешнего аудита.

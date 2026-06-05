@@ -35,6 +35,7 @@
 - Foundry Lockup stress-test пройден: 1000 пользователей, 50000 lockup, 100000 claim-попыток в mock-окружении.
 - Foundry Daily/Transport stress-test пройден: Daily 1000 пользователей, 5000 ордеров, 10000 claim-попыток; Transport 1000 owner-claim и 1000 non-owner попыток.
 - Foundry accounting invariant checks пройдены: Lockup, Daily и Transport user net payout / treasury fee / amountUnclaimed delta.
+- Product / Contract Consistency Review выявил x10 расхождение между публичными Lockup тарифами и текущей code-level формулой. Требуется решение команды до deployment.
 - Aderyn 0.6.8 выполнен по всем файлам и отдельно по core-контрактам; подготовлен human-readable summary.
 - Owner Powers Disclosure оформлен отдельным документом для вычитки.
 - BNB Testnet Battle Test пока не проведен. Подготовлены plan, Battle Kit, deployment runbook, env template, deploy script, registry template, smoke-test runbook/script, participant guide, bug report template и final report template.

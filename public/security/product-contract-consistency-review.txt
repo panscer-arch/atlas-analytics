@@ -1,0 +1,18 @@
+Product / Contract Consistency Review
+
+Finding:
+Public Lockup Flow rates and current UnityLockup.sol code-level reward rates differ by x10.
+
+Public:
+Launch +0.3%, Momentum +2%, Premiere +5%, President +12%, Imperium +22.5%.
+
+Current contract:
+Launch +0.03%, Momentum +0.2%, Premiere +0.5%, President +1.2%, Imperium +2.25%.
+
+Daily Flow also requires decision:
+Public materials describe Core 0.6% daily / 120% total and Elite 0.8% daily / 160% total.
+Current UnityDaily.sol uses Core 1.1% daily and Elite 1.3% daily, implying about 220% and 260% gross reward over 200 days.
+
+Status:
+Team decision required before public deployment.
+

@@ -64,6 +64,14 @@ const documentCards = [
     cta: "Открыть отчет",
   },
   {
+    title: "Product / Contract Consistency",
+    type: "Decision gate",
+    status: "Требует решения",
+    description: "Сравнение публичных тарифов с code-level формулами Lockup/Daily. Найдено x10 расхождение по Lockup и вопрос по Daily.",
+    href: "/security/product-contract-consistency-review-ru.md",
+    cta: "Открыть review",
+  },
+  {
     title: "Aderyn Core Report",
     type: "Static analysis",
     status: "Запущен",
@@ -354,6 +362,12 @@ const externalTrustGaps = [
     next: "Заполнить `.env.testnet`, подготовить Pancake V3 testnet tokenId, развернуть контракты, выполнить smoke-test и заменить template на публичный registry с адресами и tx hash.",
   },
   {
+    title: "Product / contract consistency",
+    status: "Требует решения",
+    why: "Accounting invariant test подсветил расхождение: публичные Lockup тарифы в white paper в 10 раз выше текущей code-level формулы. Daily Flow также требует сверки публичных 0.6/0.8% с текущими 1.1/1.3% в коде.",
+    next: "До deployment выбрать источник истины: править контракт под публичные тарифы или править публичные материалы под код.",
+  },
+  {
     title: "Полные прогоны Mythril / Aderyn",
     status: "Выполнено для текущего среза",
     why: "Mythril bounded-прогон опубликован по Transport, UnityLockup, UnityDaily и PositionHandler. Aderyn 0.6.8 выполнен по всем контрактам и отдельно по core-файлам.",
@@ -473,12 +487,17 @@ const completionItems = [
   {
     status: "Частично",
     title: "Foundry tests / invariant-тесты",
-    text: "Foundry suite пройден: 12/12, включая 2 fuzz-сценария, Lockup/Daily/Transport stress и accounting invariant checks. Отдельный прогон с 1000 fuzz-runs пройден. LP-testnet еще нужно расширить на реальной testnet-ликвидности.",
+    text: "Foundry suite пройден: 12/12, включая 2 fuzz-сценария, Lockup/Daily/Transport stress и accounting invariant checks. Отдельный прогон с 1000 fuzz-runs пройден. Accounting test выявил product/contract consistency issue по тарифам, его нужно решить до deployment.",
   },
   {
     status: "Пройдено mock",
     title: "Большой fuzzing / stress-сценарии",
     text: "Lockup stress: 1000 пользователей, 50000 lockup и 100000 claim-попыток. Daily stress: 1000 пользователей, 5000 ордеров и 10000 claim-попыток. Transport stress: 1000 owner-claim и 1000 non-owner попыток. Это mock-окружение без реальной Pancake V3 ликвидности и не gas benchmark.",
+  },
+  {
+    status: "Требует решения",
+    title: "Product / Contract consistency",
+    text: "Найдено расхождение: публичные Lockup ставки в 10 раз выше текущей формулы UnityLockup; Daily публичные 0.6/0.8% отличаются от кода 1.1/1.3%. Нужно выбрать: править контракт или публичные материалы до deployment.",
   },
   {
     status: "Подготовлено / не проведено",
@@ -501,6 +520,7 @@ const toolResults = [
   ["Foundry access-control", "12/12 пройдено", "Проверены чужой Lockup/Daily claim, повторный Lockup claim, owner-only Transport, 2 fuzz-сценария, stress-тесты Lockup/Daily/Transport и accounting invariant checks."],
   ["Foundry stress", "Пройдено mock", "Lockup: 1000 users / 50000 orders / 100000 claims. Daily: 1000 users / 5000 orders / 10000 claims. Transport: 1000 owner claims / 1000 non-owner attempts."],
   ["Accounting invariants", "3/3 пройдено", "Проверены user net payout, treasury fee и amountUnclaimed delta для Lockup, Daily и Transport в mock-окружении."],
+  ["Product / contract consistency", "Требует решения", "Проверка сравнила публичные тарифы с формулами в коде: Lockup сейчас считает reward в 10 раз ниже публичных материалов, Daily также не совпадает с опубликованными 0.6/0.8%."],
 ];
 
 function SecurityReviewBoard() {

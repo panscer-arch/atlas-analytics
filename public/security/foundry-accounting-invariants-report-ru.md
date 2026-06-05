@@ -58,6 +58,8 @@ Ran 4 test suites: 12 tests passed, 0 failed, 0 skipped.
 
 В тесте используется code-level формула контракта. Для `UnityLockupTier.Launch` при `100 ether` amount кодовая reward-часть равна `0.03 ether`. Если публичные материалы обещают другое значение, это нужно сверять отдельно как product/content mismatch, а не как результат этого теста.
 
+Отдельная сверка опубликована в `Product / Contract Consistency Review`: `/security/product-contract-consistency-review-ru.md`.
+
 ## Ограничения
 
 Это локальный mock accounting test. Он не заменяет:
@@ -66,4 +68,3 @@ Ran 4 test suites: 12 tests passed, 0 failed, 0 skipped.
 - реальные Pancake V3 testnet транзакции;
 - внешний аудит;
 - публичный BNB Testnet Battle Test.
-

@@ -8,6 +8,17 @@
 
 Этот документ переводит BNB Testnet Battle Kit в конкретные технические действия: какие переменные заполнить, какой командой развернуть контракты, как получить contract registry и что проверить перед открытием challenge.
 
+## Стоп-фактор перед deployment
+
+Перед реальным deployment нужно закрыть `Product / Contract Consistency Review`: `/security/product-contract-consistency-review-ru.md`.
+
+Сейчас найдено расхождение между публичными тарифами и code-level формулами:
+
+- Lockup Flow: публичные тарифы в 10 раз выше текущей формулы `UnityLockup.sol`;
+- Daily Flow: публичные `0.6%` / `0.8%` отличаются от текущих `1.1%` / `1.3%` в `UnityDaily.sol`.
+
+До решения команды нельзя считать testnet deployment финальной проверкой публичной экономики. Нужно выбрать один источник истины: править контракт под публичные материалы или править публичные материалы под контракт.
+
 ## Важный нюанс по LP
 
 `UnityLockup`, `UnityDaily` и `Transport` наследуют `PositionHandler`. Во время constructor контракт проверяет Pancake V3 `tokenId`:
@@ -28,23 +39,24 @@
 
 ## Порядок запуска
 
-1. Создать testnet wallet и пополнить test BNB.
-2. Подготовить testnet token и Pancake V3 testnet NFT-position.
-3. Заполнить `.env.testnet`.
-4. Выполнить:
+1. Закрыть product/contract consistency decision.
+2. Создать testnet wallet и пополнить test BNB.
+3. Подготовить testnet token и Pancake V3 testnet NFT-position.
+4. Заполнить `.env.testnet`.
+5. Выполнить:
 
 ```text
 ./scripts/deploy-testnet-battle.sh
 ```
 
-5. Проверить registry:
+6. Проверить registry:
 
 ```text
 ./scripts/verify-testnet-registry.sh
 ```
 
-6. Перенести адреса из `testnet-contract-registry.generated.json` в публичный registry.
-7. Выполнить smoke-test транзакции:
+7. Перенести адреса из `testnet-contract-registry.generated.json` в публичный registry.
+8. Выполнить smoke-test транзакции:
    - Lockup create;
    - Daily create;
    - claim before time должен revert;
@@ -52,7 +64,7 @@
    - double claim должен revert;
    - non-owner claim должен revert;
    - Transport non-owner должен revert.
-8. Только после этого открывать challenge window.
+9. Только после этого открывать challenge window.
 
 ## Что считается закрытым после runbook
 
@@ -69,4 +81,3 @@ Battle-tested
 ```
 
 пока не завершен внешний challenge и не опубликован final report.
-

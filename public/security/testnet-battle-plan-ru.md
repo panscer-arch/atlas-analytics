@@ -16,6 +16,7 @@
 - Participant Guide: `/security/testnet-participant-guide-ru.md`
 - Bug Report Template: `/security/testnet-bug-report-template-ru.md`
 - Final Report Template: `/security/testnet-final-report-template-ru.md`
+- Product / Contract Consistency Review: `/security/product-contract-consistency-review-ru.md`
 
 ## Цель
 
@@ -52,6 +53,8 @@
 - Поведение при смене tokenId владельцем.
 
 ## Формат испытания
+
+Перед шагом 1 команда должна закрыть product/contract consistency decision: текущие Lockup/Daily формулы должны совпадать с публичной экономикой или публичные материалы должны быть обновлены под фактический код.
 
 1. Развернуть финальные testnet-контракты на BNB Testnet.
 2. Опубликовать адреса контрактов, ABI, исходный код и инструкцию.
