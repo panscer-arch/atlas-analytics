@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ContentPlanBoard from "./ContentPlanBoard";
 import DailyTasksBoard from "./DailyTasksBoard";
 import AgentFaqTemplate from "./AgentFaqTemplate";
 import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
@@ -98,7 +99,7 @@ const TASK_CATEGORY_BOARDS = [
     emptyHint: "Сюда идут задачи по разработке, smart-contract, серверу, боту, API, деплою и проверкам.",
   },
 ];
-const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "securityReview", "transportRiskFaq", "marketing"];
+const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "securityReview", "transportRiskFaq", "contentPlan", "marketing"];
 const STATIC_BOARD_META = {
   launch: {
     title: "Задачи запуска",
@@ -115,6 +116,10 @@ const STATIC_BOARD_META = {
   videoScripts: {
     title: "Ролики",
     description: "Сценарии и ТЗ для роликов: тексты, формат, длительность и комментарии для правок.",
+  },
+  contentPlan: {
+    title: "Контент-план",
+    description: "SMM-план Atlas по соцсетям, датам, форматам, статусам, текстам и комментариям для правок.",
   },
   materials: {
     title: "Материалы",
@@ -869,6 +874,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isKnowledgeBaseBoard = activeBoard === "knowledgeBase";
   const isIdeasBoard = activeBoard === "ideas";
   const isDailyTasksBoard = activeBoard === "dailyTasks";
+  const isContentPlanBoard = activeBoard === "contentPlan";
   const isVideoScriptsBoard = activeBoard === "videoScripts";
   const isMaterialsBoard = activeBoard === "materials";
   const isPresentationBoard = activeBoard === "presentation";
@@ -885,7 +891,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isMarketingBoard = activeBoard === "marketing";
   const activeTaskCategoryBoard = TASK_CATEGORY_BOARDS.find((board) => board.id === activeBoard);
   const isTaskCategoryBoard = Boolean(activeTaskCategoryBoard);
-  const isStaticContentBoard = isDailyTasksBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard || isSecurityReviewBoard || isTransportRiskFaqBoard;
+  const isStaticContentBoard = isDailyTasksBoard || isContentPlanBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard || isSecurityReviewBoard || isTransportRiskFaqBoard;
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isStaticContentBoard ? [] : isTaskCategoryBoard ? taskCategoryTasks[activeBoard] || [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
@@ -915,6 +921,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       ? "Карточки фокуса на 22 мая: дедлайны, ответственные, материалы и чат по каждой задаче."
     : isIdeasBoard
       ? "Сырые идеи разложены по направлениям, чтобы их можно было приоритизировать и превращать в задачи."
+    : isContentPlanBoard
+      ? "Редактируемый SMM-план Atlas: соцсети, даты, форматы, статусы, тексты, сценарии и комментарии по правкам."
     : isVideoScriptsBoard
       ? "Сценарии и ТЗ для роликов: можно читать, редактировать текущие тексты и добавлять новые ролики."
     : isMaterialsBoard
@@ -952,6 +960,8 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       ? "Здесь можно быстро собрать задачи на день, поделиться ими с ребятами и вести обсуждение отдельно внутри каждой задачи."
     : isIdeasBoard
       ? "Здесь вычитаны и структурированы идеи по контенту, комьюнити, партнерке, лендингам, smart-contract, вебинарам и исследованиям."
+    : isContentPlanBoard
+      ? "Здесь можно вести контент-план удобнее, чем в PDF: фильтровать по соцсетям и датам, редактировать тексты, ставить статусы и оставлять комментарии по правкам."
     : isVideoScriptsBoard
       ? "Здесь хранятся тексты и ТЗ для роликов: название, формат, длительность, комментарий и полный сценарий, который можно редактировать прямо в аналитике."
     : isMaterialsBoard
@@ -996,6 +1006,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "dailyTasks", label: "Задачи на день" },
   ];
   const contentBoardTabs = [
+    { id: "contentPlan", label: "Контент-план" },
     { id: "materials", label: "Материалы" },
     { id: "presentation", label: "Презентация" },
     { id: "productLibrary", label: "Продукты" },
@@ -1348,6 +1359,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       </Wrapper>
 
       {isMaterialsBoard ? <Wrapper as="section" marginTop="lg"><MaterialsLinksBoard /></Wrapper> : null}
+      {isContentPlanBoard ? <Wrapper as="section" marginTop="lg"><ContentPlanBoard /></Wrapper> : null}
       {isPresentationBoard ? <Wrapper as="section" marginTop="lg"><PresentationContentTab /></Wrapper> : null}
       {isProductLibraryBoard ? <Wrapper as="section" marginTop="lg"><ProductLibraryBoard /></Wrapper> : null}
       {isVideoScriptsBoard ? <Wrapper as="section" marginTop="lg"><VideoScriptsBoard /></Wrapper> : null}

@@ -4,6 +4,220 @@
   padding: 1.5rem 1rem;
 }
 
+.analytics-content-plan {
+  display: grid;
+  gap: 18px;
+}
+
+.analytics-content-plan-hero,
+.analytics-content-plan-controls,
+.analytics-content-plan-day-head,
+.analytics-content-plan-card-top,
+.analytics-content-plan-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analytics-content-plan-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 10px;
+  min-width: min(360px, 100%);
+}
+
+.analytics-content-plan-stats span {
+  padding: 12px 14px;
+  border: 1px solid rgba(42, 190, 166, 0.22);
+  border-radius: 16px;
+  background: rgba(6, 22, 34, 0.58);
+  color: rgba(226, 240, 255, 0.74);
+  font-size: 13px;
+}
+
+.analytics-content-plan-stats strong {
+  display: block;
+  color: #f7fbff;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.analytics-content-plan-filters,
+.analytics-content-plan-add-grid,
+.analytics-content-plan-edit {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.analytics-content-plan-filters label {
+  display: grid;
+  gap: 6px;
+  color: rgba(214, 229, 248, 0.78);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.analytics-content-plan-reset,
+.analytics-content-plan-add-btn {
+  min-height: 48px;
+  border: 1px solid rgba(255, 151, 45, 0.42);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 151, 45, 0.22), rgba(42, 190, 166, 0.16));
+  color: #f7fbff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.analytics-content-plan-add-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.analytics-content-plan-wide {
+  grid-column: 1 / -1;
+}
+
+.analytics-content-plan-timeline {
+  display: grid;
+  gap: 18px;
+}
+
+.analytics-content-plan-day {
+  display: grid;
+  gap: 12px;
+}
+
+.analytics-content-plan-day-head {
+  padding: 0 4px;
+  align-items: center;
+}
+
+.analytics-content-plan-day-head span {
+  color: #f7fbff;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.analytics-content-plan-day-head strong {
+  padding: 8px 12px;
+  border: 1px solid rgba(42, 190, 166, 0.26);
+  border-radius: 999px;
+  background: rgba(42, 190, 166, 0.12);
+  color: #a9fff2;
+  font-size: 12px;
+}
+
+.analytics-content-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analytics-content-plan-card {
+  display: grid;
+  gap: 14px;
+}
+
+.analytics-content-plan-card-top {
+  align-items: flex-start;
+}
+
+.analytics-content-plan-card-top h3 {
+  margin: 4px 0 0;
+  color: #f7fbff;
+  font-size: 22px;
+  line-height: 1.12;
+}
+
+.analytics-content-plan-card-top span,
+.analytics-content-plan-meta span {
+  color: rgba(168, 195, 222, 0.82);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.analytics-content-plan-status {
+  max-width: 150px;
+  border: 1px solid rgba(255, 151, 45, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 151, 45, 0.12);
+  color: #ffe2bd;
+  font-weight: 900;
+  padding: 8px 10px;
+}
+
+.analytics-content-plan-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analytics-content-plan-meta span {
+  padding: 7px 10px;
+  border: 1px solid rgba(124, 153, 190, 0.2);
+  border-radius: 999px;
+  background: rgba(4, 15, 25, 0.45);
+}
+
+.analytics-content-plan-card p {
+  margin: 0;
+  color: rgba(229, 239, 252, 0.82);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.analytics-content-plan-card small {
+  display: block;
+  padding: 12px;
+  border: 1px solid rgba(255, 151, 45, 0.24);
+  border-radius: 14px;
+  background: rgba(255, 151, 45, 0.08);
+  color: #ffd6a1;
+  line-height: 1.45;
+}
+
+.analytics-content-plan-actions {
+  justify-content: flex-start;
+}
+
+.analytics-content-plan-actions button {
+  border: 1px solid rgba(124, 153, 190, 0.24);
+  border-radius: 12px;
+  background: rgba(4, 15, 25, 0.55);
+  color: #dbeafe;
+  font-weight: 850;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.analytics-content-plan-empty {
+  color: rgba(229, 239, 252, 0.74);
+}
+
+@media (max-width: 900px) {
+  .analytics-content-plan-hero,
+  .analytics-content-plan-controls,
+  .analytics-content-plan-card-top {
+    flex-direction: column;
+  }
+
+  .analytics-content-plan-stats,
+  .analytics-content-plan-filters,
+  .analytics-content-plan-add-grid,
+  .analytics-content-plan-edit,
+  .analytics-content-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-content-plan-status {
+    max-width: none;
+    width: 100%;
+  }
+}
+
 @media (min-width: 1200px) {
   .analytics-layout {
     padding-inline: 1.5rem;
