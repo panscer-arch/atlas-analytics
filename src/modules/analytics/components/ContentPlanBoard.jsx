@@ -467,6 +467,7 @@ function ContentPlanBoard() {
   const [copiedItemId, setCopiedItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
+  const [targetItemId, setTargetItemId] = useState("");
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
   const saveTimerRef = useRef(null);
@@ -529,6 +530,7 @@ function ContentPlanBoard() {
     if (!targetId || !items.some((item) => item.id === targetId)) return;
 
     deepLinkHandledRef.current = true;
+    setTargetItemId(targetId);
     setExpandedIds((current) => (current.includes(targetId) ? current : [...current, targetId]));
     window.setTimeout(() => {
       document.getElementById(getContentPlanItemElementId(targetId))?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -1126,7 +1128,11 @@ function ContentPlanBoard() {
                 const readinessMeta = getPublicationReadinessMeta(publicationChecks);
                 const publishBlockReason = getPublishBlockReason(item);
                 return (
-                  <article key={item.id} id={getContentPlanItemElementId(item.id)} className="analytics-surface analytics-content-plan-card">
+                  <article
+                    key={item.id}
+                    id={getContentPlanItemElementId(item.id)}
+                    className={targetItemId === item.id ? "analytics-surface analytics-content-plan-card analytics-content-plan-card-target" : "analytics-surface analytics-content-plan-card"}
+                  >
                     <div className="analytics-content-plan-card-top">
                       <div>
                         <span>{item.channel} / {item.format}</span>
