@@ -1543,6 +1543,14 @@ function ContentPlanBoard() {
             <strong>{dashboard.publishedLinkProgress}%</strong>
             <progress value={dashboard.publishedLinkProgress} max="100" aria-label="Покрытие ссылок опубликованных постов" />
             <small>{dashboard.publishedWithLink} из {dashboard.published} опубликованных постов с валидной ссылкой</small>
+            <div className="analytics-content-plan-coverage-actions" aria-label="Быстрые фильтры по ссылкам опубликованных постов">
+              <button type="button" onClick={() => applyFocusFilter({ status: "Опубликовано", linkIssue: "Опубликовано без ссылки" })} disabled={!dashboard.publishedWithoutLink}>
+                Без ссылки {dashboard.publishedWithoutLink}
+              </button>
+              <button type="button" onClick={() => applyFocusFilter({ status: "Опубликовано", linkIssue: "Некорректный URL" })} disabled={!dashboard.invalidLinks}>
+                URL {dashboard.invalidLinks}
+              </button>
+            </div>
           </div>
         </div>
         <div className="analytics-content-plan-stats">
