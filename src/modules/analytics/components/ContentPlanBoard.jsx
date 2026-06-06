@@ -12,6 +12,7 @@ const REVIEW_OPTIONS = ["Готовится", "На согласовании", "
 const VISUAL_OPTIONS = ["Нет визуала", "Визуал готовится", "Визуал на проверке", "Визуал ок"];
 const DATE_STATE_OPTIONS = ["Все", "Просрочено", "Сегодня", "По плану", "Без даты"];
 const READINESS_OPTIONS = ["Все", "К публикации"];
+const NEXT_ACTION_OPTIONS = ["Все", "Назначить дату", "Дописать текст", "Отправить на вычитку", "Доработать текст", "Согласовать визуал", "Публиковать", "Уже опубликовано"];
 const DEFAULT_FILTERS = {
   channel: "Все",
   stage: "Все",
@@ -22,6 +23,7 @@ const DEFAULT_FILTERS = {
   owner: "Все",
   dateState: "Все",
   readiness: "Все",
+  nextAction: "Все",
   copyIssue: "Все",
   visualIssue: "Все",
   date: "",
@@ -589,6 +591,7 @@ function ContentPlanBoard() {
       .filter((item) => filters.reviewStatus === "Все" || item.reviewStatus === filters.reviewStatus)
       .filter((item) => filters.priority === "Все" || item.priority === filters.priority)
       .filter((item) => filters.owner === "Все" || (filters.owner === "Не назначен" ? !item.owner : item.owner === filters.owner))
+      .filter((item) => filters.nextAction === "Все" || getNextActionLabel(item) === filters.nextAction)
       .filter((item) => {
         if (filters.dateState === "Все") return true;
         const state = getDateState(item.date, item.status);
@@ -670,6 +673,7 @@ function ContentPlanBoard() {
       owner: "Ответственный",
       dateState: "Срок",
       readiness: "Готовность",
+      nextAction: "Следующий шаг",
       copyIssue: "Текст",
       visualIssue: "Визуал",
       date: "Дата",
@@ -1303,6 +1307,12 @@ function ContentPlanBoard() {
             <span>Готовность</span>
             <select className="analytics-launch-input" value={filters.readiness} onChange={(event) => setFilters((current) => ({ ...current, readiness: event.target.value }))}>
               {READINESS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Следующий шаг</span>
+            <select className="analytics-launch-input" value={filters.nextAction} onChange={(event) => setFilters((current) => ({ ...current, nextAction: event.target.value }))}>
+              {NEXT_ACTION_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label>
