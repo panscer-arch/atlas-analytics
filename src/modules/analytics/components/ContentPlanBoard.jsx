@@ -390,6 +390,11 @@ function getReviewProgress(items) {
   return Math.round((approved / items.length) * 100);
 }
 
+function getSharePercent(count, total) {
+  if (!total) return 0;
+  return Math.round((count / total) * 100);
+}
+
 function getPublicationChecks(item) {
   const isTextApproved = item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать";
   const isVisualApproved = item.visualStatus === "Визуал ок" || item.visualStatus === "Нет визуала";
@@ -639,33 +644,59 @@ function ContentPlanBoard() {
   const dashboard = useMemo(() => {
     const today = getTodayIso();
     const activeItems = items.filter((item) => item.status !== "Опубликовано" && item.status !== "Готово");
+    const total = items.length;
     const overdue = activeItems.filter((item) => item.date && item.date < today).length;
     const todayItems = activeItems.filter((item) => item.date === today).length;
     const nextItems = activeItems
       .filter((item) => item.date && item.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 3);
+    const withoutDate = activeItems.filter((item) => !item.date).length;
+    const withoutCopy = activeItems.filter((item) => !String(item.copy || "").trim()).length;
+    const visualIssue = activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+    const needsRevision = items.filter((item) => item.reviewStatus === "Нужны правки").length;
+    const publishReady = items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
+    const channelMix = SOCIAL_OPTIONS.map((channel) => {
+      const count = items.filter((item) => item.channel === channel).length;
+      return {
+        label: channel,
+        count,
+        percent: getSharePercent(count, total),
+      };
+    }).filter((entry) => entry.count > 0);
+    const bottleneckMix = [
+      { label: "Без даты", count: withoutDate, tone: "warn" },
+      { label: "Без текста", count: withoutCopy, tone: "danger" },
+      { label: "Правки", count: needsRevision, tone: "focus" },
+      { label: "Визуал", count: visualIssue, tone: "accent" },
+      { label: "Готово", count: publishReady, tone: "ready" },
+    ].map((entry) => ({
+      ...entry,
+      percent: getSharePercent(entry.count, activeItems.length || total),
+    }));
 
     return {
-      total: items.length,
+      total,
       review: items.filter((item) => item.status === "На вычитке").length,
       approved: items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать").length,
-      needsRevision: items.filter((item) => item.reviewStatus === "Нужны правки").length,
+      needsRevision,
       visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
-      publishReady: items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length,
+      publishReady,
       xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
-      visualIssue: activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length,
+      visualIssue,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
-      withoutDate: activeItems.filter((item) => !item.date).length,
+      withoutDate,
       todayItems,
       nextItems,
       highPriority: activeItems.filter((item) => item.priority === "Высокий").length,
       withoutOwner: activeItems.filter((item) => !item.owner).length,
-      withoutCopy: activeItems.filter((item) => !String(item.copy || "").trim()).length,
+      withoutCopy,
       sendToReview: activeItems.filter((item) => getNextActionLabel(item) === "Отправить на вычитку").length,
       approveVisual: activeItems.filter((item) => getNextActionLabel(item) === "Согласовать визуал").length,
+      channelMix,
+      bottleneckMix,
     };
   }, [items]);
 
@@ -1311,6 +1342,47 @@ function ContentPlanBoard() {
               <small>{item.channel} / {item.title}</small>
             </button>
           )) : <small>Ближайшие даты не назначены.</small>}
+        </article>
+      </div>
+
+      <div className="analytics-content-plan-bi-grid">
+        <article className="analytics-surface analytics-content-plan-bi-panel">
+          <div className="analytics-content-plan-bi-head">
+            <span>Соцсети</span>
+            <strong>{dashboard.channels} каналов</strong>
+          </div>
+          <div className="analytics-content-plan-bi-bars">
+            {dashboard.channelMix.length ? dashboard.channelMix.map((entry) => (
+              <button key={entry.label} type="button" onClick={() => applyFocusFilter({ channel: entry.label })}>
+                <span>{entry.label}</span>
+                <b>{entry.count}</b>
+                <progress value={entry.percent} max="100" aria-label={`${entry.label}: ${entry.percent}%`} />
+                <small>{entry.percent}%</small>
+              </button>
+            )) : <small>Карточки пока не добавлены.</small>}
+          </div>
+        </article>
+        <article className="analytics-surface analytics-content-plan-bi-panel">
+          <div className="analytics-content-plan-bi-head">
+            <span>Производство</span>
+            <strong>узкие места</strong>
+          </div>
+          <div className="analytics-content-plan-bi-bars analytics-content-plan-bi-bars-compact">
+            {dashboard.bottleneckMix.map((entry) => (
+              <button key={entry.label} type="button" className={`analytics-content-plan-bi-${entry.tone}`} onClick={() => {
+                if (entry.label === "Без даты") applyFocusFilter({ dateState: "Без даты" });
+                if (entry.label === "Без текста") applyFocusFilter({ copyIssue: "Без текста" });
+                if (entry.label === "Правки") applyFocusFilter({ reviewStatus: "Нужны правки" });
+                if (entry.label === "Визуал") applyFocusFilter({ visualIssue: "Визуал не готов" });
+                if (entry.label === "Готово") applyFocusFilter({ readiness: "К публикации" });
+              }}>
+                <span>{entry.label}</span>
+                <b>{entry.count}</b>
+                <progress value={entry.percent} max="100" aria-label={`${entry.label}: ${entry.percent}%`} />
+                <small>{entry.percent}%</small>
+              </button>
+            ))}
+          </div>
         </article>
       </div>
 

@@ -285,6 +285,150 @@
   color: #a9fff2;
 }
 
+.analytics-content-plan-bi-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.analytics-content-plan-bi-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-color: rgba(111, 255, 232, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(7, 22, 35, 0.82), rgba(3, 12, 23, 0.82));
+}
+
+.analytics-content-plan-bi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.analytics-content-plan-bi-head span {
+  color: rgba(168, 195, 222, 0.86);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.analytics-content-plan-bi-head strong {
+  color: #a9fff2;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.analytics-content-plan-bi-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.analytics-content-plan-bi-bars button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 10px;
+  min-width: 0;
+  padding: 11px 12px;
+  appearance: none;
+  border: 1px solid rgba(42, 190, 166, 0.2);
+  border-radius: 8px;
+  background: rgba(2, 10, 19, 0.58);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-content-plan-bi-bars button:hover,
+.analytics-content-plan-bi-bars button:focus-visible {
+  border-color: rgba(111, 255, 232, 0.58);
+  box-shadow: 0 0 0 1px rgba(111, 255, 232, 0.14);
+  outline: none;
+}
+
+.analytics-content-plan-bi-bars span {
+  color: #e5effc;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-content-plan-bi-bars b,
+.analytics-content-plan-bi-bars small {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0;
+}
+
+.analytics-content-plan-bi-bars b {
+  color: #f7fbff;
+  font-size: 18px;
+}
+
+.analytics-content-plan-bi-bars small {
+  color: rgba(168, 195, 222, 0.84);
+  font-size: 12px;
+  text-align: right;
+}
+
+.analytics-content-plan-bi-bars progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(124, 153, 190, 0.14);
+}
+
+.analytics-content-plan-bi-bars progress::-webkit-progress-bar {
+  background: rgba(124, 153, 190, 0.14);
+}
+
+.analytics-content-plan-bi-bars progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2abea6, #6fffe8);
+  box-shadow: 0 0 16px rgba(111, 255, 232, 0.32);
+}
+
+.analytics-content-plan-bi-bars progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2abea6, #6fffe8);
+}
+
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-danger progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #ff5d73, #ff9745);
+}
+
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-danger progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #ff5d73, #ff9745);
+}
+
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-warn progress::-webkit-progress-value,
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-accent progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #ff9745, #ffcb57);
+}
+
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-warn progress::-moz-progress-bar,
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-accent progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #ff9745, #ffcb57);
+}
+
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-focus progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #4c9aff, #6fffe8);
+}
+
+.analytics-content-plan-bi-bars .analytics-content-plan-bi-focus progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #4c9aff, #6fffe8);
+}
+
 .analytics-content-plan-filters,
 .analytics-content-plan-add-grid,
 .analytics-content-plan-edit {
@@ -1131,6 +1275,7 @@
   .analytics-content-plan-filters,
   .analytics-content-plan-add-grid,
   .analytics-content-plan-edit,
+  .analytics-content-plan-bi-grid,
   .analytics-content-plan-grid {
     grid-template-columns: 1fr;
   }
@@ -1201,6 +1346,10 @@
   }
 
   .analytics-content-plan-publish-gate div {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-content-plan-bi-bars {
     grid-template-columns: 1fr;
   }
 
