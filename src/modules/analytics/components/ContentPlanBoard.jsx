@@ -573,7 +573,12 @@ function ContentPlanBoard() {
         return true;
       })
       .filter((item) => filters.readiness === "Все" || (canPublishItem(item) && item.status !== "Опубликовано"))
-      .filter((item) => filters.copyIssue === "Все" || getCopyStats(item).isXOverLimit)
+      .filter((item) => {
+        if (filters.copyIssue === "Все") return true;
+        if (filters.copyIssue === "X > 280") return getCopyStats(item).isXOverLimit;
+        if (filters.copyIssue === "Без текста") return !String(item.copy || "").trim();
+        return true;
+      })
       .filter((item) => filters.visualIssue === "Все" || (item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала"))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
@@ -624,6 +629,7 @@ function ContentPlanBoard() {
       nextItems,
       highPriority: activeItems.filter((item) => item.priority === "Высокий").length,
       withoutOwner: activeItems.filter((item) => !item.owner).length,
+      withoutCopy: activeItems.filter((item) => !String(item.copy || "").trim()).length,
     };
   }, [items]);
 
@@ -986,6 +992,16 @@ function ContentPlanBoard() {
           <span>Без даты</span>
           <strong>{dashboard.withoutDate}</strong>
           <small>Нужно назначить слот</small>
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ copyIssue: "Без текста" }), "analytics-content-plan-signal-danger")}
+          onClick={() => applyFocusFilter({ copyIssue: "Без текста" })}
+          aria-pressed={isFocusActive({ copyIssue: "Без текста" })}
+        >
+          <span>Без текста</span>
+          <strong>{dashboard.withoutCopy}</strong>
+          <small>Нет финального copy</small>
         </button>
         <button
           type="button"
