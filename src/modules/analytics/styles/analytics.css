@@ -203,16 +203,38 @@
   background: linear-gradient(135deg, rgba(111, 255, 232, 0.12), rgba(3, 12, 23, 0.78));
 }
 
-.analytics-content-plan-next div {
+.analytics-content-plan-next button {
   display: grid;
   gap: 3px;
+  width: 100%;
   padding-top: 8px;
+  appearance: none;
   border-top: 1px solid rgba(124, 153, 190, 0.16);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-content-plan-next button:hover,
+.analytics-content-plan-next button:focus-visible {
+  border-top-color: rgba(111, 255, 232, 0.48);
+  color: #a9fff2;
+  outline: none;
 }
 
 .analytics-content-plan-next strong {
   color: #f7fbff;
   font-size: 13px;
+}
+
+.analytics-content-plan-next button:hover strong,
+.analytics-content-plan-next button:focus-visible strong {
+  color: #a9fff2;
 }
 
 .analytics-content-plan-filters,

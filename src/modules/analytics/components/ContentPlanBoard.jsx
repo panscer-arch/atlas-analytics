@@ -1134,10 +1134,10 @@ function ContentPlanBoard() {
         <article className="analytics-surface analytics-content-plan-next">
           <span>Ближайшие публикации</span>
           {dashboard.nextItems.length ? dashboard.nextItems.map((item) => (
-            <div key={item.id}>
+            <button key={item.id} type="button" onClick={() => applyFocusFilter({ date: item.date })}>
               <strong>{formatPlanDate(item.date)}</strong>
               <small>{item.channel} / {item.title}</small>
-            </div>
+            </button>
           )) : <small>Ближайшие даты не назначены.</small>}
         </article>
       </div>
