@@ -757,7 +757,14 @@
   color: #d8eaff;
 }
 
-.analytics-content-plan-actions .analytics-content-plan-copy:disabled {
+.analytics-content-plan-actions .analytics-content-plan-shift-date {
+  border-color: rgba(255, 203, 87, 0.34);
+  background: rgba(255, 203, 87, 0.1);
+  color: #ffe9ae;
+}
+
+.analytics-content-plan-actions .analytics-content-plan-copy:disabled,
+.analytics-content-plan-actions .analytics-content-plan-shift-date:disabled {
   cursor: not-allowed;
   opacity: 0.46;
 }

@@ -347,6 +347,17 @@ function getTodayIso() {
   return `${year}-${month}-${day}`;
 }
 
+function addDaysToIso(value, days) {
+  const fallback = getTodayIso();
+  const baseDate = new Date(`${value || fallback}T00:00:00`);
+  const date = Number.isNaN(baseDate.getTime()) ? new Date(`${fallback}T00:00:00`) : baseDate;
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function getDateState(dateValue, status) {
   if (!dateValue || status === "Опубликовано" || status === "Готово") return "neutral";
   const today = getTodayIso();
@@ -450,11 +461,13 @@ function ContentPlanBoard() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveState, setSaveState] = useState("idle");
   const [copiedItemId, setCopiedItemId] = useState("");
+  const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const localTouchedRef = useRef(false);
   const saveTimerRef = useRef(null);
   const saveVersionRef = useRef(0);
   const pendingServerSaveRef = useRef(null);
   const copyTimerRef = useRef(null);
+  const shiftDateTimerRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -497,6 +510,7 @@ function ContentPlanBoard() {
 
   useEffect(() => () => {
     if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
 
   const filteredItems = useMemo(() => {
@@ -719,6 +733,12 @@ function ContentPlanBoard() {
     copyTimerRef.current = window.setTimeout(() => setCopiedItemId(""), 1800);
   }
 
+  function markDateShifted(itemId) {
+    setShiftedDateItemId(itemId);
+    if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
+    shiftDateTimerRef.current = window.setTimeout(() => setShiftedDateItemId(""), 1800);
+  }
+
   function fallbackCopyText(text, itemId) {
     if (typeof document === "undefined") return;
     const buffer = document.createElement("textarea");
@@ -746,6 +766,13 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyText(text, item.id);
+  }
+
+  function shiftItemDate(itemId, days) {
+    const item = items.find((currentItem) => currentItem.id === itemId);
+    if (!item || item.status === "Опубликовано") return;
+    updateItem(itemId, { date: addDaysToIso(item.date, days) });
+    markDateShifted(itemId);
   }
 
   function toggleExpanded(itemId) {
@@ -1176,6 +1203,15 @@ function ContentPlanBoard() {
                       </button>
                       <button type="button" className="analytics-content-plan-duplicate" onClick={() => duplicateItem(item.id)}>
                         Дублировать
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-shift-date"
+                        onClick={() => shiftItemDate(item.id, 1)}
+                        disabled={item.status === "Опубликовано"}
+                        title={item.date ? `Перенести на ${formatPlanDate(addDaysToIso(item.date, 1))}` : `Назначить ${formatPlanDate(addDaysToIso("", 1))}`}
+                      >
+                        {shiftedDateItemId === item.id ? "Дата сдвинута" : "Дата +1"}
                       </button>
                       {isPendingDelete ? (
                         <>
