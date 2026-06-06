@@ -426,6 +426,17 @@ function getPublishBlockReason(item) {
   return failed ? failed.detail : "готово к публикации";
 }
 
+function getNextActionLabel(item) {
+  const failed = getPublicationChecks(item).find((check) => !check.done);
+  if (!failed) return item.status === "Опубликовано" ? "Уже опубликовано" : "Публиковать";
+  return {
+    date: "Назначить дату",
+    copy: "Дописать текст",
+    review: item.reviewStatus === "Нужны правки" ? "Доработать текст" : "Отправить на вычитку",
+    visual: "Согласовать визуал",
+  }[failed.key] || failed.detail;
+}
+
 function getPublicationReadinessMeta(checks = []) {
   const done = checks.filter((check) => check.done).length;
   const total = checks.length;
@@ -1434,6 +1445,7 @@ function ContentPlanBoard() {
                 const publicationChecks = getPublicationChecks(item);
                 const readinessMeta = getPublicationReadinessMeta(publicationChecks);
                 const publishBlockReason = getPublishBlockReason(item);
+                const nextActionLabel = getNextActionLabel(item);
                 const copyStats = getCopyStats(item);
                 return (
                   <article
@@ -1461,6 +1473,9 @@ function ContentPlanBoard() {
                         </span>
                         <span className={readinessMeta.isReady ? "analytics-content-plan-blocker analytics-content-plan-blocker-ready" : "analytics-content-plan-blocker analytics-content-plan-blocker-wait"}>
                           {readinessMeta.isReady ? "Можно публиковать" : publishBlockReason}
+                        </span>
+                        <span className={readinessMeta.isReady ? "analytics-content-plan-next-action analytics-content-plan-next-action-ready" : "analytics-content-plan-next-action analytics-content-plan-next-action-wait"}>
+                          <b>Шаг</b>{nextActionLabel}
                         </span>
                         <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
                           {STATUS_OPTIONS.map((option) => (
