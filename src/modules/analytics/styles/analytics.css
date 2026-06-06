@@ -820,6 +820,12 @@
   color: #d8eaff;
 }
 
+.analytics-content-plan-actions .analytics-content-plan-brief-copy {
+  border-color: rgba(42, 190, 166, 0.34);
+  background: rgba(42, 190, 166, 0.1);
+  color: #dffefa;
+}
+
 .analytics-content-plan-actions .analytics-content-plan-link {
   border-color: rgba(168, 195, 222, 0.3);
   background: rgba(168, 195, 222, 0.1);
@@ -833,6 +839,7 @@
 }
 
 .analytics-content-plan-actions .analytics-content-plan-copy:disabled,
+.analytics-content-plan-actions .analytics-content-plan-brief-copy:disabled,
 .analytics-content-plan-actions .analytics-content-plan-shift-date:disabled {
   cursor: not-allowed;
   opacity: 0.46;

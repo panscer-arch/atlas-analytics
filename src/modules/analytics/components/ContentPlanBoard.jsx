@@ -481,6 +481,7 @@ function ContentPlanBoard() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveState, setSaveState] = useState("idle");
   const [copiedItemId, setCopiedItemId] = useState("");
+  const [copiedBriefItemId, setCopiedBriefItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
@@ -490,6 +491,7 @@ function ContentPlanBoard() {
   const saveVersionRef = useRef(0);
   const pendingServerSaveRef = useRef(null);
   const copyTimerRef = useRef(null);
+  const briefCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
 
@@ -534,6 +536,7 @@ function ContentPlanBoard() {
 
   useEffect(() => () => {
     if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    if (briefCopyTimerRef.current) window.clearTimeout(briefCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
@@ -812,6 +815,12 @@ function ContentPlanBoard() {
     copyTimerRef.current = window.setTimeout(() => setCopiedItemId(""), 1800);
   }
 
+  function markBriefCopied(itemId) {
+    setCopiedBriefItemId(itemId);
+    if (briefCopyTimerRef.current) window.clearTimeout(briefCopyTimerRef.current);
+    briefCopyTimerRef.current = window.setTimeout(() => setCopiedBriefItemId(""), 1800);
+  }
+
   function markItemLinkCopied(itemId) {
     setCopiedLinkItemId(itemId);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
@@ -851,6 +860,26 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyValue(text, () => markItemCopied(item.id));
+  }
+
+  function copyVisualBrief(item) {
+    const brief = String(item.visualBrief || "").trim();
+    if (!brief) return;
+    const parts = [
+      `ТЗ на визуал: ${item.title || "Без названия"}`,
+      "",
+      brief,
+    ];
+    const visualLink = String(item.visualLink || "").trim();
+    if (visualLink) parts.push("", `Макет / файл: ${visualLink}`);
+    const text = parts.join("\n");
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => markBriefCopied(item.id))
+        .catch(() => fallbackCopyValue(text, () => markBriefCopied(item.id)));
+      return;
+    }
+    fallbackCopyValue(text, () => markBriefCopied(item.id));
   }
 
   function getItemShareLink(itemId) {
@@ -1381,6 +1410,14 @@ function ContentPlanBoard() {
                         disabled={!String(item.copy || "").trim()}
                       >
                         {copiedItemId === item.id ? "Скопировано" : "Копировать текст"}
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-brief-copy"
+                        onClick={() => copyVisualBrief(item)}
+                        disabled={!String(item.visualBrief || "").trim()}
+                      >
+                        {copiedBriefItemId === item.id ? "ТЗ скопировано" : "Копировать ТЗ"}
                       </button>
                       <button type="button" className="analytics-content-plan-duplicate" onClick={() => duplicateItem(item.id)}>
                         Дублировать
