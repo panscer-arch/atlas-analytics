@@ -43,6 +43,67 @@
   line-height: 1.1;
 }
 
+.analytics-content-plan-command {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(260px, 1.4fr);
+  gap: 14px;
+}
+
+.analytics-content-plan-signal,
+.analytics-content-plan-next {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+}
+
+.analytics-content-plan-signal span,
+.analytics-content-plan-next > span {
+  color: rgba(168, 195, 222, 0.84);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.analytics-content-plan-signal strong {
+  color: #f7fbff;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.analytics-content-plan-signal small,
+.analytics-content-plan-next small {
+  color: rgba(226, 240, 255, 0.7);
+  line-height: 1.35;
+}
+
+.analytics-content-plan-signal-danger {
+  border-color: rgba(255, 93, 115, 0.34);
+  background: linear-gradient(135deg, rgba(255, 93, 115, 0.16), rgba(6, 22, 34, 0.74));
+}
+
+.analytics-content-plan-signal-accent {
+  border-color: rgba(255, 151, 45, 0.36);
+  background: linear-gradient(135deg, rgba(255, 151, 45, 0.15), rgba(6, 22, 34, 0.74));
+}
+
+.analytics-content-plan-signal-focus {
+  border-color: rgba(42, 190, 166, 0.34);
+  background: linear-gradient(135deg, rgba(42, 190, 166, 0.14), rgba(6, 22, 34, 0.74));
+}
+
+.analytics-content-plan-next div {
+  display: grid;
+  gap: 3px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(124, 153, 190, 0.16);
+}
+
+.analytics-content-plan-next strong {
+  color: #f7fbff;
+  font-size: 13px;
+}
+
 .analytics-content-plan-filters,
 .analytics-content-plan-add-grid,
 .analytics-content-plan-edit {
@@ -58,6 +119,10 @@
   color: rgba(214, 229, 248, 0.78);
   font-size: 12px;
   font-weight: 800;
+}
+
+.analytics-content-plan-search {
+  grid-column: span 2;
 }
 
 .analytics-content-plan-reset,
@@ -149,6 +214,37 @@
   padding: 8px 10px;
 }
 
+.analytics-content-plan-status-idea {
+  border-color: rgba(124, 153, 190, 0.3);
+  background: rgba(124, 153, 190, 0.12);
+  color: #dbeafe;
+}
+
+.analytics-content-plan-status-draft {
+  border-color: rgba(255, 151, 45, 0.34);
+  background: rgba(255, 151, 45, 0.12);
+  color: #ffe2bd;
+}
+
+.analytics-content-plan-status-review {
+  border-color: rgba(76, 154, 255, 0.36);
+  background: rgba(76, 154, 255, 0.14);
+  color: #cfe6ff;
+}
+
+.analytics-content-plan-status-ready,
+.analytics-content-plan-status-published {
+  border-color: rgba(42, 190, 166, 0.38);
+  background: rgba(42, 190, 166, 0.14);
+  color: #a9fff2;
+}
+
+.analytics-content-plan-status-paused {
+  border-color: rgba(255, 93, 115, 0.34);
+  background: rgba(255, 93, 115, 0.12);
+  color: #ffc8d0;
+}
+
 .analytics-content-plan-meta {
   display: flex;
   flex-wrap: wrap;
@@ -205,11 +301,16 @@
   }
 
   .analytics-content-plan-stats,
+  .analytics-content-plan-command,
   .analytics-content-plan-filters,
   .analytics-content-plan-add-grid,
   .analytics-content-plan-edit,
   .analytics-content-plan-grid {
     grid-template-columns: 1fr;
+  }
+
+  .analytics-content-plan-search {
+    grid-column: auto;
   }
 
   .analytics-content-plan-status {

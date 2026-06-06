@@ -7,6 +7,7 @@ const SOCIAL_OPTIONS = ["Все каналы", "Telegram", "Instagram", "X", "Ti
 const FORMAT_OPTIONS = ["Пост", "Карусель", "Рилс", "Видео", "Сторис", "Еженедельная рубрика"];
 const STAGE_OPTIONS = ["До запуска", "После запуска", "Еженедельно", "Идеи"];
 const STATUS_OPTIONS = ["Идея", "Черновик", "На вычитке", "Готово", "Опубликовано", "На паузе"];
+const PRIORITY_OPTIONS = ["Высокий", "Средний", "Низкий"];
 
 const defaultContentPlanItems = [
   {
@@ -18,9 +19,10 @@ const defaultContentPlanItems = [
     topicBlock: "Мир меняется",
     title: "Эпоха одиночек заканчивается",
     status: "Черновик",
+    priority: "Высокий",
     owner: "SMM",
-    copy: "Первые 2 секунды: «Нас долго учили справляться со всем самостоятельно». Сценарий: человек один перед экраном, пустой офис, технологии, затем связи между людьми, сеть, сообщество, логотип Atlas.",
-    comment: "Из PDF: прогрев до запуска. Хорошо подходит для Reels/TikTok/Shorts.",
+    copy: "Хук: «Мир становится сложнее, и одиночных решений все чаще недостаточно». Сценарий: человек в информационном шуме, поток новостей и технологий. Затем появляются связи между людьми, сеть, сообщество и логотип Atlas.",
+    comment: "Прогрев до запуска. Визуал: человек в информационном шуме → появляются связи → формируется сообщество Atlas. Без депрессии, паники и образов «краха мира».",
   },
   {
     id: "atlas-pre-ecosystem-1",
@@ -29,11 +31,12 @@ const defaultContentPlanItems = [
     channel: "Все каналы",
     format: "Карусель",
     topicBlock: "Экосистема",
-    title: "Atlas - это не один продукт",
+    title: "Atlas — это не один продукт",
     status: "На вычитке",
-    owner: "Content",
-    copy: "Atlas - это экосистема, где Smart Cycle является фундаментом, а вокруг него развиваются продукты, инструменты и DAO-inspired mechanics. Сообщество является частью развития Atlas.",
-    comment: "В PDF есть RU/EN варианты. Нужно вычитать термин «экосистема» и убрать повторы.",
+    priority: "Высокий",
+    owner: "Контент",
+    copy: "Atlas — это не один продукт, а экосистема. Smart Cycle является фундаментом, вокруг которого развиваются продукты, инструменты, механики, вдохновленные DAO, отдельные элементы голосования и инфраструктура для международного сообщества.",
+    comment: "Базовый пост-знакомство. Не перечислять будущие продукты как уже запущенные. Не создавать впечатление, что Atlas уже является полноценной DAO.",
   },
   {
     id: "atlas-pre-smart-contract-1",
@@ -44,9 +47,10 @@ const defaultContentPlanItems = [
     topicBlock: "Что такое Smart Cycle",
     title: "Что делает смарт-контракт",
     status: "Черновик",
-    owner: "Content",
-    copy: "Смарт-контракт - это программный код, в котором заранее определены правила работы системы. После запуска он автоматически выполняет заложенную логику, без ручного управления и посредников. Все действия фиксируются в блокчейне и могут быть проверены.",
-    comment: "Из PDF. Хороший обучающий пост для Telegram и Facebook.",
+    priority: "Высокий",
+    owner: "Контент",
+    copy: "Смарт-контракт — это программный код, в котором заранее описаны правила работы системы. Он автоматически исполняет заданную on-chain логику. При этом отдельные элементы Atlas, включая часть партнерской инфраструктуры, могут обслуживаться вне смарт-контракта и раскрываются отдельно.",
+    comment: "Хороший обучающий пост для Telegram и Facebook. Важно не писать, что все процессы Atlas полностью on-chain.",
   },
   {
     id: "atlas-pre-transparency-1",
@@ -55,11 +59,12 @@ const defaultContentPlanItems = [
     channel: "X",
     format: "Пост",
     topicBlock: "Кто такие Atlas",
-    title: "Прозрачность - это не слоган",
+    title: "Прозрачность — это не слоган",
     status: "Черновик",
+    priority: "Средний",
     owner: "SMM",
-    copy: "Trust becomes stronger when it is built on clear rules and transparent system architecture. For Atlas, transparency is not a marketing slogan. It is part of the architecture.",
-    comment: "Можно сделать короткий X-thread и отдельный RU-пост.",
+    copy: "Доверие становится сильнее, когда строится не на обещаниях, а на понятных правилах и прозрачной архитектуре. Для Atlas прозрачность — это не маркетинговый слоган, а часть подхода к системе.",
+    comment: "Сделать короткий тред в X и отдельный RU-пост. Добавить ссылку на Security Review / Transparency Center, если публикация выходит после готовности раздела.",
   },
   {
     id: "atlas-pre-foundation-1",
@@ -70,8 +75,9 @@ const defaultContentPlanItems = [
     topicBlock: "Устройство системы",
     title: "На чем построен Atlas",
     status: "Идея",
-    owner: "Design + Content",
-    copy: "Слайды: Web3, Smart Contracts, DAO-inspired mechanics, Transparency. Финал: эти элементы формируют фундамент Atlas.",
+    priority: "Средний",
+    owner: "Дизайн + контент",
+    copy: "Карусель про четыре принципа: Web3, смарт-контракты, механики, вдохновленные DAO, и прозрачность. Финал: вместе эти элементы формируют фундамент Atlas.",
     comment: "В PDF есть готовая структура слайдов. Нужен визуал с 4 принципами.",
   },
   {
@@ -83,9 +89,10 @@ const defaultContentPlanItems = [
     topicBlock: "Кто такие Atlas",
     title: "Почему появился Atlas",
     status: "Идея",
-    owner: "Content",
-    copy: "Why was Atlas created? Because the world has changed. New tools make it possible to build systems based on clear rules rather than promises. Atlas brings together technology, community and transparent architecture.",
-    comment: "Из PDF: есть EN-текст. Сделать RU/EN версии.",
+    priority: "Средний",
+    owner: "Контент",
+    copy: "Atlas появился потому, что мир изменился. Новые технологии позволяют строить системы не на обещаниях, а на понятных правилах, прозрачной архитектуре и участии сообщества.",
+    comment: "Сделать RU/EN версии. Тон: спокойно, без драматичного «старый мир умер».",
   },
   {
     id: "atlas-post-live-system-1",
@@ -94,11 +101,12 @@ const defaultContentPlanItems = [
     channel: "Telegram",
     format: "Пост",
     topicBlock: "Живая система",
-    title: "Atlas запущен: что происходит сейчас",
+    title: "Atlas после запуска: где следить за обновлениями",
     status: "Идея",
+    priority: "Высокий",
     owner: "SMM",
-    copy: "Показать первые дни запуска: что открыто, как люди подключаются, какие материалы вышли, где следить за официальными обновлениями.",
-    comment: "После запуска не обещать результат. Фокус на фактах и официальных ссылках.",
+    copy: "Показать официальные каналы, первые открытые материалы, статус системы, раздел Security Review и правила участия. Фокус на фактах, а не на обещаниях.",
+    comment: "Использовать после реального запуска. Не обещать результат, доходность или гарантированный возврат.",
   },
   {
     id: "atlas-post-smart-cycle-60",
@@ -109,9 +117,10 @@ const defaultContentPlanItems = [
     topicBlock: "Как это работает",
     title: "Что такое Smart Cycle за 60 секунд",
     status: "Идея",
-    owner: "Video",
-    copy: "Короткое объяснение: участник подключается через кошелек, видит правила, подтверждает действие, процессы фиксируются в блокчейне. Без обещаний доходности.",
-    comment: "Подходит для Reels/TikTok/Shorts. Нужен hook в первые 2 секунды.",
+    priority: "Высокий",
+    owner: "Видео",
+    copy: "Короткое объяснение: участник подключает кошелек, изучает правила цикла, подтверждает действие, а операции фиксируются в блокчейне. Без обещаний дохода, гарантий возврата или формулировок «заработок».",
+    comment: "Подходит для Reels, TikTok и Shorts. Нужен сильный хук в первые 2 секунды.",
   },
   {
     id: "atlas-post-community-1",
@@ -120,11 +129,12 @@ const defaultContentPlanItems = [
     channel: "Instagram",
     format: "Карусель",
     topicBlock: "Сообщество",
-    title: "Кто уже строит Atlas",
+    title: "Кто формирует международное ядро Atlas",
     status: "Идея",
+    priority: "Средний",
     owner: "SMM",
-    copy: "Показать международное ядро, early participants и community builders. Не уходить в обещания, держать тон про движение, обучение и прозрачность.",
-    comment: "Из PDF: тема уже есть. Нужны страны/факты, если будем указывать.",
+    copy: "Показать роли сообщества: участники, лидеры, контент-команда, техническая команда и поддержка. Если указываем страны или цифры — только подтвержденные данные.",
+    comment: "Тема из PDF. Не использовать неподтвержденные страны, цифры и заявления «уже строят» без фактов.",
   },
   {
     id: "atlas-weekly-architect",
@@ -135,7 +145,8 @@ const defaultContentPlanItems = [
     topicBlock: "Еженедельные рубрики",
     title: "Обращение Архитектора",
     status: "Идея",
-    owner: "Video",
+    priority: "Высокий",
+    owner: "Видео",
     copy: "Новости, развитие, ответы на вопросы, что изменилось за неделю, какие материалы вышли, какие следующие шаги.",
     comment: "Повторяющаяся рубрика. Можно дублировать короткими нарезками в X/Instagram/TikTok.",
   },
@@ -148,9 +159,10 @@ const defaultContentPlanItems = [
     topicBlock: "Еженедельные рубрики",
     title: "FAQ недели: топ-5 вопросов аудитории",
     status: "Идея",
-    owner: "Support + Content",
-    copy: "Собрать 5 частых вопросов из чатов: кошелек, Smart Cycle, безопасность, Transport/audit risk, официальные ссылки.",
-    comment: "Важно: ответы брать из FAQ/Legal/Security Review, не импровизировать.",
+    priority: "Средний",
+    owner: "Support + контент",
+    copy: "Собрать 5 частых вопросов из чатов: кошелек, Smart Cycle, безопасность, Transport, партнерская программа и официальные ссылки.",
+    comment: "Ответы брать только из FAQ, Legal Docs, Security Review и Audit Risk FAQ. По юридическим и security-темам не импровизировать.",
   },
   {
     id: "atlas-facebook-web3-1",
@@ -161,9 +173,52 @@ const defaultContentPlanItems = [
     topicBlock: "Web3 и технологии",
     title: "Что такое Web3 простыми словами?",
     status: "Идея",
+    priority: "Низкий",
     owner: "SMM",
-    copy: "Объяснить Web3 без перегруза: больше контроля, прозрачности и возможностей взаимодействия. Связать с тем, почему Atlas использует smart-contract и blockchain.",
+    copy: "Объяснить Web3 простыми словами: прозрачность операций, самостоятельная проверка данных, подключение через кошелек и участие в цифровой инфраструктуре без лишнего технического перегруза.",
     comment: "Из PDF: блок тем для Facebook. Можно сделать серию образовательных постов.",
+  },
+  {
+    id: "atlas-dao-clarity-1",
+    date: "2026-06-19",
+    stage: "До запуска",
+    channel: "Telegram",
+    format: "Пост",
+    topicBlock: "DAO и governance",
+    title: "Почему Atlas не называет себя полноценным DAO",
+    status: "Идея",
+    priority: "Высокий",
+    owner: "Контент + Legal",
+    copy: "Atlas не является полноценной DAO-системой в текущей версии. Проект использует отдельные механики, вдохновленные DAO: обсуждения, голосования, участие сообщества и прозрачность решений.",
+    comment: "Важный пост для корректной терминологии. Согласовать с White Paper и Legal Docs.",
+  },
+  {
+    id: "atlas-transport-disclosure-1",
+    date: "2026-06-20",
+    stage: "До запуска",
+    channel: "Telegram",
+    format: "Пост",
+    topicBlock: "Security Review",
+    title: "Что такое Transport и почему он раскрывается заранее",
+    status: "Идея",
+    priority: "Высокий",
+    owner: "Security + контент",
+    copy: "Transport — это привилегированный механизм Atlas Core V1 для обслуживания части партнерской логики. Он раскрывается в документации и Security Review, потому что участник должен понимать границы доверия в текущей архитектуре.",
+    comment: "Использовать после согласования Audit Risk FAQ. Не смягчать риск, но писать профессионально: privileged function / administrative trust risk.",
+  },
+  {
+    id: "atlas-verify-yourself-1",
+    date: "2026-06-21",
+    stage: "До запуска",
+    channel: "Все каналы",
+    format: "Карусель",
+    topicBlock: "Прозрачность",
+    title: "Как проверить Atlas самостоятельно",
+    status: "Идея",
+    priority: "Высокий",
+    owner: "Контент + Security",
+    copy: "Показать, где смотреть смарт-контракт, транзакции, Security Review, White Paper, Audit Risk FAQ и официальные соцсети Atlas. Главная мысль: доверие начинается с возможности проверить.",
+    comment: "Сделать как практическую инструкцию, не как рекламный пост.",
   },
 ];
 
@@ -175,6 +230,7 @@ const emptyItem = {
   topicBlock: "",
   title: "",
   status: "Идея",
+  priority: "Средний",
   owner: "",
   copy: "",
   comment: "",
@@ -190,6 +246,7 @@ function normalizeItems(items) {
     topicBlock: item.topicBlock || "",
     title: item.title || "",
     status: item.status || "Идея",
+    priority: item.priority || "Средний",
     owner: item.owner || "",
     copy: item.copy || "",
     comment: item.comment || "",
@@ -214,11 +271,36 @@ function formatPlanDate(value) {
   return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+function getTodayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDateState(dateValue, status) {
+  if (!dateValue || status === "Опубликовано" || status === "Готово") return "neutral";
+  const today = getTodayIso();
+  if (dateValue < today) return "overdue";
+  if (dateValue === today) return "today";
+  return "upcoming";
+}
+
+function getStatusClass(status) {
+  const token = {
+    Идея: "idea",
+    Черновик: "draft",
+    "На вычитке": "review",
+    Готово: "ready",
+    Опубликовано: "published",
+    "На паузе": "paused",
+  }[status] || "idea";
+  return `analytics-content-plan-status analytics-content-plan-status-${token}`;
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
   const [editingId, setEditingId] = useState("");
-  const [filters, setFilters] = useState({ channel: "Все", stage: "Все", status: "Все", date: "" });
+  const [expandedIds, setExpandedIds] = useState([]);
+  const [filters, setFilters] = useState({ channel: "Все", stage: "Все", format: "Все", status: "Все", owner: "Все", date: "", search: "" });
   const [saveState, setSaveState] = useState("Сохранено");
 
   useEffect(() => {
@@ -234,13 +316,25 @@ function ContentPlanBoard() {
   }, []);
 
   const filteredItems = useMemo(() => {
+    const searchValue = filters.search.trim().toLowerCase();
     return items
       .filter((item) => filters.channel === "Все" || item.channel === filters.channel || item.channel === "Все каналы")
       .filter((item) => filters.stage === "Все" || item.stage === filters.stage)
+      .filter((item) => filters.format === "Все" || item.format === filters.format)
       .filter((item) => filters.status === "Все" || item.status === filters.status)
+      .filter((item) => filters.owner === "Все" || (filters.owner === "Не назначен" ? !item.owner : item.owner === filters.owner))
       .filter((item) => !filters.date || item.date === filters.date)
+      .filter((item) => {
+        if (!searchValue) return true;
+        return [item.title, item.topicBlock, item.copy, item.comment].some((value) => String(value || "").toLowerCase().includes(searchValue));
+      })
       .sort((a, b) => (a.date || "9999-99-99").localeCompare(b.date || "9999-99-99"));
   }, [filters, items]);
+
+  const ownerOptions = useMemo(() => {
+    const owners = Array.from(new Set(items.map((item) => item.owner).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
+    return ["Все", "Не назначен", ...owners];
+  }, [items]);
 
   const groupedItems = useMemo(() => {
     return filteredItems.reduce((groups, item) => {
@@ -251,12 +345,28 @@ function ContentPlanBoard() {
     }, {});
   }, [filteredItems]);
 
-  const stats = useMemo(() => ({
-    total: items.length,
-    ready: items.filter((item) => item.status === "Готово" || item.status === "Опубликовано").length,
-    review: items.filter((item) => item.status === "На вычитке").length,
-    channels: new Set(items.map((item) => item.channel)).size,
-  }), [items]);
+  const dashboard = useMemo(() => {
+    const today = getTodayIso();
+    const activeItems = items.filter((item) => item.status !== "Опубликовано" && item.status !== "Готово");
+    const overdue = activeItems.filter((item) => item.date && item.date < today).length;
+    const todayItems = activeItems.filter((item) => item.date === today).length;
+    const nextItems = activeItems
+      .filter((item) => item.date && item.date >= today)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 3);
+
+    return {
+      total: items.length,
+      ready: items.filter((item) => item.status === "Готово" || item.status === "Опубликовано").length,
+      review: items.filter((item) => item.status === "На вычитке").length,
+      channels: new Set(items.map((item) => item.channel)).size,
+      overdue,
+      todayItems,
+      nextItems,
+      highPriority: activeItems.filter((item) => item.priority === "Высокий").length,
+      withoutOwner: activeItems.filter((item) => !item.owner).length,
+    };
+  }, [items]);
 
   function persist(nextItems) {
     setSaveState("Сохраняю...");
@@ -297,7 +407,13 @@ function ContentPlanBoard() {
   }
 
   function removeItem(itemId) {
+    const item = items.find((currentItem) => currentItem.id === itemId);
+    if (!window.confirm(`Удалить публикацию «${item?.title || "без названия"}»? Это действие нельзя отменить.`)) return;
     updateItems((current) => current.filter((item) => item.id !== itemId));
+  }
+
+  function toggleExpanded(itemId) {
+    setExpandedIds((current) => (current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]));
   }
 
   return (
@@ -305,21 +421,57 @@ function ContentPlanBoard() {
       <div className="analytics-surface analytics-content-plan-hero">
         <div>
           <span className="analytics-kicker">Контент-план</span>
-          <h2 className="analytics-agent-template-title">SMM-план Atlas по соцсетям и датам</h2>
+          <h2 className="analytics-agent-template-title">Контент-план Atlas</h2>
           <p className="analytics-page-subtitle">
-            Удобная рабочая версия по материалам из SMM.pdf: каналы, даты, форматы, тексты, статусы и комментарии по правкам.
+            План публикаций по каналам, датам, статусам и правкам. Сначала планируем, потом вычитываем, потом выпускаем.
           </p>
         </div>
         <div className="analytics-content-plan-stats">
-          <span><strong>{stats.total}</strong> карточек</span>
-          <span><strong>{stats.ready}</strong> готово</span>
-          <span><strong>{stats.review}</strong> на вычитке</span>
-          <span><strong>{stats.channels}</strong> каналов</span>
+          <span><strong>{dashboard.total}</strong> карточек</span>
+          <span><strong>{dashboard.ready}</strong> готово</span>
+          <span><strong>{dashboard.review}</strong> на вычитке</span>
+          <span><strong>{dashboard.channels}</strong> каналов</span>
         </div>
+      </div>
+
+      <div className="analytics-content-plan-command">
+        <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-danger">
+          <span>Просрочено</span>
+          <strong>{dashboard.overdue}</strong>
+          <small>Нужна новая дата или статус</small>
+        </article>
+        <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-accent">
+          <span>Сегодня</span>
+          <strong>{dashboard.todayItems}</strong>
+          <small>Публикации на текущий день</small>
+        </article>
+        <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-focus">
+          <span>Высокий приоритет</span>
+          <strong>{dashboard.highPriority}</strong>
+          <small>То, что держит запуск</small>
+        </article>
+        <article className="analytics-surface analytics-content-plan-signal">
+          <span>Без ответственного</span>
+          <strong>{dashboard.withoutOwner}</strong>
+          <small>Нужно назначить владельца</small>
+        </article>
+        <article className="analytics-surface analytics-content-plan-next">
+          <span>Ближайшие публикации</span>
+          {dashboard.nextItems.length ? dashboard.nextItems.map((item) => (
+            <div key={item.id}>
+              <strong>{formatPlanDate(item.date)}</strong>
+              <small>{item.channel} / {item.title}</small>
+            </div>
+          )) : <small>Ближайшие даты не назначены.</small>}
+        </article>
       </div>
 
       <div className="analytics-surface analytics-content-plan-controls">
         <div className="analytics-content-plan-filters">
+          <label className="analytics-content-plan-search">
+            <span>Поиск</span>
+            <input className="analytics-launch-input" value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} placeholder="Тема, блок, текст, комментарий" />
+          </label>
           <label>
             <span>Соцсеть</span>
             <select className="analytics-launch-input" value={filters.channel} onChange={(event) => setFilters((current) => ({ ...current, channel: event.target.value }))}>
@@ -342,10 +494,23 @@ function ContentPlanBoard() {
             </select>
           </label>
           <label>
+            <span>Формат</span>
+            <select className="analytics-launch-input" value={filters.format} onChange={(event) => setFilters((current) => ({ ...current, format: event.target.value }))}>
+              <option value="Все">Все</option>
+              {FORMAT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
             <span>Дата</span>
             <input className="analytics-launch-input" type="date" value={filters.date} onChange={(event) => setFilters((current) => ({ ...current, date: event.target.value }))} />
           </label>
-          <button type="button" className="analytics-content-plan-reset" onClick={() => setFilters({ channel: "Все", stage: "Все", status: "Все", date: "" })}>
+          <label>
+            <span>Ответственный</span>
+            <select className="analytics-launch-input" value={filters.owner} onChange={(event) => setFilters((current) => ({ ...current, owner: event.target.value }))}>
+              {ownerOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <button type="button" className="analytics-content-plan-reset" onClick={() => setFilters({ channel: "Все", stage: "Все", format: "Все", status: "Все", owner: "Все", date: "", search: "" })}>
             Сбросить
           </button>
         </div>
@@ -375,9 +540,12 @@ function ContentPlanBoard() {
           <select className="analytics-launch-input" value={newItem.status} onChange={(event) => setNewItem((current) => ({ ...current, status: event.target.value }))}>
             {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
+          <select className="analytics-launch-input" value={newItem.priority} onChange={(event) => setNewItem((current) => ({ ...current, priority: event.target.value }))}>
+            {PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
           <input className="analytics-launch-input" value={newItem.owner} onChange={(event) => setNewItem((current) => ({ ...current, owner: event.target.value }))} placeholder="Ответственный" />
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={newItem.copy} onChange={(event) => setNewItem((current) => ({ ...current, copy: event.target.value }))} placeholder="Текст / сценарий / тезисы" />
-          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.comment} onChange={(event) => setNewItem((current) => ({ ...current, comment: event.target.value }))} placeholder="Комментарии, правки, что нужно проверить" />
+          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.comment} onChange={(event) => setNewItem((current) => ({ ...current, comment: event.target.value }))} placeholder="Комментарии и правки" />
           <button type="button" className="analytics-content-plan-add-btn" onClick={addItem} disabled={!newItem.title.trim()}>
             Добавить
           </button>
@@ -389,11 +557,12 @@ function ContentPlanBoard() {
           <section key={dateKey} className="analytics-content-plan-day">
             <div className="analytics-content-plan-day-head">
               <span>{formatPlanDate(dateKey === "Без даты" ? "" : dateKey)}</span>
-              <strong>{groupItems.length} публикац.</strong>
+              <strong>{groupItems.length} публикаций</strong>
             </div>
             <div className="analytics-content-plan-grid">
               {groupItems.map((item) => {
                 const isEditing = editingId === item.id;
+                const isExpanded = expandedIds.includes(item.id);
                 return (
                   <article key={item.id} className="analytics-surface analytics-content-plan-card">
                     <div className="analytics-content-plan-card-top">
@@ -405,7 +574,7 @@ function ContentPlanBoard() {
                           <h3>{item.title}</h3>
                         )}
                       </div>
-                      <select className="analytics-content-plan-status" value={item.status} onChange={(event) => updateItem(item.id, { status: event.target.value })}>
+                      <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItem(item.id, { status: event.target.value })}>
                         {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                       </select>
                     </div>
@@ -423,6 +592,9 @@ function ContentPlanBoard() {
                           {STAGE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                         </select>
                         <input className="analytics-launch-input" value={item.topicBlock} onChange={(event) => updateItem(item.id, { topicBlock: event.target.value })} placeholder="Блок" />
+                        <select className="analytics-launch-input" value={item.priority} onChange={(event) => updateItem(item.id, { priority: event.target.value })}>
+                          {PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
                         <input className="analytics-launch-input" value={item.owner} onChange={(event) => updateItem(item.id, { owner: event.target.value })} placeholder="Ответственный" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="5" value={item.copy} onChange={(event) => updateItem(item.id, { copy: event.target.value })} placeholder="Текст / сценарий" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.comment} onChange={(event) => updateItem(item.id, { comment: event.target.value })} placeholder="Комментарий / правки" />
@@ -432,14 +604,21 @@ function ContentPlanBoard() {
                         <div className="analytics-content-plan-meta">
                           <span>{item.stage}</span>
                           <span>{item.topicBlock || "Без блока"}</span>
+                          <span>{item.priority || "Средний"} приоритет</span>
+                          <span>{getDateState(item.date, item.status) === "overdue" ? "Просрочено" : getDateState(item.date, item.status) === "today" ? "Сегодня" : "По плану"}</span>
                           <span>{item.owner || "Не назначен"}</span>
                         </div>
-                        <p>{item.copy || "Текст пока не добавлен."}</p>
+                        {isExpanded ? <p>{item.copy || "Текст пока не добавлен."}</p> : null}
                         {item.comment ? <small>{item.comment}</small> : null}
                       </>
                     )}
 
                     <div className="analytics-content-plan-actions">
+                      {!isEditing ? (
+                        <button type="button" onClick={() => toggleExpanded(item.id)}>
+                          {isExpanded ? "Скрыть текст" : "Показать текст"}
+                        </button>
+                      ) : null}
                       <button type="button" onClick={() => setEditingId(isEditing ? "" : item.id)}>
                         {isEditing ? "Готово" : "Редактировать"}
                       </button>
