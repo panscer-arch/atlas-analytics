@@ -439,10 +439,12 @@ function ContentPlanBoard() {
   const [expandedIds, setExpandedIds] = useState([]);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveState, setSaveState] = useState("idle");
+  const [copiedItemId, setCopiedItemId] = useState("");
   const localTouchedRef = useRef(false);
   const saveTimerRef = useRef(null);
   const saveVersionRef = useRef(0);
   const pendingServerSaveRef = useRef(null);
+  const copyTimerRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -481,6 +483,10 @@ function ContentPlanBoard() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", flushPendingSave);
     };
+  }, []);
+
+  useEffect(() => () => {
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
   }, []);
 
   const filteredItems = useMemo(() => {
@@ -695,6 +701,41 @@ function ContentPlanBoard() {
     setEditingId(duplicateId);
     setExpandedIds((current) => (current.includes(duplicateId) ? current : [...current, duplicateId]));
     setPendingDeleteId("");
+  }
+
+  function markItemCopied(itemId) {
+    setCopiedItemId(itemId);
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => setCopiedItemId(""), 1800);
+  }
+
+  function fallbackCopyText(text, itemId) {
+    if (typeof document === "undefined") return;
+    const buffer = document.createElement("textarea");
+    buffer.className = "analytics-content-plan-copy-buffer";
+    buffer.value = text;
+    buffer.setAttribute("readonly", "");
+    document.body.appendChild(buffer);
+    buffer.select();
+    try {
+      if (document.execCommand("copy")) markItemCopied(itemId);
+    } catch {
+      // Копирование не должно ломать работу карточки.
+    } finally {
+      document.body.removeChild(buffer);
+    }
+  }
+
+  function copyItemText(item) {
+    const text = String(item.copy || "").trim();
+    if (!text) return;
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => markItemCopied(item.id))
+        .catch(() => fallbackCopyText(text, item.id));
+      return;
+    }
+    fallbackCopyText(text, item.id);
   }
 
   function toggleExpanded(itemId) {
@@ -1099,6 +1140,14 @@ function ContentPlanBoard() {
                       ) : null}
                       <button type="button" onClick={() => setEditingId(isEditing ? "" : item.id)}>
                         {isEditing ? "Готово" : "Редактировать"}
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-copy"
+                        onClick={() => copyItemText(item)}
+                        disabled={!String(item.copy || "").trim()}
+                      >
+                        {copiedItemId === item.id ? "Скопировано" : "Копировать текст"}
                       </button>
                       <button type="button" className="analytics-content-plan-duplicate" onClick={() => duplicateItem(item.id)}>
                         Дублировать

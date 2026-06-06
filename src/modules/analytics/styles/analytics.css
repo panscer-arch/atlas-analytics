@@ -687,6 +687,26 @@
   color: #cffff8;
 }
 
+.analytics-content-plan-actions .analytics-content-plan-copy {
+  border-color: rgba(76, 154, 255, 0.34);
+  background: rgba(76, 154, 255, 0.1);
+  color: #d8eaff;
+}
+
+.analytics-content-plan-actions .analytics-content-plan-copy:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.analytics-content-plan-copy-buffer {
+  position: fixed;
+  inset: auto auto 0 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .analytics-content-plan-actions .analytics-content-plan-delete-confirm {
   border-color: rgba(255, 93, 115, 0.48);
   background: rgba(255, 93, 115, 0.12);
