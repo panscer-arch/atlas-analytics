@@ -22,6 +22,7 @@ const DEFAULT_FILTERS = {
   owner: "Все",
   dateState: "Все",
   readiness: "Все",
+  copyIssue: "Все",
   date: "",
   search: "",
 };
@@ -570,6 +571,7 @@ function ContentPlanBoard() {
         return true;
       })
       .filter((item) => filters.readiness === "Все" || (canPublishItem(item) && item.status !== "Опубликовано"))
+      .filter((item) => filters.copyIssue === "Все" || getCopyStats(item).isXOverLimit)
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
@@ -609,6 +611,7 @@ function ContentPlanBoard() {
       needsRevision: items.filter((item) => item.reviewStatus === "Нужны правки").length,
       visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
       publishReady: items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length,
+      xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
@@ -630,6 +633,7 @@ function ContentPlanBoard() {
       owner: "Ответственный",
       dateState: "Срок",
       readiness: "Готовность",
+      copyIssue: "Текст",
       date: "Дата",
       search: "Поиск",
     };
@@ -996,6 +1000,16 @@ function ContentPlanBoard() {
           <span>К публикации</span>
           <strong>{dashboard.publishReady}</strong>
           <small>Текст и визуал согласованы</small>
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ copyIssue: "X > 280" }), "analytics-content-plan-signal-focus")}
+          onClick={() => applyFocusFilter({ copyIssue: "X > 280" })}
+          aria-pressed={isFocusActive({ copyIssue: "X > 280" })}
+        >
+          <span>X &gt; 280</span>
+          <strong>{dashboard.xOverLimit}</strong>
+          <small>Посты X нужно сократить</small>
         </button>
         <article className="analytics-surface analytics-content-plan-next">
           <span>Ближайшие публикации</span>
