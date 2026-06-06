@@ -259,6 +259,59 @@
   cursor: pointer;
 }
 
+.analytics-content-plan-save {
+  display: grid;
+  gap: 3px;
+  min-width: 190px;
+  padding: 10px 12px;
+  border: 1px solid rgba(42, 190, 166, 0.26);
+  border-radius: 8px;
+  background: rgba(42, 190, 166, 0.1);
+  color: #dffefa;
+}
+
+.analytics-content-plan-save span {
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.analytics-content-plan-save small {
+  color: rgba(226, 240, 255, 0.68);
+  line-height: 1.35;
+}
+
+.analytics-content-plan-save button {
+  width: fit-content;
+  margin-top: 5px;
+  border: 1px solid rgba(255, 151, 45, 0.38);
+  border-radius: 8px;
+  background: rgba(255, 151, 45, 0.12);
+  color: #ffe2bd;
+  font-weight: 900;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.analytics-content-plan-save button:hover,
+.analytics-content-plan-save button:focus-visible {
+  border-color: rgba(111, 255, 232, 0.55);
+  outline: none;
+}
+
+.analytics-content-plan-save-saving {
+  border-color: rgba(76, 154, 255, 0.32);
+  background: rgba(76, 154, 255, 0.1);
+  color: #cfe6ff;
+}
+
+.analytics-content-plan-save-warn {
+  border-color: rgba(255, 151, 45, 0.38);
+  background: rgba(255, 151, 45, 0.1);
+  color: #ffe2bd;
+}
+
 .analytics-content-plan-resultbar {
   align-items: center;
 }
@@ -710,6 +763,10 @@
 
   .analytics-content-plan-filterchips {
     justify-content: flex-start;
+    width: 100%;
+  }
+
+  .analytics-content-plan-save {
     width: 100%;
   }
 }

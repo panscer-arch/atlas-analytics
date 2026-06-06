@@ -25,6 +25,28 @@ const DEFAULT_FILTERS = {
   date: "",
   search: "",
 };
+const SAVE_STATE_META = {
+  idle: {
+    label: "Сохранено",
+    detail: "Локальная копия готова",
+    tone: "ok",
+  },
+  saving: {
+    label: "Сохраняю...",
+    detail: "Отправляю изменения на сервер",
+    tone: "saving",
+  },
+  saved: {
+    label: "Сохранено на сервере",
+    detail: "Команда увидит последние правки",
+    tone: "ok",
+  },
+  local: {
+    label: "Сохранено локально",
+    detail: "Сервер не ответил, можно повторить",
+    tone: "warn",
+  },
+};
 
 const defaultContentPlanItems = [
   {
@@ -416,7 +438,7 @@ function ContentPlanBoard() {
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [expandedIds, setExpandedIds] = useState([]);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [saveState, setSaveState] = useState("Сохранено");
+  const [saveState, setSaveState] = useState("idle");
   const localTouchedRef = useRef(false);
   const saveTimerRef = useRef(null);
   const saveVersionRef = useRef(0);
@@ -441,7 +463,8 @@ function ContentPlanBoard() {
       pendingServerSaveRef.current = null;
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
       saveServerContent(CONTENT_PLAN_STORAGE_KEY, pendingItems).then((ok) => {
-        if (updateBadge) setSaveState(ok ? "Сохранено" : "Локально");
+        pendingServerSaveRef.current = ok ? null : pendingItems;
+        if (updateBadge) setSaveState(ok ? "saved" : "local");
       });
     }
 
@@ -558,7 +581,7 @@ function ContentPlanBoard() {
 
   function persist(nextItems) {
     localTouchedRef.current = true;
-    setSaveState("Сохраняю...");
+    setSaveState("saving");
     try {
       window.localStorage.setItem(CONTENT_PLAN_STORAGE_KEY, JSON.stringify(nextItems));
     } catch {
@@ -574,10 +597,25 @@ function ContentPlanBoard() {
       saveServerContent(CONTENT_PLAN_STORAGE_KEY, nextItems).then((ok) => {
         if (saveVersionRef.current === saveVersion) {
           pendingServerSaveRef.current = ok ? null : nextItems;
-          setSaveState(ok ? "Сохранено" : "Локально");
+          setSaveState(ok ? "saved" : "local");
         }
       });
     }, 450);
+  }
+
+  function retryServerSave() {
+    const pendingItems = pendingServerSaveRef.current || items;
+    if (!pendingItems) return;
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    pendingServerSaveRef.current = pendingItems;
+    const saveVersion = saveVersionRef.current + 1;
+    saveVersionRef.current = saveVersion;
+    setSaveState("saving");
+    saveServerContent(CONTENT_PLAN_STORAGE_KEY, pendingItems).then((ok) => {
+      if (saveVersionRef.current !== saveVersion) return;
+      pendingServerSaveRef.current = ok ? null : pendingItems;
+      setSaveState(ok ? "saved" : "local");
+    });
   }
 
   function updateItems(updater) {
@@ -684,6 +722,8 @@ function ContentPlanBoard() {
   function clearFilter(filterKey) {
     setFilters((current) => ({ ...current, [filterKey]: DEFAULT_FILTERS[filterKey] }));
   }
+
+  const saveMeta = SAVE_STATE_META[saveState] || SAVE_STATE_META.idle;
 
   return (
     <section className="analytics-content-plan">
@@ -845,7 +885,11 @@ function ContentPlanBoard() {
             Сбросить
           </button>
         </div>
-        <span className="analytics-product-library-save">{saveState}</span>
+        <div className={`analytics-content-plan-save analytics-content-plan-save-${saveMeta.tone}`}>
+          <span>{saveMeta.label}</span>
+          <small>{saveMeta.detail}</small>
+          {saveState === "local" ? <button type="button" onClick={retryServerSave}>Повторить</button> : null}
+        </div>
       </div>
 
       <div className="analytics-surface analytics-content-plan-resultbar">
