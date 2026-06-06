@@ -482,6 +482,7 @@ function ContentPlanBoard() {
   const [saveState, setSaveState] = useState("idle");
   const [copiedItemId, setCopiedItemId] = useState("");
   const [copiedBriefItemId, setCopiedBriefItemId] = useState("");
+  const [copiedPackageItemId, setCopiedPackageItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
@@ -492,6 +493,7 @@ function ContentPlanBoard() {
   const pendingServerSaveRef = useRef(null);
   const copyTimerRef = useRef(null);
   const briefCopyTimerRef = useRef(null);
+  const packageCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
 
@@ -537,6 +539,7 @@ function ContentPlanBoard() {
   useEffect(() => () => {
     if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
     if (briefCopyTimerRef.current) window.clearTimeout(briefCopyTimerRef.current);
+    if (packageCopyTimerRef.current) window.clearTimeout(packageCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
@@ -821,6 +824,12 @@ function ContentPlanBoard() {
     briefCopyTimerRef.current = window.setTimeout(() => setCopiedBriefItemId(""), 1800);
   }
 
+  function markPackageCopied(itemId) {
+    setCopiedPackageItemId(itemId);
+    if (packageCopyTimerRef.current) window.clearTimeout(packageCopyTimerRef.current);
+    packageCopyTimerRef.current = window.setTimeout(() => setCopiedPackageItemId(""), 1800);
+  }
+
   function markItemLinkCopied(itemId) {
     setCopiedLinkItemId(itemId);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
@@ -880,6 +889,36 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyValue(text, () => markBriefCopied(item.id));
+  }
+
+  function copyPublishPackage(item) {
+    if (!canPublishItem(item)) return;
+    const visualBrief = String(item.visualBrief || "").trim();
+    const visualLink = String(item.visualLink || "").trim();
+    const adminComment = String(item.adminComment || "").trim();
+    const text = [
+      `Пакет к публикации: ${item.title || "Без названия"}`,
+      "",
+      `Канал: ${item.channel || "Не указан"}`,
+      `Формат: ${item.format || "Не указан"}`,
+      `Дата: ${formatPlanDate(item.date)}`,
+      `Ответственный: ${item.owner || "Не назначен"}`,
+      `Статус: можно публиковать`,
+      "",
+      "Текст публикации:",
+      String(item.copy || "").trim() || "Текст не добавлен.",
+      "",
+      "Визуал:",
+      visualBrief || item.visualStatus || "Без отдельного визуала",
+      visualLink ? `Макет / файл: ${visualLink}` : "",
+      adminComment ? `Комментарий администратора: ${adminComment}` : "",
+    ].filter(Boolean).join("\n");
+    markPackageCopied(item.id);
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, () => markPackageCopied(item.id)));
+      return;
+    }
+    fallbackCopyValue(text, () => markPackageCopied(item.id));
   }
 
   function getItemShareLink(itemId) {
@@ -1418,6 +1457,15 @@ function ContentPlanBoard() {
                         disabled={!String(item.visualBrief || "").trim()}
                       >
                         {copiedBriefItemId === item.id ? "ТЗ скопировано" : "Копировать ТЗ"}
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-package-copy"
+                        onClick={() => copyPublishPackage(item)}
+                        disabled={!canPublishItem(item)}
+                        title={canPublishItem(item) ? "Скопировать все данные для публикации" : getPublishBlockReason(item)}
+                      >
+                        {copiedPackageItemId === item.id ? "Пакет скопирован" : "Пакет к публикации"}
                       </button>
                       <button type="button" className="analytics-content-plan-duplicate" onClick={() => duplicateItem(item.id)}>
                         Дублировать
