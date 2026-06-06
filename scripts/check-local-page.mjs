@@ -22,6 +22,7 @@ const titleIncludes = args.titleIncludes || "";
 const textIncludes = args.textIncludes || "";
 const clickSelector = args.clickSelector || "";
 const clickText = args.clickText || "";
+const clickSequence = args.clickSequence || "";
 const afterClickSelector = args.afterClickSelector || "";
 const afterClickTextIncludes = args.afterClickTextIncludes || "";
 const selector = args.selector || "";
@@ -71,6 +72,17 @@ try {
     await page.locator(clickSelector).first().click({ timeout });
   } else if (clickText) {
     await page.getByText(clickText, { exact: true }).first().click({ timeout });
+  }
+
+  if (clickSequence) {
+    const steps = clickSequence.split("||").map((step) => step.trim()).filter(Boolean);
+    for (const step of steps) {
+      if (step.startsWith("text:")) {
+        await page.getByText(step.slice(5), { exact: true }).first().click({ timeout });
+      } else {
+        await page.locator(step).first().click({ timeout });
+      }
+    }
   }
 
   if (afterClickSelector) {

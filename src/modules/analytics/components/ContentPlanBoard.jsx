@@ -461,6 +461,7 @@ function ContentPlanBoard() {
   const [newItem, setNewItem] = useState(emptyItem);
   const [editingId, setEditingId] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState("");
+  const [recentlyDeletedItem, setRecentlyDeletedItem] = useState(null);
   const [expandedIds, setExpandedIds] = useState([]);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveState, setSaveState] = useState("idle");
@@ -715,11 +716,35 @@ function ContentPlanBoard() {
     };
     updateItems((current) => [item, ...current]);
     setNewItem(emptyItem);
+    setRecentlyDeletedItem(null);
   }
 
   function removeItem(itemId) {
-    updateItems((current) => current.filter((item) => item.id !== itemId));
+    updateItems((current) => {
+      const index = current.findIndex((item) => item.id === itemId);
+      if (index === -1) return current;
+      setRecentlyDeletedItem({ item: current[index], index });
+      return current.filter((item) => item.id !== itemId);
+    });
     setPendingDeleteId("");
+    setEditingId((current) => (current === itemId ? "" : current));
+    setExpandedIds((current) => current.filter((id) => id !== itemId));
+  }
+
+  function restoreRecentlyDeletedItem() {
+    if (!recentlyDeletedItem?.item) return;
+    updateItems((current) => {
+      if (current.some((item) => item.id === recentlyDeletedItem.item.id)) return current;
+      const insertIndex = Math.min(Math.max(recentlyDeletedItem.index, 0), current.length);
+      return [
+        ...current.slice(0, insertIndex),
+        recentlyDeletedItem.item,
+        ...current.slice(insertIndex),
+      ];
+    });
+    setRecentlyDeletedItem(null);
+    setTargetItemId(recentlyDeletedItem.item.id);
+    setExpandedIds((current) => (current.includes(recentlyDeletedItem.item.id) ? current : [...current, recentlyDeletedItem.item.id]));
   }
 
   function duplicateItem(itemId) {
@@ -749,6 +774,7 @@ function ContentPlanBoard() {
     setEditingId(duplicateId);
     setExpandedIds((current) => (current.includes(duplicateId) ? current : [...current, duplicateId]));
     setPendingDeleteId("");
+    setRecentlyDeletedItem(null);
   }
 
   function markItemCopied(itemId) {
@@ -1111,6 +1137,16 @@ function ContentPlanBoard() {
           </button>
         </div>
       </div>
+
+      {recentlyDeletedItem ? (
+        <div className="analytics-surface analytics-content-plan-undo">
+          <div>
+            <span>Карточка удалена</span>
+            <strong>{recentlyDeletedItem.item.title}</strong>
+          </div>
+          <button type="button" onClick={restoreRecentlyDeletedItem}>Восстановить</button>
+        </div>
+      ) : null}
 
       <div className="analytics-content-plan-timeline">
         {Object.entries(groupedItems).map(([dateKey, groupItems]) => (
