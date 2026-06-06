@@ -473,6 +473,26 @@ function getNextActionLabel(item) {
   }[failed.key] || failed.detail;
 }
 
+function hasTextValue(value) {
+  return Boolean(String(value || "").trim());
+}
+
+function isValidHttpUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) return true;
+
+  try {
+    const url = new URL(text);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function hasInvalidContentPlanLink(item = {}) {
+  return !isValidHttpUrl(item.visualLink) || !isValidHttpUrl(item.publishedUrl);
+}
+
 function getQualitySignals(item, copyStats) {
   const signals = [];
   const dateState = getDateState(item.date, item.status);
@@ -487,10 +507,12 @@ function getQualitySignals(item, copyStats) {
   if (item.reviewStatus === "Нужны правки") signals.push({ label: "Правки", detail: "вернуть автору", tone: "danger" });
   if (!isTextApproved && item.reviewStatus !== "Нужны правки") signals.push({ label: "Вычитка", detail: item.reviewStatus, tone: "focus" });
   if (!isVisualApproved) signals.push({ label: "Визуал", detail: item.visualStatus, tone: "accent" });
-  if (item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()) signals.push({ label: "Пост", detail: "нет ссылки", tone: "warn" });
+  if (hasTextValue(item.visualLink) && !isValidHttpUrl(item.visualLink)) signals.push({ label: "Макет", detail: "некорректная ссылка", tone: "warn" });
+  if (hasTextValue(item.publishedUrl) && !isValidHttpUrl(item.publishedUrl)) signals.push({ label: "Пост", detail: "некорректная ссылка", tone: "warn" });
+  if (item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)) signals.push({ label: "Пост", detail: "нет ссылки", tone: "warn" });
 
   if (!signals.length) return [{ label: "Контроль", detail: "замечаний нет", tone: "ready" }];
-  return signals.slice(0, 5);
+  return signals.slice(0, 6);
 }
 
 function getDayReadinessMeta(items = []) {
@@ -500,12 +522,14 @@ function getDayReadinessMeta(items = []) {
   const withoutDate = items.filter((item) => !item.date).length;
   const revisions = items.filter((item) => item.reviewStatus === "Нужны правки").length;
   const visualIssues = items.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
-  const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
+  const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)).length;
+  const invalidLinks = items.filter(hasInvalidContentPlanLink).length;
   const signals = [
     { label: "Без даты", count: withoutDate, tone: "warn" },
     { label: "Без текста", count: withoutCopy, tone: "danger" },
     { label: "Правки", count: revisions, tone: "danger" },
     { label: "Визуал", count: visualIssues, tone: "accent" },
+    { label: "URL", count: invalidLinks, tone: "warn" },
     { label: "Нет ссылки", count: publishedWithoutLink, tone: "warn" },
   ].filter((signal) => signal.count > 0);
 
@@ -696,7 +720,7 @@ function ContentPlanBoard() {
         return true;
       })
       .filter((item) => filters.visualIssue === "Все" || (item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала"))
-      .filter((item) => filters.publishIssue === "Все" || (item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()))
+      .filter((item) => filters.publishIssue === "Все" || (item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
@@ -747,8 +771,9 @@ function ContentPlanBoard() {
     const needsRevision = items.filter((item) => item.reviewStatus === "Нужны правки").length;
     const publishReady = items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
     const published = items.filter((item) => item.status === "Опубликовано").length;
-    const publishedWithLink = items.filter((item) => item.status === "Опубликовано" && String(item.publishedUrl || "").trim()).length;
-    const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
+    const publishedWithLink = items.filter((item) => item.status === "Опубликовано" && hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl)).length;
+    const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)).length;
+    const invalidLinks = items.filter(hasInvalidContentPlanLink).length;
     const channelMix = SOCIAL_OPTIONS.map((channel) => {
       const count = items.filter((item) => item.channel === channel).length;
       return {
@@ -763,6 +788,7 @@ function ContentPlanBoard() {
       { label: "Правки", count: needsRevision, tone: "focus" },
       { label: "Визуал", count: visualIssue, tone: "accent" },
       { label: "Готово", count: publishReady, tone: "ready" },
+      { label: "URL", count: invalidLinks, tone: "warn" },
       { label: "Нет ссылки", count: publishedWithoutLink, tone: "warn" },
     ].map((entry) => ({
       ...entry,
@@ -782,6 +808,7 @@ function ContentPlanBoard() {
       xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
       visualIssue,
       publishedWithoutLink,
+      invalidLinks,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
@@ -838,7 +865,8 @@ function ContentPlanBoard() {
     const visualIssues = filteredItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
     const withoutCopy = filteredItems.filter((item) => !String(item.copy || "").trim()).length;
     const withoutOwner = filteredItems.filter((item) => !item.owner).length;
-    const publishedWithoutLink = filteredItems.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
+    const publishedWithoutLink = filteredItems.filter((item) => item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)).length;
+    const invalidLinks = filteredItems.filter(hasInvalidContentPlanLink).length;
     return {
       total,
       ready,
@@ -849,6 +877,7 @@ function ContentPlanBoard() {
         { label: "Визуал", count: visualIssues, tone: "accent" },
         { label: "Текст", count: withoutCopy, tone: "danger" },
         { label: "Owner", count: withoutOwner, tone: "warn" },
+        { label: "URL", count: invalidLinks, tone: "warn" },
         { label: "Ссылки", count: publishedWithoutLink, tone: "warn" },
       ],
     };
@@ -1186,7 +1215,7 @@ function ContentPlanBoard() {
         `Тема: ${item.title || "Без названия"}`,
         `Статус: ${item.status}; согласование: ${item.reviewStatus}; визуал: ${item.visualStatus}; готовность: ${readiness.done}/${readiness.total}`,
         `Ответственный: ${item.owner || "Не назначен"}; приоритет: ${item.priority || "Средний"}`,
-        item.publishedUrl ? `Пост: ${item.publishedUrl}` : "",
+        hasTextValue(item.publishedUrl) ? `Пост: ${item.publishedUrl}` : "",
       ].filter(Boolean).join("\n");
     });
     const text = [
@@ -1241,7 +1270,7 @@ function ContentPlanBoard() {
       `${index + 1}. ${item.title || "Без названия"}`,
       `Дата: ${formatPlanDate(item.date)}; канал: ${item.channel}; формат: ${item.format}`,
       `Ответственный: ${item.owner || "Не назначен"}; следующий шаг: ${getNextActionLabel(item)}`,
-      item.publishedUrl ? `Пост: ${item.publishedUrl}` : "",
+      hasTextValue(item.publishedUrl) ? `Пост: ${item.publishedUrl}` : "",
       `Проблемы: ${signals.map((signal) => `${signal.label} - ${signal.detail}`).join("; ")}`,
     ].filter(Boolean).join("\n"));
     const text = [
@@ -1267,7 +1296,7 @@ function ContentPlanBoard() {
     const filterLine = activeFilterChips.length
       ? activeFilterChips.map((chip) => `${chip.label}: ${chip.value}`).join("; ")
       : "без фильтров";
-    const withLinks = publishedSliceItems.filter((item) => String(item.publishedUrl || "").trim()).length;
+    const withLinks = publishedSliceItems.filter((item) => hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl)).length;
     const rows = publishedSliceItems.map((item, index) => [
       `${index + 1}. ${item.title || "Без названия"}`,
       `Дата публикации: ${formatPlanDate(item.publishedAt || item.date)}`,
@@ -1974,7 +2003,7 @@ function ContentPlanBoard() {
                           <span><b>Срок</b>{getDateStateLabel(getDateState(item.date, item.status))}</span>
                           <span><b>Owner</b>{item.owner || "Не назначен"}</span>
                           {item.status === "Опубликовано" ? <span className="analytics-content-plan-published-meta"><b>Опубликовано</b>{formatPlanDate(item.publishedAt)}</span> : null}
-                          {item.status === "Опубликовано" && item.publishedUrl ? (
+                          {item.status === "Опубликовано" && hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl) ? (
                             <span className="analytics-content-plan-published-link-meta">
                               <b>Пост</b>
                               <a href={item.publishedUrl} target="_blank" rel="noreferrer">Открыть публикацию</a>
@@ -1988,7 +2017,7 @@ function ContentPlanBoard() {
                           <div className="analytics-content-plan-visual">
                             <strong>Визуал</strong>
                             {item.visualBrief ? <span>{item.visualBrief}</span> : null}
-                            {item.visualLink ? <a href={item.visualLink} target="_blank" rel="noreferrer">Открыть макет / файл</a> : null}
+                            {hasTextValue(item.visualLink) && isValidHttpUrl(item.visualLink) ? <a href={item.visualLink} target="_blank" rel="noreferrer">Открыть макет / файл</a> : null}
                           </div>
                         ) : null}
                         {isExpanded ? <p>{item.copy || "Текст пока не добавлен."}</p> : null}
