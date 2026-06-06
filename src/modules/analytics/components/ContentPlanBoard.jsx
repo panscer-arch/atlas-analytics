@@ -26,6 +26,7 @@ const DEFAULT_FILTERS = {
   nextAction: "Все",
   copyIssue: "Все",
   visualIssue: "Все",
+  publishIssue: "Все",
   date: "",
   search: "",
 };
@@ -692,6 +693,7 @@ function ContentPlanBoard() {
         return true;
       })
       .filter((item) => filters.visualIssue === "Все" || (item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала"))
+      .filter((item) => filters.publishIssue === "Все" || (item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
@@ -741,6 +743,7 @@ function ContentPlanBoard() {
     const visualIssue = activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
     const needsRevision = items.filter((item) => item.reviewStatus === "Нужны правки").length;
     const publishReady = items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
+    const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
     const channelMix = SOCIAL_OPTIONS.map((channel) => {
       const count = items.filter((item) => item.channel === channel).length;
       return {
@@ -755,6 +758,7 @@ function ContentPlanBoard() {
       { label: "Правки", count: needsRevision, tone: "focus" },
       { label: "Визуал", count: visualIssue, tone: "accent" },
       { label: "Готово", count: publishReady, tone: "ready" },
+      { label: "Нет ссылки", count: publishedWithoutLink, tone: "warn" },
     ].map((entry) => ({
       ...entry,
       percent: getSharePercent(entry.count, activeItems.length || total),
@@ -769,6 +773,7 @@ function ContentPlanBoard() {
       publishReady,
       xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
       visualIssue,
+      publishedWithoutLink,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
@@ -800,6 +805,7 @@ function ContentPlanBoard() {
       nextAction: "Следующий шаг",
       copyIssue: "Текст",
       visualIssue: "Визуал",
+      publishIssue: "Публикация",
       date: "Дата",
       search: "Поиск",
     };
@@ -1531,6 +1537,7 @@ function ContentPlanBoard() {
                 if (entry.label === "Правки") applyFocusFilter({ reviewStatus: "Нужны правки" });
                 if (entry.label === "Визуал") applyFocusFilter({ visualIssue: "Визуал не готов" });
                 if (entry.label === "Готово") applyFocusFilter({ readiness: "К публикации" });
+                if (entry.label === "Нет ссылки") applyFocusFilter({ publishIssue: "Без ссылки" });
               }}>
                 <span>{entry.label}</span>
                 <b>{entry.count}</b>
