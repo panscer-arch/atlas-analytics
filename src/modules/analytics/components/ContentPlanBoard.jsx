@@ -351,10 +351,44 @@ function getReviewProgress(items) {
   return Math.round((approved / items.length) * 100);
 }
 
-function canPublishItem(item) {
+function getPublicationChecks(item) {
   const isTextApproved = item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать";
   const isVisualApproved = item.visualStatus === "Визуал ок" || item.visualStatus === "Нет визуала";
-  return isTextApproved && isVisualApproved;
+  return [
+    {
+      key: "date",
+      label: "Дата",
+      done: Boolean(item.date),
+      detail: item.date ? formatPlanDate(item.date) : "назначить дату публикации",
+    },
+    {
+      key: "copy",
+      label: "Текст",
+      done: Boolean(String(item.copy || "").trim()),
+      detail: String(item.copy || "").trim() ? "финальный текст заполнен" : "добавить финальный текст",
+    },
+    {
+      key: "review",
+      label: "Вычитка",
+      done: isTextApproved,
+      detail: isTextApproved ? item.reviewStatus : "нужно согласование текста",
+    },
+    {
+      key: "visual",
+      label: "Визуал",
+      done: isVisualApproved,
+      detail: isVisualApproved ? item.visualStatus : "визуал еще не согласован",
+    },
+  ];
+}
+
+function canPublishItem(item = {}) {
+  return getPublicationChecks(item).every((check) => check.done);
+}
+
+function getPublishBlockReason(item) {
+  const failed = getPublicationChecks(item).find((check) => !check.done);
+  return failed ? failed.detail : "готово к публикации";
 }
 
 function getSignalClass(isActive, tone = "") {
@@ -609,7 +643,9 @@ function ContentPlanBoard() {
   }
 
   function approveItem(itemId) {
-    updateItem(itemId, { status: "Готово", reviewStatus: "Проверено" });
+    const item = items.find((currentItem) => currentItem.id === itemId);
+    const nextItem = { ...(item || {}), reviewStatus: "Проверено" };
+    updateItem(itemId, { status: canPublishItem(nextItem) ? "Готово" : "На вычитке", reviewStatus: "Проверено" });
   }
 
   function approveVisual(itemId) {
@@ -886,6 +922,7 @@ function ContentPlanBoard() {
                 const isEditing = editingId === item.id;
                 const isExpanded = expandedIds.includes(item.id);
                 const isPendingDelete = pendingDeleteId === item.id;
+                const publicationChecks = getPublicationChecks(item);
                 return (
                   <article key={item.id} className="analytics-surface analytics-content-plan-card">
                     <div className="analytics-content-plan-card-top">
@@ -955,6 +992,17 @@ function ContentPlanBoard() {
                         ) : null}
                         {isExpanded ? <p>{item.copy || "Текст пока не добавлен."}</p> : null}
                         {item.comment ? <small>{item.comment}</small> : null}
+                        <div className="analytics-content-plan-publish-gate">
+                          <strong>Гейт публикации</strong>
+                          <div>
+                            {publicationChecks.map((check) => (
+                              <span key={check.key} className={check.done ? "analytics-content-plan-gate-ok" : "analytics-content-plan-gate-wait"}>
+                                <b>{check.label}</b>
+                                {check.detail}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <label className="analytics-content-plan-admin-note">
                           <strong>Комментарий администратора</strong>
                           <textarea className="analytics-launch-input analytics-content-plan-admin-input" rows="2" value={item.adminComment || ""} onChange={(event) => updateItem(item.id, { adminComment: event.target.value })} placeholder="Что исправить перед публикацией" />
@@ -967,7 +1015,7 @@ function ContentPlanBoard() {
                       <button type="button" onClick={() => requestRevision(item.id)} disabled={!String(item.adminComment || "").trim()}>Правки</button>
                       <button type="button" onClick={() => approveItem(item.id)}>Проверено</button>
                       <button type="button" onClick={() => approveVisual(item.id)}>Визуал OK</button>
-                      <button type="button" onClick={() => publishItem(item.id)} disabled={!canPublishItem(item)}>Опубликовано</button>
+                      <button type="button" onClick={() => publishItem(item.id)} disabled={!canPublishItem(item)} title={getPublishBlockReason(item)}>Опубликовано</button>
                     </div>
 
                     <div className="analytics-content-plan-actions">
