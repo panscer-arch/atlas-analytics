@@ -668,6 +668,35 @@ function ContentPlanBoard() {
     setPendingDeleteId("");
   }
 
+  function duplicateItem(itemId) {
+    const sourceItem = items.find((item) => item.id === itemId);
+    if (!sourceItem) return;
+
+    const duplicateId = `content-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const duplicate = {
+      ...sourceItem,
+      id: duplicateId,
+      title: `Копия: ${sourceItem.title || "публикация"}`,
+      status: "Черновик",
+      reviewStatus: "Готовится",
+      visualStatus: sourceItem.visualStatus === "Нет визуала" ? "Нет визуала" : "Визуал готовится",
+      adminComment: "",
+    };
+
+    updateItems((current) => {
+      const sourceIndex = current.findIndex((item) => item.id === itemId);
+      if (sourceIndex === -1) return [duplicate, ...current];
+      return [
+        ...current.slice(0, sourceIndex + 1),
+        duplicate,
+        ...current.slice(sourceIndex + 1),
+      ];
+    });
+    setEditingId(duplicateId);
+    setExpandedIds((current) => (current.includes(duplicateId) ? current : [...current, duplicateId]));
+    setPendingDeleteId("");
+  }
+
   function toggleExpanded(itemId) {
     setExpandedIds((current) => (current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]));
   }
@@ -1070,6 +1099,9 @@ function ContentPlanBoard() {
                       ) : null}
                       <button type="button" onClick={() => setEditingId(isEditing ? "" : item.id)}>
                         {isEditing ? "Готово" : "Редактировать"}
+                      </button>
+                      <button type="button" className="analytics-content-plan-duplicate" onClick={() => duplicateItem(item.id)}>
+                        Дублировать
                       </button>
                       {isPendingDelete ? (
                         <>
