@@ -809,6 +809,27 @@ function ContentPlanBoard() {
       }));
   }, [filters]);
 
+  const sliceHealth = useMemo(() => {
+    const total = filteredItems.length;
+    const ready = filteredItems.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
+    const revisions = filteredItems.filter((item) => item.reviewStatus === "Нужны правки").length;
+    const visualIssues = filteredItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+    const withoutCopy = filteredItems.filter((item) => !String(item.copy || "").trim()).length;
+    const withoutOwner = filteredItems.filter((item) => !item.owner).length;
+    return {
+      total,
+      ready,
+      percent: getSharePercent(ready, total),
+      signals: [
+        { label: "Готово", count: ready, tone: "ready" },
+        { label: "Правки", count: revisions, tone: "danger" },
+        { label: "Визуал", count: visualIssues, tone: "accent" },
+        { label: "Текст", count: withoutCopy, tone: "danger" },
+        { label: "Owner", count: withoutOwner, tone: "warn" },
+      ],
+    };
+  }, [filteredItems]);
+
   function persist(nextItems) {
     localTouchedRef.current = true;
     setSaveState("saving");
@@ -1585,6 +1606,20 @@ function ContentPlanBoard() {
           <span>Показано</span>
           <strong>{filteredItems.length} из {items.length}</strong>
           <small>{activeFilterChips.length ? "Работает выбранный срез контент-плана" : "Все карточки без дополнительных фильтров"}</small>
+        </div>
+        <div className="analytics-content-plan-slice-health" aria-label="Сводка качества выбранного среза">
+          <span>
+            <b>{sliceHealth.percent}%</b>
+            готово
+          </span>
+          <progress value={sliceHealth.percent} max="100" aria-label={`Готовность среза ${sliceHealth.percent}%`} />
+          <div>
+            {sliceHealth.signals.map((signal) => (
+              <small key={signal.label} className={`analytics-content-plan-slice-health-${signal.tone}`}>
+                {signal.label}: {signal.count}
+              </small>
+            ))}
+          </div>
         </div>
         {activeFilterChips.length ? (
           <div className="analytics-content-plan-filterchips" aria-label="Активные фильтры">

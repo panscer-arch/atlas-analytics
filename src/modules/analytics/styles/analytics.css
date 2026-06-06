@@ -680,6 +680,97 @@
   line-height: 1.35;
 }
 
+.analytics-content-plan-slice-health {
+  display: grid;
+  grid-template-columns: auto minmax(100px, 160px);
+  align-items: center;
+  gap: 6px 10px;
+  min-width: min(360px, 100%);
+  padding: 9px 11px;
+  border: 1px solid rgba(111, 255, 232, 0.18);
+  border-radius: 8px;
+  background: rgba(3, 12, 23, 0.5);
+}
+
+.analytics-content-plan-slice-health > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  color: rgba(226, 240, 255, 0.78);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.analytics-content-plan-slice-health b {
+  color: #f7fbff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.analytics-content-plan-slice-health progress {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(124, 153, 190, 0.14);
+}
+
+.analytics-content-plan-slice-health progress::-webkit-progress-bar {
+  background: rgba(124, 153, 190, 0.14);
+}
+
+.analytics-content-plan-slice-health progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2abea6, #6fffe8);
+  box-shadow: 0 0 16px rgba(111, 255, 232, 0.32);
+}
+
+.analytics-content-plan-slice-health progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2abea6, #6fffe8);
+}
+
+.analytics-content-plan-slice-health div {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.analytics-content-plan-slice-health small {
+  padding: 4px 6px;
+  border: 1px solid rgba(76, 154, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(76, 154, 255, 0.08);
+  color: #d8eaff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.analytics-content-plan-slice-health .analytics-content-plan-slice-health-ready {
+  border-color: rgba(111, 255, 232, 0.24);
+  background: rgba(111, 255, 232, 0.09);
+  color: #dffefa;
+}
+
+.analytics-content-plan-slice-health .analytics-content-plan-slice-health-danger {
+  border-color: rgba(255, 93, 115, 0.28);
+  background: rgba(255, 93, 115, 0.09);
+  color: #ffc8d0;
+}
+
+.analytics-content-plan-slice-health .analytics-content-plan-slice-health-warn,
+.analytics-content-plan-slice-health .analytics-content-plan-slice-health-accent {
+  border-color: rgba(255, 151, 45, 0.28);
+  background: rgba(255, 151, 45, 0.09);
+  color: #ffe2bd;
+}
+
 .analytics-content-plan-filterchips {
   display: flex;
   flex: 1 1 auto;
@@ -1571,6 +1662,11 @@
   .analytics-content-plan-filterchips {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .analytics-content-plan-slice-health {
+    width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .analytics-content-plan-save {
