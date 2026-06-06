@@ -8,6 +8,8 @@ const FORMAT_OPTIONS = ["Пост", "Карусель", "Рилс", "Видео"
 const STAGE_OPTIONS = ["До запуска", "После запуска", "Еженедельно", "Идеи"];
 const STATUS_OPTIONS = ["Идея", "Черновик", "На вычитке", "Готово", "Опубликовано", "На паузе"];
 const PRIORITY_OPTIONS = ["Высокий", "Средний", "Низкий"];
+const REVIEW_OPTIONS = ["Готовится", "На согласовании", "Нужны правки", "Проверено", "Можно публиковать"];
+const VISUAL_OPTIONS = ["Нет визуала", "Визуал готовится", "Визуал на проверке", "Визуал ок"];
 
 const defaultContentPlanItems = [
   {
@@ -19,10 +21,15 @@ const defaultContentPlanItems = [
     topicBlock: "Мир меняется",
     title: "Эпоха одиночек заканчивается",
     status: "Черновик",
+    reviewStatus: "Готовится",
+    visualStatus: "Визуал готовится",
     priority: "Высокий",
     owner: "SMM",
+    visualBrief: "Рилс: человек в информационном шуме, затем появляются линии связей, сообщество и аккуратный финальный кадр с Atlas.",
+    visualLink: "",
     copy: "Хук: «Мир становится сложнее, и одиночных решений все чаще недостаточно». Сценарий: человек в информационном шуме, поток новостей и технологий. Затем появляются связи между людьми, сеть, сообщество и логотип Atlas.",
     comment: "Прогрев до запуска. Визуал: человек в информационном шуме → появляются связи → формируется сообщество Atlas. Без депрессии, паники и образов «краха мира».",
+    adminComment: "Убрать чрезмерную драму, сделать сильный, но спокойный запусковый тон.",
   },
   {
     id: "atlas-pre-ecosystem-1",
@@ -33,10 +40,15 @@ const defaultContentPlanItems = [
     topicBlock: "Экосистема",
     title: "Atlas — это не один продукт",
     status: "На вычитке",
+    reviewStatus: "На согласовании",
+    visualStatus: "Визуал на проверке",
     priority: "Высокий",
     owner: "Контент",
+    visualBrief: "Карусель в фирменном стиле: Smart Cycle как фундамент, вокруг него документы, сообщество, голосования и инфраструктура.",
+    visualLink: "",
     copy: "Atlas — это не один продукт, а экосистема. Smart Cycle является фундаментом, вокруг которого развиваются продукты, инструменты, механики, вдохновленные DAO, отдельные элементы голосования и инфраструктура для международного сообщества.",
     comment: "Базовый пост-знакомство. Не перечислять будущие продукты как уже запущенные. Не создавать впечатление, что Atlas уже является полноценной DAO.",
+    adminComment: "",
   },
   {
     id: "atlas-pre-smart-contract-1",
@@ -47,10 +59,15 @@ const defaultContentPlanItems = [
     topicBlock: "Что такое Smart Cycle",
     title: "Что делает смарт-контракт",
     status: "Черновик",
+    reviewStatus: "Готовится",
+    visualStatus: "Нет визуала",
     priority: "Высокий",
     owner: "Контент",
+    visualBrief: "Схема: кошелек, смарт-контракт, запись операции в блокчейн. Без перегруженной технической графики.",
+    visualLink: "",
     copy: "Смарт-контракт — это программный код, в котором заранее описаны правила работы системы. Он автоматически исполняет заданную on-chain логику. При этом отдельные элементы Atlas, включая часть партнерской инфраструктуры, могут обслуживаться вне смарт-контракта и раскрываются отдельно.",
     comment: "Хороший обучающий пост для Telegram и Facebook. Важно не писать, что все процессы Atlas полностью on-chain.",
+    adminComment: "",
   },
   {
     id: "atlas-pre-transparency-1",
@@ -230,10 +247,15 @@ const emptyItem = {
   topicBlock: "",
   title: "",
   status: "Идея",
+  reviewStatus: "Готовится",
+  visualStatus: "Нет визуала",
   priority: "Средний",
   owner: "",
+  visualBrief: "",
+  visualLink: "",
   copy: "",
   comment: "",
+  adminComment: "",
 };
 
 function normalizeItems(items) {
@@ -246,10 +268,15 @@ function normalizeItems(items) {
     topicBlock: item.topicBlock || "",
     title: item.title || "",
     status: item.status || "Идея",
+    reviewStatus: item.reviewStatus || (item.status === "На вычитке" ? "На согласовании" : item.status === "Готово" || item.status === "Опубликовано" ? "Проверено" : "Готовится"),
+    visualStatus: item.visualStatus || "Нет визуала",
     priority: item.priority || "Средний",
     owner: item.owner || "",
+    visualBrief: item.visualBrief || "",
+    visualLink: item.visualLink || "",
     copy: item.copy || "",
     comment: item.comment || "",
+    adminComment: item.adminComment || "",
   })) : defaultContentPlanItems;
 }
 
@@ -300,7 +327,7 @@ function ContentPlanBoard() {
   const [newItem, setNewItem] = useState(emptyItem);
   const [editingId, setEditingId] = useState("");
   const [expandedIds, setExpandedIds] = useState([]);
-  const [filters, setFilters] = useState({ channel: "Все", stage: "Все", format: "Все", status: "Все", owner: "Все", date: "", search: "" });
+  const [filters, setFilters] = useState({ channel: "Все", stage: "Все", format: "Все", status: "Все", reviewStatus: "Все", owner: "Все", date: "", search: "" });
   const [saveState, setSaveState] = useState("Сохранено");
 
   useEffect(() => {
@@ -322,11 +349,12 @@ function ContentPlanBoard() {
       .filter((item) => filters.stage === "Все" || item.stage === filters.stage)
       .filter((item) => filters.format === "Все" || item.format === filters.format)
       .filter((item) => filters.status === "Все" || item.status === filters.status)
+      .filter((item) => filters.reviewStatus === "Все" || item.reviewStatus === filters.reviewStatus)
       .filter((item) => filters.owner === "Все" || (filters.owner === "Не назначен" ? !item.owner : item.owner === filters.owner))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
-        return [item.title, item.topicBlock, item.copy, item.comment].some((value) => String(value || "").toLowerCase().includes(searchValue));
+        return [item.title, item.topicBlock, item.copy, item.comment, item.adminComment, item.visualBrief, item.visualLink].some((value) => String(value || "").toLowerCase().includes(searchValue));
       })
       .sort((a, b) => (a.date || "9999-99-99").localeCompare(b.date || "9999-99-99"));
   }, [filters, items]);
@@ -359,6 +387,8 @@ function ContentPlanBoard() {
       total: items.length,
       ready: items.filter((item) => item.status === "Готово" || item.status === "Опубликовано").length,
       review: items.filter((item) => item.status === "На вычитке").length,
+      approved: items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать").length,
+      needsRevision: items.filter((item) => item.reviewStatus === "Нужны правки").length,
       channels: new Set(items.map((item) => item.channel)).size,
       overdue,
       todayItems,
@@ -399,8 +429,11 @@ function ContentPlanBoard() {
       title,
       topicBlock: newItem.topicBlock.trim(),
       owner: newItem.owner.trim(),
+      visualBrief: newItem.visualBrief.trim(),
+      visualLink: newItem.visualLink.trim(),
       copy: newItem.copy.trim(),
       comment: newItem.comment.trim(),
+      adminComment: newItem.adminComment.trim(),
     };
     updateItems((current) => [item, ...current]);
     setNewItem(emptyItem);
@@ -416,6 +449,30 @@ function ContentPlanBoard() {
     setExpandedIds((current) => (current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]));
   }
 
+  function sendToReview(itemId) {
+    updateItem(itemId, { status: "На вычитке", reviewStatus: "На согласовании" });
+  }
+
+  function approveItem(itemId) {
+    updateItem(itemId, { status: "Готово", reviewStatus: "Проверено" });
+  }
+
+  function requestRevision(itemId) {
+    const item = items.find((currentItem) => currentItem.id === itemId);
+    const savedComment = item?.adminComment?.trim();
+    const revisionComment = savedComment || window.prompt("Что нужно доработать перед повторной вычиткой?");
+    if (!revisionComment?.trim()) return;
+    updateItem(itemId, {
+      status: "Черновик",
+      reviewStatus: "Нужны правки",
+      adminComment: revisionComment.trim(),
+    });
+  }
+
+  function publishItem(itemId) {
+    updateItem(itemId, { status: "Опубликовано", reviewStatus: "Можно публиковать" });
+  }
+
   return (
     <section className="analytics-content-plan">
       <div className="analytics-surface analytics-content-plan-hero">
@@ -423,13 +480,14 @@ function ContentPlanBoard() {
           <span className="analytics-kicker">Контент-план</span>
           <h2 className="analytics-agent-template-title">Контент-план Atlas</h2>
           <p className="analytics-page-subtitle">
-            План публикаций по каналам, датам, статусам и правкам. Сначала планируем, потом вычитываем, потом выпускаем.
+            Редакционный план по каналам, датам, текстам, визуалам и админ-согласованию. Автор готовит, команда вычитывает, правки фиксируются в карточке.
           </p>
         </div>
         <div className="analytics-content-plan-stats">
           <span><strong>{dashboard.total}</strong> карточек</span>
           <span><strong>{dashboard.ready}</strong> готово</span>
           <span><strong>{dashboard.review}</strong> на вычитке</span>
+          <span><strong>{dashboard.approved}</strong> проверено</span>
           <span><strong>{dashboard.channels}</strong> каналов</span>
         </div>
       </div>
@@ -446,14 +504,14 @@ function ContentPlanBoard() {
           <small>Публикации на текущий день</small>
         </article>
         <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-focus">
+          <span>Нужны правки</span>
+          <strong>{dashboard.needsRevision}</strong>
+          <small>Вернуть автору после комментария</small>
+        </article>
+        <article className="analytics-surface analytics-content-plan-signal">
           <span>Высокий приоритет</span>
           <strong>{dashboard.highPriority}</strong>
           <small>То, что держит запуск</small>
-        </article>
-        <article className="analytics-surface analytics-content-plan-signal">
-          <span>Без ответственного</span>
-          <strong>{dashboard.withoutOwner}</strong>
-          <small>Нужно назначить владельца</small>
         </article>
         <article className="analytics-surface analytics-content-plan-next">
           <span>Ближайшие публикации</span>
@@ -494,6 +552,13 @@ function ContentPlanBoard() {
             </select>
           </label>
           <label>
+            <span>Согласование</span>
+            <select className="analytics-launch-input" value={filters.reviewStatus} onChange={(event) => setFilters((current) => ({ ...current, reviewStatus: event.target.value }))}>
+              <option value="Все">Все</option>
+              {REVIEW_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
             <span>Формат</span>
             <select className="analytics-launch-input" value={filters.format} onChange={(event) => setFilters((current) => ({ ...current, format: event.target.value }))}>
               <option value="Все">Все</option>
@@ -510,7 +575,7 @@ function ContentPlanBoard() {
               {ownerOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
-          <button type="button" className="analytics-content-plan-reset" onClick={() => setFilters({ channel: "Все", stage: "Все", format: "Все", status: "Все", owner: "Все", date: "", search: "" })}>
+          <button type="button" className="analytics-content-plan-reset" onClick={() => setFilters({ channel: "Все", stage: "Все", format: "Все", status: "Все", reviewStatus: "Все", owner: "Все", date: "", search: "" })}>
             Сбросить
           </button>
         </div>
@@ -540,12 +605,21 @@ function ContentPlanBoard() {
           <select className="analytics-launch-input" value={newItem.status} onChange={(event) => setNewItem((current) => ({ ...current, status: event.target.value }))}>
             {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
+          <select className="analytics-launch-input" value={newItem.reviewStatus} onChange={(event) => setNewItem((current) => ({ ...current, reviewStatus: event.target.value }))}>
+            {REVIEW_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+          <select className="analytics-launch-input" value={newItem.visualStatus} onChange={(event) => setNewItem((current) => ({ ...current, visualStatus: event.target.value }))}>
+            {VISUAL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
           <select className="analytics-launch-input" value={newItem.priority} onChange={(event) => setNewItem((current) => ({ ...current, priority: event.target.value }))}>
             {PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
           <input className="analytics-launch-input" value={newItem.owner} onChange={(event) => setNewItem((current) => ({ ...current, owner: event.target.value }))} placeholder="Ответственный" />
-          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={newItem.copy} onChange={(event) => setNewItem((current) => ({ ...current, copy: event.target.value }))} placeholder="Текст / сценарий / тезисы" />
-          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.comment} onChange={(event) => setNewItem((current) => ({ ...current, comment: event.target.value }))} placeholder="Комментарии и правки" />
+          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.visualBrief} onChange={(event) => setNewItem((current) => ({ ...current, visualBrief: event.target.value }))} placeholder="Что должно быть на картинке / видео / обложке" />
+          <input className="analytics-launch-input analytics-content-plan-wide" value={newItem.visualLink} onChange={(event) => setNewItem((current) => ({ ...current, visualLink: event.target.value }))} placeholder="Ссылка на визуал / макет / файл" />
+          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={newItem.copy} onChange={(event) => setNewItem((current) => ({ ...current, copy: event.target.value }))} placeholder="Финальный текст / сценарий / тезисы" />
+          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.comment} onChange={(event) => setNewItem((current) => ({ ...current, comment: event.target.value }))} placeholder="Рабочий комментарий автора / SMM" />
+          <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.adminComment} onChange={(event) => setNewItem((current) => ({ ...current, adminComment: event.target.value }))} placeholder="Админ-комментарий: что исправить перед публикацией" />
           <button type="button" className="analytics-content-plan-add-btn" onClick={addItem} disabled={!newItem.title.trim()}>
             Добавить
           </button>
@@ -592,26 +666,57 @@ function ContentPlanBoard() {
                           {STAGE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                         </select>
                         <input className="analytics-launch-input" value={item.topicBlock} onChange={(event) => updateItem(item.id, { topicBlock: event.target.value })} placeholder="Блок" />
+                        <select className="analytics-launch-input" value={item.reviewStatus} onChange={(event) => updateItem(item.id, { reviewStatus: event.target.value })}>
+                          {REVIEW_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                        <select className="analytics-launch-input" value={item.visualStatus} onChange={(event) => updateItem(item.id, { visualStatus: event.target.value })}>
+                          {VISUAL_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
                         <select className="analytics-launch-input" value={item.priority} onChange={(event) => updateItem(item.id, { priority: event.target.value })}>
                           {PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                         </select>
                         <input className="analytics-launch-input" value={item.owner} onChange={(event) => updateItem(item.id, { owner: event.target.value })} placeholder="Ответственный" />
-                        <textarea className="analytics-launch-input analytics-content-plan-wide" rows="5" value={item.copy} onChange={(event) => updateItem(item.id, { copy: event.target.value })} placeholder="Текст / сценарий" />
-                        <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.comment} onChange={(event) => updateItem(item.id, { comment: event.target.value })} placeholder="Комментарий / правки" />
+                        <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.visualBrief} onChange={(event) => updateItem(item.id, { visualBrief: event.target.value })} placeholder="Визуал / картинка / видео" />
+                        <input className="analytics-launch-input analytics-content-plan-wide" value={item.visualLink} onChange={(event) => updateItem(item.id, { visualLink: event.target.value })} placeholder="Ссылка на визуал / макет / файл" />
+                        <textarea className="analytics-launch-input analytics-content-plan-wide" rows="5" value={item.copy} onChange={(event) => updateItem(item.id, { copy: event.target.value })} placeholder="Финальный текст / сценарий" />
+                        <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.comment} onChange={(event) => updateItem(item.id, { comment: event.target.value })} placeholder="Рабочий комментарий автора / SMM" />
+                        <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.adminComment} onChange={(event) => updateItem(item.id, { adminComment: event.target.value })} placeholder="Админ-комментарий: что исправить перед публикацией" />
                       </div>
                     ) : (
                       <>
                         <div className="analytics-content-plan-meta">
                           <span>{item.stage}</span>
                           <span>{item.topicBlock || "Без блока"}</span>
+                          <span className="analytics-content-plan-review-badge">{item.reviewStatus}</span>
+                          <span>{item.visualStatus}</span>
                           <span>{item.priority || "Средний"} приоритет</span>
                           <span>{getDateState(item.date, item.status) === "overdue" ? "Просрочено" : getDateState(item.date, item.status) === "today" ? "Сегодня" : "По плану"}</span>
                           <span>{item.owner || "Не назначен"}</span>
                         </div>
+                        {item.visualBrief || item.visualLink ? (
+                          <div className="analytics-content-plan-visual">
+                            <strong>Визуал</strong>
+                            {item.visualBrief ? <span>{item.visualBrief}</span> : null}
+                            {item.visualLink ? <a href={item.visualLink} target="_blank" rel="noreferrer">Открыть макет / файл</a> : null}
+                          </div>
+                        ) : null}
                         {isExpanded ? <p>{item.copy || "Текст пока не добавлен."}</p> : null}
                         {item.comment ? <small>{item.comment}</small> : null}
+                        {item.adminComment ? (
+                          <div className="analytics-content-plan-admin-note">
+                            <strong>Комментарий администратора</strong>
+                            <span>{item.adminComment}</span>
+                          </div>
+                        ) : null}
                       </>
                     )}
+
+                    <div className="analytics-content-plan-review-actions">
+                      <button type="button" onClick={() => sendToReview(item.id)}>👀 На вычитку</button>
+                      <button type="button" onClick={() => requestRevision(item.id)}>✍️ Нужны правки</button>
+                      <button type="button" onClick={() => approveItem(item.id)}>✅ Проверено</button>
+                      <button type="button" onClick={() => publishItem(item.id)} disabled={item.reviewStatus !== "Проверено" && item.reviewStatus !== "Можно публиковать"}>🚀 Опубликовано</button>
+                    </div>
 
                     <div className="analytics-content-plan-actions">
                       {!isEditing ? (

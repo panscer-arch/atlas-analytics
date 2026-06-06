@@ -13,6 +13,7 @@
 .analytics-content-plan-controls,
 .analytics-content-plan-day-head,
 .analytics-content-plan-card-top,
+.analytics-content-plan-review-actions,
 .analytics-content-plan-actions {
   display: flex;
   align-items: flex-start;
@@ -258,6 +259,53 @@
   background: rgba(4, 15, 25, 0.45);
 }
 
+.analytics-content-plan-meta .analytics-content-plan-review-badge {
+  border-color: rgba(42, 190, 166, 0.32);
+  background: rgba(42, 190, 166, 0.12);
+  color: #a9fff2;
+}
+
+.analytics-content-plan-visual,
+.analytics-content-plan-admin-note {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  line-height: 1.45;
+}
+
+.analytics-content-plan-visual {
+  border: 1px solid rgba(76, 154, 255, 0.24);
+  background: rgba(76, 154, 255, 0.08);
+  color: rgba(226, 240, 255, 0.82);
+}
+
+.analytics-content-plan-admin-note {
+  border: 1px solid rgba(255, 151, 45, 0.36);
+  background: linear-gradient(135deg, rgba(255, 151, 45, 0.13), rgba(6, 22, 34, 0.62));
+  color: #ffd6a1;
+}
+
+.analytics-content-plan-visual strong,
+.analytics-content-plan-admin-note strong {
+  color: #f7fbff;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.analytics-content-plan-visual a {
+  width: fit-content;
+  color: #a9fff2;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.analytics-content-plan-visual a:hover {
+  text-decoration: underline;
+}
+
 .analytics-content-plan-card p {
   margin: 0;
   color: rgba(229, 239, 252, 0.82);
@@ -279,6 +327,12 @@
   justify-content: flex-start;
 }
 
+.analytics-content-plan-review-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
 .analytics-content-plan-actions button {
   border: 1px solid rgba(124, 153, 190, 0.24);
   border-radius: 12px;
@@ -287,6 +341,27 @@
   font-weight: 850;
   padding: 10px 12px;
   cursor: pointer;
+}
+
+.analytics-content-plan-review-actions button {
+  border: 1px solid rgba(42, 190, 166, 0.26);
+  border-radius: 999px;
+  background: rgba(42, 190, 166, 0.1);
+  color: #dffefa;
+  font-weight: 900;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+
+.analytics-content-plan-review-actions button:nth-child(2) {
+  border-color: rgba(255, 151, 45, 0.34);
+  background: rgba(255, 151, 45, 0.12);
+  color: #ffe2bd;
+}
+
+.analytics-content-plan-review-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .analytics-content-plan-empty {
