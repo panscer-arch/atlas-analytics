@@ -495,6 +495,12 @@ function getUrlFieldWarning(value) {
   return "Укажите полную ссылку с http:// или https://";
 }
 
+function getPublishedUrlStatus(value) {
+  if (!hasTextValue(value)) return { label: "не заполнена", tone: "empty" };
+  if (!isValidHttpUrl(value)) return { label: "некорректная ссылка", tone: "invalid" };
+  return { label: String(value || "").trim(), tone: "valid" };
+}
+
 function hasInvalidContentPlanLink(item = {}) {
   return !isValidHttpUrl(item.visualLink) || !isValidHttpUrl(item.publishedUrl);
 }
@@ -1349,19 +1355,26 @@ function ContentPlanBoard() {
       ? activeFilterChips.map((chip) => `${chip.label}: ${chip.value}`).join("; ")
       : "без фильтров";
     const withLinks = publishedSliceItems.filter((item) => hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl)).length;
-    const rows = publishedSliceItems.map((item, index) => [
-      `${index + 1}. ${item.title || "Без названия"}`,
-      `Дата публикации: ${formatPlanDate(item.publishedAt || item.date)}`,
-      `Канал: ${item.channel}; формат: ${item.format}`,
-      `Ответственный: ${item.owner || "Не назначен"}`,
-      `Ссылка: ${String(item.publishedUrl || "").trim() || "не заполнена"}`,
-    ].join("\n"));
+    const withoutLinks = publishedSliceItems.filter((item) => !hasTextValue(item.publishedUrl)).length;
+    const invalidLinks = publishedSliceItems.filter((item) => hasTextValue(item.publishedUrl) && !isValidHttpUrl(item.publishedUrl)).length;
+    const rows = publishedSliceItems.map((item, index) => {
+      const linkStatus = getPublishedUrlStatus(item.publishedUrl);
+      return [
+        `${index + 1}. ${item.title || "Без названия"}`,
+        `Дата публикации: ${formatPlanDate(item.publishedAt || item.date)}`,
+        `Канал: ${item.channel}; формат: ${item.format}`,
+        `Ответственный: ${item.owner || "Не назначен"}`,
+        `Ссылка: ${linkStatus.label}`,
+        linkStatus.tone === "invalid" ? `Исходное значение: ${String(item.publishedUrl || "").trim()}` : "",
+      ].filter(Boolean).join("\n");
+    });
     const text = [
       "Отчет по опубликованному контенту Atlas",
       `Фильтры: ${filterLine}`,
       `Опубликовано в срезе: ${publishedSliceItems.length}`,
-      `Со ссылкой: ${withLinks}`,
-      `Без ссылки: ${publishedSliceItems.length - withLinks}`,
+      `Валидная ссылка: ${withLinks}`,
+      `Без ссылки: ${withoutLinks}`,
+      `Некорректная ссылка: ${invalidLinks}`,
       "",
       rows.join("\n\n"),
     ].join("\n");
@@ -1529,7 +1542,7 @@ function ContentPlanBoard() {
             <span>Покрытие ссылок</span>
             <strong>{dashboard.publishedLinkProgress}%</strong>
             <progress value={dashboard.publishedLinkProgress} max="100" aria-label="Покрытие ссылок опубликованных постов" />
-            <small>{dashboard.publishedWithLink} из {dashboard.published} опубликованных постов со ссылкой</small>
+            <small>{dashboard.publishedWithLink} из {dashboard.published} опубликованных постов с валидной ссылкой</small>
           </div>
         </div>
         <div className="analytics-content-plan-stats">
