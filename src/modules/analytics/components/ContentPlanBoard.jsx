@@ -470,6 +470,25 @@ function getNextActionLabel(item) {
   }[failed.key] || failed.detail;
 }
 
+function getQualitySignals(item, copyStats) {
+  const signals = [];
+  const dateState = getDateState(item.date, item.status);
+  const isTextApproved = item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать";
+  const isVisualApproved = item.visualStatus === "Визуал ок" || item.visualStatus === "Нет визуала";
+
+  if (dateState === "overdue") signals.push({ label: "Просрочено", detail: getDateStateLabel(dateState), tone: "danger" });
+  if (!item.date) signals.push({ label: "Без даты", detail: "назначить слот", tone: "warn" });
+  if (!item.owner) signals.push({ label: "Owner", detail: "не назначен", tone: "warn" });
+  if (!String(item.copy || "").trim()) signals.push({ label: "Текст", detail: "пустой copy", tone: "danger" });
+  if (copyStats.isXOverLimit) signals.push({ label: "X", detail: "больше 280", tone: "warn" });
+  if (item.reviewStatus === "Нужны правки") signals.push({ label: "Правки", detail: "вернуть автору", tone: "danger" });
+  if (!isTextApproved && item.reviewStatus !== "Нужны правки") signals.push({ label: "Вычитка", detail: item.reviewStatus, tone: "focus" });
+  if (!isVisualApproved) signals.push({ label: "Визуал", detail: item.visualStatus, tone: "accent" });
+
+  if (!signals.length) return [{ label: "Контроль", detail: "замечаний нет", tone: "ready" }];
+  return signals.slice(0, 5);
+}
+
 function getPublicationReadinessMeta(checks = []) {
   const done = checks.filter((check) => check.done).length;
   const total = checks.length;
@@ -1661,6 +1680,7 @@ function ContentPlanBoard() {
                 const publishBlockReason = getPublishBlockReason(item);
                 const nextActionLabel = getNextActionLabel(item);
                 const copyStats = getCopyStats(item);
+                const qualitySignals = getQualitySignals(item, copyStats);
                 return (
                   <article
                     key={item.id}
@@ -1732,6 +1752,14 @@ function ContentPlanBoard() {
                       </div>
                     ) : (
                       <>
+                        <div className="analytics-content-plan-quality" aria-label="Контроль качества карточки">
+                          {qualitySignals.map((signal) => (
+                            <span key={`${signal.label}-${signal.detail}`} className={`analytics-content-plan-quality-${signal.tone}`}>
+                              <b>{signal.label}</b>
+                              {signal.detail}
+                            </span>
+                          ))}
+                        </div>
                         <div className="analytics-content-plan-meta">
                           <span><b>Этап</b>{item.stage}</span>
                           <span><b>Блок</b>{item.topicBlock || "Без блока"}</span>

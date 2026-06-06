@@ -1101,6 +1101,64 @@
   color: #ffc8d0;
 }
 
+.analytics-content-plan-quality {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.analytics-content-plan-quality span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border: 1px solid rgba(76, 154, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(76, 154, 255, 0.08);
+  color: #d8eaff;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-content-plan-quality b {
+  color: rgba(247, 251, 255, 0.96);
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.analytics-content-plan-quality .analytics-content-plan-quality-ready {
+  border-color: rgba(111, 255, 232, 0.3);
+  background: rgba(111, 255, 232, 0.1);
+  color: #dffefa;
+}
+
+.analytics-content-plan-quality .analytics-content-plan-quality-danger {
+  border-color: rgba(255, 93, 115, 0.34);
+  background: rgba(255, 93, 115, 0.1);
+  color: #ffc8d0;
+}
+
+.analytics-content-plan-quality .analytics-content-plan-quality-warn,
+.analytics-content-plan-quality .analytics-content-plan-quality-accent {
+  border-color: rgba(255, 151, 45, 0.34);
+  background: rgba(255, 151, 45, 0.1);
+  color: #ffe2bd;
+}
+
+.analytics-content-plan-quality .analytics-content-plan-quality-focus {
+  border-color: rgba(76, 154, 255, 0.3);
+  background: rgba(76, 154, 255, 0.1);
+  color: #d8eaff;
+}
+
 .analytics-content-plan-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
