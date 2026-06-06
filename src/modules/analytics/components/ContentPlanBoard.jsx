@@ -1048,6 +1048,7 @@ function ContentPlanBoard() {
                 const isPendingDelete = pendingDeleteId === item.id;
                 const publicationChecks = getPublicationChecks(item);
                 const readinessMeta = getPublicationReadinessMeta(publicationChecks);
+                const publishBlockReason = getPublishBlockReason(item);
                 return (
                   <article key={item.id} className="analytics-surface analytics-content-plan-card">
                     <div className="analytics-content-plan-card-top">
@@ -1067,6 +1068,9 @@ function ContentPlanBoard() {
                         >
                           <b>Готовность</b>
                           {readinessMeta.done}/{readinessMeta.total}
+                        </span>
+                        <span className={readinessMeta.isReady ? "analytics-content-plan-blocker analytics-content-plan-blocker-ready" : "analytics-content-plan-blocker analytics-content-plan-blocker-wait"}>
+                          {readinessMeta.isReady ? "Можно публиковать" : publishBlockReason}
                         </span>
                         <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
                           {STATUS_OPTIONS.map((option) => (

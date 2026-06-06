@@ -506,6 +506,29 @@
   color: #ffe2bd;
 }
 
+.analytics-content-plan-card-top .analytics-content-plan-blocker {
+  display: block;
+  max-width: 150px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.analytics-content-plan-blocker-ready {
+  border: 1px solid rgba(42, 190, 166, 0.28);
+  background: rgba(42, 190, 166, 0.1);
+  color: #a9fff2;
+}
+
+.analytics-content-plan-blocker-wait {
+  border: 1px solid rgba(255, 151, 45, 0.24);
+  background: rgba(255, 151, 45, 0.08);
+  color: #ffe2bd;
+}
+
 .analytics-content-plan-status {
   max-width: 150px;
   min-height: 38px;
