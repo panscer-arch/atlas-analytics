@@ -456,6 +456,19 @@ function getContentPlanItemElementId(itemId) {
   return `content-plan-item-${itemId}`;
 }
 
+function getCopyStats(item = {}) {
+  const text = String(item.copy || "").trim();
+  const chars = text.length;
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  const isXOverLimit = item.channel === "X" && chars > 280;
+  return {
+    chars,
+    words,
+    isXOverLimit,
+    label: `${chars} симв. / ${words} слов`,
+  };
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
@@ -1163,6 +1176,7 @@ function ContentPlanBoard() {
                 const publicationChecks = getPublicationChecks(item);
                 const readinessMeta = getPublicationReadinessMeta(publicationChecks);
                 const publishBlockReason = getPublishBlockReason(item);
+                const copyStats = getCopyStats(item);
                 return (
                   <article
                     key={item.id}
@@ -1239,6 +1253,9 @@ function ContentPlanBoard() {
                           <span><b>Приоритет</b>{item.priority || "Средний"}</span>
                           <span><b>Срок</b>{getDateStateLabel(getDateState(item.date, item.status))}</span>
                           <span><b>Owner</b>{item.owner || "Не назначен"}</span>
+                          <span className={copyStats.isXOverLimit ? "analytics-content-plan-copy-stat analytics-content-plan-copy-stat-warn" : "analytics-content-plan-copy-stat"}>
+                            <b>Объем</b>{copyStats.isXOverLimit ? `${copyStats.label} / X > 280` : copyStats.label}
+                          </span>
                         </div>
                         {item.visualBrief || item.visualLink ? (
                           <div className="analytics-content-plan-visual">

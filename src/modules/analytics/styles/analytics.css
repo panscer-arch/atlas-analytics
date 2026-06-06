@@ -657,6 +657,18 @@
   color: #a9fff2;
 }
 
+.analytics-content-plan-meta .analytics-content-plan-copy-stat {
+  border-color: rgba(76, 154, 255, 0.22);
+  background: rgba(76, 154, 255, 0.08);
+  color: #d8eaff;
+}
+
+.analytics-content-plan-meta .analytics-content-plan-copy-stat-warn {
+  border-color: rgba(255, 151, 45, 0.34);
+  background: rgba(255, 151, 45, 0.12);
+  color: #ffe2bd;
+}
+
 .analytics-content-plan-visual,
 .analytics-content-plan-publish-gate,
 .analytics-content-plan-admin-note {
