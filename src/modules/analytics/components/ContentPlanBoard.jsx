@@ -436,11 +436,11 @@ function ContentPlanBoard() {
 
     return {
       total: items.length,
-      ready: items.filter((item) => item.status === "Готово" || item.status === "Опубликовано").length,
       review: items.filter((item) => item.status === "На вычитке").length,
       approved: items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать").length,
       needsRevision: items.filter((item) => item.reviewStatus === "Нужны правки").length,
       visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
+      publishReady: items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
@@ -490,7 +490,6 @@ function ContentPlanBoard() {
   function updateItemStatus(itemId, nextStatus) {
     const item = items.find((currentItem) => currentItem.id === itemId);
     if (nextStatus === "Опубликовано" && !canPublishItem(item || {})) {
-      window.alert("Сначала отметьте карточку как проверенную и согласуйте визуал.");
       return;
     }
 
@@ -580,10 +579,10 @@ function ContentPlanBoard() {
         </div>
         <div className="analytics-content-plan-stats">
           <span><strong>{dashboard.total}</strong> карточек</span>
-          <span><strong>{dashboard.ready}</strong> готово</span>
           <span><strong>{dashboard.review}</strong> на вычитке</span>
           <span><strong>{dashboard.approved}</strong> проверено</span>
           <span><strong>{dashboard.visualReady}</strong> визуал ok</span>
+          <span><strong>{dashboard.publishReady}</strong> к публикации</span>
         </div>
       </div>
 
@@ -745,7 +744,11 @@ function ContentPlanBoard() {
                         )}
                       </div>
                       <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
-                        {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                        {STATUS_OPTIONS.map((option) => (
+                          <option key={option} value={option} disabled={option === "Опубликовано" && !canPublishItem(item)}>
+                            {option}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
