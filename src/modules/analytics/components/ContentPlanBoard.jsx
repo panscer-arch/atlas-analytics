@@ -10,6 +10,21 @@ const STATUS_OPTIONS = ["Идея", "Черновик", "На вычитке", "
 const PRIORITY_OPTIONS = ["Высокий", "Средний", "Низкий"];
 const REVIEW_OPTIONS = ["Готовится", "На согласовании", "Нужны правки", "Проверено", "Можно публиковать"];
 const VISUAL_OPTIONS = ["Нет визуала", "Визуал готовится", "Визуал на проверке", "Визуал ок"];
+const DATE_STATE_OPTIONS = ["Все", "Просрочено", "Сегодня", "По плану"];
+const READINESS_OPTIONS = ["Все", "К публикации"];
+const DEFAULT_FILTERS = {
+  channel: "Все",
+  stage: "Все",
+  format: "Все",
+  status: "Все",
+  reviewStatus: "Все",
+  priority: "Все",
+  owner: "Все",
+  dateState: "Все",
+  readiness: "Все",
+  date: "",
+  search: "",
+};
 
 const defaultContentPlanItems = [
   {
@@ -342,13 +357,22 @@ function canPublishItem(item) {
   return isTextApproved && isVisualApproved;
 }
 
+function getSignalClass(isActive, tone = "") {
+  return [
+    "analytics-surface",
+    "analytics-content-plan-signal",
+    tone,
+    isActive ? "analytics-content-plan-signal-active" : "",
+  ].filter(Boolean).join(" ");
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
   const [editingId, setEditingId] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [expandedIds, setExpandedIds] = useState([]);
-  const [filters, setFilters] = useState({ channel: "Все", stage: "Все", format: "Все", status: "Все", reviewStatus: "Все", owner: "Все", date: "", search: "" });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveState, setSaveState] = useState("Сохранено");
   const localTouchedRef = useRef(false);
   const saveTimerRef = useRef(null);
@@ -401,7 +425,17 @@ function ContentPlanBoard() {
       .filter((item) => filters.format === "Все" || item.format === filters.format)
       .filter((item) => filters.status === "Все" || item.status === filters.status)
       .filter((item) => filters.reviewStatus === "Все" || item.reviewStatus === filters.reviewStatus)
+      .filter((item) => filters.priority === "Все" || item.priority === filters.priority)
       .filter((item) => filters.owner === "Все" || (filters.owner === "Не назначен" ? !item.owner : item.owner === filters.owner))
+      .filter((item) => {
+        if (filters.dateState === "Все") return true;
+        const state = getDateState(item.date, item.status);
+        if (filters.dateState === "Просрочено") return state === "overdue";
+        if (filters.dateState === "Сегодня") return state === "today";
+        if (filters.dateState === "По плану") return state === "upcoming" || state === "neutral";
+        return true;
+      })
+      .filter((item) => filters.readiness === "Все" || (canPublishItem(item) && item.status !== "Опубликовано"))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
@@ -562,6 +596,18 @@ function ContentPlanBoard() {
     updateItem(itemId, { status: "Опубликовано", reviewStatus: "Можно публиковать" });
   }
 
+  function applyFocusFilter(patch) {
+    setFilters((current) => ({
+      ...DEFAULT_FILTERS,
+      search: current.search,
+      ...patch,
+    }));
+  }
+
+  function isFocusActive(patch) {
+    return Object.entries(patch).every(([key, value]) => filters[key] === value);
+  }
+
   return (
     <section className="analytics-content-plan">
       <div className="analytics-surface analytics-content-plan-hero">
@@ -587,26 +633,56 @@ function ContentPlanBoard() {
       </div>
 
       <div className="analytics-content-plan-command">
-        <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-danger">
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ dateState: "Просрочено" }), "analytics-content-plan-signal-danger")}
+          onClick={() => applyFocusFilter({ dateState: "Просрочено" })}
+          aria-pressed={isFocusActive({ dateState: "Просрочено" })}
+        >
           <span>Просрочено</span>
           <strong>{dashboard.overdue}</strong>
           <small>Нужна новая дата или статус</small>
-        </article>
-        <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-accent">
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ dateState: "Сегодня" }), "analytics-content-plan-signal-accent")}
+          onClick={() => applyFocusFilter({ dateState: "Сегодня" })}
+          aria-pressed={isFocusActive({ dateState: "Сегодня" })}
+        >
           <span>Сегодня</span>
           <strong>{dashboard.todayItems}</strong>
           <small>Публикации на текущий день</small>
-        </article>
-        <article className="analytics-surface analytics-content-plan-signal analytics-content-plan-signal-focus">
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ reviewStatus: "Нужны правки" }), "analytics-content-plan-signal-focus")}
+          onClick={() => applyFocusFilter({ reviewStatus: "Нужны правки" })}
+          aria-pressed={isFocusActive({ reviewStatus: "Нужны правки" })}
+        >
           <span>Нужны правки</span>
           <strong>{dashboard.needsRevision}</strong>
           <small>Вернуть автору после комментария</small>
-        </article>
-        <article className="analytics-surface analytics-content-plan-signal">
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ priority: "Высокий" }))}
+          onClick={() => applyFocusFilter({ priority: "Высокий" })}
+          aria-pressed={isFocusActive({ priority: "Высокий" })}
+        >
           <span>Высокий приоритет</span>
           <strong>{dashboard.highPriority}</strong>
           <small>То, что держит запуск</small>
-        </article>
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ readiness: "К публикации" }), "analytics-content-plan-signal-ready")}
+          onClick={() => applyFocusFilter({ readiness: "К публикации" })}
+          aria-pressed={isFocusActive({ readiness: "К публикации" })}
+        >
+          <span>К публикации</span>
+          <strong>{dashboard.publishReady}</strong>
+          <small>Текст и визуал согласованы</small>
+        </button>
         <article className="analytics-surface analytics-content-plan-next">
           <span>Ближайшие публикации</span>
           {dashboard.nextItems.length ? dashboard.nextItems.map((item) => (
@@ -653,6 +729,25 @@ function ContentPlanBoard() {
             </select>
           </label>
           <label>
+            <span>Приоритет</span>
+            <select className="analytics-launch-input" value={filters.priority} onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}>
+              <option value="Все">Все</option>
+              {PRIORITY_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Срок</span>
+            <select className="analytics-launch-input" value={filters.dateState} onChange={(event) => setFilters((current) => ({ ...current, dateState: event.target.value }))}>
+              {DATE_STATE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Готовность</span>
+            <select className="analytics-launch-input" value={filters.readiness} onChange={(event) => setFilters((current) => ({ ...current, readiness: event.target.value }))}>
+              {READINESS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
             <span>Формат</span>
             <select className="analytics-launch-input" value={filters.format} onChange={(event) => setFilters((current) => ({ ...current, format: event.target.value }))}>
               <option value="Все">Все</option>
@@ -669,7 +764,7 @@ function ContentPlanBoard() {
               {ownerOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
-          <button type="button" className="analytics-content-plan-reset" onClick={() => setFilters({ channel: "Все", stage: "Все", format: "Все", status: "Все", reviewStatus: "Все", owner: "Все", date: "", search: "" })}>
+          <button type="button" className="analytics-content-plan-reset" onClick={() => setFilters(DEFAULT_FILTERS)}>
             Сбросить
           </button>
         </div>
