@@ -490,6 +490,11 @@ function isValidHttpUrl(value) {
   }
 }
 
+function getUrlFieldWarning(value) {
+  if (!hasTextValue(value) || isValidHttpUrl(value)) return "";
+  return "Укажите полную ссылку с http:// или https://";
+}
+
 function hasInvalidContentPlanLink(item = {}) {
   return !isValidHttpUrl(item.visualLink) || !isValidHttpUrl(item.publishedUrl);
 }
@@ -1907,11 +1912,17 @@ function ContentPlanBoard() {
           </select>
           <input className="analytics-launch-input" value={newItem.owner} onChange={(event) => setNewItem((current) => ({ ...current, owner: event.target.value }))} placeholder="Ответственный" />
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.visualBrief} onChange={(event) => setNewItem((current) => ({ ...current, visualBrief: event.target.value }))} placeholder="Что должно быть на картинке / видео / обложке" />
-          <input className="analytics-launch-input analytics-content-plan-wide" value={newItem.visualLink} onChange={(event) => setNewItem((current) => ({ ...current, visualLink: event.target.value }))} placeholder="Ссылка на визуал / макет / файл" />
+          <label className="analytics-content-plan-url-field analytics-content-plan-wide">
+            <input className="analytics-launch-input" value={newItem.visualLink} onChange={(event) => setNewItem((current) => ({ ...current, visualLink: event.target.value }))} placeholder="Ссылка на визуал / макет / файл" aria-invalid={Boolean(getUrlFieldWarning(newItem.visualLink))} />
+            {getUrlFieldWarning(newItem.visualLink) ? <small>{getUrlFieldWarning(newItem.visualLink)}</small> : null}
+          </label>
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={newItem.copy} onChange={(event) => setNewItem((current) => ({ ...current, copy: event.target.value }))} placeholder="Финальный текст / сценарий / тезисы" />
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.comment} onChange={(event) => setNewItem((current) => ({ ...current, comment: event.target.value }))} placeholder="Рабочий комментарий автора / SMM" />
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.adminComment} onChange={(event) => setNewItem((current) => ({ ...current, adminComment: event.target.value }))} placeholder="Админ-комментарий: что исправить перед публикацией" />
-          <input className="analytics-launch-input analytics-content-plan-wide" value={newItem.publishedUrl} onChange={(event) => setNewItem((current) => ({ ...current, publishedUrl: event.target.value }))} placeholder="Ссылка на опубликованный пост" />
+          <label className="analytics-content-plan-url-field analytics-content-plan-wide">
+            <input className="analytics-launch-input" value={newItem.publishedUrl} onChange={(event) => setNewItem((current) => ({ ...current, publishedUrl: event.target.value }))} placeholder="Ссылка на опубликованный пост" aria-invalid={Boolean(getUrlFieldWarning(newItem.publishedUrl))} />
+            {getUrlFieldWarning(newItem.publishedUrl) ? <small>{getUrlFieldWarning(newItem.publishedUrl)}</small> : null}
+          </label>
           <button type="button" className="analytics-content-plan-add-btn" onClick={addItem} disabled={!newItem.title.trim()}>
             Добавить
           </button>
@@ -2038,11 +2049,17 @@ function ContentPlanBoard() {
                         </select>
                         <input className="analytics-launch-input" value={item.owner} onChange={(event) => updateItem(item.id, { owner: event.target.value })} placeholder="Ответственный" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.visualBrief} onChange={(event) => updateItem(item.id, { visualBrief: event.target.value })} placeholder="Визуал / картинка / видео" />
-                        <input className="analytics-launch-input analytics-content-plan-wide" value={item.visualLink} onChange={(event) => updateItem(item.id, { visualLink: event.target.value })} placeholder="Ссылка на визуал / макет / файл" />
+                        <label className="analytics-content-plan-url-field analytics-content-plan-wide">
+                          <input className="analytics-launch-input" value={item.visualLink} onChange={(event) => updateItem(item.id, { visualLink: event.target.value })} placeholder="Ссылка на визуал / макет / файл" aria-invalid={Boolean(getUrlFieldWarning(item.visualLink))} />
+                          {getUrlFieldWarning(item.visualLink) ? <small>{getUrlFieldWarning(item.visualLink)}</small> : null}
+                        </label>
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="5" value={item.copy} onChange={(event) => updateItem(item.id, { copy: event.target.value })} placeholder="Финальный текст / сценарий" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.comment} onChange={(event) => updateItem(item.id, { comment: event.target.value })} placeholder="Рабочий комментарий автора / SMM" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.adminComment} onChange={(event) => updateItem(item.id, { adminComment: event.target.value })} placeholder="Админ-комментарий: что исправить перед публикацией" />
-                        <input className="analytics-launch-input analytics-content-plan-wide" value={item.publishedUrl || ""} onChange={(event) => updateItem(item.id, { publishedUrl: event.target.value })} placeholder="Ссылка на опубликованный пост" />
+                        <label className="analytics-content-plan-url-field analytics-content-plan-wide">
+                          <input className="analytics-launch-input" value={item.publishedUrl || ""} onChange={(event) => updateItem(item.id, { publishedUrl: event.target.value })} placeholder="Ссылка на опубликованный пост" aria-invalid={Boolean(getUrlFieldWarning(item.publishedUrl))} />
+                          {getUrlFieldWarning(item.publishedUrl) ? <small>{getUrlFieldWarning(item.publishedUrl)}</small> : null}
+                        </label>
                       </div>
                     ) : (
                       <>
