@@ -297,6 +297,7 @@ const emptyItem = {
   copy: "",
   comment: "",
   adminComment: "",
+  publishedAt: "",
 };
 
 function normalizeItems(items) {
@@ -318,6 +319,7 @@ function normalizeItems(items) {
     copy: item.copy || "",
     comment: item.comment || "",
     adminComment: item.adminComment || "",
+    publishedAt: item.publishedAt || "",
   })) : normalizeItems(defaultContentPlanItems);
 }
 
@@ -758,7 +760,11 @@ function ContentPlanBoard() {
     const patch = { status: nextStatus };
     if (nextStatus === "На вычитке") patch.reviewStatus = "На согласовании";
     if (nextStatus === "Готово") patch.reviewStatus = "Проверено";
-    if (nextStatus === "Опубликовано") patch.reviewStatus = "Можно публиковать";
+    if (nextStatus === "Опубликовано") {
+      patch.reviewStatus = "Можно публиковать";
+      patch.publishedAt = item?.publishedAt || getTodayIso();
+    }
+    if (nextStatus !== "Опубликовано") patch.publishedAt = "";
     if (nextStatus === "Черновик" && item?.reviewStatus === "Проверено") patch.reviewStatus = "Готовится";
     updateItem(itemId, patch);
   }
@@ -1131,7 +1137,7 @@ function ContentPlanBoard() {
   function publishItem(itemId) {
     const item = items.find((currentItem) => currentItem.id === itemId);
     if (!canPublishItem(item || {})) return;
-    updateItem(itemId, { status: "Опубликовано", reviewStatus: "Можно публиковать" });
+    updateItem(itemId, { status: "Опубликовано", reviewStatus: "Можно публиковать", publishedAt: item?.publishedAt || getTodayIso() });
   }
 
   function applyFocusFilter(patch) {
@@ -1596,6 +1602,7 @@ function ContentPlanBoard() {
                           <span><b>Приоритет</b>{item.priority || "Средний"}</span>
                           <span><b>Срок</b>{getDateStateLabel(getDateState(item.date, item.status))}</span>
                           <span><b>Owner</b>{item.owner || "Не назначен"}</span>
+                          {item.status === "Опубликовано" ? <span className="analytics-content-plan-published-meta"><b>Опубликовано</b>{formatPlanDate(item.publishedAt)}</span> : null}
                           <span className={copyStats.isXOverLimit ? "analytics-content-plan-copy-stat analytics-content-plan-copy-stat-warn" : "analytics-content-plan-copy-stat"}>
                             <b>Объем</b>{copyStats.isXOverLimit ? `${copyStats.label} / X > 280` : copyStats.label}
                           </span>
