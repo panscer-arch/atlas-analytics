@@ -613,6 +613,7 @@ function ContentPlanBoard() {
   const [copiedRevisionItemId, setCopiedRevisionItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
+  const [pendingPublishWithoutLinkId, setPendingPublishWithoutLinkId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
@@ -631,6 +632,7 @@ function ContentPlanBoard() {
   const revisionCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
+  const publishConfirmTimerRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -684,6 +686,7 @@ function ContentPlanBoard() {
     if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
+    if (publishConfirmTimerRef.current) window.clearTimeout(publishConfirmTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -953,12 +956,36 @@ function ContentPlanBoard() {
   }
 
   function updateItem(itemId, patch) {
+    if (Object.prototype.hasOwnProperty.call(patch, "publishedUrl")) {
+      setPendingPublishWithoutLinkId("");
+    }
     updateItems((current) => current.map((item) => (item.id === itemId ? { ...item, ...patch } : item)));
+  }
+
+  function canMarkItemPublished(item = {}) {
+    return canPublishItem(item) && isValidHttpUrl(item.publishedUrl);
+  }
+
+  function needsPublishWithoutLinkConfirmation(item = {}) {
+    return canPublishItem(item) && !hasTextValue(item.publishedUrl);
+  }
+
+  function requestPublishWithoutLinkConfirmation(itemId) {
+    setPendingPublishWithoutLinkId(itemId);
+    if (publishConfirmTimerRef.current) window.clearTimeout(publishConfirmTimerRef.current);
+    publishConfirmTimerRef.current = window.setTimeout(() => setPendingPublishWithoutLinkId(""), 4500);
   }
 
   function updateItemStatus(itemId, nextStatus) {
     const item = items.find((currentItem) => currentItem.id === itemId);
     if (nextStatus === "Опубликовано" && !canPublishItem(item || {})) {
+      return;
+    }
+    if (nextStatus === "Опубликовано" && !canMarkItemPublished(item || {})) {
+      return;
+    }
+    if (nextStatus === "Опубликовано" && needsPublishWithoutLinkConfirmation(item || {}) && pendingPublishWithoutLinkId !== itemId) {
+      requestPublishWithoutLinkConfirmation(itemId);
       return;
     }
 
@@ -971,6 +998,7 @@ function ContentPlanBoard() {
     }
     if (nextStatus !== "Опубликовано") patch.publishedAt = "";
     if (nextStatus === "Черновик" && item?.reviewStatus === "Проверено") patch.reviewStatus = "Готовится";
+    setPendingPublishWithoutLinkId("");
     updateItem(itemId, patch);
   }
 
@@ -1456,7 +1484,12 @@ function ContentPlanBoard() {
 
   function publishItem(itemId) {
     const item = items.find((currentItem) => currentItem.id === itemId);
-    if (!canPublishItem(item || {})) return;
+    if (!canMarkItemPublished(item || {})) return;
+    if (needsPublishWithoutLinkConfirmation(item || {}) && pendingPublishWithoutLinkId !== itemId) {
+      requestPublishWithoutLinkConfirmation(itemId);
+      return;
+    }
+    setPendingPublishWithoutLinkId("");
     updateItem(itemId, { status: "Опубликовано", reviewStatus: "Можно публиковать", publishedAt: item?.publishedAt || getTodayIso() });
   }
 
@@ -1985,6 +2018,15 @@ function ContentPlanBoard() {
                 const nextActionLabel = getNextActionLabel(item);
                 const copyStats = getCopyStats(item);
                 const qualitySignals = getQualitySignals(item, copyStats);
+                const canMarkPublished = canMarkItemPublished(item);
+                const isPublishWithoutLinkPending = pendingPublishWithoutLinkId === item.id && needsPublishWithoutLinkConfirmation(item);
+                const publishButtonTitle = !canPublishItem(item)
+                  ? getPublishBlockReason(item)
+                  : !isValidHttpUrl(item.publishedUrl)
+                    ? "Сначала исправьте ссылку на опубликованный пост"
+                    : needsPublishWithoutLinkConfirmation(item)
+                      ? "Нажмите еще раз, если публикация действительно без ссылки"
+                      : "Отметить как опубликовано";
                 return (
                   <article
                     key={item.id}
@@ -2017,7 +2059,7 @@ function ContentPlanBoard() {
                         </span>
                         <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
                           {STATUS_OPTIONS.map((option) => (
-                            <option key={option} value={option} disabled={option === "Опубликовано" && !canPublishItem(item)}>
+                            <option key={option} value={option} disabled={option === "Опубликовано" && !canMarkPublished}>
                               {option}
                             </option>
                           ))}
@@ -2122,7 +2164,15 @@ function ContentPlanBoard() {
                       <button type="button" onClick={() => requestRevision(item.id)} disabled={!String(item.adminComment || "").trim()}>Правки</button>
                       <button type="button" onClick={() => approveItem(item.id)}>Проверено</button>
                       <button type="button" onClick={() => approveVisual(item.id)}>Визуал OK</button>
-                      <button type="button" onClick={() => publishItem(item.id)} disabled={!canPublishItem(item)} title={getPublishBlockReason(item)}>Опубликовано</button>
+                      <button
+                        type="button"
+                        className={isPublishWithoutLinkPending ? "analytics-content-plan-publish-confirm" : ""}
+                        onClick={() => publishItem(item.id)}
+                        disabled={!canMarkPublished}
+                        title={publishButtonTitle}
+                      >
+                        {isPublishWithoutLinkPending ? "Подтвердить без ссылки" : "Опубликовано"}
+                      </button>
                     </div>
 
                     <div className="analytics-content-plan-actions">

@@ -1686,6 +1686,12 @@
   color: #ffe2bd;
 }
 
+.analytics-content-plan-review-actions .analytics-content-plan-publish-confirm {
+  border-color: rgba(255, 203, 87, 0.52);
+  background: rgba(255, 203, 87, 0.14);
+  color: #fff0bd;
+}
+
 .analytics-content-plan-review-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
