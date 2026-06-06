@@ -1025,6 +1025,16 @@ function ContentPlanBoard() {
           <strong>{dashboard.visualIssue}</strong>
           <small>Готовится или ждёт проверки</small>
         </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ owner: "Не назначен" }), "analytics-content-plan-signal-focus")}
+          onClick={() => applyFocusFilter({ owner: "Не назначен" })}
+          aria-pressed={isFocusActive({ owner: "Не назначен" })}
+        >
+          <span>Без ответственного</span>
+          <strong>{dashboard.withoutOwner}</strong>
+          <small>Нужно назначить владельца</small>
+        </button>
         <article className="analytics-surface analytics-content-plan-next">
           <span>Ближайшие публикации</span>
           {dashboard.nextItems.length ? dashboard.nextItems.map((item) => (
