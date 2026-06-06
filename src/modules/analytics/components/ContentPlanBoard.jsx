@@ -1207,6 +1207,15 @@ function ContentPlanBoard() {
                       <button
                         type="button"
                         className="analytics-content-plan-shift-date"
+                        onClick={() => shiftItemDate(item.id, -1)}
+                        disabled={item.status === "Опубликовано"}
+                        title={item.date ? `Перенести на ${formatPlanDate(addDaysToIso(item.date, -1))}` : `Назначить ${formatPlanDate(addDaysToIso("", -1))}`}
+                      >
+                        {shiftedDateItemId === item.id ? "Дата сдвинута" : "Дата -1"}
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-shift-date"
                         onClick={() => shiftItemDate(item.id, 1)}
                         disabled={item.status === "Опубликовано"}
                         title={item.date ? `Перенести на ${formatPlanDate(addDaysToIso(item.date, 1))}` : `Назначить ${formatPlanDate(addDaysToIso("", 1))}`}
