@@ -10,7 +10,7 @@ const STATUS_OPTIONS = ["Идея", "Черновик", "На вычитке", "
 const PRIORITY_OPTIONS = ["Высокий", "Средний", "Низкий"];
 const REVIEW_OPTIONS = ["Готовится", "На согласовании", "Нужны правки", "Проверено", "Можно публиковать"];
 const VISUAL_OPTIONS = ["Нет визуала", "Визуал готовится", "Визуал на проверке", "Визуал ок"];
-const DATE_STATE_OPTIONS = ["Все", "Просрочено", "Сегодня", "По плану"];
+const DATE_STATE_OPTIONS = ["Все", "Просрочено", "Сегодня", "По плану", "Без даты"];
 const READINESS_OPTIONS = ["Все", "К публикации"];
 const DEFAULT_FILTERS = {
   channel: "Все",
@@ -568,7 +568,8 @@ function ContentPlanBoard() {
         const state = getDateState(item.date, item.status);
         if (filters.dateState === "Просрочено") return state === "overdue";
         if (filters.dateState === "Сегодня") return state === "today";
-        if (filters.dateState === "По плану") return state === "upcoming" || state === "neutral";
+        if (filters.dateState === "По плану") return state === "upcoming";
+        if (filters.dateState === "Без даты") return !item.date;
         return true;
       })
       .filter((item) => filters.readiness === "Все" || (canPublishItem(item) && item.status !== "Опубликовано"))
@@ -618,6 +619,7 @@ function ContentPlanBoard() {
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
+      withoutDate: activeItems.filter((item) => !item.date).length,
       todayItems,
       nextItems,
       highPriority: activeItems.filter((item) => item.priority === "Высокий").length,
@@ -974,6 +976,16 @@ function ContentPlanBoard() {
           <span>Сегодня</span>
           <strong>{dashboard.todayItems}</strong>
           <small>Публикации на текущий день</small>
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ dateState: "Без даты" }), "analytics-content-plan-signal-focus")}
+          onClick={() => applyFocusFilter({ dateState: "Без даты" })}
+          aria-pressed={isFocusActive({ dateState: "Без даты" })}
+        >
+          <span>Без даты</span>
+          <strong>{dashboard.withoutDate}</strong>
+          <small>Нужно назначить слот</small>
         </button>
         <button
           type="button"

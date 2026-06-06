@@ -122,7 +122,7 @@
 
 .analytics-content-plan-command {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr)) minmax(220px, 1.25fr);
+  grid-template-columns: repeat(9, minmax(0, 1fr)) minmax(220px, 1.25fr);
   gap: 14px;
 }
 
