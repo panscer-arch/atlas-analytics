@@ -413,6 +413,16 @@ function getPublishBlockReason(item) {
   return failed ? failed.detail : "готово к публикации";
 }
 
+function getPublicationReadinessMeta(checks = []) {
+  const done = checks.filter((check) => check.done).length;
+  const total = checks.length;
+  return {
+    done,
+    total,
+    isReady: total > 0 && done === total,
+  };
+}
+
 function getSignalClass(isActive, tone = "") {
   return [
     "analytics-surface",
@@ -1037,6 +1047,7 @@ function ContentPlanBoard() {
                 const isExpanded = expandedIds.includes(item.id);
                 const isPendingDelete = pendingDeleteId === item.id;
                 const publicationChecks = getPublicationChecks(item);
+                const readinessMeta = getPublicationReadinessMeta(publicationChecks);
                 return (
                   <article key={item.id} className="analytics-surface analytics-content-plan-card">
                     <div className="analytics-content-plan-card-top">
@@ -1048,13 +1059,23 @@ function ContentPlanBoard() {
                           <h3>{item.title}</h3>
                         )}
                       </div>
-                      <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option} value={option} disabled={option === "Опубликовано" && !canPublishItem(item)}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="analytics-content-plan-card-state">
+                        <span
+                          className={readinessMeta.isReady ? "analytics-content-plan-readiness analytics-content-plan-readiness-ready" : "analytics-content-plan-readiness analytics-content-plan-readiness-wait"}
+                          title={`Готовность к публикации: ${readinessMeta.done} из ${readinessMeta.total}`}
+                          aria-label={`Готовность к публикации: ${readinessMeta.done} из ${readinessMeta.total}`}
+                        >
+                          <b>Готовность</b>
+                          {readinessMeta.done}/{readinessMeta.total}
+                        </span>
+                        <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
+                          {STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option} disabled={option === "Опубликовано" && !canPublishItem(item)}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {isEditing ? (

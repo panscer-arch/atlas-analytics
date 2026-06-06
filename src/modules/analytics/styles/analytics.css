@@ -465,6 +465,47 @@
   min-width: 0;
 }
 
+.analytics-content-plan-card-state {
+  display: grid;
+  gap: 8px;
+  justify-items: stretch;
+  min-width: 150px;
+}
+
+.analytics-content-plan-readiness {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.analytics-content-plan-card-top .analytics-content-plan-readiness b {
+  color: rgba(168, 195, 222, 0.72);
+  font-family: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.analytics-content-plan-readiness-ready {
+  border: 1px solid rgba(42, 190, 166, 0.4);
+  background: rgba(42, 190, 166, 0.14);
+  color: #a9fff2;
+}
+
+.analytics-content-plan-readiness-wait {
+  border: 1px solid rgba(255, 151, 45, 0.34);
+  background: rgba(255, 151, 45, 0.1);
+  color: #ffe2bd;
+}
+
 .analytics-content-plan-status {
   max-width: 150px;
   min-height: 38px;
@@ -774,6 +815,10 @@
 
   .analytics-content-plan-status {
     max-width: none;
+    width: 100%;
+  }
+
+  .analytics-content-plan-card-state {
     width: 100%;
   }
 
