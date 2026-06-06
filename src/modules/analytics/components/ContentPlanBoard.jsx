@@ -23,6 +23,7 @@ const DEFAULT_FILTERS = {
   dateState: "Все",
   readiness: "Все",
   copyIssue: "Все",
+  visualIssue: "Все",
   date: "",
   search: "",
 };
@@ -572,6 +573,7 @@ function ContentPlanBoard() {
       })
       .filter((item) => filters.readiness === "Все" || (canPublishItem(item) && item.status !== "Опубликовано"))
       .filter((item) => filters.copyIssue === "Все" || getCopyStats(item).isXOverLimit)
+      .filter((item) => filters.visualIssue === "Все" || (item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала"))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
@@ -612,6 +614,7 @@ function ContentPlanBoard() {
       visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
       publishReady: items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length,
       xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
+      visualIssue: activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
@@ -634,6 +637,7 @@ function ContentPlanBoard() {
       dateState: "Срок",
       readiness: "Готовность",
       copyIssue: "Текст",
+      visualIssue: "Визуал",
       date: "Дата",
       search: "Поиск",
     };
@@ -1010,6 +1014,16 @@ function ContentPlanBoard() {
           <span>X &gt; 280</span>
           <strong>{dashboard.xOverLimit}</strong>
           <small>Посты X нужно сократить</small>
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ visualIssue: "Визуал не готов" }), "analytics-content-plan-signal-accent")}
+          onClick={() => applyFocusFilter({ visualIssue: "Визуал не готов" })}
+          aria-pressed={isFocusActive({ visualIssue: "Визуал не готов" })}
+        >
+          <span>Визуал не готов</span>
+          <strong>{dashboard.visualIssue}</strong>
+          <small>Готовится или ждёт проверки</small>
         </button>
         <article className="analytics-surface analytics-content-plan-next">
           <span>Ближайшие публикации</span>
