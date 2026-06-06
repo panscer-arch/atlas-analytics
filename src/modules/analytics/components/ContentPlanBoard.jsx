@@ -29,6 +29,7 @@ const DEFAULT_FILTERS = {
   visualIssue: "Все",
   linkIssue: "Все",
   duplicateIssue: "Все",
+  revisionIssue: "Все",
   date: "",
   search: "",
 };
@@ -532,6 +533,10 @@ function hasInvalidContentPlanLink(item = {}) {
   return !isValidHttpUrl(item.visualLink) || !isValidHttpUrl(item.publishedUrl);
 }
 
+function needsRevisionComment(item = {}) {
+  return item.reviewStatus === "Нужны правки" && !hasTextValue(item.adminComment);
+}
+
 function getQualitySignals(item, copyStats, isDuplicate = false) {
   const signals = [];
   const dateState = getDateState(item.date, item.status);
@@ -545,6 +550,7 @@ function getQualitySignals(item, copyStats, isDuplicate = false) {
   if (!String(item.copy || "").trim()) signals.push({ label: "Текст", detail: "пустой copy", tone: "danger" });
   if (copyStats.isXOverLimit) signals.push({ label: "X", detail: "больше 280", tone: "warn" });
   if (item.reviewStatus === "Нужны правки") signals.push({ label: "Правки", detail: "вернуть автору", tone: "danger" });
+  if (needsRevisionComment(item)) signals.push({ label: "Комментарий", detail: "объяснить правку", tone: "danger" });
   if (!isTextApproved && item.reviewStatus !== "Нужны правки") signals.push({ label: "Вычитка", detail: item.reviewStatus, tone: "focus" });
   if (!isVisualApproved) signals.push({ label: "Визуал", detail: item.visualStatus, tone: "accent" });
   if (hasTextValue(item.visualLink) && !isValidHttpUrl(item.visualLink)) signals.push({ label: "Макет", detail: "некорректная ссылка", tone: "warn" });
@@ -776,6 +782,7 @@ function ContentPlanBoard() {
         return true;
       })
       .filter((item) => filters.duplicateIssue === "Все" || duplicateItemIds.has(item.id))
+      .filter((item) => filters.revisionIssue === "Все" || needsRevisionComment(item))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
@@ -825,6 +832,7 @@ function ContentPlanBoard() {
     const visualIssue = activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
     const duplicateItems = activeItems.filter((item) => duplicateItemIds.has(item.id)).length;
     const needsRevision = items.filter((item) => item.reviewStatus === "Нужны правки").length;
+    const revisionWithoutComment = items.filter(needsRevisionComment).length;
     const publishReady = items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
     const published = items.filter((item) => item.status === "Опубликовано").length;
     const publishedWithLink = items.filter((item) => item.status === "Опубликовано" && hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl)).length;
@@ -844,6 +852,7 @@ function ContentPlanBoard() {
       { label: "Без даты", count: withoutDate, tone: "warn" },
       { label: "Без текста", count: withoutCopy, tone: "danger" },
       { label: "Правки", count: needsRevision, tone: "focus" },
+      { label: "Без комментария", count: revisionWithoutComment, tone: "danger" },
       { label: "Визуал", count: visualIssue, tone: "accent" },
       { label: "Дубли", count: duplicateItems, tone: "warn" },
       { label: "Готово", count: publishReady, tone: "ready" },
@@ -859,6 +868,7 @@ function ContentPlanBoard() {
       review: items.filter((item) => item.status === "На вычитке").length,
       approved: items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать").length,
       needsRevision,
+      revisionWithoutComment,
       visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
       publishReady,
       published,
@@ -904,6 +914,7 @@ function ContentPlanBoard() {
       visualIssue: "Визуал",
       linkIssue: "Ссылки",
       duplicateIssue: "Дубли",
+      revisionIssue: "Правки",
       date: "Дата",
       search: "Поиск",
     };
@@ -925,6 +936,7 @@ function ContentPlanBoard() {
     const total = filteredItems.length;
     const ready = filteredItems.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
     const revisions = filteredItems.filter((item) => item.reviewStatus === "Нужны правки").length;
+    const revisionWithoutComment = filteredItems.filter(needsRevisionComment).length;
     const visualIssues = filteredItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
     const withoutCopy = filteredItems.filter((item) => !String(item.copy || "").trim()).length;
     const withoutOwner = filteredItems.filter((item) => !item.owner).length;
@@ -938,6 +950,7 @@ function ContentPlanBoard() {
       signals: [
         { label: "Готово", count: ready, tone: "ready" },
         { label: "Правки", count: revisions, tone: "danger" },
+        { label: "Без комментария", count: revisionWithoutComment, tone: "danger" },
         { label: "Визуал", count: visualIssues, tone: "accent" },
         { label: "Текст", count: withoutCopy, tone: "danger" },
         { label: "Owner", count: withoutOwner, tone: "warn" },
@@ -1661,6 +1674,16 @@ function ContentPlanBoard() {
         </button>
         <button
           type="button"
+          className={getSignalClass(isFocusActive({ revisionIssue: "Без комментария" }), "analytics-content-plan-signal-danger")}
+          onClick={() => applyFocusFilter({ revisionIssue: "Без комментария" })}
+          aria-pressed={isFocusActive({ revisionIssue: "Без комментария" })}
+        >
+          <span>Без комментария</span>
+          <strong>{dashboard.revisionWithoutComment}</strong>
+          <small>Автору нужно пояснение</small>
+        </button>
+        <button
+          type="button"
           className={getSignalClass(isFocusActive({ nextAction: "Отправить на вычитку" }), "analytics-content-plan-signal-focus")}
           onClick={() => applyFocusFilter({ nextAction: "Отправить на вычитку" })}
           aria-pressed={isFocusActive({ nextAction: "Отправить на вычитку" })}
@@ -1778,6 +1801,7 @@ function ContentPlanBoard() {
                 if (entry.label === "Без даты") applyFocusFilter({ dateState: "Без даты" });
                 if (entry.label === "Без текста") applyFocusFilter({ copyIssue: "Без текста" });
                 if (entry.label === "Правки") applyFocusFilter({ reviewStatus: "Нужны правки" });
+                if (entry.label === "Без комментария") applyFocusFilter({ revisionIssue: "Без комментария" });
                 if (entry.label === "Визуал") applyFocusFilter({ visualIssue: "Визуал не готов" });
                 if (entry.label === "Дубли") applyFocusFilter({ duplicateIssue: "Найдены" });
                 if (entry.label === "Готово") applyFocusFilter({ readiness: "К публикации" });
