@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const CONTENT_PLAN_STORAGE_KEY = "atlas.analytics.contentPlan.v1";
@@ -299,7 +299,11 @@ function formatPlanDate(value) {
 }
 
 function getTodayIso() {
-  return new Date().toISOString().slice(0, 10);
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getDateState(dateValue, status) {
@@ -322,23 +326,39 @@ function getStatusClass(status) {
   return `analytics-content-plan-status analytics-content-plan-status-${token}`;
 }
 
+function getReviewProgress(items) {
+  if (!items.length) return 0;
+  const approved = items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать" || item.status === "Опубликовано").length;
+  return Math.round((approved / items.length) * 100);
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
   const [editingId, setEditingId] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [expandedIds, setExpandedIds] = useState([]);
   const [filters, setFilters] = useState({ channel: "Все", stage: "Все", format: "Все", status: "Все", reviewStatus: "Все", owner: "Все", date: "", search: "" });
   const [saveState, setSaveState] = useState("Сохранено");
+  const localTouchedRef = useRef(false);
+  const saveTimerRef = useRef(null);
+  const saveVersionRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
 
     loadServerContent(CONTENT_PLAN_STORAGE_KEY).then((savedItems) => {
-      if (isMounted && Array.isArray(savedItems)) setItems(normalizeItems(savedItems));
+      if (isMounted && Array.isArray(savedItems) && !localTouchedRef.current) setItems(normalizeItems(savedItems));
     });
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
   }, []);
 
@@ -390,6 +410,7 @@ function ContentPlanBoard() {
       approved: items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать").length,
       needsRevision: items.filter((item) => item.reviewStatus === "Нужны правки").length,
       channels: new Set(items.map((item) => item.channel)).size,
+      reviewProgress: getReviewProgress(items),
       overdue,
       todayItems,
       nextItems,
@@ -399,13 +420,23 @@ function ContentPlanBoard() {
   }, [items]);
 
   function persist(nextItems) {
+    localTouchedRef.current = true;
     setSaveState("Сохраняю...");
     try {
       window.localStorage.setItem(CONTENT_PLAN_STORAGE_KEY, JSON.stringify(nextItems));
     } catch {
       // Локальное сохранение не должно блокировать редактирование.
     }
-    saveServerContent(CONTENT_PLAN_STORAGE_KEY, nextItems).then((ok) => setSaveState(ok ? "Сохранено" : "Локально"));
+
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    const saveVersion = saveVersionRef.current + 1;
+    saveVersionRef.current = saveVersion;
+
+    saveTimerRef.current = window.setTimeout(() => {
+      saveServerContent(CONTENT_PLAN_STORAGE_KEY, nextItems).then((ok) => {
+        if (saveVersionRef.current === saveVersion) setSaveState(ok ? "Сохранено" : "Локально");
+      });
+    }, 450);
   }
 
   function updateItems(updater) {
@@ -418,6 +449,21 @@ function ContentPlanBoard() {
 
   function updateItem(itemId, patch) {
     updateItems((current) => current.map((item) => (item.id === itemId ? { ...item, ...patch } : item)));
+  }
+
+  function updateItemStatus(itemId, nextStatus) {
+    const item = items.find((currentItem) => currentItem.id === itemId);
+    if (nextStatus === "Опубликовано" && item?.reviewStatus !== "Проверено" && item?.reviewStatus !== "Можно публиковать") {
+      window.alert("Сначала отметьте карточку как проверенную.");
+      return;
+    }
+
+    const patch = { status: nextStatus };
+    if (nextStatus === "На вычитке") patch.reviewStatus = "На согласовании";
+    if (nextStatus === "Готово") patch.reviewStatus = "Проверено";
+    if (nextStatus === "Опубликовано") patch.reviewStatus = "Можно публиковать";
+    if (nextStatus === "Черновик" && item?.reviewStatus === "Проверено") patch.reviewStatus = "Готовится";
+    updateItem(itemId, patch);
   }
 
   function addItem() {
@@ -440,13 +486,16 @@ function ContentPlanBoard() {
   }
 
   function removeItem(itemId) {
-    const item = items.find((currentItem) => currentItem.id === itemId);
-    if (!window.confirm(`Удалить публикацию «${item?.title || "без названия"}»? Это действие нельзя отменить.`)) return;
     updateItems((current) => current.filter((item) => item.id !== itemId));
+    setPendingDeleteId("");
   }
 
   function toggleExpanded(itemId) {
     setExpandedIds((current) => (current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]));
+  }
+
+  function requestDelete(itemId) {
+    setPendingDeleteId((current) => (current === itemId ? "" : itemId));
   }
 
   function sendToReview(itemId) {
@@ -459,13 +508,12 @@ function ContentPlanBoard() {
 
   function requestRevision(itemId) {
     const item = items.find((currentItem) => currentItem.id === itemId);
-    const savedComment = item?.adminComment?.trim();
-    const revisionComment = savedComment || window.prompt("Что нужно доработать перед повторной вычиткой?");
-    if (!revisionComment?.trim()) return;
+    const revisionComment = item?.adminComment?.trim();
+    if (!revisionComment) return;
     updateItem(itemId, {
       status: "Черновик",
       reviewStatus: "Нужны правки",
-      adminComment: revisionComment.trim(),
+      adminComment: revisionComment,
     });
   }
 
@@ -477,11 +525,16 @@ function ContentPlanBoard() {
     <section className="analytics-content-plan">
       <div className="analytics-surface analytics-content-plan-hero">
         <div>
-          <span className="analytics-kicker">Контент-план</span>
-          <h2 className="analytics-agent-template-title">Контент-план Atlas</h2>
+          <span className="analytics-kicker">Контент-план / BI-центр</span>
+          <h2 className="analytics-agent-template-title">Редакционный центр Atlas</h2>
           <p className="analytics-page-subtitle">
-            Редакционный план по каналам, датам, текстам, визуалам и админ-согласованию. Автор готовит, команда вычитывает, правки фиксируются в карточке.
+            Автор готовит текст и визуал, администратор согласует карточку, после проверки публикация уходит в работу.
           </p>
+          <div className="analytics-content-plan-coverage">
+            <span>Покрытие проверки</span>
+            <strong>{dashboard.reviewProgress}%</strong>
+            <progress value={dashboard.reviewProgress} max="100" aria-label="Покрытие проверки контент-плана" />
+          </div>
         </div>
         <div className="analytics-content-plan-stats">
           <span><strong>{dashboard.total}</strong> карточек</span>
@@ -600,7 +653,7 @@ function ContentPlanBoard() {
           <select className="analytics-launch-input" value={newItem.stage} onChange={(event) => setNewItem((current) => ({ ...current, stage: event.target.value }))}>
             {STAGE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
-          <input className="analytics-launch-input" value={newItem.topicBlock} onChange={(event) => setNewItem((current) => ({ ...current, topicBlock: event.target.value }))} placeholder="Блок: Мир меняется, Smart Cycle..." />
+          <input className="analytics-launch-input" value={newItem.topicBlock} onChange={(event) => setNewItem((current) => ({ ...current, topicBlock: event.target.value }))} placeholder="Блок: Smart Cycle, Web3..." />
           <input className="analytics-launch-input" value={newItem.title} onChange={(event) => setNewItem((current) => ({ ...current, title: event.target.value }))} placeholder="Тема публикации" />
           <select className="analytics-launch-input" value={newItem.status} onChange={(event) => setNewItem((current) => ({ ...current, status: event.target.value }))}>
             {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
@@ -637,6 +690,7 @@ function ContentPlanBoard() {
               {groupItems.map((item) => {
                 const isEditing = editingId === item.id;
                 const isExpanded = expandedIds.includes(item.id);
+                const isPendingDelete = pendingDeleteId === item.id;
                 return (
                   <article key={item.id} className="analytics-surface analytics-content-plan-card">
                     <div className="analytics-content-plan-card-top">
@@ -648,7 +702,7 @@ function ContentPlanBoard() {
                           <h3>{item.title}</h3>
                         )}
                       </div>
-                      <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItem(item.id, { status: event.target.value })}>
+                      <select className={getStatusClass(item.status)} value={item.status} onChange={(event) => updateItemStatus(item.id, event.target.value)}>
                         {STATUS_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                       </select>
                     </div>
@@ -685,13 +739,13 @@ function ContentPlanBoard() {
                     ) : (
                       <>
                         <div className="analytics-content-plan-meta">
-                          <span>{item.stage}</span>
-                          <span>{item.topicBlock || "Без блока"}</span>
-                          <span className="analytics-content-plan-review-badge">{item.reviewStatus}</span>
-                          <span>{item.visualStatus}</span>
-                          <span>{item.priority || "Средний"} приоритет</span>
-                          <span>{getDateState(item.date, item.status) === "overdue" ? "Просрочено" : getDateState(item.date, item.status) === "today" ? "Сегодня" : "По плану"}</span>
-                          <span>{item.owner || "Не назначен"}</span>
+                          <span><b>Этап</b>{item.stage}</span>
+                          <span><b>Блок</b>{item.topicBlock || "Без блока"}</span>
+                          <span className="analytics-content-plan-review-badge"><b>Проверка</b>{item.reviewStatus}</span>
+                          <span><b>Визуал</b>{item.visualStatus}</span>
+                          <span><b>Приоритет</b>{item.priority || "Средний"}</span>
+                          <span><b>Срок</b>{getDateState(item.date, item.status) === "overdue" ? "Просрочено" : getDateState(item.date, item.status) === "today" ? "Сегодня" : "По плану"}</span>
+                          <span><b>Owner</b>{item.owner || "Не назначен"}</span>
                         </div>
                         {item.visualBrief || item.visualLink ? (
                           <div className="analytics-content-plan-visual">
@@ -702,20 +756,18 @@ function ContentPlanBoard() {
                         ) : null}
                         {isExpanded ? <p>{item.copy || "Текст пока не добавлен."}</p> : null}
                         {item.comment ? <small>{item.comment}</small> : null}
-                        {item.adminComment ? (
-                          <div className="analytics-content-plan-admin-note">
-                            <strong>Комментарий администратора</strong>
-                            <span>{item.adminComment}</span>
-                          </div>
-                        ) : null}
+                        <label className="analytics-content-plan-admin-note">
+                          <strong>Комментарий администратора</strong>
+                          <textarea className="analytics-launch-input analytics-content-plan-admin-input" rows="2" value={item.adminComment || ""} onChange={(event) => updateItem(item.id, { adminComment: event.target.value })} placeholder="Что исправить перед публикацией" />
+                        </label>
                       </>
                     )}
 
                     <div className="analytics-content-plan-review-actions">
-                      <button type="button" onClick={() => sendToReview(item.id)}>👀 На вычитку</button>
-                      <button type="button" onClick={() => requestRevision(item.id)}>✍️ Нужны правки</button>
-                      <button type="button" onClick={() => approveItem(item.id)}>✅ Проверено</button>
-                      <button type="button" onClick={() => publishItem(item.id)} disabled={item.reviewStatus !== "Проверено" && item.reviewStatus !== "Можно публиковать"}>🚀 Опубликовано</button>
+                      <button type="button" onClick={() => sendToReview(item.id)}>На вычитку</button>
+                      <button type="button" onClick={() => requestRevision(item.id)} disabled={!String(item.adminComment || "").trim()}>Правки</button>
+                      <button type="button" onClick={() => approveItem(item.id)}>Проверено</button>
+                      <button type="button" onClick={() => publishItem(item.id)} disabled={item.reviewStatus !== "Проверено" && item.reviewStatus !== "Можно публиковать"}>Опубликовано</button>
                     </div>
 
                     <div className="analytics-content-plan-actions">
@@ -727,9 +779,16 @@ function ContentPlanBoard() {
                       <button type="button" onClick={() => setEditingId(isEditing ? "" : item.id)}>
                         {isEditing ? "Готово" : "Редактировать"}
                       </button>
-                      <button type="button" onClick={() => removeItem(item.id)}>
-                        Удалить
-                      </button>
+                      {isPendingDelete ? (
+                        <>
+                          <button type="button" className="analytics-content-plan-delete-confirm" onClick={() => removeItem(item.id)}>Точно удалить</button>
+                          <button type="button" onClick={() => setPendingDeleteId("")}>Отмена</button>
+                        </>
+                      ) : (
+                        <button type="button" onClick={() => requestDelete(item.id)}>
+                          Удалить
+                        </button>
+                      )}
                     </div>
                   </article>
                 );
