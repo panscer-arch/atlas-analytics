@@ -489,6 +489,28 @@ function getQualitySignals(item, copyStats) {
   return signals.slice(0, 5);
 }
 
+function getDayReadinessMeta(items = []) {
+  const total = items.length;
+  const ready = items.filter((item) => canPublishItem(item) || item.status === "Опубликовано").length;
+  const withoutCopy = items.filter((item) => !String(item.copy || "").trim()).length;
+  const withoutDate = items.filter((item) => !item.date).length;
+  const revisions = items.filter((item) => item.reviewStatus === "Нужны правки").length;
+  const visualIssues = items.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+  const signals = [
+    { label: "Без даты", count: withoutDate, tone: "warn" },
+    { label: "Без текста", count: withoutCopy, tone: "danger" },
+    { label: "Правки", count: revisions, tone: "danger" },
+    { label: "Визуал", count: visualIssues, tone: "accent" },
+  ].filter((signal) => signal.count > 0);
+
+  return {
+    total,
+    ready,
+    percent: getSharePercent(ready, total),
+    signals,
+  };
+}
+
 function getPublicationReadinessMeta(checks = []) {
   const done = checks.filter((check) => check.done).length;
   const total = checks.length;
@@ -1651,6 +1673,7 @@ function ContentPlanBoard() {
           const readyCount = groupItems.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
           const revisionCount = groupItems.filter((item) => item.reviewStatus === "Нужны правки").length;
           const visualIssueCount = groupItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+          const dayReadiness = getDayReadinessMeta(groupItems);
           return (
             <section key={dateKey} className="analytics-content-plan-day">
               <div className="analytics-content-plan-day-head">
@@ -1660,6 +1683,16 @@ function ContentPlanBoard() {
                   <strong className="analytics-content-plan-day-ready">{readyCount} к публикации</strong>
                   <strong className="analytics-content-plan-day-warn">{revisionCount} правки</strong>
                   <strong className="analytics-content-plan-day-visual">{visualIssueCount} визуал</strong>
+                </div>
+                <div className="analytics-content-plan-day-health">
+                  <span>
+                    <b>{dayReadiness.percent}%</b>
+                    готовность дня
+                  </span>
+                  <progress value={dayReadiness.percent} max="100" aria-label={`Готовность дня ${dayReadiness.percent}%`} />
+                  <small>
+                    {dayReadiness.signals.length ? dayReadiness.signals.slice(0, 3).map((signal) => `${signal.label}: ${signal.count}`).join(" / ") : "замечаний нет"}
+                  </small>
                 </div>
                 <button
                   type="button"
