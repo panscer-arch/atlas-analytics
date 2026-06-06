@@ -659,6 +659,8 @@ function ContentPlanBoard() {
       highPriority: activeItems.filter((item) => item.priority === "Высокий").length,
       withoutOwner: activeItems.filter((item) => !item.owner).length,
       withoutCopy: activeItems.filter((item) => !String(item.copy || "").trim()).length,
+      sendToReview: activeItems.filter((item) => getNextActionLabel(item) === "Отправить на вычитку").length,
+      approveVisual: activeItems.filter((item) => getNextActionLabel(item) === "Согласовать визуал").length,
     };
   }, [items]);
 
@@ -1197,6 +1199,16 @@ function ContentPlanBoard() {
         </button>
         <button
           type="button"
+          className={getSignalClass(isFocusActive({ nextAction: "Отправить на вычитку" }), "analytics-content-plan-signal-focus")}
+          onClick={() => applyFocusFilter({ nextAction: "Отправить на вычитку" })}
+          aria-pressed={isFocusActive({ nextAction: "Отправить на вычитку" })}
+        >
+          <span>На вычитку</span>
+          <strong>{dashboard.sendToReview}</strong>
+          <small>Текст есть, нужен редактор</small>
+        </button>
+        <button
+          type="button"
           className={getSignalClass(isFocusActive({ priority: "Высокий" }))}
           onClick={() => applyFocusFilter({ priority: "Высокий" })}
           aria-pressed={isFocusActive({ priority: "Высокий" })}
@@ -1234,6 +1246,16 @@ function ContentPlanBoard() {
           <span>Визуал не готов</span>
           <strong>{dashboard.visualIssue}</strong>
           <small>Готовится или ждёт проверки</small>
+        </button>
+        <button
+          type="button"
+          className={getSignalClass(isFocusActive({ nextAction: "Согласовать визуал" }), "analytics-content-plan-signal-accent")}
+          onClick={() => applyFocusFilter({ nextAction: "Согласовать визуал" })}
+          aria-pressed={isFocusActive({ nextAction: "Согласовать визуал" })}
+        >
+          <span>Согласовать визуал</span>
+          <strong>{dashboard.approveVisual}</strong>
+          <small>Текст готов, визуал ждёт OK</small>
         </button>
         <button
           type="button"
