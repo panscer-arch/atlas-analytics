@@ -483,6 +483,7 @@ function ContentPlanBoard() {
   const [copiedItemId, setCopiedItemId] = useState("");
   const [copiedBriefItemId, setCopiedBriefItemId] = useState("");
   const [copiedPackageItemId, setCopiedPackageItemId] = useState("");
+  const [copiedDayKey, setCopiedDayKey] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
@@ -494,6 +495,7 @@ function ContentPlanBoard() {
   const copyTimerRef = useRef(null);
   const briefCopyTimerRef = useRef(null);
   const packageCopyTimerRef = useRef(null);
+  const dayCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
 
@@ -540,6 +542,7 @@ function ContentPlanBoard() {
     if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
     if (briefCopyTimerRef.current) window.clearTimeout(briefCopyTimerRef.current);
     if (packageCopyTimerRef.current) window.clearTimeout(packageCopyTimerRef.current);
+    if (dayCopyTimerRef.current) window.clearTimeout(dayCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
@@ -830,6 +833,12 @@ function ContentPlanBoard() {
     packageCopyTimerRef.current = window.setTimeout(() => setCopiedPackageItemId(""), 1800);
   }
 
+  function markDayCopied(dayKey) {
+    setCopiedDayKey(dayKey);
+    if (dayCopyTimerRef.current) window.clearTimeout(dayCopyTimerRef.current);
+    dayCopyTimerRef.current = window.setTimeout(() => setCopiedDayKey(""), 1800);
+  }
+
   function markItemLinkCopied(itemId) {
     setCopiedLinkItemId(itemId);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
@@ -891,12 +900,11 @@ function ContentPlanBoard() {
     fallbackCopyValue(text, () => markBriefCopied(item.id));
   }
 
-  function copyPublishPackage(item) {
-    if (!canPublishItem(item)) return;
+  function buildPublishPackageText(item) {
     const visualBrief = String(item.visualBrief || "").trim();
     const visualLink = String(item.visualLink || "").trim();
     const adminComment = String(item.adminComment || "").trim();
-    const text = [
+    return [
       `Пакет к публикации: ${item.title || "Без названия"}`,
       "",
       `Канал: ${item.channel || "Не указан"}`,
@@ -913,12 +921,34 @@ function ContentPlanBoard() {
       visualLink ? `Макет / файл: ${visualLink}` : "",
       adminComment ? `Комментарий администратора: ${adminComment}` : "",
     ].filter(Boolean).join("\n");
+  }
+
+  function copyPublishPackage(item) {
+    if (!canPublishItem(item)) return;
+    const text = buildPublishPackageText(item);
     markPackageCopied(item.id);
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, () => markPackageCopied(item.id)));
       return;
     }
     fallbackCopyValue(text, () => markPackageCopied(item.id));
+  }
+
+  function copyDayPublishPackage(dayKey, groupItems) {
+    const readyItems = groupItems.filter((item) => canPublishItem(item) && item.status !== "Опубликовано");
+    if (!readyItems.length) return;
+    const text = [
+      `Пакет публикаций на день: ${formatPlanDate(dayKey === "Без даты" ? "" : dayKey)}`,
+      `Готово к публикации: ${readyItems.length}`,
+      "",
+      readyItems.map((item, index) => [`#${index + 1}`, buildPublishPackageText(item)].join("\n")).join("\n\n---\n\n"),
+    ].join("\n");
+    markDayCopied(dayKey);
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, () => markDayCopied(dayKey)));
+      return;
+    }
+    fallbackCopyValue(text, () => markDayCopied(dayKey));
   }
 
   function getItemShareLink(itemId) {
@@ -1299,8 +1329,18 @@ function ContentPlanBoard() {
         {Object.entries(groupedItems).map(([dateKey, groupItems]) => (
           <section key={dateKey} className="analytics-content-plan-day">
             <div className="analytics-content-plan-day-head">
-              <span>{formatPlanDate(dateKey === "Без даты" ? "" : dateKey)}</span>
-              <strong>{groupItems.length} публикаций</strong>
+              <div>
+                <span>{formatPlanDate(dateKey === "Без даты" ? "" : dateKey)}</span>
+                <strong>{groupItems.length} публикаций</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyDayPublishPackage(dateKey, groupItems)}
+                disabled={!groupItems.some((item) => canPublishItem(item) && item.status !== "Опубликовано")}
+                title="Скопировать все готовые публикации за этот день"
+              >
+                {copiedDayKey === dateKey ? "День скопирован" : "Пакет дня"}
+              </button>
             </div>
             <div className="analytics-content-plan-grid">
               {groupItems.map((item) => {
