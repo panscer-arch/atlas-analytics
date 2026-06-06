@@ -604,6 +604,7 @@ function ContentPlanBoard() {
   const [copiedAudit, setCopiedAudit] = useState(false);
   const [copiedPublishedReport, setCopiedPublishedReport] = useState(false);
   const [copiedTaskList, setCopiedTaskList] = useState(false);
+  const [copiedRevisionSlice, setCopiedRevisionSlice] = useState(false);
   const [copiedRevisionItemId, setCopiedRevisionItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
@@ -621,6 +622,7 @@ function ContentPlanBoard() {
   const auditCopyTimerRef = useRef(null);
   const publishedReportCopyTimerRef = useRef(null);
   const taskListCopyTimerRef = useRef(null);
+  const revisionSliceCopyTimerRef = useRef(null);
   const revisionCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
@@ -673,6 +675,7 @@ function ContentPlanBoard() {
     if (auditCopyTimerRef.current) window.clearTimeout(auditCopyTimerRef.current);
     if (publishedReportCopyTimerRef.current) window.clearTimeout(publishedReportCopyTimerRef.current);
     if (taskListCopyTimerRef.current) window.clearTimeout(taskListCopyTimerRef.current);
+    if (revisionSliceCopyTimerRef.current) window.clearTimeout(revisionSliceCopyTimerRef.current);
     if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
@@ -893,6 +896,10 @@ function ContentPlanBoard() {
     return filteredItems.filter((item) => item.status === "Опубликовано");
   }, [filteredItems]);
 
+  const revisionSliceItems = useMemo(() => {
+    return filteredItems.filter((item) => item.reviewStatus === "Нужны правки" || hasTextValue(item.adminComment));
+  }, [filteredItems]);
+
   function persist(nextItems) {
     localTouchedRef.current = true;
     setSaveState("saving");
@@ -1087,6 +1094,12 @@ function ContentPlanBoard() {
     setCopiedTaskList(true);
     if (taskListCopyTimerRef.current) window.clearTimeout(taskListCopyTimerRef.current);
     taskListCopyTimerRef.current = window.setTimeout(() => setCopiedTaskList(false), 1800);
+  }
+
+  function markRevisionSliceCopied() {
+    setCopiedRevisionSlice(true);
+    if (revisionSliceCopyTimerRef.current) window.clearTimeout(revisionSliceCopyTimerRef.current);
+    revisionSliceCopyTimerRef.current = window.setTimeout(() => setCopiedRevisionSlice(false), 2200);
   }
 
   function markRevisionCopied(itemId) {
@@ -1328,25 +1341,51 @@ function ContentPlanBoard() {
   }
 
   function copyRevisionRequest(item) {
-    const adminComment = String(item.adminComment || "").trim();
-    if (!adminComment) return;
-    const text = [
-      `Правки по публикации: ${item.title || "Без названия"}`,
-      "",
-      `Канал: ${item.channel || "Не указан"}`,
-      `Формат: ${item.format || "Не указан"}`,
-      `Дата: ${formatPlanDate(item.date)}`,
-      `Ответственный: ${item.owner || "Не назначен"}`,
-      "",
-      "Что нужно исправить:",
-      adminComment,
-    ].join("\n");
+    const text = buildRevisionRequestText(item);
+    if (!text) return;
     markRevisionCopied(item.id);
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, () => markRevisionCopied(item.id)));
       return;
     }
     fallbackCopyValue(text, () => markRevisionCopied(item.id));
+  }
+
+  function buildRevisionRequestText(item) {
+    const adminComment = String(item.adminComment || "").trim();
+    if (!adminComment && item.reviewStatus !== "Нужны правки") return "";
+    return [
+      `Правки по публикации: ${item.title || "Без названия"}`,
+      "",
+      `Канал: ${item.channel || "Не указан"}`,
+      `Формат: ${item.format || "Не указан"}`,
+      `Дата: ${formatPlanDate(item.date)}`,
+      `Ответственный: ${item.owner || "Не назначен"}`,
+      `Статус: ${item.status}; согласование: ${item.reviewStatus}`,
+      "",
+      "Что нужно исправить:",
+      adminComment || "Комментарий администратора не заполнен. Нужно уточнить правку перед возвратом автору.",
+    ].join("\n");
+  }
+
+  function copyCurrentRevisionPackage() {
+    if (!revisionSliceItems.length) return;
+    const filterLine = activeFilterChips.length
+      ? activeFilterChips.map((chip) => `${chip.label}: ${chip.value}`).join("; ")
+      : "без фильтров";
+    const text = [
+      "Пакет правок по контент-плану Atlas",
+      `Фильтры: ${filterLine}`,
+      `Карточек с правками: ${revisionSliceItems.length}`,
+      "",
+      revisionSliceItems.map((item, index) => [`#${index + 1}`, buildRevisionRequestText(item)].filter(Boolean).join("\n")).join("\n\n---\n\n"),
+    ].join("\n");
+    markRevisionSliceCopied();
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, markRevisionSliceCopied));
+      return;
+    }
+    fallbackCopyValue(text, markRevisionSliceCopied);
   }
 
   function getItemShareLink(itemId) {
@@ -1807,6 +1846,14 @@ function ContentPlanBoard() {
           disabled={!filteredItems.length}
         >
           {copiedAudit ? "Аудит скопирован" : "Аудит среза"}
+        </button>
+        <button
+          type="button"
+          className="analytics-content-plan-revision-slice-copy"
+          onClick={copyCurrentRevisionPackage}
+          disabled={!revisionSliceItems.length}
+        >
+          {copiedRevisionSlice ? "Правки скопированы" : "Пакет правок"}
         </button>
         <button
           type="button"
