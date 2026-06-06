@@ -529,6 +529,11 @@ function getPublishedUrlStatus(value) {
   return { label: String(value || "").trim(), tone: "valid" };
 }
 
+function getPublishedDateStatus(value) {
+  if (!hasTextValue(value)) return { label: "не заполнена", tone: "empty" };
+  return { label: formatPlanDate(value), tone: "valid" };
+}
+
 function hasInvalidContentPlanLink(item = {}) {
   return !isValidHttpUrl(item.visualLink) || !isValidHttpUrl(item.publishedUrl);
 }
@@ -1423,11 +1428,15 @@ function ContentPlanBoard() {
     const withLinks = publishedSliceItems.filter((item) => hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl)).length;
     const withoutLinks = publishedSliceItems.filter((item) => !hasTextValue(item.publishedUrl)).length;
     const invalidLinks = publishedSliceItems.filter((item) => hasTextValue(item.publishedUrl) && !isValidHttpUrl(item.publishedUrl)).length;
+    const withDates = publishedSliceItems.filter((item) => hasTextValue(item.publishedAt)).length;
+    const withoutDates = publishedSliceItems.filter((item) => !hasTextValue(item.publishedAt)).length;
     const rows = publishedSliceItems.map((item, index) => {
       const linkStatus = getPublishedUrlStatus(item.publishedUrl);
+      const dateStatus = getPublishedDateStatus(item.publishedAt);
       return [
         `${index + 1}. ${item.title || "Без названия"}`,
-        `Дата публикации: ${formatPlanDate(item.publishedAt || item.date)}`,
+        `Дата публикации: ${dateStatus.label}`,
+        dateStatus.tone === "empty" && item.date ? `Плановая дата: ${formatPlanDate(item.date)}` : "",
         `Канал: ${item.channel}; формат: ${item.format}`,
         `Ответственный: ${item.owner || "Не назначен"}`,
         `Ссылка: ${linkStatus.label}`,
@@ -1438,6 +1447,8 @@ function ContentPlanBoard() {
       "Отчет по опубликованному контенту Atlas",
       `Фильтры: ${filterLine}`,
       `Опубликовано в срезе: ${publishedSliceItems.length}`,
+      `С датой публикации: ${withDates}`,
+      `Без даты публикации: ${withoutDates}`,
       `Валидная ссылка: ${withLinks}`,
       `Без ссылки: ${withoutLinks}`,
       `Некорректная ссылка: ${invalidLinks}`,
