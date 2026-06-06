@@ -484,6 +484,7 @@ function ContentPlanBoard() {
   const [copiedBriefItemId, setCopiedBriefItemId] = useState("");
   const [copiedPackageItemId, setCopiedPackageItemId] = useState("");
   const [copiedDayKey, setCopiedDayKey] = useState("");
+  const [copiedSlice, setCopiedSlice] = useState(false);
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
@@ -496,6 +497,7 @@ function ContentPlanBoard() {
   const briefCopyTimerRef = useRef(null);
   const packageCopyTimerRef = useRef(null);
   const dayCopyTimerRef = useRef(null);
+  const sliceCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
 
@@ -543,6 +545,7 @@ function ContentPlanBoard() {
     if (briefCopyTimerRef.current) window.clearTimeout(briefCopyTimerRef.current);
     if (packageCopyTimerRef.current) window.clearTimeout(packageCopyTimerRef.current);
     if (dayCopyTimerRef.current) window.clearTimeout(dayCopyTimerRef.current);
+    if (sliceCopyTimerRef.current) window.clearTimeout(sliceCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
@@ -839,6 +842,12 @@ function ContentPlanBoard() {
     dayCopyTimerRef.current = window.setTimeout(() => setCopiedDayKey(""), 1800);
   }
 
+  function markSliceCopied() {
+    setCopiedSlice(true);
+    if (sliceCopyTimerRef.current) window.clearTimeout(sliceCopyTimerRef.current);
+    sliceCopyTimerRef.current = window.setTimeout(() => setCopiedSlice(false), 1800);
+  }
+
   function markItemLinkCopied(itemId) {
     setCopiedLinkItemId(itemId);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
@@ -949,6 +958,35 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyValue(text, () => markDayCopied(dayKey));
+  }
+
+  function copyCurrentSlice() {
+    if (!filteredItems.length) return;
+    const filterLine = activeFilterChips.length
+      ? activeFilterChips.map((chip) => `${chip.label}: ${chip.value}`).join("; ")
+      : "без фильтров";
+    const rows = filteredItems.map((item, index) => {
+      const readiness = getPublicationReadinessMeta(getPublicationChecks(item));
+      return [
+        `${index + 1}. ${formatPlanDate(item.date)} / ${item.channel} / ${item.format}`,
+        `Тема: ${item.title || "Без названия"}`,
+        `Статус: ${item.status}; согласование: ${item.reviewStatus}; визуал: ${item.visualStatus}; готовность: ${readiness.done}/${readiness.total}`,
+        `Ответственный: ${item.owner || "Не назначен"}; приоритет: ${item.priority || "Средний"}`,
+      ].join("\n");
+    });
+    const text = [
+      "Срез контент-плана Atlas",
+      `Фильтры: ${filterLine}`,
+      `Карточек: ${filteredItems.length} из ${items.length}`,
+      "",
+      rows.join("\n\n"),
+    ].join("\n");
+    markSliceCopied();
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, markSliceCopied));
+      return;
+    }
+    fallbackCopyValue(text, markSliceCopied);
   }
 
   function getItemShareLink(itemId) {
@@ -1269,6 +1307,14 @@ function ContentPlanBoard() {
             ))}
           </div>
         ) : null}
+        <button
+          type="button"
+          className="analytics-content-plan-slice-copy"
+          onClick={copyCurrentSlice}
+          disabled={!filteredItems.length}
+        >
+          {copiedSlice ? "Срез скопирован" : "Скопировать срез"}
+        </button>
       </div>
 
       <div className="analytics-surface analytics-content-plan-form">
