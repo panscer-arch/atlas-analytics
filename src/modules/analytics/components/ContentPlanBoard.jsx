@@ -485,6 +485,7 @@ function ContentPlanBoard() {
   const [copiedPackageItemId, setCopiedPackageItemId] = useState("");
   const [copiedDayKey, setCopiedDayKey] = useState("");
   const [copiedSlice, setCopiedSlice] = useState(false);
+  const [copiedRevisionItemId, setCopiedRevisionItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
@@ -498,6 +499,7 @@ function ContentPlanBoard() {
   const packageCopyTimerRef = useRef(null);
   const dayCopyTimerRef = useRef(null);
   const sliceCopyTimerRef = useRef(null);
+  const revisionCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
 
@@ -546,6 +548,7 @@ function ContentPlanBoard() {
     if (packageCopyTimerRef.current) window.clearTimeout(packageCopyTimerRef.current);
     if (dayCopyTimerRef.current) window.clearTimeout(dayCopyTimerRef.current);
     if (sliceCopyTimerRef.current) window.clearTimeout(sliceCopyTimerRef.current);
+    if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
@@ -848,6 +851,12 @@ function ContentPlanBoard() {
     sliceCopyTimerRef.current = window.setTimeout(() => setCopiedSlice(false), 1800);
   }
 
+  function markRevisionCopied(itemId) {
+    setCopiedRevisionItemId(itemId);
+    if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
+    revisionCopyTimerRef.current = window.setTimeout(() => setCopiedRevisionItemId(""), 1800);
+  }
+
   function markItemLinkCopied(itemId) {
     setCopiedLinkItemId(itemId);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
@@ -987,6 +996,28 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyValue(text, markSliceCopied);
+  }
+
+  function copyRevisionRequest(item) {
+    const adminComment = String(item.adminComment || "").trim();
+    if (!adminComment) return;
+    const text = [
+      `Правки по публикации: ${item.title || "Без названия"}`,
+      "",
+      `Канал: ${item.channel || "Не указан"}`,
+      `Формат: ${item.format || "Не указан"}`,
+      `Дата: ${formatPlanDate(item.date)}`,
+      `Ответственный: ${item.owner || "Не назначен"}`,
+      "",
+      "Что нужно исправить:",
+      adminComment,
+    ].join("\n");
+    markRevisionCopied(item.id);
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, () => markRevisionCopied(item.id)));
+      return;
+    }
+    fallbackCopyValue(text, () => markRevisionCopied(item.id));
   }
 
   function getItemShareLink(itemId) {
@@ -1543,6 +1574,14 @@ function ContentPlanBoard() {
                         disabled={!String(item.visualBrief || "").trim()}
                       >
                         {copiedBriefItemId === item.id ? "ТЗ скопировано" : "Копировать ТЗ"}
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-revision-copy"
+                        onClick={() => copyRevisionRequest(item)}
+                        disabled={!String(item.adminComment || "").trim()}
+                      >
+                        {copiedRevisionItemId === item.id ? "Правки скопированы" : "Копировать правки"}
                       </button>
                       <button
                         type="button"
