@@ -452,6 +452,10 @@ function getDateStateLabel(value) {
   }[value] || "По плану";
 }
 
+function getContentPlanItemElementId(itemId) {
+  return `content-plan-item-${itemId}`;
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
@@ -461,12 +465,15 @@ function ContentPlanBoard() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [saveState, setSaveState] = useState("idle");
   const [copiedItemId, setCopiedItemId] = useState("");
+  const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const localTouchedRef = useRef(false);
+  const deepLinkHandledRef = useRef(false);
   const saveTimerRef = useRef(null);
   const saveVersionRef = useRef(0);
   const pendingServerSaveRef = useRef(null);
   const copyTimerRef = useRef(null);
+  const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
 
   useEffect(() => {
@@ -510,8 +517,23 @@ function ContentPlanBoard() {
 
   useEffect(() => () => {
     if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || deepLinkHandledRef.current) return;
+    const url = new URL(window.location.href);
+    const hashId = url.hash.startsWith("#content-plan-item-") ? url.hash.replace("#content-plan-item-", "") : "";
+    const targetId = url.searchParams.get("content") || hashId;
+    if (!targetId || !items.some((item) => item.id === targetId)) return;
+
+    deepLinkHandledRef.current = true;
+    setExpandedIds((current) => (current.includes(targetId) ? current : [...current, targetId]));
+    window.setTimeout(() => {
+      document.getElementById(getContentPlanItemElementId(targetId))?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+  }, [items]);
 
   const filteredItems = useMemo(() => {
     const searchValue = filters.search.trim().toLowerCase();
@@ -733,13 +755,19 @@ function ContentPlanBoard() {
     copyTimerRef.current = window.setTimeout(() => setCopiedItemId(""), 1800);
   }
 
+  function markItemLinkCopied(itemId) {
+    setCopiedLinkItemId(itemId);
+    if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
+    linkCopyTimerRef.current = window.setTimeout(() => setCopiedLinkItemId(""), 1800);
+  }
+
   function markDateShifted(itemId) {
     setShiftedDateItemId(itemId);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
     shiftDateTimerRef.current = window.setTimeout(() => setShiftedDateItemId(""), 1800);
   }
 
-  function fallbackCopyText(text, itemId) {
+  function fallbackCopyValue(text, onCopied) {
     if (typeof document === "undefined") return;
     const buffer = document.createElement("textarea");
     buffer.className = "analytics-content-plan-copy-buffer";
@@ -748,7 +776,7 @@ function ContentPlanBoard() {
     document.body.appendChild(buffer);
     buffer.select();
     try {
-      if (document.execCommand("copy")) markItemCopied(itemId);
+      if (document.execCommand("copy")) onCopied();
     } catch {
       // Копирование не должно ломать работу карточки.
     } finally {
@@ -762,10 +790,31 @@ function ContentPlanBoard() {
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text)
         .then(() => markItemCopied(item.id))
-        .catch(() => fallbackCopyText(text, item.id));
+        .catch(() => fallbackCopyValue(text, () => markItemCopied(item.id)));
       return;
     }
-    fallbackCopyText(text, item.id);
+    fallbackCopyValue(text, () => markItemCopied(item.id));
+  }
+
+  function getItemShareLink(itemId) {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+    url.searchParams.set("board", "contentPlan");
+    url.searchParams.set("content", itemId);
+    url.hash = getContentPlanItemElementId(itemId);
+    return url.toString();
+  }
+
+  function copyItemLink(itemId) {
+    const link = getItemShareLink(itemId);
+    if (!link) return;
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(link)
+        .then(() => markItemLinkCopied(itemId))
+        .catch(() => fallbackCopyValue(link, () => markItemLinkCopied(itemId)));
+      return;
+    }
+    fallbackCopyValue(link, () => markItemLinkCopied(itemId));
   }
 
   function shiftItemDate(itemId, days) {
@@ -1077,7 +1126,7 @@ function ContentPlanBoard() {
                 const readinessMeta = getPublicationReadinessMeta(publicationChecks);
                 const publishBlockReason = getPublishBlockReason(item);
                 return (
-                  <article key={item.id} className="analytics-surface analytics-content-plan-card">
+                  <article key={item.id} id={getContentPlanItemElementId(item.id)} className="analytics-surface analytics-content-plan-card">
                     <div className="analytics-content-plan-card-top">
                       <div>
                         <span>{item.channel} / {item.format}</span>
@@ -1192,6 +1241,13 @@ function ContentPlanBoard() {
                       ) : null}
                       <button type="button" onClick={() => setEditingId(isEditing ? "" : item.id)}>
                         {isEditing ? "Готово" : "Редактировать"}
+                      </button>
+                      <button
+                        type="button"
+                        className="analytics-content-plan-link"
+                        onClick={() => copyItemLink(item.id)}
+                      >
+                        {copiedLinkItemId === item.id ? "Ссылка скопирована" : "Ссылка"}
                       </button>
                       <button
                         type="button"

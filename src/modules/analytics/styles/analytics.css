@@ -757,6 +757,12 @@
   color: #d8eaff;
 }
 
+.analytics-content-plan-actions .analytics-content-plan-link {
+  border-color: rgba(168, 195, 222, 0.3);
+  background: rgba(168, 195, 222, 0.1);
+  color: #e5effc;
+}
+
 .analytics-content-plan-actions .analytics-content-plan-shift-date {
   border-color: rgba(255, 203, 87, 0.34);
   background: rgba(255, 203, 87, 0.1);
