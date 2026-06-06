@@ -1403,23 +1403,30 @@ function ContentPlanBoard() {
       ) : null}
 
       <div className="analytics-content-plan-timeline">
-        {Object.entries(groupedItems).map(([dateKey, groupItems]) => (
-          <section key={dateKey} className="analytics-content-plan-day">
-            <div className="analytics-content-plan-day-head">
-              <div>
-                <span>{formatPlanDate(dateKey === "Без даты" ? "" : dateKey)}</span>
-                <strong>{groupItems.length} публикаций</strong>
+        {Object.entries(groupedItems).map(([dateKey, groupItems]) => {
+          const readyCount = groupItems.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
+          const revisionCount = groupItems.filter((item) => item.reviewStatus === "Нужны правки").length;
+          const visualIssueCount = groupItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+          return (
+            <section key={dateKey} className="analytics-content-plan-day">
+              <div className="analytics-content-plan-day-head">
+                <div>
+                  <span>{formatPlanDate(dateKey === "Без даты" ? "" : dateKey)}</span>
+                  <strong>{groupItems.length} публикаций</strong>
+                  <strong className="analytics-content-plan-day-ready">{readyCount} к публикации</strong>
+                  <strong className="analytics-content-plan-day-warn">{revisionCount} правки</strong>
+                  <strong className="analytics-content-plan-day-visual">{visualIssueCount} визуал</strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyDayPublishPackage(dateKey, groupItems)}
+                  disabled={!readyCount}
+                  title="Скопировать все готовые публикации за этот день"
+                >
+                  {copiedDayKey === dateKey ? "День скопирован" : "Пакет дня"}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => copyDayPublishPackage(dateKey, groupItems)}
-                disabled={!groupItems.some((item) => canPublishItem(item) && item.status !== "Опубликовано")}
-                title="Скопировать все готовые публикации за этот день"
-              >
-                {copiedDayKey === dateKey ? "День скопирован" : "Пакет дня"}
-              </button>
-            </div>
-            <div className="analytics-content-plan-grid">
+              <div className="analytics-content-plan-grid">
               {groupItems.map((item) => {
                 const isEditing = editingId === item.id;
                 const isExpanded = expandedIds.includes(item.id);
@@ -1627,9 +1634,10 @@ function ContentPlanBoard() {
                   </article>
                 );
               })}
-            </div>
-          </section>
-        ))}
+              </div>
+            </section>
+          );
+        })}
         {!filteredItems.length ? (
           <div className="analytics-surface analytics-content-plan-empty">
             Нет публикаций под выбранные фильтры.
