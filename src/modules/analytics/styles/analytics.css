@@ -1372,6 +1372,25 @@
   color: #a9fff2;
 }
 
+.analytics-content-plan-meta .analytics-content-plan-published-link-meta {
+  border-color: rgba(111, 255, 232, 0.28);
+  background: rgba(111, 255, 232, 0.09);
+}
+
+.analytics-content-plan-published-link-meta a {
+  color: #dffefa;
+  font-weight: 950;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.analytics-content-plan-published-link-meta a:hover,
+.analytics-content-plan-published-link-meta a:focus-visible {
+  color: #a9fff2;
+  text-decoration: underline;
+  outline: none;
+}
+
 .analytics-content-plan-meta .analytics-content-plan-copy-stat-warn {
   border-color: rgba(255, 151, 45, 0.34);
   background: rgba(255, 151, 45, 0.12);

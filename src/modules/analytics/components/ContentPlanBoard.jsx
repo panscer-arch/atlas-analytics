@@ -298,6 +298,7 @@ const emptyItem = {
   comment: "",
   adminComment: "",
   publishedAt: "",
+  publishedUrl: "",
 };
 
 function normalizeItems(items) {
@@ -320,6 +321,7 @@ function normalizeItems(items) {
     comment: item.comment || "",
     adminComment: item.adminComment || "",
     publishedAt: item.publishedAt || "",
+    publishedUrl: item.publishedUrl || "",
   })) : normalizeItems(defaultContentPlanItems);
 }
 
@@ -916,6 +918,7 @@ function ContentPlanBoard() {
       copy: newItem.copy.trim(),
       comment: newItem.comment.trim(),
       adminComment: newItem.adminComment.trim(),
+      publishedUrl: newItem.publishedUrl.trim(),
     };
     updateItems((current) => [item, ...current]);
     setNewItem(emptyItem);
@@ -1093,6 +1096,7 @@ function ContentPlanBoard() {
     const visualBrief = String(item.visualBrief || "").trim();
     const visualLink = String(item.visualLink || "").trim();
     const adminComment = String(item.adminComment || "").trim();
+    const publishedUrl = String(item.publishedUrl || "").trim();
     return [
       `Пакет к публикации: ${item.title || "Без названия"}`,
       "",
@@ -1101,6 +1105,7 @@ function ContentPlanBoard() {
       `Дата: ${formatPlanDate(item.date)}`,
       `Ответственный: ${item.owner || "Не назначен"}`,
       `Статус: можно публиковать`,
+      publishedUrl ? `Опубликовано: ${publishedUrl}` : "",
       "",
       "Текст публикации:",
       String(item.copy || "").trim() || "Текст не добавлен.",
@@ -1152,7 +1157,8 @@ function ContentPlanBoard() {
         `Тема: ${item.title || "Без названия"}`,
         `Статус: ${item.status}; согласование: ${item.reviewStatus}; визуал: ${item.visualStatus}; готовность: ${readiness.done}/${readiness.total}`,
         `Ответственный: ${item.owner || "Не назначен"}; приоритет: ${item.priority || "Средний"}`,
-      ].join("\n");
+        item.publishedUrl ? `Пост: ${item.publishedUrl}` : "",
+      ].filter(Boolean).join("\n");
     });
     const text = [
       "Срез контент-плана Atlas",
@@ -1206,8 +1212,9 @@ function ContentPlanBoard() {
       `${index + 1}. ${item.title || "Без названия"}`,
       `Дата: ${formatPlanDate(item.date)}; канал: ${item.channel}; формат: ${item.format}`,
       `Ответственный: ${item.owner || "Не назначен"}; следующий шаг: ${getNextActionLabel(item)}`,
+      item.publishedUrl ? `Пост: ${item.publishedUrl}` : "",
       `Проблемы: ${signals.map((signal) => `${signal.label} - ${signal.detail}`).join("; ")}`,
-    ].join("\n"));
+    ].filter(Boolean).join("\n"));
     const text = [
       "Аудит среза контент-плана Atlas",
       `Фильтры: ${filterLine}`,
@@ -1740,6 +1747,7 @@ function ContentPlanBoard() {
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={newItem.copy} onChange={(event) => setNewItem((current) => ({ ...current, copy: event.target.value }))} placeholder="Финальный текст / сценарий / тезисы" />
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.comment} onChange={(event) => setNewItem((current) => ({ ...current, comment: event.target.value }))} placeholder="Рабочий комментарий автора / SMM" />
           <textarea className="analytics-launch-input analytics-content-plan-wide" rows="2" value={newItem.adminComment} onChange={(event) => setNewItem((current) => ({ ...current, adminComment: event.target.value }))} placeholder="Админ-комментарий: что исправить перед публикацией" />
+          <input className="analytics-launch-input analytics-content-plan-wide" value={newItem.publishedUrl} onChange={(event) => setNewItem((current) => ({ ...current, publishedUrl: event.target.value }))} placeholder="Ссылка на опубликованный пост" />
           <button type="button" className="analytics-content-plan-add-btn" onClick={addItem} disabled={!newItem.title.trim()}>
             Добавить
           </button>
@@ -1870,6 +1878,7 @@ function ContentPlanBoard() {
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="5" value={item.copy} onChange={(event) => updateItem(item.id, { copy: event.target.value })} placeholder="Финальный текст / сценарий" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.comment} onChange={(event) => updateItem(item.id, { comment: event.target.value })} placeholder="Рабочий комментарий автора / SMM" />
                         <textarea className="analytics-launch-input analytics-content-plan-wide" rows="3" value={item.adminComment} onChange={(event) => updateItem(item.id, { adminComment: event.target.value })} placeholder="Админ-комментарий: что исправить перед публикацией" />
+                        <input className="analytics-launch-input analytics-content-plan-wide" value={item.publishedUrl || ""} onChange={(event) => updateItem(item.id, { publishedUrl: event.target.value })} placeholder="Ссылка на опубликованный пост" />
                       </div>
                     ) : (
                       <>
@@ -1890,6 +1899,12 @@ function ContentPlanBoard() {
                           <span><b>Срок</b>{getDateStateLabel(getDateState(item.date, item.status))}</span>
                           <span><b>Owner</b>{item.owner || "Не назначен"}</span>
                           {item.status === "Опубликовано" ? <span className="analytics-content-plan-published-meta"><b>Опубликовано</b>{formatPlanDate(item.publishedAt)}</span> : null}
+                          {item.status === "Опубликовано" && item.publishedUrl ? (
+                            <span className="analytics-content-plan-published-link-meta">
+                              <b>Пост</b>
+                              <a href={item.publishedUrl} target="_blank" rel="noreferrer">Открыть публикацию</a>
+                            </span>
+                          ) : null}
                           <span className={copyStats.isXOverLimit ? "analytics-content-plan-copy-stat analytics-content-plan-copy-stat-warn" : "analytics-content-plan-copy-stat"}>
                             <b>Объем</b>{copyStats.isXOverLimit ? `${copyStats.label} / X > 280` : copyStats.label}
                           </span>
