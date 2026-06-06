@@ -799,6 +799,7 @@ function ContentPlanBoard() {
     const publishedWithLink = items.filter((item) => item.status === "Опубликовано" && hasTextValue(item.publishedUrl) && isValidHttpUrl(item.publishedUrl)).length;
     const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)).length;
     const publishedInvalidLink = items.filter((item) => item.status === "Опубликовано" && hasTextValue(item.publishedUrl) && !isValidHttpUrl(item.publishedUrl)).length;
+    const invalidVisualLinks = items.filter((item) => hasTextValue(item.visualLink) && !isValidHttpUrl(item.visualLink)).length;
     const invalidLinks = items.filter(hasInvalidContentPlanLink).length;
     const channelMix = SOCIAL_OPTIONS.map((channel) => {
       const count = items.filter((item) => item.channel === channel).length;
@@ -835,6 +836,7 @@ function ContentPlanBoard() {
       visualIssue,
       publishedWithoutLink,
       publishedInvalidLink,
+      invalidVisualLinks,
       invalidLinks,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
@@ -1553,6 +1555,9 @@ function ContentPlanBoard() {
               </button>
               <button type="button" onClick={() => applyFocusFilter({ status: "Опубликовано", linkIssue: "Некорректная ссылка публикации" })} disabled={!dashboard.publishedInvalidLink}>
                 URL {dashboard.publishedInvalidLink}
+              </button>
+              <button type="button" onClick={() => applyFocusFilter({ linkIssue: "Некорректная ссылка визуала" })} disabled={!dashboard.invalidVisualLinks}>
+                Макет URL {dashboard.invalidVisualLinks}
               </button>
             </div>
           </div>
