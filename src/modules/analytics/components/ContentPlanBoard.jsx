@@ -577,6 +577,7 @@ function ContentPlanBoard() {
   const [copiedDayKey, setCopiedDayKey] = useState("");
   const [copiedSlice, setCopiedSlice] = useState(false);
   const [copiedAudit, setCopiedAudit] = useState(false);
+  const [copiedPublishedReport, setCopiedPublishedReport] = useState(false);
   const [copiedTaskList, setCopiedTaskList] = useState(false);
   const [copiedRevisionItemId, setCopiedRevisionItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
@@ -593,6 +594,7 @@ function ContentPlanBoard() {
   const dayCopyTimerRef = useRef(null);
   const sliceCopyTimerRef = useRef(null);
   const auditCopyTimerRef = useRef(null);
+  const publishedReportCopyTimerRef = useRef(null);
   const taskListCopyTimerRef = useRef(null);
   const revisionCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
@@ -644,6 +646,7 @@ function ContentPlanBoard() {
     if (dayCopyTimerRef.current) window.clearTimeout(dayCopyTimerRef.current);
     if (sliceCopyTimerRef.current) window.clearTimeout(sliceCopyTimerRef.current);
     if (auditCopyTimerRef.current) window.clearTimeout(auditCopyTimerRef.current);
+    if (publishedReportCopyTimerRef.current) window.clearTimeout(publishedReportCopyTimerRef.current);
     if (taskListCopyTimerRef.current) window.clearTimeout(taskListCopyTimerRef.current);
     if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
@@ -846,6 +849,10 @@ function ContentPlanBoard() {
     };
   }, [filteredItems]);
 
+  const publishedSliceItems = useMemo(() => {
+    return filteredItems.filter((item) => item.status === "Опубликовано");
+  }, [filteredItems]);
+
   function persist(nextItems) {
     localTouchedRef.current = true;
     setSaveState("saving");
@@ -1028,6 +1035,12 @@ function ContentPlanBoard() {
     setCopiedAudit(true);
     if (auditCopyTimerRef.current) window.clearTimeout(auditCopyTimerRef.current);
     auditCopyTimerRef.current = window.setTimeout(() => setCopiedAudit(false), 3000);
+  }
+
+  function markPublishedReportCopied() {
+    setCopiedPublishedReport(true);
+    if (publishedReportCopyTimerRef.current) window.clearTimeout(publishedReportCopyTimerRef.current);
+    publishedReportCopyTimerRef.current = window.setTimeout(() => setCopiedPublishedReport(false), 2200);
   }
 
   function markTaskListCopied() {
@@ -1242,6 +1255,36 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyValue(text, markAuditCopied);
+  }
+
+  function copyPublishedReport() {
+    if (!publishedSliceItems.length) return;
+    const filterLine = activeFilterChips.length
+      ? activeFilterChips.map((chip) => `${chip.label}: ${chip.value}`).join("; ")
+      : "без фильтров";
+    const withLinks = publishedSliceItems.filter((item) => String(item.publishedUrl || "").trim()).length;
+    const rows = publishedSliceItems.map((item, index) => [
+      `${index + 1}. ${item.title || "Без названия"}`,
+      `Дата публикации: ${formatPlanDate(item.publishedAt || item.date)}`,
+      `Канал: ${item.channel}; формат: ${item.format}`,
+      `Ответственный: ${item.owner || "Не назначен"}`,
+      `Ссылка: ${String(item.publishedUrl || "").trim() || "не заполнена"}`,
+    ].join("\n"));
+    const text = [
+      "Отчет по опубликованному контенту Atlas",
+      `Фильтры: ${filterLine}`,
+      `Опубликовано в срезе: ${publishedSliceItems.length}`,
+      `Со ссылкой: ${withLinks}`,
+      `Без ссылки: ${publishedSliceItems.length - withLinks}`,
+      "",
+      rows.join("\n\n"),
+    ].join("\n");
+    markPublishedReportCopied();
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, markPublishedReportCopied));
+      return;
+    }
+    fallbackCopyValue(text, markPublishedReportCopied);
   }
 
   function copyRevisionRequest(item) {
@@ -1710,6 +1753,14 @@ function ContentPlanBoard() {
           disabled={!filteredItems.length}
         >
           {copiedAudit ? "Аудит скопирован" : "Аудит среза"}
+        </button>
+        <button
+          type="button"
+          className="analytics-content-plan-published-copy"
+          onClick={copyPublishedReport}
+          disabled={!publishedSliceItems.length}
+        >
+          {copiedPublishedReport ? "Отчет скопирован" : "Отчет публикаций"}
         </button>
         <button
           type="button"
