@@ -486,6 +486,7 @@ function getQualitySignals(item, copyStats) {
   if (item.reviewStatus === "Нужны правки") signals.push({ label: "Правки", detail: "вернуть автору", tone: "danger" });
   if (!isTextApproved && item.reviewStatus !== "Нужны правки") signals.push({ label: "Вычитка", detail: item.reviewStatus, tone: "focus" });
   if (!isVisualApproved) signals.push({ label: "Визуал", detail: item.visualStatus, tone: "accent" });
+  if (item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()) signals.push({ label: "Пост", detail: "нет ссылки", tone: "warn" });
 
   if (!signals.length) return [{ label: "Контроль", detail: "замечаний нет", tone: "ready" }];
   return signals.slice(0, 5);
@@ -498,11 +499,13 @@ function getDayReadinessMeta(items = []) {
   const withoutDate = items.filter((item) => !item.date).length;
   const revisions = items.filter((item) => item.reviewStatus === "Нужны правки").length;
   const visualIssues = items.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+  const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
   const signals = [
     { label: "Без даты", count: withoutDate, tone: "warn" },
     { label: "Без текста", count: withoutCopy, tone: "danger" },
     { label: "Правки", count: revisions, tone: "danger" },
     { label: "Визуал", count: visualIssues, tone: "accent" },
+    { label: "Нет ссылки", count: publishedWithoutLink, tone: "warn" },
   ].filter((signal) => signal.count > 0);
 
   return {
@@ -821,6 +824,7 @@ function ContentPlanBoard() {
     const visualIssues = filteredItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
     const withoutCopy = filteredItems.filter((item) => !String(item.copy || "").trim()).length;
     const withoutOwner = filteredItems.filter((item) => !item.owner).length;
+    const publishedWithoutLink = filteredItems.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
     return {
       total,
       ready,
@@ -831,6 +835,7 @@ function ContentPlanBoard() {
         { label: "Визуал", count: visualIssues, tone: "accent" },
         { label: "Текст", count: withoutCopy, tone: "danger" },
         { label: "Owner", count: withoutOwner, tone: "warn" },
+        { label: "Ссылки", count: publishedWithoutLink, tone: "warn" },
       ],
     };
   }, [filteredItems]);
