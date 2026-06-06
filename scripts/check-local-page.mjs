@@ -20,6 +20,10 @@ const waitUntil = args.waitUntil || "networkidle";
 const screenshotPath = args.screenshot || "";
 const titleIncludes = args.titleIncludes || "";
 const textIncludes = args.textIncludes || "";
+const clickSelector = args.clickSelector || "";
+const clickText = args.clickText || "";
+const afterClickSelector = args.afterClickSelector || "";
+const afterClickTextIncludes = args.afterClickTextIncludes || "";
 const selector = args.selector || "";
 const timeout = Number(args.timeout || 15000);
 const viewportMatch = String(args.viewport || "").match(/^(\d+)x(\d+)$/);
@@ -60,6 +64,23 @@ try {
     const bodyText = await page.locator("body").innerText({ timeout });
     if (!bodyText.includes(textIncludes)) {
       throw new Error(`Text check failed. Could not find "${textIncludes}".`);
+    }
+  }
+
+  if (clickSelector) {
+    await page.locator(clickSelector).first().click({ timeout });
+  } else if (clickText) {
+    await page.getByText(clickText, { exact: true }).first().click({ timeout });
+  }
+
+  if (afterClickSelector) {
+    await page.locator(afterClickSelector).first().waitFor({ timeout });
+  }
+
+  if (afterClickTextIncludes) {
+    const afterClickText = await page.locator(afterClickSelector || "body").innerText({ timeout });
+    if (!afterClickText.includes(afterClickTextIncludes)) {
+      throw new Error(`After-click text check failed. Could not find "${afterClickTextIncludes}".`);
     }
   }
 

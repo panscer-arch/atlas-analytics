@@ -20,6 +20,7 @@
 .analytics-content-plan-hero,
 .analytics-content-plan-form,
 .analytics-content-plan-controls,
+.analytics-content-plan-resultbar,
 .analytics-content-plan-day-head,
 .analytics-content-plan-empty {
   border-radius: 8px;
@@ -28,6 +29,7 @@
 
 .analytics-content-plan-hero,
 .analytics-content-plan-controls,
+.analytics-content-plan-resultbar,
 .analytics-content-plan-day-head,
 .analytics-content-plan-card-top,
 .analytics-content-plan-review-actions,
@@ -255,6 +257,82 @@
   color: #f7fbff;
   font-weight: 900;
   cursor: pointer;
+}
+
+.analytics-content-plan-resultbar {
+  align-items: center;
+}
+
+.analytics-content-plan-resultbar > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 210px;
+}
+
+.analytics-content-plan-resultbar span {
+  color: rgba(168, 195, 222, 0.82);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.analytics-content-plan-resultbar strong {
+  color: #f7fbff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.analytics-content-plan-resultbar small {
+  color: rgba(226, 240, 255, 0.68);
+  line-height: 1.35;
+}
+
+.analytics-content-plan-filterchips {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.analytics-content-plan-filterchips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 11px;
+  border: 1px solid rgba(111, 255, 232, 0.24);
+  border-radius: 8px;
+  background: rgba(42, 190, 166, 0.1);
+  color: #dffefa;
+  cursor: pointer;
+}
+
+.analytics-content-plan-filterchips button::after {
+  content: "×";
+  color: #a9fff2;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.analytics-content-plan-filterchips button:hover,
+.analytics-content-plan-filterchips button:focus-visible {
+  border-color: rgba(111, 255, 232, 0.62);
+  box-shadow: 0 0 0 1px rgba(111, 255, 232, 0.14);
+  outline: none;
+}
+
+.analytics-content-plan-filterchips span,
+.analytics-content-plan-filterchips strong {
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.analytics-content-plan-filterchips strong {
+  font-weight: 950;
 }
 
 .analytics-content-plan-add-btn:disabled {
@@ -542,6 +620,7 @@
 @media (max-width: 900px) {
   .analytics-content-plan-hero,
   .analytics-content-plan-controls,
+  .analytics-content-plan-resultbar,
   .analytics-content-plan-card-top {
     flex-direction: column;
   }
@@ -586,6 +665,11 @@
   .analytics-content-plan-review-actions button {
     flex: 1 1 140px;
   }
+
+  .analytics-content-plan-filterchips {
+    justify-content: flex-start;
+    width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
@@ -596,6 +680,7 @@
   .analytics-content-plan-hero,
   .analytics-content-plan-controls,
   .analytics-content-plan-form,
+  .analytics-content-plan-resultbar,
   .analytics-content-plan-card {
     padding: 14px;
   }

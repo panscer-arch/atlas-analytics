@@ -366,6 +366,15 @@ function getSignalClass(isActive, tone = "") {
   ].filter(Boolean).join(" ");
 }
 
+function getDateStateLabel(value) {
+  return {
+    overdue: "Просрочено",
+    today: "Сегодня",
+    upcoming: "По плану",
+    neutral: "Без активного срока",
+  }[value] || "По плану";
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
@@ -484,6 +493,34 @@ function ContentPlanBoard() {
       withoutOwner: activeItems.filter((item) => !item.owner).length,
     };
   }, [items]);
+
+  const activeFilterChips = useMemo(() => {
+    const labels = {
+      channel: "Соцсеть",
+      stage: "Этап",
+      format: "Формат",
+      status: "Статус",
+      reviewStatus: "Согласование",
+      priority: "Приоритет",
+      owner: "Ответственный",
+      dateState: "Срок",
+      readiness: "Готовность",
+      date: "Дата",
+      search: "Поиск",
+    };
+
+    return Object.entries(filters)
+      .filter(([key, value]) => {
+        if (!value) return false;
+        if (key === "search") return Boolean(value.trim());
+        return value !== DEFAULT_FILTERS[key];
+      })
+      .map(([key, value]) => ({
+        key,
+        label: labels[key] || key,
+        value: key === "date" ? formatPlanDate(value) : value,
+      }));
+  }, [filters]);
 
   function persist(nextItems) {
     localTouchedRef.current = true;
@@ -606,6 +643,10 @@ function ContentPlanBoard() {
 
   function isFocusActive(patch) {
     return Object.entries(patch).every(([key, value]) => filters[key] === value);
+  }
+
+  function clearFilter(filterKey) {
+    setFilters((current) => ({ ...current, [filterKey]: DEFAULT_FILTERS[filterKey] }));
   }
 
   return (
@@ -771,6 +812,24 @@ function ContentPlanBoard() {
         <span className="analytics-product-library-save">{saveState}</span>
       </div>
 
+      <div className="analytics-surface analytics-content-plan-resultbar">
+        <div>
+          <span>Показано</span>
+          <strong>{filteredItems.length} из {items.length}</strong>
+          <small>{activeFilterChips.length ? "Работает выбранный срез контент-плана" : "Все карточки без дополнительных фильтров"}</small>
+        </div>
+        {activeFilterChips.length ? (
+          <div className="analytics-content-plan-filterchips" aria-label="Активные фильтры">
+            {activeFilterChips.map((chip) => (
+              <button key={chip.key} type="button" onClick={() => clearFilter(chip.key)}>
+                <span>{chip.label}</span>
+                <strong>{chip.value}</strong>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
       <div className="analytics-surface analytics-content-plan-form">
         <div className="analytics-data-table-head">
           <div>
@@ -884,7 +943,7 @@ function ContentPlanBoard() {
                           <span className="analytics-content-plan-review-badge"><b>Проверка</b>{item.reviewStatus}</span>
                           <span><b>Визуал</b>{item.visualStatus}</span>
                           <span><b>Приоритет</b>{item.priority || "Средний"}</span>
-                          <span><b>Срок</b>{getDateState(item.date, item.status) === "overdue" ? "Просрочено" : getDateState(item.date, item.status) === "today" ? "Сегодня" : "По плану"}</span>
+                          <span><b>Срок</b>{getDateStateLabel(getDateState(item.date, item.status))}</span>
                           <span><b>Owner</b>{item.owner || "Не назначен"}</span>
                         </div>
                         {item.visualBrief || item.visualLink ? (
