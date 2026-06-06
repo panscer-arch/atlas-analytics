@@ -28,6 +28,7 @@ const DEFAULT_FILTERS = {
   copyIssue: "Все",
   visualIssue: "Все",
   linkIssue: "Все",
+  duplicateIssue: "Все",
   date: "",
   search: "",
 };
@@ -478,6 +479,32 @@ function hasTextValue(value) {
   return Boolean(String(value || "").trim());
 }
 
+function getContentPlanDuplicateKey(item = {}) {
+  const date = String(item.date || "").trim();
+  const channel = String(item.channel || "").trim().toLowerCase();
+  const title = String(item.title || "").trim().replace(/\s+/g, " ").toLowerCase();
+  if (!date || !channel || !title) return "";
+  return `${date}::${channel}::${title}`;
+}
+
+function getDuplicateContentPlanIds(items = []) {
+  const groups = new Map();
+  items.forEach((item) => {
+    const key = getContentPlanDuplicateKey(item);
+    if (!key) return;
+    const group = groups.get(key) || [];
+    group.push(item.id);
+    groups.set(key, group);
+  });
+
+  const ids = new Set();
+  groups.forEach((group) => {
+    if (group.length < 2) return;
+    group.forEach((id) => ids.add(id));
+  });
+  return ids;
+}
+
 function isValidHttpUrl(value) {
   const text = String(value || "").trim();
   if (!text) return true;
@@ -505,12 +532,13 @@ function hasInvalidContentPlanLink(item = {}) {
   return !isValidHttpUrl(item.visualLink) || !isValidHttpUrl(item.publishedUrl);
 }
 
-function getQualitySignals(item, copyStats) {
+function getQualitySignals(item, copyStats, isDuplicate = false) {
   const signals = [];
   const dateState = getDateState(item.date, item.status);
   const isTextApproved = item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать";
   const isVisualApproved = item.visualStatus === "Визуал ок" || item.visualStatus === "Нет визуала";
 
+  if (isDuplicate) signals.push({ label: "Дубль", detail: "та же дата, канал и заголовок", tone: "warn" });
   if (dateState === "overdue") signals.push({ label: "Просрочено", detail: getDateStateLabel(dateState), tone: "danger" });
   if (!item.date) signals.push({ label: "Без даты", detail: "назначить слот", tone: "warn" });
   if (!item.owner) signals.push({ label: "Owner", detail: "не назначен", tone: "warn" });
@@ -621,6 +649,7 @@ function ContentPlanBoard() {
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [pendingPublishWithoutLinkId, setPendingPublishWithoutLinkId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
+  const duplicateItemIds = useMemo(() => getDuplicateContentPlanIds(items), [items]);
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
   const saveTimerRef = useRef(null);
@@ -746,13 +775,14 @@ function ContentPlanBoard() {
         if (filters.linkIssue === "Опубликовано без ссылки") return item.status === "Опубликовано" && !hasTextValue(item.publishedUrl);
         return true;
       })
+      .filter((item) => filters.duplicateIssue === "Все" || duplicateItemIds.has(item.id))
       .filter((item) => !filters.date || item.date === filters.date)
       .filter((item) => {
         if (!searchValue) return true;
         return [item.title, item.topicBlock, item.copy, item.comment, item.adminComment, item.visualBrief, item.visualLink].some((value) => String(value || "").toLowerCase().includes(searchValue));
       })
       .sort((a, b) => (a.date || "9999-99-99").localeCompare(b.date || "9999-99-99"));
-  }, [filters, items]);
+  }, [duplicateItemIds, filters, items]);
 
   const ownerOptions = useMemo(() => {
     const owners = Array.from(new Set(items.map((item) => item.owner).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
@@ -793,6 +823,7 @@ function ContentPlanBoard() {
     const withoutDate = activeItems.filter((item) => !item.date).length;
     const withoutCopy = activeItems.filter((item) => !String(item.copy || "").trim()).length;
     const visualIssue = activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
+    const duplicateItems = activeItems.filter((item) => duplicateItemIds.has(item.id)).length;
     const needsRevision = items.filter((item) => item.reviewStatus === "Нужны правки").length;
     const publishReady = items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
     const published = items.filter((item) => item.status === "Опубликовано").length;
@@ -814,6 +845,7 @@ function ContentPlanBoard() {
       { label: "Без текста", count: withoutCopy, tone: "danger" },
       { label: "Правки", count: needsRevision, tone: "focus" },
       { label: "Визуал", count: visualIssue, tone: "accent" },
+      { label: "Дубли", count: duplicateItems, tone: "warn" },
       { label: "Готово", count: publishReady, tone: "ready" },
       { label: "URL", count: invalidLinks, tone: "warn" },
       { label: "Нет ссылки", count: publishedWithoutLink, tone: "warn" },
@@ -834,6 +866,7 @@ function ContentPlanBoard() {
       publishedLinkProgress: getSharePercent(publishedWithLink, published),
       xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
       visualIssue,
+      duplicateItems,
       publishedWithoutLink,
       publishedInvalidLink,
       invalidVisualLinks,
@@ -853,7 +886,7 @@ function ContentPlanBoard() {
       channelMix,
       bottleneckMix,
     };
-  }, [items]);
+  }, [duplicateItemIds, items]);
 
   const activeFilterChips = useMemo(() => {
     const labels = {
@@ -870,6 +903,7 @@ function ContentPlanBoard() {
       copyIssue: "Текст",
       visualIssue: "Визуал",
       linkIssue: "Ссылки",
+      duplicateIssue: "Дубли",
       date: "Дата",
       search: "Поиск",
     };
@@ -896,6 +930,7 @@ function ContentPlanBoard() {
     const withoutOwner = filteredItems.filter((item) => !item.owner).length;
     const publishedWithoutLink = filteredItems.filter((item) => item.status === "Опубликовано" && !hasTextValue(item.publishedUrl)).length;
     const invalidLinks = filteredItems.filter(hasInvalidContentPlanLink).length;
+    const duplicates = filteredItems.filter((item) => duplicateItemIds.has(item.id)).length;
     return {
       total,
       ready,
@@ -906,11 +941,12 @@ function ContentPlanBoard() {
         { label: "Визуал", count: visualIssues, tone: "accent" },
         { label: "Текст", count: withoutCopy, tone: "danger" },
         { label: "Owner", count: withoutOwner, tone: "warn" },
+        { label: "Дубли", count: duplicates, tone: "warn" },
         { label: "URL", count: invalidLinks, tone: "warn" },
         { label: "Ссылки", count: publishedWithoutLink, tone: "warn" },
       ],
     };
-  }, [filteredItems]);
+  }, [duplicateItemIds, filteredItems]);
 
   const publishedSliceItems = useMemo(() => {
     return filteredItems.filter((item) => item.status === "Опубликовано");
@@ -1326,7 +1362,7 @@ function ContentPlanBoard() {
     const issueItems = filteredItems
       .map((item) => {
         const copyStats = getCopyStats(item);
-        const signals = getQualitySignals(item, copyStats).filter((signal) => signal.tone !== "ready");
+        const signals = getQualitySignals(item, copyStats, duplicateItemIds.has(item.id)).filter((signal) => signal.tone !== "ready");
         return { item, signals };
       })
       .filter((entry) => entry.signals.length);
@@ -1675,6 +1711,16 @@ function ContentPlanBoard() {
         </button>
         <button
           type="button"
+          className={getSignalClass(isFocusActive({ duplicateIssue: "Найдены" }), "analytics-content-plan-signal-focus")}
+          onClick={() => applyFocusFilter({ duplicateIssue: "Найдены" })}
+          aria-pressed={isFocusActive({ duplicateIssue: "Найдены" })}
+        >
+          <span>Дубли</span>
+          <strong>{dashboard.duplicateItems}</strong>
+          <small>Та же дата, канал и заголовок</small>
+        </button>
+        <button
+          type="button"
           className={getSignalClass(isFocusActive({ nextAction: "Согласовать визуал" }), "analytics-content-plan-signal-accent")}
           onClick={() => applyFocusFilter({ nextAction: "Согласовать визуал" })}
           aria-pressed={isFocusActive({ nextAction: "Согласовать визуал" })}
@@ -1733,6 +1779,7 @@ function ContentPlanBoard() {
                 if (entry.label === "Без текста") applyFocusFilter({ copyIssue: "Без текста" });
                 if (entry.label === "Правки") applyFocusFilter({ reviewStatus: "Нужны правки" });
                 if (entry.label === "Визуал") applyFocusFilter({ visualIssue: "Визуал не готов" });
+                if (entry.label === "Дубли") applyFocusFilter({ duplicateIssue: "Найдены" });
                 if (entry.label === "Готово") applyFocusFilter({ readiness: "К публикации" });
                 if (entry.label === "URL") applyFocusFilter({ linkIssue: "Некорректный URL" });
                 if (entry.label === "Нет ссылки") applyFocusFilter({ linkIssue: "Опубликовано без ссылки" });
@@ -2047,7 +2094,7 @@ function ContentPlanBoard() {
                 const publishBlockReason = getPublishBlockReason(item);
                 const nextActionLabel = getNextActionLabel(item);
                 const copyStats = getCopyStats(item);
-                const qualitySignals = getQualitySignals(item, copyStats);
+                const qualitySignals = getQualitySignals(item, copyStats, duplicateItemIds.has(item.id));
                 const canMarkPublished = canMarkItemPublished(item);
                 const isPublishWithoutLinkPending = pendingPublishWithoutLinkId === item.id && needsPublishWithoutLinkConfirmation(item);
                 const publishButtonTitle = !canPublishItem(item)
