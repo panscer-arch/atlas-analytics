@@ -277,17 +277,21 @@ function normalizeItems(items) {
     copy: item.copy || "",
     comment: item.comment || "",
     adminComment: item.adminComment || "",
-  })) : defaultContentPlanItems;
+  })) : normalizeItems(defaultContentPlanItems);
+}
+
+function getDefaultContentPlanItems() {
+  return normalizeItems(defaultContentPlanItems);
 }
 
 function readStoredItems() {
-  if (typeof window === "undefined") return defaultContentPlanItems;
+  if (typeof window === "undefined") return getDefaultContentPlanItems();
 
   try {
     const saved = window.localStorage.getItem(CONTENT_PLAN_STORAGE_KEY);
-    return saved ? normalizeItems(JSON.parse(saved)) : defaultContentPlanItems;
+    return saved ? normalizeItems(JSON.parse(saved)) : getDefaultContentPlanItems();
   } catch {
-    return defaultContentPlanItems;
+    return getDefaultContentPlanItems();
   }
 }
 
@@ -332,6 +336,12 @@ function getReviewProgress(items) {
   return Math.round((approved / items.length) * 100);
 }
 
+function canPublishItem(item) {
+  const isTextApproved = item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать";
+  const isVisualApproved = item.visualStatus === "Визуал ок" || item.visualStatus === "Нет визуала";
+  return isTextApproved && isVisualApproved;
+}
+
 function ContentPlanBoard() {
   const [items, setItems] = useState(readStoredItems);
   const [newItem, setNewItem] = useState(emptyItem);
@@ -343,6 +353,7 @@ function ContentPlanBoard() {
   const localTouchedRef = useRef(false);
   const saveTimerRef = useRef(null);
   const saveVersionRef = useRef(0);
+  const pendingServerSaveRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -357,8 +368,28 @@ function ContentPlanBoard() {
   }, []);
 
   useEffect(() => {
+    function flushPendingSave({ updateBadge = true } = {}) {
+      const pendingItems = pendingServerSaveRef.current;
+      if (!pendingItems) return;
+      pendingServerSaveRef.current = null;
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      saveServerContent(CONTENT_PLAN_STORAGE_KEY, pendingItems).then((ok) => {
+        if (updateBadge) setSaveState(ok ? "Сохранено" : "Локально");
+      });
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") flushPendingSave();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", flushPendingSave);
+
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+      flushPendingSave({ updateBadge: false });
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", flushPendingSave);
     };
   }, []);
 
@@ -409,6 +440,7 @@ function ContentPlanBoard() {
       review: items.filter((item) => item.status === "На вычитке").length,
       approved: items.filter((item) => item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать").length,
       needsRevision: items.filter((item) => item.reviewStatus === "Нужны правки").length,
+      visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
       channels: new Set(items.map((item) => item.channel)).size,
       reviewProgress: getReviewProgress(items),
       overdue,
@@ -431,10 +463,14 @@ function ContentPlanBoard() {
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     const saveVersion = saveVersionRef.current + 1;
     saveVersionRef.current = saveVersion;
+    pendingServerSaveRef.current = nextItems;
 
     saveTimerRef.current = window.setTimeout(() => {
       saveServerContent(CONTENT_PLAN_STORAGE_KEY, nextItems).then((ok) => {
-        if (saveVersionRef.current === saveVersion) setSaveState(ok ? "Сохранено" : "Локально");
+        if (saveVersionRef.current === saveVersion) {
+          pendingServerSaveRef.current = ok ? null : nextItems;
+          setSaveState(ok ? "Сохранено" : "Локально");
+        }
       });
     }, 450);
   }
@@ -453,8 +489,8 @@ function ContentPlanBoard() {
 
   function updateItemStatus(itemId, nextStatus) {
     const item = items.find((currentItem) => currentItem.id === itemId);
-    if (nextStatus === "Опубликовано" && item?.reviewStatus !== "Проверено" && item?.reviewStatus !== "Можно публиковать") {
-      window.alert("Сначала отметьте карточку как проверенную.");
+    if (nextStatus === "Опубликовано" && !canPublishItem(item || {})) {
+      window.alert("Сначала отметьте карточку как проверенную и согласуйте визуал.");
       return;
     }
 
@@ -506,6 +542,10 @@ function ContentPlanBoard() {
     updateItem(itemId, { status: "Готово", reviewStatus: "Проверено" });
   }
 
+  function approveVisual(itemId) {
+    updateItem(itemId, { visualStatus: "Визуал ок" });
+  }
+
   function requestRevision(itemId) {
     const item = items.find((currentItem) => currentItem.id === itemId);
     const revisionComment = item?.adminComment?.trim();
@@ -518,6 +558,8 @@ function ContentPlanBoard() {
   }
 
   function publishItem(itemId) {
+    const item = items.find((currentItem) => currentItem.id === itemId);
+    if (!canPublishItem(item || {})) return;
     updateItem(itemId, { status: "Опубликовано", reviewStatus: "Можно публиковать" });
   }
 
@@ -541,7 +583,7 @@ function ContentPlanBoard() {
           <span><strong>{dashboard.ready}</strong> готово</span>
           <span><strong>{dashboard.review}</strong> на вычитке</span>
           <span><strong>{dashboard.approved}</strong> проверено</span>
-          <span><strong>{dashboard.channels}</strong> каналов</span>
+          <span><strong>{dashboard.visualReady}</strong> визуал ok</span>
         </div>
       </div>
 
@@ -767,7 +809,8 @@ function ContentPlanBoard() {
                       <button type="button" onClick={() => sendToReview(item.id)}>На вычитку</button>
                       <button type="button" onClick={() => requestRevision(item.id)} disabled={!String(item.adminComment || "").trim()}>Правки</button>
                       <button type="button" onClick={() => approveItem(item.id)}>Проверено</button>
-                      <button type="button" onClick={() => publishItem(item.id)} disabled={item.reviewStatus !== "Проверено" && item.reviewStatus !== "Можно публиковать"}>Опубликовано</button>
+                      <button type="button" onClick={() => approveVisual(item.id)}>Визуал OK</button>
+                      <button type="button" onClick={() => publishItem(item.id)} disabled={!canPublishItem(item)}>Опубликовано</button>
                     </div>
 
                     <div className="analytics-content-plan-actions">

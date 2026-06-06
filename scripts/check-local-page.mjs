@@ -22,6 +22,10 @@ const titleIncludes = args.titleIncludes || "";
 const textIncludes = args.textIncludes || "";
 const selector = args.selector || "";
 const timeout = Number(args.timeout || 15000);
+const viewportMatch = String(args.viewport || "").match(/^(\d+)x(\d+)$/);
+const viewport = viewportMatch
+  ? { width: Number(viewportMatch[1]), height: Number(viewportMatch[2]) }
+  : { width: 1440, height: 1000 };
 
 const browser = await chromium.launch({
   headless: true,
@@ -38,7 +42,7 @@ const browser = await chromium.launch({
 });
 
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   await page.goto(url, { waitUntil, timeout });
 
   if (titleIncludes) {
