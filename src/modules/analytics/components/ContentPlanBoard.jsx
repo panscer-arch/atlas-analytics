@@ -395,6 +395,30 @@ function getSharePercent(count, total) {
   return Math.round((count / total) * 100);
 }
 
+function getQueueScore(item) {
+  const dateState = getDateState(item.date, item.status);
+  const nextAction = getNextActionLabel(item);
+  let score = 0;
+  if (dateState === "overdue") score += 70;
+  if (dateState === "today") score += 55;
+  if (!item.date) score += 40;
+  if (item.priority === "Высокий") score += 32;
+  if (nextAction === "Публиковать") score += 28;
+  if (nextAction === "Доработать текст") score += 24;
+  if (nextAction === "Согласовать визуал") score += 20;
+  if (nextAction === "Отправить на вычитку") score += 18;
+  if (!item.owner) score += 10;
+  return score;
+}
+
+function getQueueTone(item) {
+  const dateState = getDateState(item.date, item.status);
+  if (dateState === "overdue") return "danger";
+  if (dateState === "today") return "accent";
+  if (getNextActionLabel(item) === "Публиковать") return "ready";
+  return "focus";
+}
+
 function getPublicationChecks(item) {
   const isTextApproved = item.reviewStatus === "Проверено" || item.reviewStatus === "Можно публиковать";
   const isVisualApproved = item.visualStatus === "Визуал ок" || item.visualStatus === "Нет визуала";
@@ -651,6 +675,18 @@ function ContentPlanBoard() {
       .filter((item) => item.date && item.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 3);
+    const queueItems = activeItems
+      .map((item) => ({
+        ...item,
+        queueScore: getQueueScore(item),
+        queueTone: getQueueTone(item),
+        queueAction: getNextActionLabel(item),
+      }))
+      .sort((a, b) => {
+        if (b.queueScore !== a.queueScore) return b.queueScore - a.queueScore;
+        return (a.date || "9999-99-99").localeCompare(b.date || "9999-99-99");
+      })
+      .slice(0, 5);
     const withoutDate = activeItems.filter((item) => !item.date).length;
     const withoutCopy = activeItems.filter((item) => !String(item.copy || "").trim()).length;
     const visualIssue = activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
@@ -690,6 +726,7 @@ function ContentPlanBoard() {
       withoutDate,
       todayItems,
       nextItems,
+      queueItems,
       highPriority: activeItems.filter((item) => item.priority === "Высокий").length,
       withoutOwner: activeItems.filter((item) => !item.owner).length,
       withoutCopy,
@@ -1385,6 +1422,35 @@ function ContentPlanBoard() {
           </div>
         </article>
       </div>
+
+      <article className="analytics-surface analytics-content-plan-queue">
+        <div className="analytics-content-plan-bi-head">
+          <span>Очередь редакции</span>
+          <strong>{dashboard.queueItems.length ? "что делать первым" : "нет активных карточек"}</strong>
+        </div>
+        <div className="analytics-content-plan-queue-list">
+          {dashboard.queueItems.length ? dashboard.queueItems.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`analytics-content-plan-queue-item analytics-content-plan-queue-${item.queueTone}`}
+              onClick={() => {
+                setTargetItemId(item.id);
+                setExpandedIds((current) => (current.includes(item.id) ? current : [...current, item.id]));
+                document.getElementById(getContentPlanItemElementId(item.id))?.scrollIntoView({ block: "center", behavior: "smooth" });
+              }}
+            >
+              <b>{String(index + 1).padStart(2, "0")}</b>
+              <span>
+                <strong>{item.title}</strong>
+                <small>{item.channel} / {item.format} / {item.owner || "без ответственного"}</small>
+              </span>
+              <i>{item.queueAction}</i>
+              <em>{item.date ? formatPlanDate(item.date) : "Без даты"}</em>
+            </button>
+          )) : <p>Все активные карточки закрыты или опубликованы.</p>}
+        </div>
+      </article>
 
       <div className="analytics-surface analytics-content-plan-controls">
         <div className="analytics-content-plan-filters">
