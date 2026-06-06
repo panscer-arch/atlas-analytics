@@ -498,6 +498,7 @@ function ContentPlanBoard() {
   const [copiedPackageItemId, setCopiedPackageItemId] = useState("");
   const [copiedDayKey, setCopiedDayKey] = useState("");
   const [copiedSlice, setCopiedSlice] = useState(false);
+  const [copiedTaskList, setCopiedTaskList] = useState(false);
   const [copiedRevisionItemId, setCopiedRevisionItemId] = useState("");
   const [copiedLinkItemId, setCopiedLinkItemId] = useState("");
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
@@ -512,6 +513,7 @@ function ContentPlanBoard() {
   const packageCopyTimerRef = useRef(null);
   const dayCopyTimerRef = useRef(null);
   const sliceCopyTimerRef = useRef(null);
+  const taskListCopyTimerRef = useRef(null);
   const revisionCopyTimerRef = useRef(null);
   const linkCopyTimerRef = useRef(null);
   const shiftDateTimerRef = useRef(null);
@@ -561,6 +563,7 @@ function ContentPlanBoard() {
     if (packageCopyTimerRef.current) window.clearTimeout(packageCopyTimerRef.current);
     if (dayCopyTimerRef.current) window.clearTimeout(dayCopyTimerRef.current);
     if (sliceCopyTimerRef.current) window.clearTimeout(sliceCopyTimerRef.current);
+    if (taskListCopyTimerRef.current) window.clearTimeout(taskListCopyTimerRef.current);
     if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
     if (linkCopyTimerRef.current) window.clearTimeout(linkCopyTimerRef.current);
     if (shiftDateTimerRef.current) window.clearTimeout(shiftDateTimerRef.current);
@@ -868,6 +871,12 @@ function ContentPlanBoard() {
     sliceCopyTimerRef.current = window.setTimeout(() => setCopiedSlice(false), 1800);
   }
 
+  function markTaskListCopied() {
+    setCopiedTaskList(true);
+    if (taskListCopyTimerRef.current) window.clearTimeout(taskListCopyTimerRef.current);
+    taskListCopyTimerRef.current = window.setTimeout(() => setCopiedTaskList(false), 1800);
+  }
+
   function markRevisionCopied(itemId) {
     setCopiedRevisionItemId(itemId);
     if (revisionCopyTimerRef.current) window.clearTimeout(revisionCopyTimerRef.current);
@@ -1013,6 +1022,27 @@ function ContentPlanBoard() {
       return;
     }
     fallbackCopyValue(text, markSliceCopied);
+  }
+
+  function copyCurrentTaskList() {
+    if (filters.nextAction === "Все" || !filteredItems.length) return;
+    const rows = filteredItems.map((item, index) => [
+      `${index + 1}. ${item.title || "Без названия"}`,
+      `Дата: ${formatPlanDate(item.date)}; канал: ${item.channel}; формат: ${item.format}`,
+      `Ответственный: ${item.owner || "Не назначен"}; приоритет: ${item.priority || "Средний"}`,
+    ].join("\n"));
+    const text = [
+      `Задачи контент-плана Atlas: ${filters.nextAction}`,
+      `Количество: ${filteredItems.length}`,
+      "",
+      rows.join("\n\n"),
+    ].join("\n");
+    markTaskListCopied();
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyValue(text, markTaskListCopied));
+      return;
+    }
+    fallbackCopyValue(text, markTaskListCopied);
   }
 
   function copyRevisionRequest(item) {
@@ -1388,6 +1418,14 @@ function ContentPlanBoard() {
           disabled={!filteredItems.length}
         >
           {copiedSlice ? "Срез скопирован" : "Скопировать срез"}
+        </button>
+        <button
+          type="button"
+          className="analytics-content-plan-task-copy"
+          onClick={copyCurrentTaskList}
+          disabled={filters.nextAction === "Все" || !filteredItems.length}
+        >
+          {copiedTaskList ? "Задачи скопированы" : "Скопировать задачи"}
         </button>
       </div>
 
