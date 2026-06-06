@@ -746,6 +746,8 @@ function ContentPlanBoard() {
     const visualIssue = activeItems.filter((item) => item.visualStatus !== "Визуал ок" && item.visualStatus !== "Нет визуала").length;
     const needsRevision = items.filter((item) => item.reviewStatus === "Нужны правки").length;
     const publishReady = items.filter((item) => canPublishItem(item) && item.status !== "Опубликовано").length;
+    const published = items.filter((item) => item.status === "Опубликовано").length;
+    const publishedWithLink = items.filter((item) => item.status === "Опубликовано" && String(item.publishedUrl || "").trim()).length;
     const publishedWithoutLink = items.filter((item) => item.status === "Опубликовано" && !String(item.publishedUrl || "").trim()).length;
     const channelMix = SOCIAL_OPTIONS.map((channel) => {
       const count = items.filter((item) => item.channel === channel).length;
@@ -774,6 +776,9 @@ function ContentPlanBoard() {
       needsRevision,
       visualReady: items.filter((item) => item.visualStatus === "Визуал ок").length,
       publishReady,
+      published,
+      publishedWithLink,
+      publishedLinkProgress: getSharePercent(publishedWithLink, published),
       xOverLimit: activeItems.filter((item) => getCopyStats(item).isXOverLimit).length,
       visualIssue,
       publishedWithoutLink,
@@ -1408,6 +1413,12 @@ function ContentPlanBoard() {
             <strong>{dashboard.reviewProgress}%</strong>
             <progress value={dashboard.reviewProgress} max="100" aria-label="Покрытие проверки контент-плана" />
           </div>
+          <div className="analytics-content-plan-coverage analytics-content-plan-coverage-links">
+            <span>Покрытие ссылок</span>
+            <strong>{dashboard.publishedLinkProgress}%</strong>
+            <progress value={dashboard.publishedLinkProgress} max="100" aria-label="Покрытие ссылок опубликованных постов" />
+            <small>{dashboard.publishedWithLink} из {dashboard.published} опубликованных постов со ссылкой</small>
+          </div>
         </div>
         <div className="analytics-content-plan-stats">
           <span><strong>{dashboard.total}</strong> карточек</span>
@@ -1415,6 +1426,7 @@ function ContentPlanBoard() {
           <span><strong>{dashboard.approved}</strong> проверено</span>
           <span><strong>{dashboard.visualReady}</strong> визуал ok</span>
           <span><strong>{dashboard.publishReady}</strong> к публикации</span>
+          <span><strong>{dashboard.published}</strong> опубликовано</span>
         </div>
       </div>
 

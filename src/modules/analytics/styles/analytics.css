@@ -142,6 +142,19 @@
   font-size: 28px;
 }
 
+.analytics-content-plan-coverage small {
+  grid-column: 1 / -1;
+  color: rgba(226, 240, 255, 0.68);
+  line-height: 1.35;
+}
+
+.analytics-content-plan-coverage-links {
+  margin-top: 10px;
+  border-color: rgba(76, 154, 255, 0.24);
+  background:
+    linear-gradient(180deg, rgba(10, 28, 48, 0.72), rgba(4, 16, 27, 0.72));
+}
+
 .analytics-content-plan-coverage progress {
   grid-column: 1 / -1;
   width: 100%;
@@ -165,6 +178,14 @@
 .analytics-content-plan-coverage progress::-moz-progress-bar {
   border-radius: 999px;
   background: #6fffe8;
+}
+
+.analytics-content-plan-coverage-links progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #4c9aff, #6fffe8);
+}
+
+.analytics-content-plan-coverage-links progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #4c9aff, #6fffe8);
 }
 
 .analytics-content-plan-command {
