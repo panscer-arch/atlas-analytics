@@ -1441,12 +1441,14 @@ function ContentPlanBoard() {
     const invalidLinks = publishedSliceItems.filter((item) => hasTextValue(item.publishedUrl) && !isValidHttpUrl(item.publishedUrl)).length;
     const withDates = publishedSliceItems.filter((item) => hasTextValue(item.publishedAt)).length;
     const withoutDates = publishedSliceItems.filter((item) => !hasTextValue(item.publishedAt)).length;
+    const futureDates = publishedSliceItems.filter(hasFuturePublishedDate).length;
     const rows = publishedSliceItems.map((item, index) => {
       const linkStatus = getPublishedUrlStatus(item.publishedUrl);
       const dateStatus = getPublishedDateStatus(item.publishedAt);
       return [
         `${index + 1}. ${item.title || "Без названия"}`,
         `Дата публикации: ${dateStatus.label}`,
+        hasFuturePublishedDate(item) ? "Проблема даты: дата публикации в будущем" : "",
         dateStatus.tone === "empty" && item.date ? `Плановая дата: ${formatPlanDate(item.date)}` : "",
         `Канал: ${item.channel}; формат: ${item.format}`,
         `Ответственный: ${item.owner || "Не назначен"}`,
@@ -1460,6 +1462,7 @@ function ContentPlanBoard() {
       `Опубликовано в срезе: ${publishedSliceItems.length}`,
       `С датой публикации: ${withDates}`,
       `Без даты публикации: ${withoutDates}`,
+      `С будущей датой публикации: ${futureDates}`,
       `Валидная ссылка: ${withLinks}`,
       `Без ссылки: ${withoutLinks}`,
       `Некорректная ссылка: ${invalidLinks}`,
