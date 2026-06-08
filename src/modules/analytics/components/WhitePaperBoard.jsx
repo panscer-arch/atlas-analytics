@@ -10,6 +10,7 @@ const WHITE_PAPER_VIEWS = [
   { id: "document", label: "Документ" },
   { id: "whitepaper20", label: "WhitePaper 2.0" },
   { id: "whitepaper30", label: "White Paper 3.0" },
+  { id: "whitepaper40", label: "White Paper 4.0" },
   { id: "manifest", label: "Манифест" },
   { id: "archive", label: "Архив v6.4" },
 ];
@@ -42,7 +43,7 @@ function mergeDefaultBlocks(savedBlocks = []) {
     const normalizedBlock = normalizeBlock(block);
     const defaultBlock = defaultBlocksById.get(normalizedBlock.id);
     if (!defaultBlock) return normalizedBlock;
-    if (normalizedBlock.id.startsWith("wp20-")) {
+    if (normalizedBlock.id.startsWith("wp20-") || normalizedBlock.id.startsWith("wp30-") || normalizedBlock.id.startsWith("wp40-")) {
       return {
         ...normalizedBlock,
         title: defaultBlock.title,
@@ -353,6 +354,7 @@ function WhitePaperBoard() {
       document: { title: "Новый блок White Paper", role: "Рабочий раздел" },
       whitepaper20: { title: "Новый блок WhitePaper 2.0", role: "Структурный раздел" },
       whitepaper30: { title: "Новый блок White Paper 3.0", role: "Структурный раздел" },
+      whitepaper40: { title: "Новый блок White Paper 4.0", role: "Структурный раздел" },
       manifest: { title: "Новый блок манифеста", role: "Манифест" },
       archive: { title: "Новый блок архива v6.4", role: "Архив v6.4" },
     };
