@@ -46,13 +46,13 @@ function mergeDefaultBlocks(savedBlocks = []) {
     if (normalizedBlock.id.startsWith("wp20-") || normalizedBlock.id.startsWith("wp30-") || normalizedBlock.id.startsWith("wp40-")) {
       return {
         ...normalizedBlock,
-        title: defaultBlock.title,
-        sourceTitle: defaultBlock.sourceTitle,
+        title: normalizedBlock.title || defaultBlock.title,
+        sourceTitle: normalizedBlock.sourceTitle || defaultBlock.sourceTitle,
         sectionNumber: defaultBlock.sectionNumber,
         view: defaultBlock.view,
-        role: defaultBlock.role,
+        role: normalizedBlock.role || defaultBlock.role,
         text: normalizedBlock.text || defaultBlock.text,
-        notes: defaultBlock.notes || normalizedBlock.notes,
+        notes: normalizedBlock.notes || defaultBlock.notes,
       };
     }
     return {
