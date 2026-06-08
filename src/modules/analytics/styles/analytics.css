@@ -9282,6 +9282,21 @@
   gap: 1rem;
 }
 
+.analytics-white-paper-version-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.4rem;
+  border: 1px solid rgba(157, 178, 255, 0.12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.analytics-white-paper-version-tabs .analytics-agent-template-tab {
+  border-radius: 999px;
+  padding: 0.68rem 1rem;
+}
+
 .analytics-agent-dataset .analytics-data-table-head {
   align-items: flex-start;
 }

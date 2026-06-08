@@ -9,6 +9,7 @@ const BLOCK_STATUSES = ["Согласовать", "Черновик", "На вы
 const WHITE_PAPER_VIEWS = [
   { id: "document", label: "Документ" },
   { id: "whitepaper20", label: "WhitePaper 2.0" },
+  { id: "whitepaper30", label: "White Paper 3.0" },
   { id: "manifest", label: "Манифест" },
   { id: "archive", label: "Архив v6.4" },
 ];
@@ -351,6 +352,7 @@ function WhitePaperBoard() {
     const defaultsByView = {
       document: { title: "Новый блок White Paper", role: "Рабочий раздел" },
       whitepaper20: { title: "Новый блок WhitePaper 2.0", role: "Структурный раздел" },
+      whitepaper30: { title: "Новый блок White Paper 3.0", role: "Структурный раздел" },
       manifest: { title: "Новый блок манифеста", role: "Манифест" },
       archive: { title: "Новый блок архива v6.4", role: "Архив v6.4" },
     };
@@ -376,7 +378,7 @@ function WhitePaperBoard() {
           <span className="analytics-kicker">White Paper</span>
           <h2 className="analytics-agent-template-title">White Paper: публичная версия</h2>
           <p className="analytics-page-subtitle">
-            Чистая версия для чтения и сверки. В WhitePaper 2.0 собираем новую структуру без наполнения: сначала согласуем каркас, затем будем заполнять блоки постепенно.
+            Чистая версия для чтения и сверки. В WhitePaper 2.0 и White Paper 3.0 собираем новые структуры: сначала согласуем каркас, затем будем заполнять блоки постепенно.
           </p>
         </div>
         <div className="analytics-agent-template-review-actions">
