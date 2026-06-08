@@ -9152,6 +9152,34 @@
   color: #9ff0df;
 }
 
+.analytics-whitepaper-save {
+  min-width: 11.5rem;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 10px;
+  padding: 0.46rem 0.72rem;
+  background: rgba(7, 12, 22, 0.55);
+  color: #9fb2cf;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.analytics-whitepaper-save-saving {
+  border-color: rgba(255, 183, 92, 0.28);
+  color: #ffd596;
+}
+
+.analytics-whitepaper-save-saved {
+  border-color: rgba(118, 214, 194, 0.28);
+  color: #9ff0df;
+}
+
+.analytics-whitepaper-save-error {
+  border-color: rgba(255, 111, 125, 0.35);
+  color: #ff9ca7;
+}
+
 .analytics-video-edit-hint {
   margin: -0.15rem 0 1rem;
   color: #9fb2cf;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { defaultWhitePaperBlocks } from "../data/whitePaperBlocks";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
@@ -94,10 +94,9 @@ function hasStoredBlocks() {
   }
 }
 
-function persistBlocks(blocks) {
+function persistBlocksLocal(blocks) {
   try {
     window.localStorage.setItem(WHITE_PAPER_STORAGE_KEY, JSON.stringify(blocks));
-    saveServerContent(WHITE_PAPER_STORAGE_KEY, blocks);
   } catch {
     // Рабочая версия остаётся в состоянии страницы, даже если storage временно недоступен.
   }
@@ -275,6 +274,12 @@ function WhitePaperLegalPreview({ block }) {
 
 function WhitePaperBoard() {
   const [blocks, setBlocks] = useState(readStoredBlocks);
+  const [saveState, setSaveState] = useState({ status: "idle", message: "Сервер не синхронизирован" });
+  const saveTimerRef = useRef(null);
+  const latestBlocksRef = useRef(blocks);
+  const saveInFlightRef = useRef(false);
+  const saveQueuedRef = useRef(false);
+  const saveVersionRef = useRef(0);
   const [activeBlockId, setActiveBlockId] = useState(() => {
     if (typeof window === "undefined") return defaultWhitePaperBlocks[0].id;
     const url = new URL(window.location.href);
@@ -297,13 +302,21 @@ function WhitePaperBoard() {
       if (isMounted && Array.isArray(savedBlocks)) {
         const mergedBlocks = mergeDefaultBlocks(savedBlocks);
         setBlocks(mergedBlocks);
-        if (JSON.stringify(mergedBlocks) !== JSON.stringify(savedBlocks.map(normalizeBlock))) persistBlocks(mergedBlocks);
+        latestBlocksRef.current = mergedBlocks;
+        persistBlocksLocal(mergedBlocks);
+        setSaveState({ status: "saved", message: "Серверная версия загружена" });
+        if (JSON.stringify(mergedBlocks) !== JSON.stringify(savedBlocks.map(normalizeBlock))) scheduleServerSave(mergedBlocks, { immediate: true });
       }
-      if (isMounted && !Array.isArray(savedBlocks) && !hasStoredBlocks()) persistBlocks(defaultWhitePaperBlocks);
+      if (isMounted && !Array.isArray(savedBlocks) && !hasStoredBlocks()) {
+        latestBlocksRef.current = defaultWhitePaperBlocks;
+        persistBlocksLocal(defaultWhitePaperBlocks);
+        scheduleServerSave(defaultWhitePaperBlocks, { immediate: true });
+      }
     });
 
     return () => {
       isMounted = false;
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
   }, []);
 
@@ -331,10 +344,51 @@ function WhitePaperBoard() {
     window.history.replaceState({}, "", url.toString());
   }, [activeBlock, activeView]);
 
+  async function flushServerSave() {
+    if (saveInFlightRef.current) {
+      saveQueuedRef.current = true;
+      return;
+    }
+
+    saveInFlightRef.current = true;
+    saveQueuedRef.current = false;
+    const version = saveVersionRef.current;
+    const blocksToSave = latestBlocksRef.current;
+    setSaveState({ status: "saving", message: "Сохраняю на сервер..." });
+
+    const ok = await saveServerContent(WHITE_PAPER_STORAGE_KEY, blocksToSave);
+
+    saveInFlightRef.current = false;
+
+    if (saveQueuedRef.current || saveVersionRef.current !== version) {
+      flushServerSave();
+      return;
+    }
+
+    setSaveState(ok
+      ? { status: "saved", message: "Сохранено на сервере" }
+      : { status: "error", message: "Не удалось сохранить на сервер" });
+  }
+
+  function scheduleServerSave(nextBlocks, options = {}) {
+    latestBlocksRef.current = nextBlocks;
+    saveVersionRef.current += 1;
+    setSaveState({ status: "saving", message: "Ожидает сохранения..." });
+
+    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+
+    const delay = options.immediate ? 0 : 500;
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null;
+      flushServerSave();
+    }, delay);
+  }
+
   function updateBlocks(updater) {
     setBlocks((current) => {
       const next = updater(current);
-      persistBlocks(next);
+      persistBlocksLocal(next);
+      scheduleServerSave(next);
       return next;
     });
   }
@@ -391,6 +445,9 @@ function WhitePaperBoard() {
               </button>
             ))}
           </div>
+          <span className={`analytics-whitepaper-save analytics-whitepaper-save-${saveState.status}`} role="status">
+            {saveState.message}
+          </span>
           <AnalyticsActionButton variant="primary" size="sm" onClick={addBlock}>
             + блок
           </AnalyticsActionButton>
