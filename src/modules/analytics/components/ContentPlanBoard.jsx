@@ -1354,6 +1354,7 @@ function ContentPlanBoard() {
         `${index + 1}. ${formatPlanDate(item.date)} / ${item.channel} / ${item.format}`,
         `Тема: ${item.title || "Без названия"}`,
         `Статус: ${item.status}; согласование: ${item.reviewStatus}; визуал: ${item.visualStatus}; готовность: ${readiness.done}/${readiness.total}`,
+        `Следующий шаг: ${getNextActionLabel(item)}`,
         `Ответственный: ${item.owner || "Не назначен"}; приоритет: ${item.priority || "Средний"}`,
         hasTextValue(item.publishedUrl) ? `Пост: ${item.publishedUrl}` : "",
       ].filter(Boolean).join("\n");
