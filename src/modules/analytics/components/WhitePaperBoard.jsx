@@ -5,7 +5,11 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const WHITE_PAPER_STORAGE_KEY = "atlas.analytics.whitePaper.blocks.v8";
 
-const BLOCK_STATUSES = ["Согласовать", "Черновик", "На вычитке", "Готово", "Переписать"];
+const CONTENT_FORMAT_OPTIONS = [
+  { id: "text", label: "Только текст" },
+  { id: "tables", label: "Можно использовать таблицы" },
+  { id: "charts", label: "Можно использовать графики и таблицы" },
+];
 const WHITE_PAPER_VIEWS = [
   { id: "document", label: "Документ" },
   { id: "whitepaper20", label: "WhitePaper 2.0" },
@@ -34,6 +38,8 @@ function normalizeBlock(block, index = 0) {
     status: block.status || "Черновик",
     text: block.text || "",
     notes: block.notes || "",
+    prompt: block.prompt || "",
+    contentFormat: block.contentFormat || "text",
   };
 }
 
@@ -54,12 +60,16 @@ function mergeDefaultBlocks(savedBlocks = []) {
         role: normalizedBlock.role || defaultBlock.role,
         text: normalizedBlock.text || defaultBlock.text,
         notes: normalizedBlock.notes || defaultBlock.notes,
+        prompt: normalizedBlock.prompt || defaultBlock.prompt,
+        contentFormat: normalizedBlock.contentFormat || defaultBlock.contentFormat,
       };
     }
     return {
       ...normalizedBlock,
       text: normalizedBlock.text || defaultBlock.text,
       notes: normalizedBlock.notes || defaultBlock.notes,
+      prompt: normalizedBlock.prompt || defaultBlock.prompt,
+      contentFormat: normalizedBlock.contentFormat || defaultBlock.contentFormat,
     };
   });
   const savedIds = new Set(normalizedSavedBlocks.map((block) => block.id));
@@ -672,24 +682,35 @@ function WhitePaperBoard() {
             </section>
           ) : null}
 
+          <label className="analytics-program-field">
+            Название
+            <input className="analytics-agent-template-input" value={activeBlock.title} onChange={(event) => updateBlock(activeBlock.id, { title: event.target.value })} />
+          </label>
+
           <div className="analytics-dataset-meta-row">
             <label>
-              Статус
-              <select className="analytics-agent-template-input" value={activeBlock.status} onChange={(event) => updateBlock(activeBlock.id, { status: event.target.value })}>
-                {BLOCK_STATUSES.map((status) => (
-                  <option key={status} value={status}>{status}</option>
+              Формат подачи
+              <select
+                className="analytics-agent-template-input"
+                value={activeBlock.contentFormat || "text"}
+                onChange={(event) => updateBlock(activeBlock.id, { contentFormat: event.target.value })}
+              >
+                {CONTENT_FORMAT_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
                 ))}
               </select>
-            </label>
-            <label>
-              Роль блока
-              <input className="analytics-agent-template-input" value={activeBlock.role} onChange={(event) => updateBlock(activeBlock.id, { role: event.target.value })} />
             </label>
           </div>
 
           <label className="analytics-program-field">
-            Название
-            <input className="analytics-agent-template-input" value={activeBlock.title} onChange={(event) => updateBlock(activeBlock.id, { title: event.target.value })} />
+            Промпт для генерации блока
+            <textarea
+              className="analytics-agent-template-input"
+              value={activeBlock.prompt || ""}
+              onChange={(event) => updateBlock(activeBlock.id, { prompt: event.target.value })}
+              rows="6"
+              placeholder="Опишите, на основе чего потом генерировать актуальный текст: смысл блока, тональность, факты, ограничения, что нельзя обещать."
+            />
           </label>
 
           {activeBlock.id === "wp20-cover-metadata" ? (
