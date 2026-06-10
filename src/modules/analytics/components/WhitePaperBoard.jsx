@@ -173,6 +173,25 @@ function renderWhitePaperText(text = "") {
     });
 }
 
+function replaceWhitePaperSubsectionText(blockText = "", subsection, nextText = "") {
+  if (!subsection?.number) return nextText;
+
+  const lines = String(blockText || "").split(/\r?\n/);
+  const startIndex = lines.findIndex((line) => line.trim().match(new RegExp(`^${subsection.number.replace(".", "\\.")}\\s+`)));
+  if (startIndex === -1) return blockText;
+
+  let endIndex = lines.length;
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (/^\d+\.\d+\s+/.test(lines[index].trim())) {
+      endIndex = index;
+      break;
+    }
+  }
+
+  const nextLines = String(nextText || "").split(/\r?\n/);
+  return [...lines.slice(0, startIndex), ...nextLines, ...lines.slice(endIndex)].join("\n");
+}
+
 function WhitePaperCoverPreview({ block }) {
   const lines = getWhitePaperCoverLines(block.text);
   const title = lines[0] || "Atlas System White Paper";
@@ -483,6 +502,18 @@ function WhitePaperBoard() {
     updateBlocks((current) => current.map((block) => (block.id === blockId ? { ...block, ...patch } : block)));
   }
 
+  function updateReadableText(nextText) {
+    if (!activeBlock) return;
+    if (!activeSubsection) {
+      updateBlock(activeBlock.id, { text: nextText });
+      return;
+    }
+
+    updateBlock(activeBlock.id, {
+      text: replaceWhitePaperSubsectionText(activeBlock.text, activeSubsection, nextText),
+    });
+  }
+
   function switchView(viewId) {
     setActiveView(viewId);
     const firstBlock = blocks.find((block) => getBlockView(block) === viewId);
@@ -639,9 +670,18 @@ function WhitePaperBoard() {
                 <span>{activeSubsection ? activeSubsection.number : activeBlock.sectionNumber || "Блок"}</span>
                 <div>
                   <strong>{activeSubsection ? activeSubsection.title : activeBlock.title}</strong>
-                  <small>{activeSubsection ? activeBlock.title : "Полный текст выбранного блока"}</small>
+                  <small>{activeSubsection ? `${activeBlock.title} · редактируется только выбранный подпункт` : "Полный текст выбранного блока"}</small>
                 </div>
               </div>
+              <label className="analytics-whitepaper-reader-editor">
+                <span>{activeSubsection ? "Редактировать подблок" : "Редактировать блок"}</span>
+                <textarea
+                  className="analytics-agent-template-input analytics-whitepaper-reader-input"
+                  value={activeReadableText}
+                  onChange={(event) => updateReadableText(event.target.value)}
+                  rows={activeSubsection ? 12 : 16}
+                />
+              </label>
               <div className="analytics-whitepaper-reader-body">
                 {renderWhitePaperText(activeReadableText)}
               </div>

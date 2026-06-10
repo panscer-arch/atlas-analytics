@@ -9143,6 +9143,25 @@
   font-weight: 750;
 }
 
+.analytics-whitepaper-reader-editor {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.analytics-whitepaper-reader-editor span {
+  color: #8fa3c0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-whitepaper-reader-input {
+  min-height: 14rem;
+  resize: vertical;
+  line-height: 1.55;
+}
+
 .analytics-whitepaper-reader-body {
   display: grid;
   gap: 0.85rem;
