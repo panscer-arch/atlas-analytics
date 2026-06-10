@@ -9009,12 +9009,12 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.5rem;
-  align-items: stretch;
+  align-items: start;
 }
 
 .analytics-whitepaper-tree-toggle {
   width: 2rem;
-  min-height: 2.35rem;
+  height: 2.35rem;
   border: 1px solid rgba(118, 214, 194, 0.18);
   border-radius: 0.8rem;
   background: rgba(118, 214, 194, 0.06);
@@ -9743,7 +9743,7 @@
 .analytics-dataset-editor {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(220px, 0.28fr) minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 0.32fr) minmax(0, 1fr);
   align-items: start;
 }
 
