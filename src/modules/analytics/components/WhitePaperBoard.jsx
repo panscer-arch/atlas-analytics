@@ -181,6 +181,80 @@ function replaceWhitePaperSubsectionText(blockText = "", subsection, nextText = 
   return [...lines.slice(0, startIndex), ...nextLines, ...lines.slice(endIndex)].join("\n");
 }
 
+function WhitePaperReadableText({ text }) {
+  const lines = String(text || "").split(/\r?\n/);
+  const chunks = [];
+  let buffer = [];
+  let table = [];
+
+  function flushBuffer() {
+    if (!buffer.length) return;
+    chunks.push({ type: "paragraph", text: buffer.join(" ") });
+    buffer = [];
+  }
+
+  function flushTable() {
+    if (!table.length) return;
+    chunks.push({ type: "table", text: table.join("\n") });
+    table = [];
+  }
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushBuffer();
+      flushTable();
+      return;
+    }
+
+    if (trimmed.startsWith("|")) {
+      flushBuffer();
+      table.push(trimmed);
+      return;
+    }
+
+    flushTable();
+    if (/^\d+\.\d+\s+/.test(trimmed)) {
+      flushBuffer();
+      chunks.push({ type: "heading", text: trimmed });
+      return;
+    }
+    if (/^\[Нужно заполнить\]/.test(trimmed)) {
+      flushBuffer();
+      chunks.push({ type: "todo", text: trimmed });
+      return;
+    }
+    if (/^\[Действие\]/.test(trimmed)) {
+      flushBuffer();
+      chunks.push({ type: "action", text: trimmed });
+      return;
+    }
+    if (/^[-•]\s+/.test(trimmed) || /^\d+\.\s+/.test(trimmed)) {
+      flushBuffer();
+      chunks.push({ type: "list", text: trimmed });
+      return;
+    }
+
+    buffer.push(trimmed);
+  });
+
+  flushBuffer();
+  flushTable();
+
+  return (
+    <div className="analytics-whitepaper-readable-body">
+      {chunks.map((chunk, index) => {
+        if (chunk.type === "heading") return <h3 key={`${chunk.type}-${index}`}>{chunk.text}</h3>;
+        if (chunk.type === "table") return <pre key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-table">{chunk.text}</pre>;
+        if (chunk.type === "todo") return <div key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-callout analytics-whitepaper-readable-todo">{chunk.text}</div>;
+        if (chunk.type === "action") return <div key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-callout analytics-whitepaper-readable-action">{chunk.text}</div>;
+        if (chunk.type === "list") return <p key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-list">{chunk.text}</p>;
+        return <p key={`${chunk.type}-${index}`}>{chunk.text}</p>;
+      })}
+    </div>
+  );
+}
+
 function WhitePaperCoverPreview({ block }) {
   const lines = getWhitePaperCoverLines(block.text);
   const title = lines[0] || "Atlas System White Paper";
@@ -362,6 +436,7 @@ function WhitePaperBoard() {
     const url = new URL(window.location.href);
     return url.searchParams.get("subblock") || "";
   });
+  const [documentMode, setDocumentMode] = useState("read");
   const [expandedBlockIds, setExpandedBlockIds] = useState(() => new Set());
 
   useEffect(() => {
@@ -611,7 +686,7 @@ function WhitePaperBoard() {
         ))}
       </div>
 
-      <div className="analytics-dataset-editor">
+      <div className={`analytics-dataset-editor${documentMode === "read" ? " analytics-whitepaper-read-layout" : ""}`}>
         <aside className="analytics-dataset-sidebar">
           <span className="analytics-kicker">Блоки документа</span>
           {visibleBlocks.map((block) => {
@@ -664,75 +739,87 @@ function WhitePaperBoard() {
 
         <div className="analytics-dataset-main">
           {isStructuredWhitePaper ? (
-            <section className="analytics-whitepaper-reader">
+            <section className={`analytics-whitepaper-reader analytics-whitepaper-reader-${documentMode}`}>
               <div className="analytics-whitepaper-reader-head">
                 <span>{activeSubsection ? activeSubsection.number : activeBlock.sectionNumber || "Блок"}</span>
                 <div>
                   <strong>{activeSubsection ? activeSubsection.title : activeBlock.title}</strong>
-                  <small>{activeSubsection ? `${activeBlock.title} · редактируется только выбранный подпункт` : "Полный текст выбранного блока"}</small>
+                  <small>{documentMode === "read" ? "Режим чтения" : activeSubsection ? `${activeBlock.title} · редактируется только выбранный подпункт` : "Полный текст выбранного блока"}</small>
+                </div>
+                <div className="analytics-whitepaper-mode-toggle" aria-label="Режим White Paper">
+                  <button type="button" className={documentMode === "read" ? "is-active" : ""} onClick={() => setDocumentMode("read")}>Читать</button>
+                  <button type="button" className={documentMode === "edit" ? "is-active" : ""} onClick={() => setDocumentMode("edit")}>Редактировать</button>
                 </div>
               </div>
-              <label className="analytics-whitepaper-reader-editor">
-                <span>{activeSubsection ? "Редактировать подблок" : "Редактировать блок"}</span>
-                <textarea
-                  className="analytics-agent-template-input analytics-whitepaper-reader-input"
-                  value={activeReadableText}
-                  onChange={(event) => updateReadableText(event.target.value)}
-                  rows={activeSubsection ? 12 : 16}
-                />
-              </label>
+              {documentMode === "read" ? (
+                <WhitePaperReadableText text={activeReadableText} />
+              ) : (
+                <label className="analytics-whitepaper-reader-editor">
+                  <span>{activeSubsection ? "Редактировать подблок" : "Редактировать блок"}</span>
+                  <textarea
+                    className="analytics-agent-template-input analytics-whitepaper-reader-input"
+                    value={activeReadableText}
+                    onChange={(event) => updateReadableText(event.target.value)}
+                    rows={activeSubsection ? 12 : 16}
+                  />
+                </label>
+              )}
             </section>
           ) : null}
 
-          <label className="analytics-program-field">
-            Название
-            <input className="analytics-agent-template-input" value={activeBlock.title} onChange={(event) => updateBlock(activeBlock.id, { title: event.target.value })} />
-          </label>
+          {documentMode === "edit" ? (
+            <>
+              <label className="analytics-program-field">
+                Название
+                <input className="analytics-agent-template-input" value={activeBlock.title} onChange={(event) => updateBlock(activeBlock.id, { title: event.target.value })} />
+              </label>
 
-          <div className="analytics-dataset-meta-row">
-            <label>
-              Формат подачи
-              <select
-                className="analytics-agent-template-input"
-                value={activeBlock.contentFormat || "text"}
-                onChange={(event) => updateBlock(activeBlock.id, { contentFormat: event.target.value })}
-              >
-                {CONTENT_FORMAT_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+              <div className="analytics-dataset-meta-row">
+                <label>
+                  Формат подачи
+                  <select
+                    className="analytics-agent-template-input"
+                    value={activeBlock.contentFormat || "text"}
+                    onChange={(event) => updateBlock(activeBlock.id, { contentFormat: event.target.value })}
+                  >
+                    {CONTENT_FORMAT_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
-          <label className="analytics-program-field">
-            Промпт для генерации блока
-            <textarea
-              className="analytics-agent-template-input"
-              value={activeBlock.prompt || ""}
-              onChange={(event) => updateBlock(activeBlock.id, { prompt: event.target.value })}
-              rows="6"
-              placeholder="Опишите, на основе чего потом генерировать актуальный текст: смысл блока, тональность, факты, ограничения, что нельзя обещать."
-            />
-          </label>
+              <label className="analytics-program-field">
+                Промпт для генерации блока
+                <textarea
+                  className="analytics-agent-template-input"
+                  value={activeBlock.prompt || ""}
+                  onChange={(event) => updateBlock(activeBlock.id, { prompt: event.target.value })}
+                  rows="6"
+                  placeholder="Опишите, на основе чего потом генерировать актуальный текст: смысл блока, тональность, факты, ограничения, что нельзя обещать."
+                />
+              </label>
 
-          {activeBlock.id === "wp20-cover-metadata" ? (
-            <div className="analytics-program-field">
-              <span className="analytics-whitepaper-preview-label">Предпросмотр первой страницы</span>
-              <WhitePaperCoverPreview block={activeBlock} />
-            </div>
+              {activeBlock.id === "wp20-cover-metadata" ? (
+                <div className="analytics-program-field">
+                  <span className="analytics-whitepaper-preview-label">Предпросмотр первой страницы</span>
+                  <WhitePaperCoverPreview block={activeBlock} />
+                </div>
+              ) : null}
+
+              {activeBlock.id === "wp20-legal-disclaimer" ? (
+                <div className="analytics-program-field">
+                  <span className="analytics-whitepaper-preview-label">Предпросмотр второй страницы</span>
+                  <WhitePaperLegalPreview block={activeBlock} />
+                </div>
+              ) : null}
+
+              <label className="analytics-program-field">
+                Заметки для вычитки
+                <textarea className="analytics-agent-template-input" value={activeBlock.notes} onChange={(event) => updateBlock(activeBlock.id, { notes: event.target.value })} rows="5" />
+              </label>
+            </>
           ) : null}
-
-          {activeBlock.id === "wp20-legal-disclaimer" ? (
-            <div className="analytics-program-field">
-              <span className="analytics-whitepaper-preview-label">Предпросмотр второй страницы</span>
-              <WhitePaperLegalPreview block={activeBlock} />
-            </div>
-          ) : null}
-
-          <label className="analytics-program-field">
-            Заметки для вычитки
-            <textarea className="analytics-agent-template-input" value={activeBlock.notes} onChange={(event) => updateBlock(activeBlock.id, { notes: event.target.value })} rows="5" />
-          </label>
         </div>
       </div>
     </section>

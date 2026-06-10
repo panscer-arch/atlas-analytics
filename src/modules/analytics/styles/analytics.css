@@ -9138,10 +9138,25 @@
     rgba(5, 12, 25, 0.42);
 }
 
+.analytics-whitepaper-reader-read {
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+}
+
 .analytics-whitepaper-reader-head {
   display: flex;
   gap: 0.8rem;
   align-items: flex-start;
+}
+
+.analytics-whitepaper-reader-read .analytics-whitepaper-reader-head {
+  align-items: center;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .analytics-whitepaper-reader-head > span {
@@ -9153,6 +9168,11 @@
   background: rgba(118, 214, 194, 0.13);
   color: #8df5df;
   font-weight: 950;
+}
+
+.analytics-whitepaper-reader-read .analytics-whitepaper-reader-head > span {
+  background: #e0f7f1;
+  color: #087261;
 }
 
 .analytics-whitepaper-reader-head div {
@@ -9168,10 +9188,53 @@
   line-height: 1.25;
 }
 
+.analytics-whitepaper-reader-read .analytics-whitepaper-reader-head strong {
+  color: #0f172a;
+}
+
 .analytics-whitepaper-reader-head small {
   color: #8fa3c0;
   font-size: 0.78rem;
   font-weight: 750;
+}
+
+.analytics-whitepaper-reader-read .analytics-whitepaper-reader-head small {
+  color: #64748b;
+}
+
+.analytics-whitepaper-mode-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  margin-left: auto;
+  min-width: max-content;
+  padding: 0.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.56);
+}
+
+.analytics-whitepaper-reader-read .analytics-whitepaper-mode-toggle {
+  background: #f1f5f9;
+}
+
+.analytics-whitepaper-mode-toggle button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 0.5rem 0.78rem;
+  white-space: nowrap;
+}
+
+.analytics-whitepaper-mode-toggle button.is-active {
+  background: #0f766e;
+  color: #ffffff;
 }
 
 .analytics-whitepaper-reader-editor {
@@ -9191,6 +9254,66 @@
   min-height: 14rem;
   resize: vertical;
   line-height: 1.55;
+}
+
+.analytics-whitepaper-readable-body {
+  display: grid;
+  gap: 1rem;
+  padding: 2rem clamp(1.25rem, 3vw, 3.2rem) 2.4rem;
+  color: #111827;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.72;
+}
+
+.analytics-whitepaper-readable-body h3 {
+  margin: 1.1rem 0 0.1rem;
+  color: #0f172a;
+  font-size: clamp(1.32rem, 2vw, 1.8rem);
+  font-weight: 950;
+  line-height: 1.18;
+}
+
+.analytics-whitepaper-readable-body p {
+  margin: 0;
+  color: #1f2937;
+}
+
+.analytics-whitepaper-readable-list {
+  padding-left: 1rem;
+  border-left: 3px solid #99f6e4;
+}
+
+.analytics-whitepaper-readable-table {
+  overflow: auto;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #dbeafe;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+  color: #111827;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.analytics-whitepaper-readable-callout {
+  padding: 1rem 1.1rem;
+  border-radius: 0.95rem;
+  color: #111827;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.analytics-whitepaper-readable-todo {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+}
+
+.analytics-whitepaper-readable-action {
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
 }
 
 .analytics-whitepaper-reader-body {
@@ -9747,6 +9870,10 @@
   align-items: start;
 }
 
+.analytics-dataset-editor.analytics-whitepaper-read-layout {
+  grid-template-columns: minmax(260px, 0.22fr) minmax(0, 1fr);
+}
+
 .analytics-dataset-sidebar,
 .analytics-dataset-main {
   border: 1px solid rgba(157, 178, 255, 0.1);
@@ -9792,6 +9919,10 @@
   display: grid;
   gap: 1rem;
   padding: 1rem;
+}
+
+.analytics-whitepaper-read-layout .analytics-dataset-main {
+  padding: 0.9rem;
 }
 
 .analytics-dataset-meta-row {
