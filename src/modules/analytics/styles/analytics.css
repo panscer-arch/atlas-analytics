@@ -9000,6 +9000,180 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.analytics-whitepaper-tree-item {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.analytics-whitepaper-tree-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.42rem;
+  align-items: stretch;
+}
+
+.analytics-whitepaper-tree-toggle {
+  width: 2.25rem;
+  min-height: 2.6rem;
+  border: 1px solid rgba(118, 214, 194, 0.18);
+  border-radius: 0.9rem;
+  background: rgba(118, 214, 194, 0.06);
+  color: #8df5df;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.analytics-whitepaper-tree-toggle.is-expanded {
+  transform: rotate(90deg);
+  border-color: rgba(118, 214, 194, 0.34);
+  background: rgba(118, 214, 194, 0.12);
+}
+
+.analytics-whitepaper-tree-block {
+  width: 100%;
+  text-align: left;
+}
+
+.analytics-whitepaper-subtree {
+  display: grid;
+  gap: 0.36rem;
+  margin-left: 2.7rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(118, 214, 194, 0.18);
+}
+
+.analytics-whitepaper-subtree-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  border: 1px solid rgba(157, 178, 255, 0.1);
+  border-radius: 0.9rem;
+  padding: 0.62rem 0.72rem;
+  background: rgba(5, 12, 25, 0.38);
+  color: #aebdd4;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.analytics-whitepaper-subtree-button:hover,
+.analytics-whitepaper-subtree-button:focus-visible {
+  border-color: rgba(118, 214, 194, 0.28);
+  background: rgba(118, 214, 194, 0.08);
+  color: #edf7ff;
+  transform: translateX(2px);
+}
+
+.analytics-whitepaper-subtree-button.is-active {
+  border-color: rgba(118, 214, 194, 0.46);
+  background: linear-gradient(180deg, rgba(118, 214, 194, 0.16), rgba(123, 180, 255, 0.08));
+  color: #f4fbff;
+}
+
+.analytics-whitepaper-subtree-button span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.2rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: rgba(118, 214, 194, 0.11);
+  color: #8df5df;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.analytics-whitepaper-subtree-button strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.analytics-whitepaper-reader {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.1rem;
+  border: 1px solid rgba(118, 214, 194, 0.18);
+  border-radius: 1.2rem;
+  background:
+    linear-gradient(135deg, rgba(118, 214, 194, 0.08), transparent 44%),
+    rgba(5, 12, 25, 0.42);
+}
+
+.analytics-whitepaper-reader-head {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.analytics-whitepaper-reader-head > span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 3rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(118, 214, 194, 0.13);
+  color: #8df5df;
+  font-weight: 950;
+}
+
+.analytics-whitepaper-reader-head div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.analytics-whitepaper-reader-head strong {
+  color: #f5f8ff;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.analytics-whitepaper-reader-head small {
+  color: #8fa3c0;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.analytics-whitepaper-reader-body {
+  display: grid;
+  gap: 0.85rem;
+  color: #d9e5f7;
+  font-size: 0.96rem;
+  line-height: 1.62;
+}
+
+.analytics-whitepaper-reader-body p,
+.analytics-whitepaper-reader-body ul {
+  margin: 0;
+}
+
+.analytics-whitepaper-reader-body ul {
+  display: grid;
+  gap: 0.38rem;
+  padding-left: 1.25rem;
+}
+
+.analytics-whitepaper-subblock-table {
+  max-width: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(157, 178, 255, 0.12);
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.2);
+  color: #dce9ff;
+  white-space: pre;
+}
+
 .analytics-agent-template-links {
   display: grid;
   gap: 0.85rem;

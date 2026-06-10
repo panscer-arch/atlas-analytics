@@ -119,6 +119,60 @@ function findFirstCoverValue(lines, labels) {
   return labels.map((label) => findCoverValue(lines, label)).find(Boolean) || "";
 }
 
+function getWhitePaperSubsections(block) {
+  const lines = String(block?.text || "").split(/\r?\n/);
+  const sections = [];
+  let current = null;
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^(\d+\.\d+)\s+(.+)$/);
+    if (match) {
+      if (current) sections.push(current);
+      current = {
+        id: `${block.id}-${match[1].replace(/\./g, "-")}`,
+        number: match[1],
+        title: match[2],
+        lines: [trimmed],
+      };
+      return;
+    }
+
+    if (current) current.lines.push(line);
+  });
+
+  if (current) sections.push(current);
+
+  return sections.map((section) => ({
+    id: section.id,
+    number: section.number,
+    title: section.title,
+    text: section.lines.join("\n").trim(),
+  }));
+}
+
+function renderWhitePaperText(text = "") {
+  return String(text || "")
+    .split(/\n{2,}/)
+    .map((paragraph, index) => {
+      const trimmed = paragraph.trim();
+      if (!trimmed) return null;
+      if (/^\|/.test(trimmed)) {
+        return <pre key={`${index}-${trimmed.slice(0, 12)}`} className="analytics-whitepaper-subblock-table">{trimmed}</pre>;
+      }
+      if (/^- /.test(trimmed)) {
+        return (
+          <ul key={`${index}-${trimmed.slice(0, 12)}`}>
+            {trimmed.split(/\n/).filter(Boolean).map((item) => (
+              <li key={item}>{item.replace(/^- /, "")}</li>
+            ))}
+          </ul>
+        );
+      }
+      return <p key={`${index}-${trimmed.slice(0, 12)}`}>{trimmed}</p>;
+    });
+}
+
 function WhitePaperCoverPreview({ block }) {
   const lines = getWhitePaperCoverLines(block.text);
   const title = lines[0] || "Atlas System White Paper";
@@ -295,6 +349,12 @@ function WhitePaperBoard() {
     if (url.searchParams.get("block")?.startsWith("archive-")) return "archive";
     return "document";
   });
+  const [activeSubsectionId, setActiveSubsectionId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+    return url.searchParams.get("subblock") || "";
+  });
+  const [expandedBlockIds, setExpandedBlockIds] = useState(() => new Set());
 
   useEffect(() => {
     let isMounted = true;
@@ -323,6 +383,10 @@ function WhitePaperBoard() {
 
   const visibleBlocks = useMemo(() => blocks.filter((block) => getBlockView(block) === activeView), [activeView, blocks]);
   const activeBlock = visibleBlocks.find((block) => block.id === activeBlockId) || visibleBlocks[0] || blocks[0];
+  const isStructuredWhitePaper = activeView === "whitepaper50";
+  const activeSubsections = useMemo(() => getWhitePaperSubsections(activeBlock), [activeBlock]);
+  const activeSubsection = activeSubsections.find((section) => section.id === activeSubsectionId) || null;
+  const activeReadableText = activeSubsection?.text || activeBlock?.text || "";
   const stats = useMemo(() => {
     const ready = visibleBlocks.filter((block) => block.status === "Готово").length;
     const review = visibleBlocks.filter((block) => block.status === "На вычитке").length;
@@ -342,8 +406,29 @@ function WhitePaperBoard() {
     url.searchParams.set("board", "whitePaper");
     url.searchParams.set("view", activeView);
     url.searchParams.set("block", activeBlock.id);
+    if (activeSubsection) {
+      url.searchParams.set("subblock", activeSubsection.id);
+    } else {
+      url.searchParams.delete("subblock");
+    }
     window.history.replaceState({}, "", url.toString());
-  }, [activeBlock, activeView]);
+  }, [activeBlock, activeSubsection, activeView]);
+
+  useEffect(() => {
+    if (!activeBlock || !isStructuredWhitePaper) return;
+    setExpandedBlockIds((current) => {
+      if (current.has(activeBlock.id)) return current;
+      const next = new Set(current);
+      next.add(activeBlock.id);
+      return next;
+    });
+  }, [activeBlock, isStructuredWhitePaper]);
+
+  useEffect(() => {
+    if (!isStructuredWhitePaper || !activeSubsectionId) return;
+    if (activeSubsections.some((section) => section.id === activeSubsectionId)) return;
+    setActiveSubsectionId("");
+  }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper]);
 
   async function flushServerSave() {
     if (saveInFlightRef.current) {
@@ -402,6 +487,38 @@ function WhitePaperBoard() {
     setActiveView(viewId);
     const firstBlock = blocks.find((block) => getBlockView(block) === viewId);
     if (firstBlock) setActiveBlockId(firstBlock.id);
+    setActiveSubsectionId("");
+  }
+
+  function selectBlock(blockId) {
+    setActiveBlockId(blockId);
+    setActiveSubsectionId("");
+    if (activeView === "whitepaper50") {
+      setExpandedBlockIds((current) => {
+        const next = new Set(current);
+        next.add(blockId);
+        return next;
+      });
+    }
+  }
+
+  function toggleBlock(blockId) {
+    setExpandedBlockIds((current) => {
+      const next = new Set(current);
+      if (next.has(blockId)) next.delete(blockId);
+      else next.add(blockId);
+      return next;
+    });
+  }
+
+  function selectSubsection(blockId, subsectionId) {
+    setActiveBlockId(blockId);
+    setActiveSubsectionId(subsectionId);
+    setExpandedBlockIds((current) => {
+      const next = new Set(current);
+      next.add(blockId);
+      return next;
+    });
   }
 
   function addBlock() {
@@ -468,19 +585,69 @@ function WhitePaperBoard() {
       <div className="analytics-dataset-editor">
         <aside className="analytics-dataset-sidebar">
           <span className="analytics-kicker">Блоки документа</span>
-          {visibleBlocks.map((block) => (
-            <button
-              key={block.id}
-              type="button"
-              className={`analytics-agent-template-tab${activeBlock.id === block.id ? " analytics-agent-template-tab-active" : ""}`}
-              onClick={() => setActiveBlockId(block.id)}
-            >
-              {block.title}
-            </button>
-          ))}
+          {visibleBlocks.map((block) => {
+            const subsections = isStructuredWhitePaper ? getWhitePaperSubsections(block) : [];
+            const isExpanded = expandedBlockIds.has(block.id);
+            const isActiveBlock = activeBlock.id === block.id;
+
+            return (
+              <div key={block.id} className="analytics-whitepaper-tree-item">
+                <div className="analytics-whitepaper-tree-row">
+                  {isStructuredWhitePaper && subsections.length ? (
+                    <button
+                      type="button"
+                      className={`analytics-whitepaper-tree-toggle${isExpanded ? " is-expanded" : ""}`}
+                      onClick={() => toggleBlock(block.id)}
+                      aria-label={isExpanded ? "Свернуть подблоки" : "Раскрыть подблоки"}
+                    >
+                      ›
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={`analytics-agent-template-tab analytics-whitepaper-tree-block${isActiveBlock && !activeSubsection ? " analytics-agent-template-tab-active" : ""}`}
+                    onClick={() => selectBlock(block.id)}
+                  >
+                    {block.title}
+                  </button>
+                </div>
+
+                {isStructuredWhitePaper && isExpanded && subsections.length ? (
+                  <div className="analytics-whitepaper-subtree">
+                    {subsections.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        className={`analytics-whitepaper-subtree-button${activeSubsection?.id === section.id ? " is-active" : ""}`}
+                        onClick={() => selectSubsection(block.id, section.id)}
+                      >
+                        <span>{section.number}</span>
+                        <strong>{section.title}</strong>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </aside>
 
         <div className="analytics-dataset-main">
+          {isStructuredWhitePaper ? (
+            <section className="analytics-whitepaper-reader">
+              <div className="analytics-whitepaper-reader-head">
+                <span>{activeSubsection ? activeSubsection.number : activeBlock.sectionNumber || "Блок"}</span>
+                <div>
+                  <strong>{activeSubsection ? activeSubsection.title : activeBlock.title}</strong>
+                  <small>{activeSubsection ? activeBlock.title : "Полный текст выбранного блока"}</small>
+                </div>
+              </div>
+              <div className="analytics-whitepaper-reader-body">
+                {renderWhitePaperText(activeReadableText)}
+              </div>
+            </section>
+          ) : null}
+
           <div className="analytics-dataset-meta-row">
             <label>
               Статус
