@@ -625,7 +625,8 @@ function WhitePaperBoard() {
                     className={`analytics-agent-template-tab analytics-whitepaper-tree-block${isActiveBlock && !activeSubsection ? " analytics-agent-template-tab-active" : ""}`}
                     onClick={() => selectBlock(block.id)}
                   >
-                    {block.title}
+                    <span className="analytics-whitepaper-tree-block-number">{block.sectionNumber || "•"}</span>
+                    <span className="analytics-whitepaper-tree-block-title">{block.title.replace(/^\d+\.\s*/, "")}</span>
                   </button>
                 </div>
 

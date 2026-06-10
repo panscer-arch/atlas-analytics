@@ -9002,25 +9002,25 @@
 
 .analytics-whitepaper-tree-item {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.36rem;
 }
 
 .analytics-whitepaper-tree-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.42rem;
+  gap: 0.5rem;
   align-items: stretch;
 }
 
 .analytics-whitepaper-tree-toggle {
-  width: 2.25rem;
-  min-height: 2.6rem;
+  width: 2rem;
+  min-height: 2.35rem;
   border: 1px solid rgba(118, 214, 194, 0.18);
-  border-radius: 0.9rem;
+  border-radius: 0.8rem;
   background: rgba(118, 214, 194, 0.06);
   color: #8df5df;
   font: inherit;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 900;
   cursor: pointer;
   transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
@@ -9033,26 +9033,57 @@
 }
 
 .analytics-whitepaper-tree-block {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
   width: 100%;
+  min-height: 2.35rem;
+  padding: 0.58rem 0.72rem;
   text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+  border-radius: 0.9rem;
+}
+
+.analytics-whitepaper-tree-block-number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: rgba(118, 214, 194, 0.1);
+  color: #8df5df;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.analytics-whitepaper-tree-block-title {
+  min-width: 0;
+  color: inherit;
+  font-size: 0.83rem;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .analytics-whitepaper-subtree {
   display: grid;
-  gap: 0.36rem;
-  margin-left: 2.7rem;
-  padding-left: 0.75rem;
+  gap: 0.32rem;
+  margin-left: 2.5rem;
+  padding: 0.18rem 0 0.18rem 0.68rem;
   border-left: 1px solid rgba(118, 214, 194, 0.18);
 }
 
 .analytics-whitepaper-subtree-button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.55rem;
-  align-items: start;
+  gap: 0.5rem;
+  align-items: center;
   border: 1px solid rgba(157, 178, 255, 0.1);
-  border-radius: 0.9rem;
-  padding: 0.62rem 0.72rem;
+  border-radius: 0.82rem;
+  padding: 0.5rem 0.62rem;
   background: rgba(5, 12, 25, 0.38);
   color: #aebdd4;
   font: inherit;
@@ -9078,20 +9109,20 @@
 .analytics-whitepaper-subtree-button span {
   display: inline-grid;
   place-items: center;
-  min-width: 2.2rem;
-  height: 1.55rem;
+  min-width: 2rem;
+  height: 1.35rem;
   border-radius: 999px;
   background: rgba(118, 214, 194, 0.11);
   color: #8df5df;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 900;
 }
 
 .analytics-whitepaper-subtree-button strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 0.82rem;
-  font-weight: 850;
+  font-size: 0.78rem;
+  font-weight: 800;
   line-height: 1.25;
 }
 
@@ -9741,6 +9772,20 @@
   color: #9fb2cf;
   font-weight: 750;
   line-height: 1.35;
+}
+
+.analytics-dataset-sidebar .analytics-whitepaper-tree-block-title {
+  color: inherit;
+  font-size: 0.83rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.analytics-dataset-sidebar .analytics-whitepaper-subtree-button strong {
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .analytics-dataset-main {
