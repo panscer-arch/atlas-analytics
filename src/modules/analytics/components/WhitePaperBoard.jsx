@@ -437,6 +437,7 @@ function WhitePaperBoard() {
     return url.searchParams.get("subblock") || "";
   });
   const [documentMode, setDocumentMode] = useState("read");
+  const [readTheme, setReadTheme] = useState("light");
   const [expandedBlockIds, setExpandedBlockIds] = useState(() => new Set());
 
   useEffect(() => {
@@ -738,17 +739,30 @@ function WhitePaperBoard() {
         </aside>
 
         <div className="analytics-dataset-main">
+          <div className="analytics-whitepaper-control-panel">
+            <div>
+              <span>Режим работы</span>
+              <div className="analytics-whitepaper-mode-toggle" aria-label="Режим White Paper">
+                <button type="button" className={documentMode === "read" ? "is-active" : ""} onClick={() => setDocumentMode("read")}>Читать</button>
+                <button type="button" className={documentMode === "edit" ? "is-active" : ""} onClick={() => setDocumentMode("edit")}>Редактировать</button>
+              </div>
+            </div>
+            <div>
+              <span>Тема чтения</span>
+              <div className="analytics-whitepaper-mode-toggle" aria-label="Тема чтения White Paper">
+                <button type="button" className={readTheme === "light" ? "is-active" : ""} onClick={() => setReadTheme("light")}>Белая</button>
+                <button type="button" className={readTheme === "dark" ? "is-active" : ""} onClick={() => setReadTheme("dark")}>Чёрная</button>
+              </div>
+            </div>
+          </div>
+
           {isStructuredWhitePaper ? (
-            <section className={`analytics-whitepaper-reader analytics-whitepaper-reader-${documentMode}`}>
+            <section className={`analytics-whitepaper-reader analytics-whitepaper-reader-${documentMode} analytics-whitepaper-reader-theme-${readTheme}`}>
               <div className="analytics-whitepaper-reader-head">
                 <span>{activeSubsection ? activeSubsection.number : activeBlock.sectionNumber || "Блок"}</span>
                 <div>
                   <strong>{activeSubsection ? activeSubsection.title : activeBlock.title}</strong>
                   <small>{documentMode === "read" ? "Режим чтения" : activeSubsection ? `${activeBlock.title} · редактируется только выбранный подпункт` : "Полный текст выбранного блока"}</small>
-                </div>
-                <div className="analytics-whitepaper-mode-toggle" aria-label="Режим White Paper">
-                  <button type="button" className={documentMode === "read" ? "is-active" : ""} onClick={() => setDocumentMode("read")}>Читать</button>
-                  <button type="button" className={documentMode === "edit" ? "is-active" : ""} onClick={() => setDocumentMode("edit")}>Редактировать</button>
                 </div>
               </div>
               {documentMode === "read" ? (
@@ -767,8 +781,7 @@ function WhitePaperBoard() {
             </section>
           ) : null}
 
-          {documentMode === "edit" ? (
-            <>
+          <div className="analytics-whitepaper-editor-fields">
               <label className="analytics-program-field">
                 Название
                 <input className="analytics-agent-template-input" value={activeBlock.title} onChange={(event) => updateBlock(activeBlock.id, { title: event.target.value })} />
@@ -818,8 +831,7 @@ function WhitePaperBoard() {
                 Заметки для вычитки
                 <textarea className="analytics-agent-template-input" value={activeBlock.notes} onChange={(event) => updateBlock(activeBlock.id, { notes: event.target.value })} rows="5" />
               </label>
-            </>
-          ) : null}
+          </div>
         </div>
       </div>
     </section>
