@@ -151,28 +151,6 @@ function getWhitePaperSubsections(block) {
   }));
 }
 
-function renderWhitePaperText(text = "") {
-  return String(text || "")
-    .split(/\n{2,}/)
-    .map((paragraph, index) => {
-      const trimmed = paragraph.trim();
-      if (!trimmed) return null;
-      if (/^\|/.test(trimmed)) {
-        return <pre key={`${index}-${trimmed.slice(0, 12)}`} className="analytics-whitepaper-subblock-table">{trimmed}</pre>;
-      }
-      if (/^- /.test(trimmed)) {
-        return (
-          <ul key={`${index}-${trimmed.slice(0, 12)}`}>
-            {trimmed.split(/\n/).filter(Boolean).map((item) => (
-              <li key={item}>{item.replace(/^- /, "")}</li>
-            ))}
-          </ul>
-        );
-      }
-      return <p key={`${index}-${trimmed.slice(0, 12)}`}>{trimmed}</p>;
-    });
-}
-
 function replaceWhitePaperSubsectionText(blockText = "", subsection, nextText = "") {
   if (!subsection?.number) return nextText;
 
@@ -449,6 +427,11 @@ function WhitePaperBoard() {
     setActiveSubsectionId("");
   }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper]);
 
+  useEffect(() => {
+    if (!isStructuredWhitePaper || activeSubsectionId || !activeSubsections.length) return;
+    setActiveSubsectionId(activeSubsections[0].id);
+  }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper]);
+
   async function flushServerSave() {
     if (saveInFlightRef.current) {
       saveQueuedRef.current = true;
@@ -517,20 +500,23 @@ function WhitePaperBoard() {
   function switchView(viewId) {
     setActiveView(viewId);
     const firstBlock = blocks.find((block) => getBlockView(block) === viewId);
-    if (firstBlock) setActiveBlockId(firstBlock.id);
-    setActiveSubsectionId("");
+    if (firstBlock) {
+      setActiveBlockId(firstBlock.id);
+      const firstSubsection = getWhitePaperSubsections(firstBlock)[0];
+      setActiveSubsectionId(firstSubsection?.id || "");
+    }
   }
 
   function selectBlock(blockId) {
+    const block = blocks.find((item) => item.id === blockId);
+    const firstSubsection = getWhitePaperSubsections(block)[0];
     setActiveBlockId(blockId);
-    setActiveSubsectionId("");
-    if (activeView === "whitepaper50") {
-      setExpandedBlockIds((current) => {
-        const next = new Set(current);
-        next.add(blockId);
-        return next;
-      });
-    }
+    setActiveSubsectionId(firstSubsection?.id || "");
+    setExpandedBlockIds((current) => {
+      const next = new Set(current);
+      next.add(blockId);
+      return next;
+    });
   }
 
   function toggleBlock(blockId) {
@@ -682,9 +668,6 @@ function WhitePaperBoard() {
                   rows={activeSubsection ? 12 : 16}
                 />
               </label>
-              <div className="analytics-whitepaper-reader-body">
-                {renderWhitePaperText(activeReadableText)}
-              </div>
             </section>
           ) : null}
 
