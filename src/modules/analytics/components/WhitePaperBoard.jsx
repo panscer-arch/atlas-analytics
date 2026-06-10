@@ -181,6 +181,64 @@ function replaceWhitePaperSubsectionText(blockText = "", subsection, nextText = 
   return [...lines.slice(0, startIndex), ...nextLines, ...lines.slice(endIndex)].join("\n");
 }
 
+function parseMarkdownTable(tableText = "") {
+  const rows = String(tableText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim()));
+  if (!rows.length) return { headers: [], rows: [] };
+  const [headers, maybeDivider, ...bodyRows] = rows;
+  const hasDivider = maybeDivider?.every((cell) => /^:?-{2,}:?$/.test(cell));
+  return {
+    headers,
+    rows: hasDivider ? bodyRows : rows.slice(1),
+  };
+}
+
+function getTableCellTone(value = "") {
+  const normalized = value.toLowerCase();
+  if (normalized.includes("нужно заполнить") || normalized.includes("требует")) return "warning";
+  if (normalized.includes("подтвердить") || normalized.includes("сверки")) return "review";
+  if (normalized.includes("предварительно") || normalized.includes("черновик")) return "draft";
+  if (normalized.includes("заполнено") || normalized.includes("пройден")) return "ok";
+  return "";
+}
+
+function WhitePaperReadableTable({ text }) {
+  const table = parseMarkdownTable(text);
+  if (!table.headers.length || !table.rows.length) {
+    return <pre className="analytics-whitepaper-readable-table-raw">{text}</pre>;
+  }
+
+  return (
+    <div className="analytics-whitepaper-readable-table-wrap">
+      <table className="analytics-whitepaper-readable-table">
+        <thead>
+          <tr>
+            {table.headers.map((header) => <th key={header}>{header}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, rowIndex) => (
+            <tr key={`${row.join("-")}-${rowIndex}`}>
+              {table.headers.map((header, cellIndex) => {
+                const value = row[cellIndex] || "";
+                const tone = cellIndex === table.headers.length - 1 ? getTableCellTone(value) : "";
+                return (
+                  <td key={`${header}-${cellIndex}`} data-label={header}>
+                    {tone ? <span className={`analytics-whitepaper-table-badge analytics-whitepaper-table-badge-${tone}`}>{value}</span> : value}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function WhitePaperReadableText({ text }) {
   const lines = String(text || "").split(/\r?\n/);
   const chunks = [];
@@ -245,7 +303,7 @@ function WhitePaperReadableText({ text }) {
     <div className="analytics-whitepaper-readable-body">
       {chunks.map((chunk, index) => {
         if (chunk.type === "heading") return <h3 key={`${chunk.type}-${index}`}>{chunk.text}</h3>;
-        if (chunk.type === "table") return <pre key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-table">{chunk.text}</pre>;
+        if (chunk.type === "table") return <WhitePaperReadableTable key={`${chunk.type}-${index}`} text={chunk.text} />;
         if (chunk.type === "todo") return <div key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-callout analytics-whitepaper-readable-todo">{chunk.text}</div>;
         if (chunk.type === "action") return <div key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-callout analytics-whitepaper-readable-action">{chunk.text}</div>;
         if (chunk.type === "list") return <p key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-list">{chunk.text}</p>;
