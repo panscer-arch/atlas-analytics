@@ -708,13 +708,6 @@ function WhitePaperBoard() {
             <input className="analytics-agent-template-input" value={activeBlock.title} onChange={(event) => updateBlock(activeBlock.id, { title: event.target.value })} />
           </label>
 
-          {!isStructuredWhitePaper ? (
-            <label className="analytics-program-field">
-              Текст блока
-              <textarea className="analytics-agent-template-input analytics-dataset-source" value={activeBlock.text} onChange={(event) => updateBlock(activeBlock.id, { text: event.target.value })} rows="20" />
-            </label>
-          ) : null}
-
           {activeBlock.id === "wp20-cover-metadata" ? (
             <div className="analytics-program-field">
               <span className="analytics-whitepaper-preview-label">Предпросмотр первой страницы</span>
