@@ -402,7 +402,7 @@ function WhitePaperBoard() {
 
   const visibleBlocks = useMemo(() => blocks.filter((block) => getBlockView(block) === activeView), [activeView, blocks]);
   const activeBlock = visibleBlocks.find((block) => block.id === activeBlockId) || visibleBlocks[0] || blocks[0];
-  const isStructuredWhitePaper = activeView === "whitepaper50";
+  const isStructuredWhitePaper = true;
   const activeSubsections = useMemo(() => getWhitePaperSubsections(activeBlock), [activeBlock]);
   const activeSubsection = activeSubsections.find((section) => section.id === activeSubsectionId) || null;
   const activeReadableText = activeSubsection?.text || activeBlock?.text || "";
