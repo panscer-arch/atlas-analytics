@@ -796,7 +796,7 @@ function WhitePaperBoard() {
           })}
         </aside>
 
-        <div className="analytics-dataset-main">
+        <div className={`analytics-dataset-main analytics-whitepaper-main-theme-${readTheme}`}>
           <div className="analytics-whitepaper-control-panel">
             <div>
               <span>Режим работы</span>
@@ -806,8 +806,8 @@ function WhitePaperBoard() {
               </div>
             </div>
             <div>
-              <span>Тема чтения</span>
-              <div className="analytics-whitepaper-mode-toggle" aria-label="Тема чтения White Paper">
+              <span>Тема текста</span>
+              <div className="analytics-whitepaper-mode-toggle" aria-label="Тема текста White Paper">
                 <button type="button" className={readTheme === "light" ? "is-active" : ""} onClick={() => setReadTheme("light")}>Белая</button>
                 <button type="button" className={readTheme === "dark" ? "is-active" : ""} onClick={() => setReadTheme("dark")}>Чёрная</button>
               </div>
