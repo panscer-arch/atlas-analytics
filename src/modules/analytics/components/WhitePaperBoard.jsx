@@ -475,6 +475,7 @@ function WhitePaperBoard() {
   const saveInFlightRef = useRef(false);
   const saveQueuedRef = useRef(false);
   const saveVersionRef = useRef(0);
+  const readableEditorRef = useRef(null);
   const [activeBlockId, setActiveBlockId] = useState(() => {
     if (typeof window === "undefined") return defaultWhitePaperBlocks[0].id;
     const url = new URL(window.location.href);
@@ -576,6 +577,18 @@ function WhitePaperBoard() {
     if (!isStructuredWhitePaper || activeSubsectionId || !activeSubsections.length) return;
     setActiveSubsectionId(activeSubsections[0].id);
   }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper]);
+
+  useEffect(() => {
+    if (documentMode !== "edit") return undefined;
+
+    const focusTimer = window.setTimeout(() => {
+      const editor = readableEditorRef.current;
+      if (!editor) return;
+      editor.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [activeBlock?.id, activeSubsectionId, documentMode]);
 
   async function flushServerSave() {
     if (saveInFlightRef.current) {
@@ -829,9 +842,11 @@ function WhitePaperBoard() {
                 <label className="analytics-whitepaper-reader-editor">
                   <span>{activeSubsection ? "Редактировать подблок" : "Редактировать блок"}</span>
                   <textarea
+                    ref={readableEditorRef}
                     className="analytics-agent-template-input analytics-whitepaper-reader-input"
                     value={activeReadableText}
                     onChange={(event) => updateReadableText(event.target.value)}
+                    onKeyDown={(event) => event.stopPropagation()}
                     rows={activeSubsection ? 12 : 16}
                   />
                 </label>
