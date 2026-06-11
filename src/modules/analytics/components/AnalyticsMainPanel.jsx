@@ -3,6 +3,7 @@ import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
 import CrmDashboardTab from "./CrmDashboardTab";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
+import HyipParserPanel from "./HyipParserPanel";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
@@ -38,6 +39,14 @@ export default function AnalyticsMainPanel({
     );
   }
   if (activeTab === "content") return <LaunchChecklistSection mode="content" />;
+
+  if (activeTab === "parser") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <HyipParserPanel />
+      </Wrapper>
+    );
+  }
 
   if (activeTab === "socialSubscriptions") {
     return (

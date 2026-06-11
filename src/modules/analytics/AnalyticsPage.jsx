@@ -834,6 +834,7 @@ function AnalyticsPage() {
     { id: "productLibrary", label: "Библиотека" },
     { id: "tasks", label: "Задачи" },
     { id: "expenses", label: "Расходы" },
+    { id: "parser", label: "Парсер" },
     { id: "content", label: "Контент" },
     { id: "socialSubscriptions", label: "Подписки" },
     { id: "developments", label: "Разработки" },
