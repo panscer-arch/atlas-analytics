@@ -98,6 +98,9 @@ cp .env.example .env.local
 | `VITE_ANALYTICS_BOARD_URL` | URL внешней доски для iframe и кнопки открытия |
 | `VITE_ANALYTICS_BOARD_API_URL` | API доски для отправки сигналов/идей, если подключено |
 | `VITE_CONTENT_API_BASE_URL` | базовый URL content API; если пусто, frontend ходит в относительный `/api/content/...` |
+| `RESEND_API_KEY` | API-ключ Resend для outreach-агента в парсере |
+| `OUTREACH_FROM_EMAIL` | email отправителя, например `Superflow Systems <ads@superflowsystems.com>` |
+| `OUTREACH_REPLY_TO_EMAIL` | email для ответов площадок |
 
 Если переменные не заданы, приложение продолжит работать на mock/fallback-данных. Редактируемый контент будет сохраняться в `localStorage`, а попытки серверного сохранения просто не будут ломать интерфейс.
 
@@ -147,10 +150,13 @@ Endpoints:
 | `GET` | `/api/content/health` | healthcheck |
 | `GET` | `/api/content/:key` | загрузить JSON по ключу |
 | `PUT` | `/api/content/:key` | сохранить JSON по ключу |
+| `POST` | `/api/outreach/send-email` | отправить outreach email через Resend после подтверждения в UI |
 
 Сервер хранит файлы как `${ATLAS_CONTENT_STORE_DIR}/${key}.json`. Перед перезаписью существующего файла сервер кладёт копию в `${ATLAS_CONTENT_STORE_DIR}/_backups/${key}/`.
 
 Ограничение размера тела запроса: 10 MB.
+
+Outreach-агент вкладки `Парсер` хранит очередь переговоров через content API по ключу `atlas.analytics.hyipOutreach.queue.v1`. Отправка email не работает без `RESEND_API_KEY`, `OUTREACH_FROM_EMAIL` и `OUTREACH_REPLY_TO_EMAIL`; в этом случае UI создаёт черновики и Telegram-тексты, но показывает понятную ошибку при попытке отправить email.
 
 ## Backup контента
 

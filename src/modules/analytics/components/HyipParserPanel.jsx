@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { loadServerContent, postServerJson, saveServerContent } from "../services/contentStore";
 
 const COUNTRY_OPTIONS = [
   "Все страны",
@@ -25,6 +26,9 @@ const COUNTRY_OPTIONS = [
 ];
 const STATUS_OPTIONS = ["Все статусы", "Новый", "Проверить", "Готов к контакту", "В работе", "Не подходит"];
 const STORAGE_KEY = "atlas.analytics.hyipParserLeads.v3";
+const OUTREACH_STORAGE_KEY = "atlas.analytics.hyipOutreach.queue.v1";
+const OUTREACH_STATUS_OPTIONS = ["Найден", "Черновик", "Отправлено", "Ответили", "Цена получена", "Договорились", "Отказ"];
+const PIPELINE_STATUSES = ["Найден", "Черновик", "Отправлено", "Ответили", "Цена получена", "Договорились", "Отказ"];
 
 const defaultLeads = [
   {
@@ -628,6 +632,115 @@ function readStoredLeads() {
   }
 }
 
+function readStoredOutreach() {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const saved = window.localStorage.getItem(OUTREACH_STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function extractEmail(value = "") {
+  return String(value || "").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+}
+
+function extractTelegramHandle(value = "") {
+  return String(value || "").match(/@[a-zA-Z0-9_]{5,}/)?.[0] || "";
+}
+
+function makeFollowUpDate(days = 2) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeOutreachRecord(lead, record = {}) {
+  const email = record.email || extractEmail(lead.contacts);
+  const telegram = record.telegram || extractTelegramHandle(lead.contacts);
+  return {
+    leadId: lead.id,
+    status: record.status || (lead.status === "Готов к контакту" ? "Найден" : "Найден"),
+    channel: record.channel || (email ? "email" : telegram ? "telegram" : "form"),
+    email,
+    telegram,
+    subject: record.subject || "",
+    draft: record.draft || "",
+    price: record.price || "",
+    conditions: record.conditions || "",
+    nextStep: record.nextStep || "Создать черновик и запросить media kit",
+    followUpAt: record.followUpAt || "",
+    lastContactAt: record.lastContactAt || "",
+    responseNotes: record.responseNotes || "",
+    history: Array.isArray(record.history) ? record.history : [],
+    sendState: "",
+  };
+}
+
+function getOutreachRecord(lead, outreach) {
+  return normalizeOutreachRecord(lead, outreach[lead.id]);
+}
+
+function formatLeadContext(lead) {
+  return [
+    `Platform: ${lead.name}`,
+    `Country/GEO: ${lead.country}`,
+    `Category: ${lead.category}`,
+    `Website: ${lead.url}`,
+    `Public contacts: ${lead.contacts || "not found yet"}`,
+    `Internal notes: ${lead.notes || "none"}`,
+  ].join("\n");
+}
+
+function buildOutreachDraft(lead, record = {}) {
+  const subject = `Advertising placement request - Superflow Systems x ${lead.name}`;
+  const intro = lead.country === "Индия"
+    ? "We are preparing an India-focused Web3 advertising test and are reviewing relevant crypto, Telegram and monitor placements."
+    : "We are preparing an international Web3 advertising campaign and are reviewing relevant crypto, Telegram and monitor placements.";
+  const body = [
+    "Hello,",
+    "",
+    "My name is [Your Name], I represent Superflow Systems.",
+    intro,
+    "",
+    "Could you please send your current media kit and placement options?",
+    "",
+    "We would like to understand:",
+    "1. Available ad formats: banners, listings, reviews, Telegram/channel placements, newsletter or social posts",
+    "2. Prices per week/month and available start dates",
+    "3. Traffic by country, especially India and global crypto/Web3 audience",
+    "4. Telegram/social audience size and engagement",
+    "5. Moderation requirements and materials you need from our side",
+    "6. Payment methods and invoice/confirmation process",
+    "",
+    "We can provide the website, creatives and project details for your review before any placement. We are looking for compliant paid advertising options and want to confirm all requirements first.",
+    "",
+    "Thank you.",
+    "Superflow Systems team",
+    "",
+    "---",
+    formatLeadContext(lead),
+  ].join("\n");
+
+  return {
+    ...record,
+    status: "Черновик",
+    subject,
+    draft: body,
+    nextStep: "Проверить текст и отправить email / написать в Telegram",
+    followUpAt: record.followUpAt || makeFollowUpDate(2),
+  };
+}
+
+function makeTelegramUrl(handle = "", text = "") {
+  const cleanHandle = String(handle || "").replace(/^@/, "").trim();
+  if (!cleanHandle) return "";
+  return `https://t.me/${cleanHandle}?text=${encodeURIComponent(text)}`;
+}
+
 function getScoreTone(score) {
   if (score >= 80) return "success";
   if (score >= 60) return "accent";
@@ -659,20 +772,68 @@ function downloadLeadsCsv(leads) {
 
 export default function HyipParserPanel() {
   const [leads, setLeads] = useState(readStoredLeads);
+  const [outreach, setOutreach] = useState(readStoredOutreach);
+  const [isOutreachLoaded, setIsOutreachLoaded] = useState(false);
+  const [outreachSaveState, setOutreachSaveState] = useState("Локально");
+  const [selectedLeadId, setSelectedLeadId] = useState(() => readStoredLeads()[0]?.id || "");
+  const [pipelineStatus, setPipelineStatus] = useState("Все этапы");
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
   const [query, setQuery] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [runProgress, setRunProgress] = useState(100);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(OUTREACH_STORAGE_KEY).then((savedOutreach) => {
+      if (!isMounted) return;
+      if (savedOutreach && typeof savedOutreach === "object" && !Array.isArray(savedOutreach)) {
+        setOutreach(savedOutreach);
+        try {
+          window.localStorage.setItem(OUTREACH_STORAGE_KEY, JSON.stringify(savedOutreach));
+        } catch {
+          // Серверная очередь уже загружена в состояние страницы.
+        }
+        setOutreachSaveState("Сохранено на сервере");
+      }
+      setIsOutreachLoaded(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOutreachLoaded) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setOutreachSaveState("Сохраняю...");
+      try {
+        window.localStorage.setItem(OUTREACH_STORAGE_KEY, JSON.stringify(outreach));
+      } catch {
+        // Очередь останется доступна в состоянии страницы.
+      }
+
+      saveServerContent(OUTREACH_STORAGE_KEY, outreach).then((ok) => {
+        setOutreachSaveState(ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [isOutreachLoaded, outreach]);
+
   const filteredLeads = useMemo(() => leads.filter((lead) => {
+    const record = getOutreachRecord(lead, outreach);
     const countryMatch = country === "Все страны" || lead.country === country;
     const statusMatch = status === "Все статусы" || lead.status === status;
+    const pipelineMatch = pipelineStatus === "Все этапы" || record.status === pipelineStatus;
     const search = query.trim().toLowerCase();
-    const queryMatch = !search || [lead.name, lead.country, lead.url, lead.category, lead.contacts, lead.notes]
+    const queryMatch = !search || [lead.name, lead.country, lead.url, lead.category, lead.contacts, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
       .some((value) => String(value).toLowerCase().includes(search));
-    return countryMatch && statusMatch && queryMatch;
-  }), [country, leads, query, status]);
+    return countryMatch && statusMatch && pipelineMatch && queryMatch;
+  }), [country, leads, outreach, pipelineStatus, query, status]);
 
   const summary = useMemo(() => ({
     total: leads.length,
@@ -680,6 +841,14 @@ export default function HyipParserPanel() {
     avgFit: Math.round(leads.reduce((sum, lead) => sum + lead.fitScore, 0) / Math.max(leads.length, 1)),
     contacts: leads.filter((lead) => lead.contacts && lead.contacts !== "form only").length,
   }), [leads]);
+
+  const pipelineSummary = useMemo(() => PIPELINE_STATUSES.map((item) => ({
+    status: item,
+    count: leads.filter((lead) => getOutreachRecord(lead, outreach).status === item).length,
+  })), [leads, outreach]);
+
+  const selectedLead = leads.find((lead) => lead.id === selectedLeadId) || filteredLeads[0] || leads[0];
+  const selectedOutreach = selectedLead ? getOutreachRecord(selectedLead, outreach) : null;
 
   function persist(nextLeads) {
     setLeads(nextLeads);
@@ -690,6 +859,93 @@ export default function HyipParserPanel() {
 
   function updateLead(id, patch) {
     persist(leads.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)));
+  }
+
+  function updateOutreach(leadId, patch) {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+    const currentRecord = getOutreachRecord(lead, outreach);
+    const nextRecord = {
+      ...currentRecord,
+      ...patch,
+      history: patch.history || currentRecord.history,
+    };
+    setOutreach((current) => ({ ...current, [leadId]: nextRecord }));
+  }
+
+  function appendOutreachHistory(leadId, text, patch = {}) {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return;
+    const currentRecord = getOutreachRecord(lead, outreach);
+    updateOutreach(leadId, {
+      ...patch,
+      history: [
+        { id: `outreach-${Date.now()}`, text, createdAt: new Date().toISOString() },
+        ...currentRecord.history,
+      ],
+    });
+  }
+
+  function createDraft(lead) {
+    const currentRecord = getOutreachRecord(lead, outreach);
+    const nextRecord = buildOutreachDraft(lead, currentRecord);
+    appendOutreachHistory(lead.id, "Агент создал черновик письма", nextRecord);
+  }
+
+  async function copyTelegramDraft(lead, record) {
+    const draft = record.draft || buildOutreachDraft(lead, record).draft;
+    try {
+      await navigator.clipboard.writeText(draft);
+      appendOutreachHistory(lead.id, "Telegram-текст скопирован", {
+        ...record,
+        draft,
+        status: record.status === "Найден" ? "Черновик" : record.status,
+        nextStep: "Открыть Telegram и отправить вручную",
+      });
+    } catch {
+      window.alert("Не получилось скопировать текст. Выдели черновик вручную.");
+    }
+  }
+
+  async function sendEmail(lead, record) {
+    const draft = record.draft || buildOutreachDraft(lead, record).draft;
+    const subject = record.subject || buildOutreachDraft(lead, record).subject;
+    const email = record.email || extractEmail(lead.contacts);
+    if (!email) {
+      window.alert("У этого лида нет email. Добавь email в карточку outreach или используй Telegram/contact form.");
+      return;
+    }
+
+    updateOutreach(lead.id, { ...record, draft, subject, email, sendState: "sending" });
+    const result = await postServerJson("/api/outreach/send-email", {
+      lead: { id: lead.id, name: lead.name, url: lead.url, country: lead.country, category: lead.category },
+      to: email,
+      subject,
+      body: draft,
+    });
+
+    if (!result.ok) {
+      const errorText = result.payload?.error === "outreach_email_not_configured"
+        ? "Нужно подключить RESEND_API_KEY, OUTREACH_FROM_EMAIL и OUTREACH_REPLY_TO_EMAIL на сервере."
+        : result.payload?.error === "invalid_recipient_email"
+          ? "Email получателя выглядит некорректно."
+          : "Email не отправился. Проверь настройки отправки.";
+      updateOutreach(lead.id, { ...record, draft, subject, email, sendState: "error" });
+      window.alert(errorText);
+      return;
+    }
+
+    appendOutreachHistory(lead.id, `Email отправлен на ${email}`, {
+      ...record,
+      draft,
+      subject,
+      email,
+      status: "Отправлено",
+      lastContactAt: new Date().toISOString(),
+      followUpAt: makeFollowUpDate(2),
+      nextStep: "Ждать ответ или сделать follow-up через 2 дня",
+      sendState: "sent",
+    });
   }
 
   function startParserRun() {
@@ -748,6 +1004,120 @@ export default function HyipParserPanel() {
         <Metric label="Есть контакты" value={summary.contacts} tone="success" />
       </section>
 
+      <section className="analytics-outreach-pipeline analytics-surface">
+        <div className="analytics-parser-table-head">
+          <div>
+            <h2>Outreach CRM</h2>
+            <p>Агент ведёт переговоры до цены: черновик, отправка, ответ, условия, сделка. Очередь: {outreachSaveState}.</p>
+          </div>
+        </div>
+        <div className="analytics-outreach-pipeline-list">
+          {pipelineSummary.map((item) => (
+            <button
+              key={item.status}
+              type="button"
+              className={pipelineStatus === item.status ? "is-active" : ""}
+              onClick={() => setPipelineStatus((current) => (current === item.status ? "Все этапы" : item.status))}
+            >
+              <span>{item.status}</span>
+              <strong>{item.count}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {selectedLead && selectedOutreach && (
+        <section className="analytics-outreach-cockpit analytics-surface">
+          <div className="analytics-outreach-lead">
+            <p className="analytics-kicker">Selected lead</p>
+            <h2>{selectedLead.name}</h2>
+            <a href={selectedLead.url} target="_blank" rel="noreferrer">{selectedLead.url}</a>
+            <div className="analytics-outreach-meta">
+              <span>{selectedLead.country}</span>
+              <span>{selectedLead.category}</span>
+              <span>Fit {selectedLead.fitScore}%</span>
+            </div>
+            <textarea
+              value={selectedLead.contacts}
+              onChange={(event) => updateLead(selectedLead.id, { contacts: event.target.value })}
+              rows="4"
+            />
+          </div>
+
+          <div className="analytics-outreach-agent">
+            <div className="analytics-outreach-agent-head">
+              <div>
+                <p className="analytics-kicker">Superflow outreach agent</p>
+                <h2>Переговоры до цены</h2>
+              </div>
+              <select value={selectedOutreach.status} onChange={(event) => appendOutreachHistory(selectedLead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })}>
+                {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </div>
+
+            <div className="analytics-outreach-fields">
+              <label>
+                Email
+                <input value={selectedOutreach.email} onChange={(event) => updateOutreach(selectedLead.id, { email: event.target.value })} placeholder="ads@example.com" />
+              </label>
+              <label>
+                Telegram
+                <input value={selectedOutreach.telegram} onChange={(event) => updateOutreach(selectedLead.id, { telegram: event.target.value })} placeholder="@manager" />
+              </label>
+              <label>
+                Цена
+                <input value={selectedOutreach.price} onChange={(event) => updateOutreach(selectedLead.id, { price: event.target.value, status: event.target.value ? "Цена получена" : selectedOutreach.status })} placeholder="$ / week, $ / month" />
+              </label>
+              <label>
+                Follow-up
+                <input type="date" value={selectedOutreach.followUpAt} onChange={(event) => updateOutreach(selectedLead.id, { followUpAt: event.target.value })} />
+              </label>
+            </div>
+
+            <label className="analytics-outreach-subject">
+              Тема email
+              <input value={selectedOutreach.subject} onChange={(event) => updateOutreach(selectedLead.id, { subject: event.target.value })} placeholder="Advertising placement request..." />
+            </label>
+
+            <label className="analytics-outreach-draft">
+              Черновик агента
+              <textarea value={selectedOutreach.draft} onChange={(event) => updateOutreach(selectedLead.id, { draft: event.target.value, status: selectedOutreach.status === "Найден" ? "Черновик" : selectedOutreach.status })} rows="12" />
+            </label>
+
+            <div className="analytics-outreach-actions">
+              <button type="button" onClick={() => createDraft(selectedLead)}>Создать черновик</button>
+              <button type="button" onClick={() => sendEmail(selectedLead, selectedOutreach)}>
+                {selectedOutreach.sendState === "sending" ? "Отправляю..." : "Отправить email"}
+              </button>
+              <button type="button" onClick={() => copyTelegramDraft(selectedLead, selectedOutreach)}>Скопировать Telegram</button>
+              <a className={!selectedOutreach.telegram ? "is-disabled" : ""} href={makeTelegramUrl(selectedOutreach.telegram, selectedOutreach.draft)} target="_blank" rel="noreferrer">Открыть Telegram</a>
+            </div>
+
+            <div className="analytics-outreach-notes">
+              <label>
+                Условия размещения
+                <textarea value={selectedOutreach.conditions} onChange={(event) => updateOutreach(selectedLead.id, { conditions: event.target.value })} rows="3" />
+              </label>
+              <label>
+                Ответ / заметки
+                <textarea value={selectedOutreach.responseNotes} onChange={(event) => updateOutreach(selectedLead.id, { responseNotes: event.target.value, status: event.target.value ? "Ответили" : selectedOutreach.status })} rows="3" />
+              </label>
+              <label>
+                Следующий шаг
+                <input value={selectedOutreach.nextStep} onChange={(event) => updateOutreach(selectedLead.id, { nextStep: event.target.value })} />
+              </label>
+            </div>
+
+            <div className="analytics-outreach-history">
+              <strong>История</strong>
+              {(selectedOutreach.history.length ? selectedOutreach.history : [{ id: "empty", text: "Пока действий нет", createdAt: "" }]).slice(0, 5).map((item) => (
+                <p key={item.id}>{item.createdAt ? new Date(item.createdAt).toLocaleString("ru-RU") : ""} {item.text}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="analytics-parser-grid">
         <div className="analytics-parser-panel analytics-surface">
           <div className="analytics-parser-panel-head">
@@ -767,6 +1137,12 @@ export default function HyipParserPanel() {
               Статус
               <select value={status} onChange={(event) => setStatus(event.target.value)}>
                 {STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              Этап outreach
+              <select value={pipelineStatus} onChange={(event) => setPipelineStatus(event.target.value)}>
+                {["Все этапы", ...OUTREACH_STATUS_OPTIONS].map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <label className="analytics-parser-wide">
@@ -835,13 +1211,16 @@ export default function HyipParserPanel() {
                 <th>Страна</th>
                 <th>Контакты</th>
                 <th>Скоринг</th>
-                <th>Статус</th>
+                <th>Outreach</th>
+                <th>Лид</th>
                 <th>Заметки</th>
               </tr>
             </thead>
             <tbody>
-              {filteredLeads.map((lead) => (
-                <tr key={lead.id}>
+              {filteredLeads.map((lead) => {
+                const record = getOutreachRecord(lead, outreach);
+                return (
+                <tr key={lead.id} className={selectedLead?.id === lead.id ? "analytics-parser-row-active" : ""}>
                   <td>
                     <input value={lead.name} onChange={(event) => updateLead(lead.id, { name: event.target.value })} />
                     <input value={lead.url} onChange={(event) => updateLead(lead.id, { url: event.target.value })} />
@@ -861,6 +1240,13 @@ export default function HyipParserPanel() {
                     <Score label="Fit" value={lead.fitScore} />
                   </td>
                   <td>
+                    <select className={`analytics-parser-status analytics-parser-status-${getStatusTone(record.status)}`} value={record.status} onChange={(event) => appendOutreachHistory(lead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })}>
+                      {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+                    </select>
+                    <button type="button" className="analytics-parser-mini-button" onClick={() => { setSelectedLeadId(lead.id); createDraft(lead); }}>Черновик</button>
+                    <button type="button" className="analytics-parser-mini-button" onClick={() => setSelectedLeadId(lead.id)}>Открыть</button>
+                  </td>
+                  <td>
                     <select className={`analytics-parser-status analytics-parser-status-${getStatusTone(lead.status)}`} value={lead.status} onChange={(event) => updateLead(lead.id, { status: event.target.value })}>
                       {STATUS_OPTIONS.filter((item) => item !== "Все статусы").map((item) => <option key={item}>{item}</option>)}
                     </select>
@@ -869,7 +1255,8 @@ export default function HyipParserPanel() {
                     <textarea value={lead.notes} onChange={(event) => updateLead(lead.id, { notes: event.target.value })} rows="4" />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

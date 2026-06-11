@@ -1,13 +1,14 @@
 import http from "node:http";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent } from "./telegram-task-store.mjs";
+import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
 const BACKUP_DIR = path.join(STORE_DIR, "_backups");
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
+const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
 
 let telegramEnvCache = null;
 
@@ -98,6 +99,83 @@ function formatTelegramSubtaskPush({ task = {}, subtask = {} }) {
 
   lines.push("", "💬 <i>Проверьте задачу и отпишитесь по статусу.</i>");
   return lines.join("\n");
+}
+
+function normalizeEmailValue(value = "") {
+  return String(value || "").trim();
+}
+
+function isProbablyEmail(value = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmailValue(value));
+}
+
+function sanitizeEmailText(value = "", maxLength = 6000) {
+  return normalizeEmailValue(value).slice(0, maxLength);
+}
+
+async function appendOutreachEmailLog(entry) {
+  const log = await readContent(OUTREACH_LOG_KEY, []);
+  const nextLog = Array.isArray(log) ? log : [];
+  await writeContent(OUTREACH_LOG_KEY, [{ ...entry, createdAt: new Date().toISOString() }, ...nextLog].slice(0, 500));
+}
+
+async function sendOutreachEmail({ lead = {}, to = "", subject = "", body = "" }) {
+  const apiKey = normalizeEmailValue(process.env.RESEND_API_KEY || "");
+  const from = normalizeEmailValue(process.env.OUTREACH_FROM_EMAIL || "");
+  const replyTo = normalizeEmailValue(process.env.OUTREACH_REPLY_TO_EMAIL || from);
+  const recipient = normalizeEmailValue(to);
+
+  if (!apiKey || !from || !replyTo) {
+    return { ok: false, status: 503, error: "outreach_email_not_configured" };
+  }
+  if (!isProbablyEmail(recipient)) {
+    return { ok: false, status: 400, error: "invalid_recipient_email" };
+  }
+
+  const cleanSubject = sanitizeEmailText(subject || `Advertising options request - ${lead.name || "Superflow Systems"}`, 220);
+  const cleanBody = sanitizeEmailText(body, 8000);
+  if (!cleanBody) {
+    return { ok: false, status: 400, error: "empty_email_body" };
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [recipient],
+      reply_to: replyTo,
+      subject: cleanSubject,
+      text: cleanBody,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    await appendOutreachEmailLog({
+      ok: false,
+      leadId: lead.id || "",
+      leadName: lead.name || "",
+      to: recipient,
+      subject: cleanSubject,
+      error: payload?.message || payload?.error || "resend_send_failed",
+    });
+    return { ok: false, status: response.status || 502, error: payload?.message || payload?.error || "resend_send_failed" };
+  }
+
+  await appendOutreachEmailLog({
+    ok: true,
+    leadId: lead.id || "",
+    leadName: lead.name || "",
+    to: recipient,
+    subject: cleanSubject,
+    resendId: payload?.id || "",
+  });
+
+  return { ok: true, status: 200, resendId: payload?.id || "" };
 }
 
 async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
@@ -217,6 +295,14 @@ const server = http.createServer(async (request, response) => {
       const parsed = JSON.parse(body || "{}");
       const text = formatTelegramSubtaskPush(parsed);
       const result = await sendTelegramMessage(text, { parse_mode: "HTML" }, String(parsed.chatId || "").trim());
+      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
+      return;
+    }
+
+    if (url.pathname === "/api/outreach/send-email" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const result = await sendOutreachEmail(parsed);
       sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
       return;
     }

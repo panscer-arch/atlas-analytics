@@ -15734,6 +15734,199 @@ input.analytics-smm-cell-input {
   color: #ffb0b0;
 }
 
+.analytics-outreach-pipeline,
+.analytics-outreach-cockpit {
+  padding: 1rem;
+}
+
+.analytics-outreach-pipeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-outreach-pipeline-list {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.analytics-outreach-pipeline-list button {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 86px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(235, 244, 255, 0.82);
+  text-align: left;
+}
+
+.analytics-outreach-pipeline-list button.is-active {
+  border-color: rgba(114, 239, 214, 0.45);
+  background: rgba(114, 239, 214, 0.1);
+}
+
+.analytics-outreach-pipeline-list span {
+  color: rgba(185, 204, 225, 0.72);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.analytics-outreach-pipeline-list strong {
+  color: #ffffff;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.analytics-outreach-cockpit {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.32fr) minmax(0, 0.68fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.analytics-outreach-lead,
+.analytics-outreach-agent {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.analytics-outreach-lead h2,
+.analytics-outreach-agent h2 {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 950;
+}
+
+.analytics-outreach-lead a {
+  color: #72efd6;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.analytics-outreach-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.analytics-outreach-meta span {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.34rem 0.55rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(235, 244, 255, 0.82);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.analytics-outreach-agent-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.analytics-outreach-fields,
+.analytics-outreach-notes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-outreach-notes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-outreach-lead textarea,
+.analytics-outreach-agent input,
+.analytics-outreach-agent select,
+.analytics-outreach-agent textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(4, 10, 18, 0.74);
+  color: #ffffff;
+  padding: 0.62rem 0.7rem;
+  font: inherit;
+  font-size: 0.86rem;
+  outline: none;
+}
+
+.analytics-outreach-agent label {
+  display: grid;
+  gap: 0.35rem;
+  color: rgba(185, 204, 225, 0.72);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.analytics-outreach-draft textarea {
+  min-height: 260px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.analytics-outreach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.analytics-outreach-actions button,
+.analytics-outreach-actions a,
+.analytics-parser-mini-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  border: 1px solid rgba(114, 239, 214, 0.28);
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  background: rgba(114, 239, 214, 0.1);
+  color: #dffdf8;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.analytics-outreach-actions a.is-disabled {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.analytics-outreach-history {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.analytics-outreach-history strong {
+  color: #ffffff;
+}
+
+.analytics-outreach-history p {
+  margin: 0;
+  color: rgba(185, 204, 225, 0.72);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.analytics-parser-row-active {
+  outline: 1px solid rgba(114, 239, 214, 0.34);
+  outline-offset: -1px;
+}
+
+.analytics-parser-mini-button {
+  width: 100%;
+  margin-top: 0.45rem;
+}
+
 .analytics-life-diary {
   display: grid;
   gap: 1rem;
@@ -16350,6 +16543,10 @@ input.analytics-smm-cell-input {
   .analytics-parser-grid,
   .analytics-parser-controls,
   .analytics-parser-outreach-grid,
+  .analytics-outreach-pipeline-list,
+  .analytics-outreach-cockpit,
+  .analytics-outreach-fields,
+  .analytics-outreach-notes,
   .analytics-security-hero {
     grid-template-columns: 1fr;
   }

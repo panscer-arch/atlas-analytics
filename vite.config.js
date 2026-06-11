@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api/content": "http://127.0.0.1:8787",
+      "/api/outreach": "http://127.0.0.1:8787",
     },
   },
 });
