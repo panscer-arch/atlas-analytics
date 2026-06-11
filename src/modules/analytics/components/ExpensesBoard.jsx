@@ -3,6 +3,7 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 import formatCurrency from "../utils/formatCurrency";
 
 export const EXPENSES_STORAGE_KEY = "atlas.analytics.expenses.v1";
+export const EXPENSE_FUNDS_STORAGE_KEY = "atlas.analytics.expenseFunds.v1";
 
 const EXPENSE_CATEGORIES = [
   "Маркетинг",
@@ -22,6 +23,7 @@ const EXPENSE_STATUSES = ["План", "Счёт", "К оплате", "Оплач
 const EXPENSE_PRIORITIES = ["Высокий", "Средний", "Низкий"];
 const EXPENSE_PERIODS = ["Разово", "Ежемесячно", "Еженедельно", "Ежегодно"];
 const EXPENSE_OWNERS = ["", "Digitex", "Bruno", "Gem", "Rotenberg", "Команда"];
+const OBLIGATION_CATEGORIES = ["Серверы / инфраструктура", "Сервисы / подписки", "Долги", "Зарплаты", "Legal / Security"];
 
 const defaultExpenses = [
   {
@@ -94,6 +96,46 @@ const defaultExpenses = [
     vendor: "Internal",
     comment: "Фиксировать отдельно от операционных расходов, чтобы видеть долговую нагрузку.",
   },
+  {
+    id: "expense-domain-001",
+    title: "Домен supersussystem.com",
+    category: "Сервисы / подписки",
+    amount: 18,
+    currency: "USDT",
+    date: "2026-07-15",
+    status: "План",
+    priority: "Высокий",
+    owner: "Digitex",
+    period: "Ежегодно",
+    vendor: "Domain registrar",
+    comment: "Обязательная дата продления домена. Проверить точную дату у регистратора.",
+  },
+  {
+    id: "expense-content-api-001",
+    title: "Content API / инфраструктурный сервис",
+    category: "Серверы / инфраструктура",
+    amount: 120,
+    currency: "USDT",
+    date: "2026-06-28",
+    status: "План",
+    priority: "Высокий",
+    owner: "Digitex",
+    period: "Ежемесячно",
+    vendor: "Infrastructure",
+    comment: "Резерв под API, деплой, хранение данных и обязательные технические сервисы.",
+  },
+];
+
+const defaultFunds = [
+  {
+    id: "fund-launch-wallet-001",
+    title: "Стартовый бюджет запуска",
+    amount: 50000,
+    currency: "USDT",
+    date: "2026-06-11",
+    source: "Кошелек Atlas",
+    comment: "Пример пополнения бюджета. Можно заменить на фактическое поступление.",
+  },
 ];
 
 function getTodayInputDate() {
@@ -143,6 +185,46 @@ function normalizeExpenses(items) {
   return Array.isArray(items) ? items.map(normalizeExpense) : defaultExpenses.map(normalizeExpense);
 }
 
+function createFund(overrides = {}) {
+  return {
+    id: `fund-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title: "",
+    amount: 0,
+    currency: "USDT",
+    date: getTodayInputDate(),
+    source: "",
+    comment: "",
+    ...overrides,
+  };
+}
+
+function normalizeFund(item = {}) {
+  return {
+    id: item.id || `fund-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title: item.title || "",
+    amount: Number(item.amount || 0),
+    currency: item.currency || "USDT",
+    date: item.date || getTodayInputDate(),
+    source: item.source || "",
+    comment: item.comment || "",
+  };
+}
+
+function normalizeFunds(items) {
+  return Array.isArray(items) ? items.map(normalizeFund) : defaultFunds.map(normalizeFund);
+}
+
+function mergeMissingDefaultObligations(items) {
+  const normalized = normalizeExpenses(items);
+  const existingIds = new Set(normalized.map((item) => item.id));
+  const missingObligations = defaultExpenses
+    .filter((item) => ["expense-domain-001", "expense-content-api-001"].includes(item.id))
+    .filter((item) => !existingIds.has(item.id))
+    .map(normalizeExpense);
+
+  return [...normalized, ...missingObligations];
+}
+
 function getMonthKey(value) {
   if (!value) return "Без даты";
   const date = new Date(value);
@@ -171,6 +253,15 @@ function formatDate(value) {
   return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function getDaysUntil(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  return Math.ceil((date.getTime() - today.getTime()) / 86400000);
+}
+
 function getExpenseSummary(expenses) {
   const total = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const paid = expenses.filter((item) => item.status === "Оплачено").reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -184,7 +275,9 @@ function getExpenseSummary(expenses) {
 
 function ExpensesBoard() {
   const [expenses, setExpenses] = useState(() => normalizeExpenses(defaultExpenses));
+  const [funds, setFunds] = useState(() => normalizeFunds(defaultFunds));
   const [newExpense, setNewExpense] = useState(() => createExpense());
+  const [newFund, setNewFund] = useState(() => createFund());
   const [categoryFilter, setCategoryFilter] = useState("Все");
   const [statusFilter, setStatusFilter] = useState("Все");
   const [monthFilter, setMonthFilter] = useState("Все");
@@ -195,12 +288,18 @@ function ExpensesBoard() {
   useEffect(() => {
     let isMounted = true;
 
-    loadServerContent(EXPENSES_STORAGE_KEY).then((savedExpenses) => {
+    Promise.all([
+      loadServerContent(EXPENSES_STORAGE_KEY),
+      loadServerContent(EXPENSE_FUNDS_STORAGE_KEY),
+    ]).then(([savedExpenses, savedFunds]) => {
       if (!isMounted) return;
-      const nextExpenses = normalizeExpenses(Array.isArray(savedExpenses) ? savedExpenses : defaultExpenses);
+      const nextExpenses = Array.isArray(savedExpenses) ? mergeMissingDefaultObligations(savedExpenses) : normalizeExpenses(defaultExpenses);
+      const nextFunds = normalizeFunds(Array.isArray(savedFunds) ? savedFunds : defaultFunds);
       setExpenses(nextExpenses);
+      setFunds(nextFunds);
       try {
         window.localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(nextExpenses));
+        window.localStorage.setItem(EXPENSE_FUNDS_STORAGE_KEY, JSON.stringify(nextFunds));
       } catch {
         // Серверная версия уже загружена в состояние страницы.
       }
@@ -236,6 +335,30 @@ function ExpensesBoard() {
     return () => window.clearTimeout(saveTimer);
   }, [expenses, isLoaded]);
 
+  useEffect(() => {
+    if (!isLoaded) return undefined;
+
+    const saveTimer = window.setTimeout(() => {
+      const requestId = saveRef.current + 1;
+      saveRef.current = requestId;
+      const normalized = normalizeFunds(funds);
+      setSaveState("Сохраняю...");
+
+      try {
+        window.localStorage.setItem(EXPENSE_FUNDS_STORAGE_KEY, JSON.stringify(normalized));
+      } catch {
+        // Локальное сохранение не должно блокировать серверное.
+      }
+
+      saveServerContent(EXPENSE_FUNDS_STORAGE_KEY, normalized).then((ok) => {
+        if (saveRef.current !== requestId) return;
+        setSaveState(ok ? "Сохранено на сервере" : "Ошибка сохранения");
+      });
+    }, 450);
+
+    return () => window.clearTimeout(saveTimer);
+  }, [funds, isLoaded]);
+
   const monthOptions = useMemo(() => {
     const months = Array.from(new Set(expenses.map((item) => getMonthKey(item.date)))).sort();
     return ["Все", ...months];
@@ -248,8 +371,24 @@ function ExpensesBoard() {
     return categoryMatch && statusMatch && monthMatch;
   }), [categoryFilter, expenses, monthFilter, statusFilter]);
 
-  const summary = getExpenseSummary(filteredExpenses);
   const allSummary = getExpenseSummary(expenses);
+  const totalFunds = funds.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const currentBalance = totalFunds - allSummary.paid;
+  const plannedBalance = totalFunds - allSummary.total;
+  const today = getTodayInputDate();
+  const next30Date = new Date();
+  next30Date.setDate(next30Date.getDate() + 30);
+  const next30InputDate = next30Date.toISOString().slice(0, 10);
+  const upcomingObligations = expenses
+    .filter((item) => item.status !== "Оплачено")
+    .filter((item) => item.date >= today)
+    .filter((item) => item.date <= next30InputDate || OBLIGATION_CATEGORIES.includes(item.category) || item.period !== "Разово")
+    .sort((first, second) => first.date.localeCompare(second.date))
+    .slice(0, 8);
+  const upcoming30Total = expenses
+    .filter((item) => item.status !== "Оплачено")
+    .filter((item) => item.date >= today && item.date <= next30InputDate)
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const categoryTotals = EXPENSE_CATEGORIES.map((category) => ({
     category,
     total: expenses.filter((item) => item.category === category).reduce((sum, item) => sum + Number(item.amount || 0), 0),
@@ -266,6 +405,25 @@ function ExpensesBoard() {
     if (!title) return;
     setExpenses((current) => [normalizeExpense({ ...newExpense, title }), ...current]);
     setNewExpense(createExpense({ category: newExpense.category, date: newExpense.date, owner: newExpense.owner }));
+  }
+
+  function updateFund(fundId, patch) {
+    setFunds((current) => current.map((item) => (item.id === fundId ? normalizeFund({ ...item, ...patch }) : item)));
+  }
+
+  function addFund() {
+    const title = newFund.title.trim();
+    if (!title) return;
+    setFunds((current) => [normalizeFund({ ...newFund, title }), ...current]);
+    setNewFund(createFund({ date: newFund.date, source: newFund.source }));
+  }
+
+  function deleteFund(fundId) {
+    const fund = funds.find((item) => item.id === fundId);
+    if (!fund) return;
+    const confirmed = window.confirm(`Удалить поступление «${fund.title}»?`);
+    if (!confirmed) return;
+    setFunds((current) => current.filter((item) => item.id !== fundId));
   }
 
   function deleteExpense(expenseId) {
@@ -289,42 +447,105 @@ function ExpensesBoard() {
         </div>
         <div className="analytics-expenses-save">
           <span>{saveState}</span>
-          <strong>{formatCurrency(allSummary.total)}</strong>
-          <small>общая сумма в списке</small>
+          <strong>{formatCurrency(currentBalance)}</strong>
+          <small>остаток сейчас</small>
         </div>
       </div>
 
       <div className="analytics-expenses-kpis">
         <article>
-          <span>Всего по фильтру</span>
-          <strong>{formatCurrency(summary.total)}</strong>
-          <small>{filteredExpenses.length} записей</small>
+          <span>Поступления</span>
+          <strong>{formatCurrency(totalFunds)}</strong>
+          <small>{funds.length} пополнений</small>
         </article>
         <article>
-          <span>К оплате</span>
-          <strong>{formatCurrency(summary.due)}</strong>
-          <small>счёт / дедлайн / просрочка</small>
+          <span>Остаток сейчас</span>
+          <strong>{formatCurrency(currentBalance)}</strong>
+          <small>поступления минус оплачено</small>
         </article>
         <article>
-          <span>Оплачено</span>
-          <strong>{formatCurrency(summary.paid)}</strong>
-          <small>закрытые расходы</small>
+          <span>После плановых</span>
+          <strong>{formatCurrency(plannedBalance)}</strong>
+          <small>если закрыть все расходы</small>
         </article>
         <article>
-          <span>Регулярные</span>
-          <strong>{formatCurrency(summary.recurring)}</strong>
-          <small>месячная/годовая нагрузка</small>
+          <span>Ближайшие 30 дней</span>
+          <strong>{formatCurrency(upcoming30Total)}</strong>
+          <small>ожидаемые оплаты</small>
         </article>
         <article>
           <span>Долги</span>
-          <strong>{formatCurrency(summary.debts)}</strong>
+          <strong>{formatCurrency(allSummary.debts)}</strong>
           <small>отдельная нагрузка</small>
         </article>
         <article>
           <span>Высокий приоритет</span>
-          <strong>{summary.urgent}</strong>
+          <strong>{allSummary.urgent}</strong>
           <small>ещё не оплачено</small>
         </article>
+      </div>
+
+      <div className="analytics-expenses-grid">
+        <div className="analytics-expenses-panel">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">Кошелек</span>
+              <h3 className="analytics-section-title">Поступления бюджета</h3>
+              <p>Заносим пополнения кошелька или бюджета запуска, чтобы видеть, из какой суммы расходуем деньги.</p>
+            </div>
+          </div>
+          <div className="analytics-expenses-fund-form">
+            <input className="analytics-launch-input" value={newFund.title} onChange={(event) => setNewFund((current) => ({ ...current, title: event.target.value }))} placeholder="Например: пополнение кошелька" />
+            <input className="analytics-launch-input" type="number" min="0" step="0.01" value={newFund.amount} onChange={(event) => setNewFund((current) => ({ ...current, amount: event.target.value }))} />
+            <input className="analytics-launch-input" type="date" value={newFund.date} onChange={(event) => setNewFund((current) => ({ ...current, date: event.target.value }))} />
+            <input className="analytics-launch-input" value={newFund.source} onChange={(event) => setNewFund((current) => ({ ...current, source: event.target.value }))} placeholder="Источник / кошелек" />
+            <textarea className="analytics-launch-input" rows="2" value={newFund.comment} onChange={(event) => setNewFund((current) => ({ ...current, comment: event.target.value }))} placeholder="Комментарий к поступлению" />
+            <button type="button" className="analytics-expenses-add" onClick={addFund} disabled={!newFund.title.trim()}>Добавить поступление</button>
+          </div>
+          <div className="analytics-expenses-funds">
+            {funds.map((fund) => (
+              <article key={fund.id}>
+                <input className="analytics-launch-table-input analytics-launch-table-input-title" value={fund.title} onChange={(event) => updateFund(fund.id, { title: event.target.value })} />
+                <div>
+                  <input className="analytics-launch-table-input" type="number" min="0" step="0.01" value={fund.amount} onChange={(event) => updateFund(fund.id, { amount: event.target.value })} />
+                  <input className="analytics-launch-table-input" type="date" value={fund.date} onChange={(event) => updateFund(fund.id, { date: event.target.value })} />
+                </div>
+                <input className="analytics-launch-table-input" value={fund.source} onChange={(event) => updateFund(fund.id, { source: event.target.value })} placeholder="Источник" />
+                <textarea className="analytics-launch-table-input" rows="2" value={fund.comment} onChange={(event) => updateFund(fund.id, { comment: event.target.value })} placeholder="Комментарий" />
+                <button type="button" onClick={() => deleteFund(fund.id)}>Удалить</button>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="analytics-expenses-panel">
+          <div className="analytics-data-table-head">
+            <div>
+              <span className="analytics-kicker">Календарь</span>
+              <h3 className="analytics-section-title">Ближайшие оплаты</h3>
+              <p>Домены, серверы, подписки, долги и другие обязательства, которые нельзя пропустить.</p>
+            </div>
+          </div>
+          <div className="analytics-expenses-upcoming">
+            {upcomingObligations.map((expense) => {
+              const days = getDaysUntil(expense.date);
+              return (
+                <article key={expense.id}>
+                  <div>
+                    <strong>{formatDate(expense.date)}</strong>
+                    <small>{days === 0 ? "сегодня" : days && days > 0 ? `через ${days} дн.` : "просрочено"}</small>
+                  </div>
+                  <span>
+                    <b>{expense.title}</b>
+                    <small>{expense.category} · {expense.period}</small>
+                  </span>
+                  <em>{formatCurrency(expense.amount)}</em>
+                </article>
+              );
+            })}
+            {!upcomingObligations.length ? <p className="analytics-expenses-empty">Ближайших обязательных оплат нет.</p> : null}
+          </div>
+        </div>
       </div>
 
       <div className="analytics-expenses-panel">
