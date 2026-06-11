@@ -327,208 +327,202 @@ function ExpensesBoard() {
         </article>
       </div>
 
-      <div className="analytics-expenses-layout">
-        <div className="analytics-expenses-main">
-          <div className="analytics-expenses-panel">
-            <div className="analytics-data-table-head">
-              <div>
-                <span className="analytics-kicker">Новый расход</span>
-                <h3 className="analytics-section-title">Добавить оплату</h3>
-              </div>
-            </div>
-            <div className="analytics-expenses-form">
-              <label>
-                <span>Название</span>
-                <input className="analytics-launch-input" value={newExpense.title} onChange={(event) => setNewExpense((current) => ({ ...current, title: event.target.value }))} placeholder="Например: аудит смарт-контракта" />
-              </label>
-              <label>
-                <span>Категория</span>
-                <select className="analytics-launch-input" value={newExpense.category} onChange={(event) => setNewExpense((current) => ({ ...current, category: event.target.value }))}>
-                  {EXPENSE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Сумма</span>
-                <input className="analytics-launch-input" type="number" min="0" step="0.01" value={newExpense.amount} onChange={(event) => setNewExpense((current) => ({ ...current, amount: event.target.value }))} />
-              </label>
-              <label>
-                <span>Дата</span>
-                <input className="analytics-launch-input" type="date" value={newExpense.date} onChange={(event) => setNewExpense((current) => ({ ...current, date: event.target.value }))} />
-              </label>
-              <label>
-                <span>Статус</span>
-                <select className="analytics-launch-input" value={newExpense.status} onChange={(event) => setNewExpense((current) => ({ ...current, status: event.target.value }))}>
-                  {EXPENSE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Ответственный</span>
-                <select className="analytics-launch-input" value={newExpense.owner} onChange={(event) => setNewExpense((current) => ({ ...current, owner: event.target.value }))}>
-                  {EXPENSE_OWNERS.map((owner) => <option key={owner || "empty"} value={owner}>{owner || "Не назначен"}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Регулярность</span>
-                <select className="analytics-launch-input" value={newExpense.period} onChange={(event) => setNewExpense((current) => ({ ...current, period: event.target.value }))}>
-                  {EXPENSE_PERIODS.map((period) => <option key={period} value={period}>{period}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Поставщик</span>
-                <input className="analytics-launch-input" value={newExpense.vendor} onChange={(event) => setNewExpense((current) => ({ ...current, vendor: event.target.value }))} placeholder="Сервис / человек / команда" />
-              </label>
-              <label className="analytics-expenses-form-wide">
-                <span>Комментарий</span>
-                <textarea className="analytics-launch-input" rows="2" value={newExpense.comment} onChange={(event) => setNewExpense((current) => ({ ...current, comment: event.target.value }))} placeholder="За что платим, почему важно, ссылка на счёт или договоренность" />
-              </label>
-              <button type="button" className="analytics-expenses-add" onClick={addExpense} disabled={!newExpense.title.trim()}>
-                Добавить расход
-              </button>
-            </div>
-          </div>
-
-          <div className="analytics-expenses-panel">
-            <div className="analytics-expenses-toolbar">
-              <label>
-                <span>Категория</span>
-                <select className="analytics-launch-input" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-                  <option value="Все">Все</option>
-                  {EXPENSE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Статус</span>
-                <select className="analytics-launch-input" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                  <option value="Все">Все</option>
-                  {EXPENSE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Месяц</span>
-                <select className="analytics-launch-input" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
-                  {monthOptions.map((month) => <option key={month} value={month}>{month}</option>)}
-                </select>
-              </label>
-              <button type="button" onClick={() => {
-                setCategoryFilter("Все");
-                setStatusFilter("Все");
-                setMonthFilter("Все");
-              }}>
-                Сбросить
-              </button>
-            </div>
-
-            <div className="analytics-table-responsive">
-              <table className="analytics-table analytics-expenses-table">
-                <thead>
-                  <tr>
-                    <th>Расход</th>
-                    <th>Категория</th>
-                    <th>Сумма</th>
-                    <th>Дата</th>
-                    <th>Статус</th>
-                    <th>Приоритет</th>
-                    <th>Ответственный</th>
-                    <th>Регулярность</th>
-                    <th>Комментарий</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredExpenses.map((expense) => (
-                    <tr key={expense.id}>
-                      <td>
-                        <input className="analytics-launch-table-input analytics-launch-table-input-title" value={expense.title} onChange={(event) => updateExpense(expense.id, { title: event.target.value })} />
-                        <input className="analytics-launch-table-input" value={expense.vendor} onChange={(event) => updateExpense(expense.id, { vendor: event.target.value })} placeholder="Поставщик" />
-                      </td>
-                      <td>
-                        <select className="analytics-launch-table-input" value={expense.category} onChange={(event) => updateExpense(expense.id, { category: event.target.value })}>
-                          {EXPENSE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
-                        </select>
-                      </td>
-                      <td>
-                        <input className="analytics-launch-table-input" type="number" min="0" step="0.01" value={expense.amount} onChange={(event) => updateExpense(expense.id, { amount: event.target.value })} />
-                        <small className="analytics-expenses-currency">{expense.currency}</small>
-                      </td>
-                      <td>
-                        <input className="analytics-launch-table-input" type="date" value={expense.date} onChange={(event) => updateExpense(expense.id, { date: event.target.value })} />
-                        <small className="analytics-expenses-date">{formatDate(expense.date)}</small>
-                      </td>
-                      <td>
-                        <select className={`analytics-expenses-status analytics-expenses-status-${getStatusTone(expense.status)}`} value={expense.status} onChange={(event) => updateExpense(expense.id, { status: event.target.value })}>
-                          {EXPENSE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
-                        </select>
-                      </td>
-                      <td>
-                        <select className={`analytics-expenses-priority analytics-expenses-priority-${getPriorityTone(expense.priority)}`} value={expense.priority} onChange={(event) => updateExpense(expense.id, { priority: event.target.value })}>
-                          {EXPENSE_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-                        </select>
-                      </td>
-                      <td>
-                        <select className="analytics-launch-table-input" value={expense.owner} onChange={(event) => updateExpense(expense.id, { owner: event.target.value })}>
-                          {EXPENSE_OWNERS.map((owner) => <option key={owner || "empty"} value={owner}>{owner || "Не назначен"}</option>)}
-                        </select>
-                      </td>
-                      <td>
-                        <select className="analytics-launch-table-input" value={expense.period} onChange={(event) => updateExpense(expense.id, { period: event.target.value })}>
-                          {EXPENSE_PERIODS.map((period) => <option key={period} value={period}>{period}</option>)}
-                        </select>
-                      </td>
-                      <td>
-                        <textarea className="analytics-launch-table-input" rows="3" value={expense.comment} onChange={(event) => updateExpense(expense.id, { comment: event.target.value })} />
-                      </td>
-                      <td>
-                        <div className="analytics-expenses-actions">
-                          <button type="button" onClick={() => updateExpense(expense.id, { status: "Оплачено" })}>Оплачено</button>
-                          <button type="button" onClick={() => deleteExpense(expense.id)}>Удалить</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {!filteredExpenses.length ? (
-                    <tr>
-                      <td colSpan="10" className="analytics-expenses-empty">По выбранным фильтрам расходов нет.</td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
+      <div className="analytics-expenses-panel">
+        <div className="analytics-data-table-head">
+          <div>
+            <span className="analytics-kicker">Структура</span>
+            <h3 className="analytics-section-title">По категориям</h3>
           </div>
         </div>
+        <div className="analytics-expenses-category-list">
+          {categoryTotals.map((item) => (
+            <button key={item.category} type="button" onClick={() => setCategoryFilter(item.category)}>
+              <span>
+                <strong>{item.category}</strong>
+                <small>{item.count} записей</small>
+              </span>
+              <b>{formatCurrency(item.total)}</b>
+              <progress max="100" value={(item.total / maxCategoryTotal) * 100} />
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <aside className="analytics-expenses-side">
-          <div className="analytics-expenses-panel">
-            <div className="analytics-data-table-head">
-              <div>
-                <span className="analytics-kicker">Структура</span>
-                <h3 className="analytics-section-title">По категориям</h3>
-              </div>
-            </div>
-            <div className="analytics-expenses-category-list">
-              {categoryTotals.map((item) => (
-                <button key={item.category} type="button" onClick={() => setCategoryFilter(item.category)}>
-                  <span>
-                    <strong>{item.category}</strong>
-                    <small>{item.count} записей</small>
-                  </span>
-                  <b>{formatCurrency(item.total)}</b>
-                  <progress max="100" value={(item.total / maxCategoryTotal) * 100} />
-                </button>
+      <div className="analytics-expenses-panel">
+        <div className="analytics-data-table-head">
+          <div>
+            <span className="analytics-kicker">Новый расход</span>
+            <h3 className="analytics-section-title">Добавить оплату</h3>
+          </div>
+        </div>
+        <div className="analytics-expenses-form">
+          <label>
+            <span>Название</span>
+            <input className="analytics-launch-input" value={newExpense.title} onChange={(event) => setNewExpense((current) => ({ ...current, title: event.target.value }))} placeholder="Например: аудит смарт-контракта" />
+          </label>
+          <label>
+            <span>Категория</span>
+            <select className="analytics-launch-input" value={newExpense.category} onChange={(event) => setNewExpense((current) => ({ ...current, category: event.target.value }))}>
+              {EXPENSE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Сумма</span>
+            <input className="analytics-launch-input" type="number" min="0" step="0.01" value={newExpense.amount} onChange={(event) => setNewExpense((current) => ({ ...current, amount: event.target.value }))} />
+          </label>
+          <label>
+            <span>Дата</span>
+            <input className="analytics-launch-input" type="date" value={newExpense.date} onChange={(event) => setNewExpense((current) => ({ ...current, date: event.target.value }))} />
+          </label>
+          <label>
+            <span>Статус</span>
+            <select className="analytics-launch-input" value={newExpense.status} onChange={(event) => setNewExpense((current) => ({ ...current, status: event.target.value }))}>
+              {EXPENSE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Ответственный</span>
+            <select className="analytics-launch-input" value={newExpense.owner} onChange={(event) => setNewExpense((current) => ({ ...current, owner: event.target.value }))}>
+              {EXPENSE_OWNERS.map((owner) => <option key={owner || "empty"} value={owner}>{owner || "Не назначен"}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Регулярность</span>
+            <select className="analytics-launch-input" value={newExpense.period} onChange={(event) => setNewExpense((current) => ({ ...current, period: event.target.value }))}>
+              {EXPENSE_PERIODS.map((period) => <option key={period} value={period}>{period}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Поставщик</span>
+            <input className="analytics-launch-input" value={newExpense.vendor} onChange={(event) => setNewExpense((current) => ({ ...current, vendor: event.target.value }))} placeholder="Сервис / человек / команда" />
+          </label>
+          <label className="analytics-expenses-form-wide">
+            <span>Комментарий</span>
+            <textarea className="analytics-launch-input" rows="2" value={newExpense.comment} onChange={(event) => setNewExpense((current) => ({ ...current, comment: event.target.value }))} placeholder="За что платим, почему важно, ссылка на счёт или договоренность" />
+          </label>
+          <button type="button" className="analytics-expenses-add" onClick={addExpense} disabled={!newExpense.title.trim()}>
+            Добавить расход
+          </button>
+        </div>
+      </div>
+
+      <div className="analytics-expenses-panel">
+        <div className="analytics-expenses-toolbar">
+          <label>
+            <span>Категория</span>
+            <select className="analytics-launch-input" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+              <option value="Все">Все</option>
+              {EXPENSE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Статус</span>
+            <select className="analytics-launch-input" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="Все">Все</option>
+              {EXPENSE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Месяц</span>
+            <select className="analytics-launch-input" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
+              {monthOptions.map((month) => <option key={month} value={month}>{month}</option>)}
+            </select>
+          </label>
+          <button type="button" onClick={() => {
+            setCategoryFilter("Все");
+            setStatusFilter("Все");
+            setMonthFilter("Все");
+          }}>
+            Сбросить
+          </button>
+        </div>
+
+        <div className="analytics-table-responsive">
+          <table className="analytics-table analytics-expenses-table">
+            <thead>
+              <tr>
+                <th>Расход</th>
+                <th>Категория</th>
+                <th>Сумма</th>
+                <th>Дата</th>
+                <th>Статус</th>
+                <th>Приоритет</th>
+                <th>Ответственный</th>
+                <th>Регулярность</th>
+                <th>Комментарий</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredExpenses.map((expense) => (
+                <tr key={expense.id}>
+                  <td>
+                    <input className="analytics-launch-table-input analytics-launch-table-input-title" value={expense.title} onChange={(event) => updateExpense(expense.id, { title: event.target.value })} />
+                    <input className="analytics-launch-table-input" value={expense.vendor} onChange={(event) => updateExpense(expense.id, { vendor: event.target.value })} placeholder="Поставщик" />
+                  </td>
+                  <td>
+                    <select className="analytics-launch-table-input" value={expense.category} onChange={(event) => updateExpense(expense.id, { category: event.target.value })}>
+                      {EXPENSE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <input className="analytics-launch-table-input" type="number" min="0" step="0.01" value={expense.amount} onChange={(event) => updateExpense(expense.id, { amount: event.target.value })} />
+                    <small className="analytics-expenses-currency">{expense.currency}</small>
+                  </td>
+                  <td>
+                    <input className="analytics-launch-table-input" type="date" value={expense.date} onChange={(event) => updateExpense(expense.id, { date: event.target.value })} />
+                    <small className="analytics-expenses-date">{formatDate(expense.date)}</small>
+                  </td>
+                  <td>
+                    <select className={`analytics-expenses-status analytics-expenses-status-${getStatusTone(expense.status)}`} value={expense.status} onChange={(event) => updateExpense(expense.id, { status: event.target.value })}>
+                      {EXPENSE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select className={`analytics-expenses-priority analytics-expenses-priority-${getPriorityTone(expense.priority)}`} value={expense.priority} onChange={(event) => updateExpense(expense.id, { priority: event.target.value })}>
+                      {EXPENSE_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select className="analytics-launch-table-input" value={expense.owner} onChange={(event) => updateExpense(expense.id, { owner: event.target.value })}>
+                      {EXPENSE_OWNERS.map((owner) => <option key={owner || "empty"} value={owner}>{owner || "Не назначен"}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select className="analytics-launch-table-input" value={expense.period} onChange={(event) => updateExpense(expense.id, { period: event.target.value })}>
+                      {EXPENSE_PERIODS.map((period) => <option key={period} value={period}>{period}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <textarea className="analytics-launch-table-input" rows="3" value={expense.comment} onChange={(event) => updateExpense(expense.id, { comment: event.target.value })} />
+                  </td>
+                  <td>
+                    <div className="analytics-expenses-actions">
+                      <button type="button" onClick={() => updateExpense(expense.id, { status: "Оплачено" })}>Оплачено</button>
+                      <button type="button" onClick={() => deleteExpense(expense.id)}>Удалить</button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+              {!filteredExpenses.length ? (
+                <tr>
+                  <td colSpan="10" className="analytics-expenses-empty">По выбранным фильтрам расходов нет.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <div className="analytics-expenses-panel analytics-expenses-rules">
-            <span className="analytics-kicker">Как вести</span>
-            <h3>Простая логика учета</h3>
-            <p>Все будущие оплаты ставим в “План”, выставленные счета в “Счёт”, срочные оплаты в “К оплате”, закрытые суммы в “Оплачено”. Долги не смешиваем с операционкой.</p>
-            <ul>
-              <li>Маркетинг и SMM лучше разделять.</li>
-              <li>Серверы и сервисы держать регулярными.</li>
-              <li>Legal/Security фиксировать отдельно перед запуском.</li>
-            </ul>
-          </div>
-        </aside>
+      <div className="analytics-expenses-panel analytics-expenses-rules">
+        <span className="analytics-kicker">Как вести</span>
+        <h3>Простая логика учета</h3>
+        <p>Все будущие оплаты ставим в “План”, выставленные счета в “Счёт”, срочные оплаты в “К оплате”, закрытые суммы в “Оплачено”. Долги не смешиваем с операционкой.</p>
+        <ul>
+          <li>Маркетинг и SMM лучше разделять.</li>
+          <li>Серверы и сервисы держать регулярными.</li>
+          <li>Legal/Security фиксировать отдельно перед запуском.</li>
+        </ul>
       </div>
     </section>
   );

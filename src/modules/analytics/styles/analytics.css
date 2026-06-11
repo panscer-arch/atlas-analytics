@@ -14434,25 +14434,8 @@
   font-weight: 700;
 }
 
-.analytics-expenses-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.3fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.analytics-expenses-main,
-.analytics-expenses-side {
-  display: grid;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.analytics-expenses-main {
-  overflow: hidden;
-}
-
 .analytics-expenses-panel {
+  min-width: 0;
   padding: 1rem;
 }
 
@@ -14472,7 +14455,7 @@
 }
 
 .analytics-expenses-form {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .analytics-expenses-form label,
@@ -14523,7 +14506,7 @@
 }
 
 .analytics-expenses-toolbar {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(140px, 0.4fr);
   align-items: end;
   margin-bottom: 0.9rem;
 }
@@ -14537,7 +14520,7 @@
 }
 
 .analytics-expenses-table {
-  min-width: 1320px;
+  min-width: 1280px;
 }
 
 .analytics-expenses-toolbar button {
@@ -14628,6 +14611,7 @@
 
 .analytics-expenses-category-list {
   display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.65rem;
 }
 
@@ -14710,6 +14694,21 @@
 .analytics-expenses-rules ul {
   margin: 0.8rem 0 0;
   padding-left: 1.1rem;
+}
+
+.analytics-expenses-rules {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.35fr) minmax(0, 0.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.analytics-expenses-rules .analytics-kicker {
+  grid-column: 1 / -1;
+}
+
+.analytics-expenses-rules h3 {
+  margin-top: 0;
 }
 
 @media (max-width: 767px) {
@@ -14804,6 +14803,8 @@
   .analytics-expenses-layout,
   .analytics-expenses-form,
   .analytics-expenses-toolbar,
+  .analytics-expenses-category-list,
+  .analytics-expenses-rules,
   .analytics-security-hero {
     grid-template-columns: 1fr;
   }
