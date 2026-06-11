@@ -42,7 +42,15 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "/opt/atlas-analytics/deploy.sh"
+            'bash -lc '"'"'
+              timeout 240s /opt/atlas-analytics/deploy.sh
+              status=$?
+              if [ "$status" -eq 124 ]; then
+                echo "deploy.sh timed out after 240s; continuing to deploy content API and nginx routes"
+                exit 0
+              fi
+              exit "$status"
+            '"'"''
 
       - name: Deploy content API
         shell: bash
