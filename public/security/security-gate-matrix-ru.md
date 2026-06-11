@@ -1,6 +1,6 @@
 # Atlas System — Security Gate Matrix
 
-Дата: 2026-06-05  
+Дата: 2026-06-11  
 Статус: рабочая матрица закрытия шагов  
 Формулировка статуса проекта: `Security Review in progress`
 
@@ -47,6 +47,26 @@ node scripts/verify-security-evidence.mjs
 - BNB Testnet deployment еще не выполнен;
 - публичный BNB Testnet Battle Test еще не проведен;
 - внешний аудит еще не выполнен.
+
+## Executive gate status
+
+| Направление | Текущий вывод |
+| --- | --- |
+| Code-level защита от чужого claim | Проверяется и подтверждена текущим набором Foundry access-control/fuzz/stress тестов для текущего среза |
+| Авто-анализ | Slither, Solhint, Aderyn и Mythril bounded reports опубликованы |
+| Accounting | Lockup, Daily и Transport accounting invariants пройдены в mock-окружении |
+| Product/legal consistency | Не закрыто: найден tariff mismatch между публичными материалами и code-level расчетом |
+| Owner / Transport powers | Draft раскрытия подготовлен; нужна финальная policy по multisig/timelock/governance |
+| Testnet deployment | Подготовлен, но не выполнен |
+| Testnet battle | Kit подготовлен, но публичный challenge не проведен |
+| External audit | Не начат |
+
+Итог:
+
+```text
+Security Review section is ready as a working disclosure and evidence center.
+Launch/audit status is not final until tariff decision, testnet deployment, testnet battle and external audit are completed.
+```
 
 ## Gate Matrix
 

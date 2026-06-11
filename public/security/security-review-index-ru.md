@@ -1,7 +1,7 @@
 # Atlas System Security Review Index
 
 Status: Security Review in progress
-Date: 2026-06-05
+Date: 2026-06-11
 
 Этот индекс объясняет, какие материалы уже собраны по проверке безопасности Atlas System.
 
@@ -20,7 +20,7 @@ Date: 2026-06-05
    Единая матрица статусов: что закрыто доказательствами, что подготовлено как kit, какие gates требуют решения перед deployment.
 
 5. Security Evidence Manifest
-   Machine-readable JSON со статусами 13 gates и 41 evidence-файлом. Локальная проверка: `node scripts/verify-security-evidence.mjs`.
+   Machine-readable JSON со статусами 13 gates и 43 evidence-файлами. Локальная проверка: `node scripts/verify-security-evidence.mjs`.
 
 6. Slither Report
    Машинный отчет автоматического анализа Solidity-кода.
@@ -106,6 +106,29 @@ Date: 2026-06-05
 ## Важно
 
 Эти материалы не являются полноценным внешним аудитом и не дают гарантии отсутствия рисков. Они фиксируют запущенный процесс проверки и помогают отделить безопасность кода от архитектурных полномочий системы.
+
+## Executive status на 11.06.2026
+
+Security Review можно считать собранным как рабочий публичный центр доказательств: есть основной review-документ, gate matrix, evidence manifest, owner-powers disclosure, product/contract consistency review, отчеты Slither/Solhint/Aderyn/Mythril, Foundry access-control/fuzz/stress/accounting reports и testnet battle kit.
+
+При этом публичный статус остается:
+
+```text
+Security Review in progress
+```
+
+Причина: до статуса `Audited` или `Battle-tested` еще не закрыты ключевые gates:
+
+1. Product / contract tariff mismatch.
+2. Реальный BNB Testnet deployment.
+3. Публичный BNB Testnet Battle Test.
+4. Независимый внешний аудит.
+
+Главный practical blocker сейчас:
+
+```text
+Команда должна выбрать один источник истины: править контракт под публичные тарифы или править публичные материалы под текущий code-level расчет.
+```
 
 ## Текущий статус по этапам
 

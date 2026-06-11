@@ -308,6 +308,73 @@ const verificationSteps = [
   },
 ];
 
+const executiveVerdict = [
+  {
+    label: "Публичный статус",
+    value: "Security Review in progress",
+    tone: "warning",
+    text: "Можно показывать процесс проверки, отчеты и текущие выводы. Нельзя писать Audited до внешнего аудита.",
+  },
+  {
+    label: "Что закрыто",
+    value: "13 gates / 43 evidence",
+    tone: "good",
+    text: "Manifest проверяется автоматически: Foundry, fuzz, stress, accounting, Slither, Aderyn, Mythril и supporting docs на месте.",
+  },
+  {
+    label: "Главный blocker",
+    value: "Tariff mismatch",
+    tone: "danger",
+    text: "До deployment нужно решить расхождение публичной экономики и code-level формул Lockup/Daily.",
+  },
+  {
+    label: "Следующий уровень доверия",
+    value: "Testnet battle + audit",
+    tone: "neutral",
+    text: "Kit подготовлен, но публичный testnet challenge и независимый внешний аудит еще не проведены.",
+  },
+];
+
+const launchGates = [
+  ["Build / tests", "Закрыто для текущего среза", "Foundry suite 12/12, fuzz 1000, stress и accounting invariants пройдены.", "Повторить после финальных правок."],
+  ["Static analysis", "Закрыто для текущего среза", "Slither, Solhint, Aderyn и Mythril bounded опубликованы.", "Повторить после финального кода и deployment."],
+  ["Product / contract consistency", "Открытый blocker", "Найдено x10 расхождение Lockup и отдельный вопрос по Daily.", "Выбрать Option A или Option B."],
+  ["Owner / Transport risk", "Draft раскрыт", "Owner powers disclosure подготовлен, Transport вынесен как отдельный admin trust risk.", "Утвердить multisig/timelock/governance policy."],
+  ["Testnet deployment", "Подготовлено / не выполнено", "Runbook, env template, deploy script, registry и smoke-kit готовы.", "Заполнить реальные адреса и выполнить deployment."],
+  ["BNB Testnet Battle", "Подготовлено / не проведено", "Plan, Battle Kit, guide, bug template и final report template готовы.", "Провести challenge и опубликовать итоговый отчет."],
+  ["External audit", "Не начат", "Нет независимого audit report.", "Заказать аудит после закрытия tariff gate и testnet battle."],
+];
+
+const priorityActions = [
+  {
+    title: "1. Закрыть тарифное решение",
+    text: "Команда выбирает источник истины: правим контракт под публичные проценты или правим White Paper/FAQ/сайт под текущий код.",
+  },
+  {
+    title: "2. Повторить security-прогоны",
+    text: "После решения повторяются forge build/test, fuzz, stress, accounting, Slither, Aderyn и Mythril, чтобы отчеты соответствовали финальному срезу.",
+  },
+  {
+    title: "3. Опубликовать Contract Registry",
+    text: "После testnet deployment заполняются реальные адреса, owner/authorized/Transport, tokenId, explorer links и smoke-test tx.",
+  },
+  {
+    title: "4. Провести Testnet Battle",
+    text: "Открывается публичное окно проверки, собираются воспроизводимые reports, делается triage и публикуется final report.",
+  },
+  {
+    title: "5. Заказать внешний аудит",
+    text: "Только после независимого отчета можно обсуждать статус Audited. До этого формулировка остается Security Review in progress.",
+  },
+];
+
+const auditRiskBridge = [
+  ["Transport", "Административный механизм выплат и инфраструктурных операций. Это не внешний exploit, но важная зона доверия."],
+  ["Owner powers", "Treasury, fee, tokenId и privileged actions должны быть раскрыты отдельно от обычной защиты пользовательского claim."],
+  ["Liquidity / LP", "Claim зависит не только от Solidity-логики, но и от состояния LP-позиции, tick/range, slippage и доступной ликвидности."],
+  ["Public wording", "Security Review должен говорить честно: проверяемость, ограничения, открытые gates и отсутствие гарантий."],
+];
+
 const reviewRoles = [
   {
     role: "Project Lead",
@@ -634,7 +701,46 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
+          <span>00</span>
+          <h3>Финальный executive verdict</h3>
+        </div>
+        <div className="analytics-security-verdict-grid">
+          {executiveVerdict.map((item) => (
+            <article key={item.label} className={`analytics-security-verdict-card analytics-security-verdict-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
           <span>01</span>
+          <h3>Launch gate matrix</h3>
+        </div>
+        <div className="analytics-security-gate-table" role="table" aria-label="Launch gate matrix">
+          <div className="analytics-security-gate-row analytics-security-gate-head" role="row">
+            <span>Gate</span>
+            <span>Статус</span>
+            <span>Что есть сейчас</span>
+            <span>Что нужно закрыть</span>
+          </div>
+          {launchGates.map(([gate, status, evidence, next]) => (
+            <div key={gate} className="analytics-security-gate-row" role="row">
+              <strong>{gate}</strong>
+              <span>{status}</span>
+              <p>{evidence}</p>
+              <p>{next}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
+          <span>02</span>
           <h3>Что выдала программа и как это читать</h3>
         </div>
         <div className="analytics-security-program-grid">
@@ -667,7 +773,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>02</span>
+          <span>03</span>
           <h3>Перевод кода на обычный язык</h3>
         </div>
         <div className="analytics-security-claim-grid">
@@ -696,7 +802,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>03</span>
+          <span>04</span>
           <h3>Что нужно добавить для полного внешнего доверия</h3>
         </div>
         <div className="analytics-security-gap-grid">
@@ -719,7 +825,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>04</span>
+          <span>05</span>
           <h3>Документы и отчеты для проверки</h3>
         </div>
         <div className="analytics-security-doc-grid">
@@ -782,7 +888,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>05</span>
+          <span>06</span>
           <h3>Техническая карта проверки</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -798,7 +904,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>06</span>
+          <span>07</span>
           <h3>Авто-инструменты</h3>
         </div>
         <div className="analytics-security-check-grid">
@@ -814,7 +920,7 @@ function SecurityReviewBoard() {
 
       <div className="analytics-security-section">
         <div className="analytics-security-section-head">
-          <span>07</span>
+          <span>08</span>
           <h3>Как говорить публично</h3>
         </div>
         <div className="analytics-security-public-grid">
@@ -830,7 +936,7 @@ function SecurityReviewBoard() {
       <div className="analytics-security-section analytics-security-two-columns">
         <div>
           <div className="analytics-security-section-head">
-            <span>08</span>
+            <span>09</span>
             <h3>Нельзя писать</h3>
           </div>
           <div className="analytics-security-tags">
@@ -839,7 +945,7 @@ function SecurityReviewBoard() {
         </div>
         <div>
           <div className="analytics-security-section-head">
-            <span>09</span>
+            <span>10</span>
             <h3>Что еще не завершено</h3>
           </div>
           <div className="analytics-security-completion-list">
@@ -851,6 +957,41 @@ function SecurityReviewBoard() {
               </article>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="analytics-security-section">
+        <div className="analytics-security-section-head">
+          <span>11</span>
+          <h3>Приоритетный план закрытия Security Review</h3>
+        </div>
+        <div className="analytics-security-priority-list">
+          {priorityActions.map((item) => (
+            <article key={item.title}>
+              <h4>{item.title}</h4>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="analytics-security-section analytics-security-audit-bridge">
+        <div>
+          <span className="analytics-kicker">Связка с Audit Risk FAQ</span>
+          <h3>Что показывать человеку, который увидит риск в аудите</h3>
+          <p>
+            Этот раздел не должен спорить с аудитом. Его задача — заранее объяснить, какие риски технические,
+            какие архитектурные, какие уже проверены, а какие требуют доверия к системным полномочиям.
+          </p>
+          <a href="/?board=transportRiskFaq" target="_blank" rel="noreferrer">Открыть Audit Risk FAQ</a>
+        </div>
+        <div className="analytics-security-audit-list">
+          {auditRiskBridge.map(([title, text]) => (
+            <article key={title}>
+              <strong>{title}</strong>
+              <p>{text}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>
