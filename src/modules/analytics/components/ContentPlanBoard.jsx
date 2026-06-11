@@ -1069,6 +1069,7 @@ function ContentPlanBoard() {
   const [smmRows, setSmmRows] = useState(readSmmRows);
   const [smmApprovals, setSmmApprovals] = useState(readSmmApprovals);
   const [smmTheme, setSmmTheme] = useState(readSmmTheme);
+  const [isSmmEditing, setIsSmmEditing] = useState(false);
   const duplicateItemIds = useMemo(() => getDuplicateContentPlanIds(items), [items]);
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
@@ -2078,6 +2079,37 @@ function ContentPlanBoard() {
     });
   }
 
+  function renderSmmCell(row, field, placeholder, options = {}) {
+    const value = row[field] || "";
+    if (!isSmmEditing) {
+      return (
+        <div className={`analytics-smm-read-cell ${options.title ? "analytics-smm-read-title" : ""} ${value ? "" : "analytics-smm-empty"}`}>
+          {value || "-"}
+        </div>
+      );
+    }
+
+    if (options.singleLine) {
+      return (
+        <input
+          className="analytics-smm-cell-input"
+          value={value}
+          onChange={(event) => updateSmmRow(row.id, field, event.target.value)}
+          placeholder={placeholder}
+        />
+      );
+    }
+
+    return (
+      <textarea
+        className={`analytics-smm-cell-input ${options.title ? "analytics-smm-cell-title" : ""} ${field === "edits" ? "analytics-smm-edits-input" : ""}`}
+        value={value}
+        onChange={(event) => updateSmmRow(row.id, field, event.target.value)}
+        placeholder={placeholder}
+      />
+    );
+  }
+
   return (
     <section className={`analytics-content-plan analytics-smm-plan analytics-smm-plan-${smmTheme}`}>
       <div className="analytics-surface analytics-smm-plan-hero">
@@ -2110,7 +2142,10 @@ function ContentPlanBoard() {
           </div>
           <div className="analytics-smm-section-actions">
             <strong>{smmRows.length} строк</strong>
-            <button type="button" onClick={addSmmRow}>Добавить пост</button>
+            <button type="button" onClick={() => setIsSmmEditing((current) => !current)}>
+              {isSmmEditing ? "Готово" : "Редактировать"}
+            </button>
+            {isSmmEditing ? <button type="button" onClick={addSmmRow}>Добавить пост</button> : null}
           </div>
         </div>
 
@@ -2140,78 +2175,15 @@ function ContentPlanBoard() {
                     data-smm-approval={approval}
                     className={approval ? `analytics-smm-row-${approval}` : ""}
                   >
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input analytics-smm-cell-title"
-                        value={row.post}
-                        onChange={(event) => updateSmmRow(row.id, "post", event.target.value)}
-                        placeholder="Название поста"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="analytics-smm-cell-input"
-                        value={row.date}
-                        onChange={(event) => updateSmmRow(row.id, "date", event.target.value)}
-                        placeholder="дд.мм.гггг"
-                      />
-                    </td>
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input"
-                        value={row.meaning}
-                        onChange={(event) => updateSmmRow(row.id, "meaning", event.target.value)}
-                        placeholder="Смысл"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="analytics-smm-cell-input"
-                        value={row.format}
-                        onChange={(event) => updateSmmRow(row.id, "format", event.target.value)}
-                        placeholder="Формат"
-                      />
-                    </td>
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input"
-                        value={row.text}
-                        onChange={(event) => updateSmmRow(row.id, "text", event.target.value)}
-                        placeholder="Текст"
-                      />
-                    </td>
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input"
-                        value={row.englishText}
-                        onChange={(event) => updateSmmRow(row.id, "englishText", event.target.value)}
-                        placeholder="Text EN"
-                      />
-                    </td>
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input"
-                        value={row.visual}
-                        onChange={(event) => updateSmmRow(row.id, "visual", event.target.value)}
-                        placeholder="Картинка"
-                      />
-                    </td>
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input"
-                        value={row.videoScript}
-                        onChange={(event) => updateSmmRow(row.id, "videoScript", event.target.value)}
-                        placeholder="Сценарий видео"
-                      />
-                    </td>
-                    <td>
-                      <textarea
-                        className="analytics-smm-cell-input analytics-smm-edits-input"
-                        value={row.edits}
-                        onChange={(event) => updateSmmRow(row.id, "edits", event.target.value)}
-                        placeholder="Правки / комментарий"
-                      />
-                    </td>
+                    <td>{renderSmmCell(row, "post", "Название поста", { title: true })}</td>
+                    <td>{renderSmmCell(row, "date", "дд.мм.гггг", { singleLine: true })}</td>
+                    <td>{renderSmmCell(row, "meaning", "Смысл")}</td>
+                    <td>{renderSmmCell(row, "format", "Формат", { singleLine: true })}</td>
+                    <td>{renderSmmCell(row, "text", "Текст")}</td>
+                    <td>{renderSmmCell(row, "englishText", "Text EN")}</td>
+                    <td>{renderSmmCell(row, "visual", "Картинка")}</td>
+                    <td>{renderSmmCell(row, "videoScript", "Сценарий видео")}</td>
+                    <td>{renderSmmCell(row, "edits", "Правки / комментарий")}</td>
                     <td>
                       <div className="analytics-smm-approval">
                         <button

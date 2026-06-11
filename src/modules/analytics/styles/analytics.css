@@ -1958,6 +1958,22 @@
   color: rgba(168, 195, 222, 0.4);
 }
 
+.analytics-smm-read-cell {
+  max-height: 240px;
+  overflow: auto;
+  color: rgba(229, 239, 252, 0.88);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.analytics-smm-read-title {
+  color: #f7fbff;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
 .analytics-smm-cell-input {
   width: 100%;
   min-height: 92px;
@@ -2122,7 +2138,8 @@ input.analytics-smm-cell-input {
 .analytics-smm-plan-light .analytics-smm-stats small,
 .analytics-smm-plan-light .analytics-smm-plan-save small,
 .analytics-smm-plan-light .analytics-smm-topic-card ol,
-.analytics-smm-plan-light .analytics-smm-table td span {
+.analytics-smm-plan-light .analytics-smm-table td span,
+.analytics-smm-plan-light .analytics-smm-read-cell {
   color: rgba(38, 52, 74, 0.72);
 }
 
@@ -2130,7 +2147,8 @@ input.analytics-smm-cell-input {
 .analytics-smm-plan-light .analytics-smm-section-head h3,
 .analytics-smm-plan-light .analytics-smm-topic-card strong,
 .analytics-smm-plan-light .analytics-smm-stats strong,
-.analytics-smm-plan-light .analytics-smm-cell-title {
+.analytics-smm-plan-light .analytics-smm-cell-title,
+.analytics-smm-plan-light .analytics-smm-read-title {
   color: #0f172a;
 }
 
