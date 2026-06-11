@@ -328,11 +328,54 @@ function isResponsibleValueForPerson(value, personName) {
   return getResponsibleParts(value).some((part) => part === canonicalPerson);
 }
 
+function isSubtaskDone(subtask) {
+  return Boolean(subtask.done) || subtask.status === "Готово";
+}
+
 function isTaskAssignedToPerson(task, personName) {
   if (!personName || personName === ALL_PEOPLE_TAB_ID) return true;
 
   return isResponsibleValueForPerson(task.responsible, personName)
     || normalizeArray(task.subtasks).some((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
+}
+
+function hasActiveItemForPerson(task, personName) {
+  if (!personName || personName === ALL_PEOPLE_TAB_ID) return task.status !== "Готово";
+
+  const matchingSubtasks = normalizeArray(task.subtasks)
+    .filter((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
+
+  if (matchingSubtasks.length) {
+    return matchingSubtasks.some((subtask) => !isSubtaskDone(subtask));
+  }
+
+  return task.status !== "Готово" && isResponsibleValueForPerson(task.responsible, personName);
+}
+
+function hasCompletedItemForPerson(task, personName) {
+  if (!personName || personName === ALL_PEOPLE_TAB_ID) return task.status === "Готово";
+
+  const matchingSubtasks = normalizeArray(task.subtasks)
+    .filter((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
+
+  if (matchingSubtasks.length) {
+    return matchingSubtasks.every(isSubtaskDone);
+  }
+
+  return task.status === "Готово" && isResponsibleValueForPerson(task.responsible, personName);
+}
+
+function countActiveItemsForPerson(tasks, personName) {
+  return tasks.reduce((count, task) => {
+    const matchingSubtasks = normalizeArray(task.subtasks)
+      .filter((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
+
+    if (matchingSubtasks.length) {
+      return count + matchingSubtasks.filter((subtask) => !isSubtaskDone(subtask)).length;
+    }
+
+    return count + (task.status !== "Готово" && isResponsibleValueForPerson(task.responsible, personName) ? 1 : 0);
+  }, 0);
 }
 
 export default function DailyTasksBoard() {
@@ -968,12 +1011,11 @@ export default function DailyTasksBoard() {
   }
 
   const selectedPerson = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
-  const allActiveTasks = tasks.filter((task) => task.status !== "Готово");
-  const allCompletedTasks = tasks.filter((task) => task.status === "Готово");
-  const completedTasks = allCompletedTasks.filter((task) => isTaskAssignedToPerson(task, selectedPerson));
-  const activeTasks = allActiveTasks.filter((task) => isTaskAssignedToPerson(task, selectedPerson));
+  const activeTasks = tasks.filter((task) => hasActiveItemForPerson(task, selectedPerson));
+  const activeTaskIds = new Set(activeTasks.map((task) => task.id));
+  const completedTasks = tasks.filter((task) => !activeTaskIds.has(task.id) && hasCompletedItemForPerson(task, selectedPerson));
   const personTaskCounts = dailyPeople.reduce((result, person) => {
-    result[person] = allActiveTasks.filter((task) => isTaskAssignedToPerson(task, person)).length;
+    result[person] = countActiveItemsForPerson(tasks, person);
     return result;
   }, {});
 
