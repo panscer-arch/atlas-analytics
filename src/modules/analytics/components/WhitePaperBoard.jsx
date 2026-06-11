@@ -181,6 +181,12 @@ function replaceWhitePaperSubsectionText(blockText = "", subsection, nextText = 
   return [...lines.slice(0, startIndex), ...nextLines, ...lines.slice(endIndex)].join("\n");
 }
 
+function isEditableKeyboardTarget(target) {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable;
+}
+
 function parseMarkdownTable(tableText = "") {
   const rows = String(tableText || "")
     .split(/\r?\n/)
@@ -589,6 +595,28 @@ function WhitePaperBoard() {
 
     return () => window.clearTimeout(focusTimer);
   }, [activeBlock?.id, activeSubsectionId, documentMode]);
+
+  useEffect(() => {
+    if (documentMode !== "edit" || typeof window === "undefined") return undefined;
+
+    function handleEditorSpace(event) {
+      if (event.key !== " " && event.code !== "Space") return;
+      if (isEditableKeyboardTarget(event.target)) return;
+
+      const editor = readableEditorRef.current;
+      if (!editor) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      editor.focus();
+    }
+
+    window.addEventListener("keydown", handleEditorSpace, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleEditorSpace, true);
+    };
+  }, [documentMode]);
 
   async function flushServerSave() {
     if (saveInFlightRef.current) {
