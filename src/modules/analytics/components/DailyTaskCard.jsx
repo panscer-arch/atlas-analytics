@@ -18,6 +18,9 @@ const ASSIGNEE_ALIAS_MAP = {
   digitex: "Диджитекс",
   rubi: "Руби",
   ruby: "Руби",
+  ivanov: "Прогер",
+  "programmer": "Прогер",
+  "developer": "Прогер",
 };
 
 function normalizeArray(value) {
@@ -27,6 +30,19 @@ function normalizeArray(value) {
 function normalizeAssigneeName(value = "") {
   const normalized = String(value || "").trim().replace(/\s+/g, " ");
   return ASSIGNEE_ALIAS_MAP[normalized.toLocaleLowerCase("ru-RU")] || normalized;
+}
+
+function getResponsibleParts(value = "") {
+  return String(value || "")
+    .split(/\s+(?:и|and)\s+|[\/,;|]+/i)
+    .map(normalizeAssigneeName)
+    .filter(Boolean);
+}
+
+function isResponsibleValueForAssignee(value, assignee) {
+  const normalizedAssignee = normalizeAssigneeName(assignee);
+  if (!normalizedAssignee) return true;
+  return getResponsibleParts(value).some((part) => part === normalizedAssignee);
 }
 
 function getLaunchStatusTone(status) {
@@ -101,6 +117,7 @@ export default function DailyTaskCard({
   index,
   isCompleted = false,
   assigneeOptions = [],
+  selectedPerson = "",
   responsibleDrafts,
   responsibleSavedTaskId,
   subtaskDrafts,
@@ -141,7 +158,11 @@ export default function DailyTaskCard({
 }) {
     const [pushChatBySubtask, setPushChatBySubtask] = useState({});
     const subtasks = normalizeArray(task.subtasks);
-    const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
+    const normalizedSelectedPerson = normalizeAssigneeName(selectedPerson);
+    const visibleSubtasks = normalizedSelectedPerson
+      ? subtasks.filter((subtask) => isResponsibleValueForAssignee(subtask.responsible, normalizedSelectedPerson))
+      : subtasks;
+    const completedSubtasks = visibleSubtasks.filter((subtask) => subtask.done).length;
     const deadlineMeta = getDailyDeadlineMeta(task.deadline);
     const responsibleValue = normalizeAssigneeName(task.responsible || "");
     const isResponsibleSaved = responsibleSavedTaskId === task.id;
@@ -184,10 +205,10 @@ export default function DailyTaskCard({
         <div className="analytics-daily-subtasks">
           <div className="analytics-daily-subtasks-head">
             <span>Подзадачи</span>
-            <small>{completedSubtasks}/{subtasks.length}</small>
+            <small>{completedSubtasks}/{visibleSubtasks.length}</small>
           </div>
           <div className="analytics-daily-subtasks-list">
-            {subtasks.map((subtask) => {
+            {visibleSubtasks.map((subtask) => {
               const subtaskMessages = normalizeArray(subtask.messages);
               const audioMessagesCount = subtaskMessages.filter((message) => message.type === "audio").length;
               const subtaskStatus = subtask.status || (subtask.done ? "Готово" : "В работе");
@@ -375,7 +396,11 @@ export default function DailyTaskCard({
                 </div>
               );
             })}
-            {!subtasks.length ? <div className="analytics-daily-chat-empty">Разбей большую задачу на конкретные шаги.</div> : null}
+            {!visibleSubtasks.length ? (
+              <div className="analytics-daily-chat-empty">
+                {normalizedSelectedPerson ? `У ${normalizedSelectedPerson} в этой карточке нет отдельных подзадач.` : "Разбей большую задачу на конкретные шаги."}
+              </div>
+            ) : null}
           </div>
           <div className="analytics-daily-subtask-add">
             <textarea

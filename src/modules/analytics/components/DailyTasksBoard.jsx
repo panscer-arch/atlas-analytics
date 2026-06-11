@@ -17,6 +17,7 @@ const DAILY_PERSON_ALIASES = {
   Ротенберг: ["Ротенберг", "Roten Berg", "Rotenberg", "roten_berg"],
   Диджитекс: ["Диджитекс", "Дигитекс", "Digitex"],
   Руби: ["Руби", "Rubi", "Ruby"],
+  Прогер: ["Прогер", "Ivanov", "Иванов", "Programmer", "Developer"],
 };
 const DAILY_PERSON_ALIAS_MAP = Object.fromEntries(
   Object.entries(DAILY_PERSON_ALIASES).flatMap(([person, aliases]) => (
@@ -216,11 +217,11 @@ function createDailyTask(overrides = {}) {
   };
 }
 
-function createDailySubtask(title = "") {
+function createDailySubtask(title = "", responsible = "") {
   return {
     id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title,
-    responsible: "",
+    responsible,
     priority: "Средний",
     status: "В работе",
     deadline: "",
@@ -317,7 +318,7 @@ function getFullSubtaskId(shortSubtaskId = "") {
 
 function getResponsibleParts(value = "") {
   return String(value || "")
-    .split(/[\/,;|]+/)
+    .split(/\s+(?:и|and)\s+|[\/,;|]+/i)
     .map(getCanonicalPersonName)
     .filter(Boolean);
 }
@@ -773,10 +774,11 @@ export default function DailyTasksBoard() {
   function addSubtask(taskId) {
     const title = (subtaskDrafts[taskId] || "").trim();
     if (!title) return;
+    const selectedSubtaskResponsible = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
 
     persist((currentTasks) => currentTasks.map((task) => (
       task.id === taskId
-        ? { ...task, subtasks: [...normalizeArray(task.subtasks), createDailySubtask(title)], updatedAt: new Date().toISOString() }
+        ? { ...task, subtasks: [...normalizeArray(task.subtasks), createDailySubtask(title, selectedSubtaskResponsible)], updatedAt: new Date().toISOString() }
         : task
     )));
     setSubtaskDrafts((current) => ({ ...current, [taskId]: "" }));
@@ -1086,6 +1088,7 @@ export default function DailyTasksBoard() {
               task={task}
               index={index}
               assigneeOptions={dailyPeople}
+              selectedPerson={selectedPerson}
               responsibleDrafts={responsibleDrafts}
               responsibleSavedTaskId={responsibleSavedTaskId}
               subtaskDrafts={subtaskDrafts}
@@ -1152,6 +1155,7 @@ export default function DailyTasksBoard() {
                   index={index}
                   isCompleted
                   assigneeOptions={dailyPeople}
+                  selectedPerson={selectedPerson}
                   responsibleDrafts={responsibleDrafts}
                   responsibleSavedTaskId={responsibleSavedTaskId}
                   subtaskDrafts={subtaskDrafts}
