@@ -28,7 +28,6 @@ const STATUS_OPTIONS = ["Все статусы", "Новый", "Проверит
 const STORAGE_KEY = "atlas.analytics.hyipParserLeads.v3";
 const OUTREACH_STORAGE_KEY = "atlas.analytics.hyipOutreach.queue.v1";
 const OUTREACH_STATUS_OPTIONS = ["Найден", "Черновик", "Отправлено", "Ответили", "Цена получена", "Договорились", "Отказ"];
-const PIPELINE_STATUSES = ["Найден", "Черновик", "Отправлено", "Ответили", "Цена получена", "Договорились", "Отказ"];
 
 const defaultLeads = [
   {
@@ -593,29 +592,6 @@ const defaultLeads = [
   },
 ];
 
-const parserStages = [
-  ["Поиск", "Google/Bing/Yandex queries по стране и языку"],
-  ["Классификация", "monitor, listing, forum, Telegram directory"],
-  ["Контакты", "email, Telegram, WhatsApp, contact form"],
-  ["Оценка", "живость, трафик, свежесть, рекламный fit"],
-  ["Очередь", "передача в outreach-таблицу"],
-];
-
-const outreachTemplates = [
-  {
-    title: "Telegram / короткое первое касание",
-    text: "Hi. We are preparing an international Web3 project launch and are looking for monitor/listing advertising options. Could you please send your current ad placements, prices, traffic stats, and listing requirements? We can provide website, creatives, and project materials for review.",
-  },
-  {
-    title: "Email / форма обратной связи",
-    text: "Hello. My name is [Name], I represent Atlas System. We are reviewing HYIP monitor and crypto-listing advertising placements for an upcoming international campaign. Please send your media kit, available banner/listing slots, weekly/monthly pricing, accepted payment methods, and moderation requirements. We do not need automated posting; we want to review compliant paid placement options first.",
-  },
-  {
-    title: "Что обязательно спросить",
-    text: "Traffic by country, Telegram/channel audience, banner sizes, listing type, price per week/month, moderation rules, refund policy, payment method, start date, examples of previous placements.",
-  },
-];
-
 function readStoredLeads() {
   if (typeof window === "undefined") return defaultLeads;
 
@@ -780,8 +756,6 @@ export default function HyipParserPanel() {
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
   const [query, setQuery] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
-  const [runProgress, setRunProgress] = useState(100);
 
   useEffect(() => {
     let isMounted = true;
@@ -841,11 +815,6 @@ export default function HyipParserPanel() {
     avgFit: Math.round(leads.reduce((sum, lead) => sum + lead.fitScore, 0) / Math.max(leads.length, 1)),
     contacts: leads.filter((lead) => lead.contacts && lead.contacts !== "form only").length,
   }), [leads]);
-
-  const pipelineSummary = useMemo(() => PIPELINE_STATUSES.map((item) => ({
-    status: item,
-    count: leads.filter((lead) => getOutreachRecord(lead, outreach).status === item).length,
-  })), [leads, outreach]);
 
   const selectedLead = leads.find((lead) => lead.id === selectedLeadId) || filteredLeads[0] || leads[0];
   const selectedOutreach = selectedLead ? getOutreachRecord(selectedLead, outreach) : null;
@@ -948,15 +917,6 @@ export default function HyipParserPanel() {
     });
   }
 
-  function startParserRun() {
-    setIsRunning(true);
-    setRunProgress((current) => (current >= 95 ? 18 : Math.min(current + 17, 95)));
-  }
-
-  function stopParserRun() {
-    setIsRunning(false);
-  }
-
   function addManualLead() {
     const nextLead = {
       id: `lead-${Date.now()}`,
@@ -979,21 +939,17 @@ export default function HyipParserPanel() {
     <WrapperShell>
       <section className="analytics-parser-hero analytics-surface">
         <div>
-          <p className="analytics-kicker">Parser / HYIP monitors</p>
-          <h1>Парсер HYIP-мониторов</h1>
+          <p className="analytics-kicker">Parser / outreach</p>
+          <h1>Площадки и переговоры</h1>
           <p>
-            Поиск рекламных площадок по странам: мониторы, листинги, форумы и комьюнити-каталоги. Модуль собирает публичные контакты,
-            оценивает живость площадки и готовит лиды для аккуратного outreach.
+            База рекламных площадок, черновик письма, email-отправка и быстрый текст для Telegram. Задача простая:
+            выбрать контакт, запросить цену и довести до договорённости.
           </p>
         </div>
         <div className="analytics-parser-run-card">
-          <span>{isRunning ? "Поиск идет" : "Очередь готова"}</span>
-          <strong>{runProgress}%</strong>
-          <progress value={runProgress} max="100" />
-          <div>
-            <button type="button" onClick={startParserRun}>{isRunning ? "Продолжить поиск" : "Запустить парсер"}</button>
-            <button type="button" onClick={stopParserRun}>Пауза</button>
-          </div>
+          <span>Очередь outreach</span>
+          <strong>{summary.total}</strong>
+          <p>{outreachSaveState}</p>
         </div>
       </section>
 
@@ -1004,32 +960,10 @@ export default function HyipParserPanel() {
         <Metric label="Есть контакты" value={summary.contacts} tone="success" />
       </section>
 
-      <section className="analytics-outreach-pipeline analytics-surface">
-        <div className="analytics-parser-table-head">
-          <div>
-            <h2>Outreach CRM</h2>
-            <p>Агент ведёт переговоры до цены: черновик, отправка, ответ, условия, сделка. Очередь: {outreachSaveState}.</p>
-          </div>
-        </div>
-        <div className="analytics-outreach-pipeline-list">
-          {pipelineSummary.map((item) => (
-            <button
-              key={item.status}
-              type="button"
-              className={pipelineStatus === item.status ? "is-active" : ""}
-              onClick={() => setPipelineStatus((current) => (current === item.status ? "Все этапы" : item.status))}
-            >
-              <span>{item.status}</span>
-              <strong>{item.count}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
-
       {selectedLead && selectedOutreach && (
         <section className="analytics-outreach-cockpit analytics-surface">
           <div className="analytics-outreach-lead">
-            <p className="analytics-kicker">Selected lead</p>
+            <p className="analytics-kicker">Площадка</p>
             <h2>{selectedLead.name}</h2>
             <a href={selectedLead.url} target="_blank" rel="noreferrer">{selectedLead.url}</a>
             <div className="analytics-outreach-meta">
@@ -1047,8 +981,8 @@ export default function HyipParserPanel() {
           <div className="analytics-outreach-agent">
             <div className="analytics-outreach-agent-head">
               <div>
-                <p className="analytics-kicker">Superflow outreach agent</p>
-                <h2>Переговоры до цены</h2>
+                <p className="analytics-kicker">Superflow Systems</p>
+                <h2>Написать и договориться</h2>
               </div>
               <select value={selectedOutreach.status} onChange={(event) => appendOutreachHistory(selectedLead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })}>
                 {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
@@ -1118,80 +1052,6 @@ export default function HyipParserPanel() {
         </section>
       )}
 
-      <section className="analytics-parser-grid">
-        <div className="analytics-parser-panel analytics-surface">
-          <div className="analytics-parser-panel-head">
-            <div>
-              <h2>Настройки поиска</h2>
-              <p>Страны, ключи и безопасный режим сбора публичных данных.</p>
-            </div>
-          </div>
-          <div className="analytics-parser-controls">
-            <label>
-              Страна
-              <select value={country} onChange={(event) => setCountry(event.target.value)}>
-                {COUNTRY_OPTIONS.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-            <label>
-              Статус
-              <select value={status} onChange={(event) => setStatus(event.target.value)}>
-                {STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-            <label>
-              Этап outreach
-              <select value={pipelineStatus} onChange={(event) => setPipelineStatus(event.target.value)}>
-                {["Все этапы", ...OUTREACH_STATUS_OPTIONS].map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-            <label className="analytics-parser-wide">
-              Поиск / ключевые слова
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="hyip monitor, profit monitor, listing..." />
-            </label>
-          </div>
-          <div className="analytics-parser-stage-list">
-            {parserStages.map(([title, text], index) => (
-              <article key={title}>
-                <span>{index + 1}</span>
-                <div>
-                  <strong>{title}</strong>
-                  <p>{text}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <div className="analytics-parser-panel analytics-parser-rules analytics-surface">
-          <h2>Что должен считать парсер</h2>
-          <ul>
-            <li>Только публичные страницы и контакты: email, Telegram, WhatsApp, contact form.</li>
-            <li>Без обхода капчи, авторизации, paywall и запретов robots.txt.</li>
-            <li>Оценка живости: свежие посты, обновления листингов, соцсети, индексируемость.</li>
-            <li>Оценка пригодности: страна, язык, рекламные форматы, похожесть аудитории.</li>
-            <li>Перед контактом нужен ручной review текста, без обещаний гарантированной доходности.</li>
-          </ul>
-        </div>
-      </section>
-
-      <section className="analytics-parser-outreach analytics-surface">
-        <div className="analytics-parser-table-head">
-          <div>
-            <h2>Как связываться</h2>
-            <p>Готовые тексты для Telegram, email и contact form. Отправлять вручную после проверки площадки.</p>
-          </div>
-        </div>
-        <div className="analytics-parser-outreach-grid">
-          {outreachTemplates.map((template) => (
-            <article key={template.title}>
-              <strong>{template.title}</strong>
-              <textarea readOnly value={template.text} rows={template.title === "Email / форма обратной связи" ? 6 : 4} />
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="analytics-parser-table-wrap analytics-surface">
         <div className="analytics-parser-table-head">
           <div>
@@ -1202,6 +1062,30 @@ export default function HyipParserPanel() {
             <button type="button" onClick={addManualLead}>Добавить вручную</button>
             <button type="button" onClick={() => downloadLeadsCsv(filteredLeads)}>Экспорт CSV</button>
           </div>
+        </div>
+        <div className="analytics-parser-controls analytics-parser-controls-compact">
+          <label>
+            Страна
+            <select value={country} onChange={(event) => setCountry(event.target.value)}>
+              {COUNTRY_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            Лид
+            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+              {STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            Переговоры
+            <select value={pipelineStatus} onChange={(event) => setPipelineStatus(event.target.value)}>
+              {["Все этапы", ...OUTREACH_STATUS_OPTIONS].map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            Поиск
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="название, страна, контакт..." />
+          </label>
         </div>
         <div className="analytics-parser-table-scroll">
           <table className="analytics-table analytics-parser-table">

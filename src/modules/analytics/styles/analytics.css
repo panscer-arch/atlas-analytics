@@ -15734,49 +15734,8 @@ input.analytics-smm-cell-input {
   color: #ffb0b0;
 }
 
-.analytics-outreach-pipeline,
 .analytics-outreach-cockpit {
   padding: 1rem;
-}
-
-.analytics-outreach-pipeline {
-  display: grid;
-  gap: 1rem;
-}
-
-.analytics-outreach-pipeline-list {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.65rem;
-}
-
-.analytics-outreach-pipeline-list button {
-  display: grid;
-  gap: 0.45rem;
-  min-height: 86px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  padding: 0.8rem;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(235, 244, 255, 0.82);
-  text-align: left;
-}
-
-.analytics-outreach-pipeline-list button.is-active {
-  border-color: rgba(114, 239, 214, 0.45);
-  background: rgba(114, 239, 214, 0.1);
-}
-
-.analytics-outreach-pipeline-list span {
-  color: rgba(185, 204, 225, 0.72);
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
-.analytics-outreach-pipeline-list strong {
-  color: #ffffff;
-  font-size: 1.75rem;
-  line-height: 1;
 }
 
 .analytics-outreach-cockpit {
@@ -15925,6 +15884,11 @@ input.analytics-smm-cell-input {
 .analytics-parser-mini-button {
   width: 100%;
   margin-top: 0.45rem;
+}
+
+.analytics-parser-controls-compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 0;
 }
 
 .analytics-life-diary {
@@ -16543,7 +16507,6 @@ input.analytics-smm-cell-input {
   .analytics-parser-grid,
   .analytics-parser-controls,
   .analytics-parser-outreach-grid,
-  .analytics-outreach-pipeline-list,
   .analytics-outreach-cockpit,
   .analytics-outreach-fields,
   .analytics-outreach-notes,
