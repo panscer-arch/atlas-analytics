@@ -15734,6 +15734,269 @@ input.analytics-smm-cell-input {
   color: #ffb0b0;
 }
 
+.analytics-life-diary {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-life-diary-hero,
+.analytics-life-diary-card {
+  border: 1px solid rgba(47, 217, 255, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(47, 217, 255, 0.12), transparent 26%),
+    linear-gradient(145deg, rgba(10, 18, 32, 0.96), rgba(4, 9, 18, 0.98));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.analytics-life-diary-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1.25rem;
+}
+
+.analytics-life-diary-kicker {
+  display: inline-flex;
+  margin-bottom: 0.45rem;
+  color: #78ffe0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analytics-life-diary-hero h2,
+.analytics-life-diary-card h3 {
+  margin: 0;
+  color: #f7fbff;
+}
+
+.analytics-life-diary-hero h2 {
+  font-size: clamp(1.45rem, 2.2vw, 2.25rem);
+}
+
+.analytics-life-diary-hero p {
+  max-width: 760px;
+  margin: 0.55rem 0 0;
+  color: #aebdd4;
+  line-height: 1.5;
+}
+
+.analytics-life-diary-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.analytics-life-diary-actions select,
+.analytics-life-diary input,
+.analytics-life-diary select,
+.analytics-life-diary textarea {
+  width: 100%;
+  border: 1px solid rgba(123, 180, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(4, 9, 18, 0.72);
+  color: #f6f9ff;
+  font: inherit;
+}
+
+.analytics-life-diary-actions select,
+.analytics-life-diary input,
+.analytics-life-diary select {
+  min-height: 40px;
+  padding: 0.55rem 0.7rem;
+}
+
+.analytics-life-diary textarea {
+  resize: vertical;
+  padding: 0.7rem;
+  line-height: 1.45;
+}
+
+.analytics-life-diary-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-life-diary-kpis div {
+  min-width: 0;
+  border: 1px solid rgba(120, 255, 224, 0.14);
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: linear-gradient(145deg, rgba(31, 55, 84, 0.62), rgba(8, 14, 26, 0.88));
+}
+
+.analytics-life-diary-kpis span,
+.analytics-life-diary label,
+.analytics-life-diary-meal-title span,
+.analytics-life-diary-card-head span,
+.analytics-life-diary-food-row span {
+  color: #aebdd4;
+  font-size: 0.82rem;
+}
+
+.analytics-life-diary-kpis strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #ffffff;
+  font-size: 1.25rem;
+}
+
+.analytics-life-diary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.analytics-life-diary-card {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.analytics-life-diary-card-wide {
+  grid-column: 1 / -1;
+}
+
+.analytics-life-diary-card-head,
+.analytics-life-diary-meal-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.analytics-life-diary-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.analytics-life-diary-form-grid-small {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-life-diary label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.analytics-life-diary-meals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.analytics-life-diary-meal {
+  min-width: 0;
+  border: 1px solid rgba(123, 180, 255, 0.12);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.analytics-life-diary-meal-title strong {
+  color: #f7fbff;
+}
+
+.analytics-life-diary-food-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 74px 112px 82px 32px;
+  gap: 0.45rem;
+  align-items: center;
+  margin-top: 0.55rem;
+}
+
+.analytics-life-diary-food-row button,
+.analytics-life-diary-add-food {
+  border: 1px solid rgba(47, 217, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(47, 217, 255, 0.08);
+  color: #dff8ff;
+}
+
+.analytics-life-diary-food-row button {
+  width: 32px;
+  height: 32px;
+}
+
+.analytics-life-diary-add-food {
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  font-weight: 800;
+}
+
+.analytics-life-diary-activity-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 1rem 0;
+}
+
+.analytics-life-diary-activity-list label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  border: 1px solid rgba(123, 180, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.55rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.analytics-life-diary-activity-list input {
+  width: auto;
+  min-height: auto;
+}
+
+.analytics-life-diary-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 1199.98px) {
+  .analytics-life-diary-hero,
+  .analytics-life-diary-grid,
+  .analytics-life-diary-meals,
+  .analytics-life-diary-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-life-diary-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .analytics-life-diary-actions,
+  .analytics-life-diary-card-head,
+  .analytics-life-diary-meal-title {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-life-diary-form-grid,
+  .analytics-life-diary-form-grid-small,
+  .analytics-life-diary-activity-list,
+  .analytics-life-diary-food-row,
+  .analytics-life-diary-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-life-diary-food-row button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 767px) {
   .analytics-board-overlay {
     padding: 0.5rem;
