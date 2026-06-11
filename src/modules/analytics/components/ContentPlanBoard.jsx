@@ -3,6 +3,7 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const CONTENT_PLAN_STORAGE_KEY = "atlas.analytics.contentPlan.v1";
 const SMM_APPROVAL_STORAGE_KEY = "atlas.analytics.smmPlan.approvals.v1";
+const SMM_EDITS_STORAGE_KEY = "atlas.analytics.smmPlan.edits.v1";
 
 const SOCIAL_OPTIONS = ["Все каналы", "Telegram", "Instagram", "X", "TikTok", "YouTube", "Facebook"];
 const FORMAT_OPTIONS = ["Пост", "Карусель", "Рилс", "Видео", "Сторис", "Еженедельная рубрика"];
@@ -57,7 +58,7 @@ const SAVE_STATE_META = {
   },
 };
 
-const SMM_PLAN_SECTIONS = [
+const SMM_TOPIC_SECTIONS = [
   {
     id: "prelaunch",
     title: "Контент-план Atlas",
@@ -213,10 +214,192 @@ const SMM_PLAN_SECTIONS = [
   },
 ];
 
+const SMM_FACEBOOK_TOPICS = [
+  {
+    id: "fb-web3",
+    title: "Web3 и технологии",
+    posts: [
+      "Что такое Web3 простыми словами?",
+      "Чем Web3 отличается от привычного интернета?",
+      "Почему блокчейн называют технологией доверия?",
+      "Что такое смарт-контракт и как он работает?",
+      "Можно ли проверить работу алгоритма самостоятельно?",
+      "Что такое DAO и зачем оно нужно?",
+      "Как технологии помогают создавать прозрачные системы?",
+      "Почему все больше проектов используют блокчейн?",
+      "Что такое цифровая идентичность в новом интернете?",
+      "Какие навыки будут востребованы в эпоху Web3?",
+    ],
+  },
+  {
+    id: "fb-future",
+    title: "Будущее общества",
+    posts: [
+      "Почему эпоха одиночек заканчивается?",
+      "Сила сообщества против силы отдельного человека.",
+      "Как изменились способы взаимодействия людей за последние 20 лет?",
+      "Почему доверие становится самым ценным ресурсом?",
+      "Какие сообщества будут успешны в будущем?",
+      "Что объединяет самые сильные мировые экосистемы?",
+      "Почему люди ищут новые формы сотрудничества?",
+      "Как технологии помогают людям объединяться?",
+      "Что такое цифровое сообщество нового поколения?",
+      "Почему совместные проекты растут быстрее одиночных?",
+    ],
+  },
+  {
+    id: "fb-education",
+    title: "Образовательный контент",
+    posts: [
+      "5 мифов о блокчейне.",
+      "7 ошибок новичков в мире цифровых технологий.",
+      "Как безопасно хранить цифровые активы.",
+      "Что такое децентрализация на простом примере.",
+      "Как работают цифровые кошельки.",
+      "Почему важно понимать принципы цифровой безопасности.",
+      "Какие технологии формируют интернет будущего.",
+      "С чего начать изучение Web3 в 2026 году.",
+      "Как отличить технологию от хайпа.",
+      "Почему образование становится главным активом в цифровом мире.",
+    ],
+  },
+  {
+    id: "fb-engagement",
+    title: "Темы для вовлечения",
+    posts: [
+      "Какая технология изменит мир сильнее всего в ближайшие 10 лет?",
+      "Что для вас важнее: скорость или прозрачность?",
+      "Верите ли вы, что сообщества могут быть сильнее корпораций?",
+      "Какой навык оказался для вас самым полезным за последние 5 лет?",
+      "Какая технология вас больше всего впечатляет сегодня?",
+    ],
+  },
+];
+
+const SMM_APPROVAL_ROWS = [
+  {
+    id: "row-epoch-alone",
+    post: "Эпоха одиночек заканчивается",
+    date: "29.05.2026",
+    meaning: "Показать, что мир меняется: людям нужны новые способы взаимодействия, а сильные проекты строятся сообществами.",
+    format: "Рилс / сценарий видео",
+    text: "Нас долго учили справляться со всем самостоятельно. Строить карьеру самостоятельно. Искать возможности самостоятельно. Разбираться в технологиях самостоятельно. Но мир меняется. Самые сильные проекты больше не строятся в одиночку. Их создают сообщества. Люди, объединенные общими принципами, технологиями и идеями. Возможно, следующая эпоха принадлежит именно им.",
+    englishText: "For years, we were taught to do everything on our own. Build a career on our own. Find opportunities on our own. Learn new technologies on our own. But the world is changing. The strongest projects are no longer built by individuals alone. They are built by communities.",
+    visual: "Темный свет, человек один перед экраном, пустой офис/квартира, люди в телефонах, затем появляются линии связей и сообщество.",
+    videoScript: "Первые 2 секунды: «Нас долго учили справляться со всем самостоятельно». Кадр 1: человек один перед экраном. Кадр 2: пустой офис и люди в телефонах. Кадр 3: AI, технологии, новости. Кадр 4: связи между людьми. Кадр 5: Atlas, логотип.",
+    edits: "",
+  },
+  {
+    id: "row-why-atlas",
+    post: "Почему появился Atlas",
+    date: "07.05.2026",
+    meaning: "Общее знакомство: почему миру понадобилась такая система и почему Atlas появляется именно сейчас.",
+    format: "Видео",
+    text: "Atlas — это цифровая система взаимопомощи нового поколения. Мы создаем современную экосистему, объединяющую DAO-механики, смарт-контракты и прозрачную архитектуру взаимодействия между участниками. Atlas создается в период глобальных изменений, когда все больше людей ищут новые формы взаимодействия, объединения и финансовой устойчивости. Это только начало.",
+    englishText: "Why was Atlas created? Because the world has changed. Today, technology allows people to interact in entirely new ways. More transparently. More efficiently. More openly. New tools make it possible to build systems based on clear rules rather than promises.",
+    visual: "WHY ATLAS?, города, люди, технологии, экраны, абстрактные линии, интерфейсы, код, смарт-контракт, логотип Atlas.",
+    videoScript: "Кадр 1: WHY ATLAS? Кадр 2: города, люди, технологии, экраны. Кадр 3: линии соединяются в сеть. Кадр 4: интерфейсы, код, смарт-контракт. Кадр 5: логотип Atlas.",
+    edits: "",
+  },
+  {
+    id: "row-ecosystem",
+    post: "Atlas — это не один продукт",
+    date: "02.06.2026",
+    meaning: "Показать экосистему: Atlas не отдельный сервис, а среда, где разные элементы работают как единая система.",
+    format: "Пост / карусель",
+    text: "Atlas — это не один продукт. Это экосистема, в которой разные элементы работают как единая система. В основе Atlas находится Smart Cycle — механизм взаимопомощи, построенный на смарт-контрактах. Вокруг него развивается инфраструктура: продукты, инструменты и механики, которые делают взаимодействие участников более удобным и прозрачным.",
+    englishText: "Atlas is not a single product. It is an ecosystem where different elements work together as one unified system. At the core of Atlas is Smart Cycle — a mutual assistance mechanism powered by smart contracts. Around it, the ecosystem infrastructure continues to evolve.",
+    visual: "Карусель: Atlas в центре, Smart Cycle, Community, DAO-inspired mechanics, Ecosystem Products, Wallet, P2P Exchange, Academy, Governance Platform.",
+    videoScript: "Слайд 1: Atlas — это не один продукт. Слайд 2: многие знакомятся через Smart Cycle. Слайд 3: цифровая экосистема нового поколения. Слайд 4: Smart Cycle. Слайд 5: Governance. Слайд 6: P2P Exchange. Слайд 7: Wallet / Academy / Future Products. Слайд 8: Atlas.",
+    edits: "",
+  },
+  {
+    id: "row-smart-cycle",
+    post: "Как работает Smart Cycle",
+    date: "31.05.2026",
+    meaning: "Первое простое объяснение Smart Cycle и роли смарт-контракта без перегруза.",
+    format: "Карусель / пост",
+    text: "Smart Cycle — это ключевой механизм экосистемы Atlas. В его основе лежит смарт-контракт, работающий по заранее определенным правилам и алгоритмам. Взаимодействие происходит в рамках прозрачной системы, где процессы выполняются автоматически и фиксируются в блокчейне.",
+    englishText: "Smart Cycle is the core mechanism of the Atlas ecosystem. At its foundation is a smart contract that operates according to predefined rules and algorithms. Participation takes place through a transparent framework where processes are executed automatically and recorded on the blockchain.",
+    visual: "Карусель: участник подключается к системе, средства взаимодействуют по правилам, процессы автоматические, действия фиксируются в блокчейне.",
+    videoScript: "Слайд 1: Как работает Smart Cycle? Слайд 2: участник подключается через смарт-контракт. Слайд 3: средства взаимодействуют по правилам. Слайд 4: процессы автоматические. Слайд 5: логика заранее определена. Слайд 6: действия в блокчейне. Слайд 7: прозрачность архитектурой. Слайд 8: фундамент Atlas.",
+    edits: "",
+  },
+  {
+    id: "row-smart-contract",
+    post: "Что делает смарт-контракт",
+    date: "",
+    meaning: "Обучение: объяснить смарт-контракт простыми словами и показать, почему он важен для Atlas.",
+    format: "Карусель",
+    text: "Смарт-контракт — это один из ключевых элементов экосистемы Atlas. Если говорить простыми словами, это программный код, в котором заранее определены правила работы системы. После запуска смарт-контракт автоматически выполняет заложенную в него логику. Все действия фиксируются в блокчейне и могут быть проверены.",
+    englishText: "A smart contract is one of the key elements of the Atlas ecosystem. Simply put, it is a piece of code that contains predefined rules for how the system operates. Once deployed, the smart contract automatically executes the logic built into it.",
+    visual: "Показать фундамент: Web3, Smart Contracts, DAO-inspired mechanics, Transparency.",
+    videoScript: "Слайд 1: Что делает смарт-контракт? Слайд 2: программный код с правилами. Слайд 3: автоматически выполняет правила. Слайд 4: без ручного управления. Слайд 5: работает одинаково для всех. Слайд 6: все действия в блокчейне. Слайд 7: фундаментальный инструмент Web3. Слайд 8: прозрачность Atlas.",
+    edits: "",
+  },
+  {
+    id: "row-foundation",
+    post: "На чем построен Atlas",
+    date: "05.06.2026",
+    meaning: "Показать четыре принципа, лежащие в основе экосистемы.",
+    format: "Видео / карусель",
+    text: "Любая система начинается с фундамента. В основе Atlas лежат четыре ключевых принципа: Web3, Smart contracts, DAO-inspired mechanics и Transparency. Именно сочетание этих элементов формирует фундамент Atlas.",
+    englishText: "Every system starts with a foundation. Atlas is built on four core principles. Web3 provides the technological foundation for a new way of interaction. Smart contracts automate processes. DAO-inspired mechanics support the growth of the ecosystem. Transparency remains one of the core principles of Atlas.",
+    visual: "Устройство системы: Web3, Smart Contracts, DAO-inspired mechanics, Transparency -> ATLAS.",
+    videoScript: "Слайд 1: На чем построен Atlas? Слайд 2: Web3. Слайд 3: Smart Contracts. Слайд 4: DAO-inspired mechanics. Слайд 5: Transparency. Слайд 6: вместе появляется система нового поколения. Слайд 7: Web3 + Smart Contracts + DAO + Transparency = Atlas. Слайд 8: фундамент определяет будущее.",
+    edits: "",
+  },
+  {
+    id: "row-verify-system",
+    post: "Можно ли проверить работу системы?",
+    date: "",
+    meaning: "Закрепить идею прозрачности: доверие строится на возможности проверки, а не только на словах.",
+    format: "Пост",
+    text: "Можно ли проверить работу системы? Да. Одним из ключевых принципов Atlas является прозрачность. Именно поэтому важные процессы внутри системы фиксируются в блокчейне и могут быть проверены с помощью открытых инструментов, таких как BscScan. Для нас прозрачность — это часть архитектуры Atlas.",
+    englishText: "Can the system be verified? Yes. Transparency is one of the core principles of Atlas. Key processes within the system are recorded on the blockchain and can be reviewed using public tools such as BscScan.",
+    visual: "Картинка или короткая схема: блокчейн, BscScan, проверка, открытые данные.",
+    videoScript: "",
+    edits: "",
+  },
+  {
+    id: "row-transparency-code",
+    post: "Прозрачность не слоган. Это код.",
+    date: "",
+    meaning: "Доверие: объяснить, что прозрачность Atlas должна быть частью архитектуры, а не маркетинговой фразой.",
+    format: "Карусель / картинка",
+    text: "В современном цифровом мире доверие становится одним из самых ценных ресурсов. Но на чем оно должно строиться? На обещаниях? На словах? На репутации отдельных людей? Мы считаем, что доверие становится сильнее, когда оно основано на понятных правилах и прозрачной архитектуре системы.",
+    englishText: "In today's digital world, trust has become one of the most valuable resources. We believe trust becomes stronger when it is built on clear rules and transparent system architecture. For us, transparency is not a marketing slogan. It is part of the architecture.",
+    visual: "Темная фирменная картинка: Transparency is code / открытая архитектура / проверяемые процессы.",
+    videoScript: "",
+    edits: "",
+  },
+  {
+    id: "row-faq",
+    post: "FAQ: Топ-5 вопросов после старта",
+    date: "",
+    meaning: "Собрать первые вопросы аудитории после запуска и снять основные возражения.",
+    format: "Пост / карусель",
+    text: "FAQ после старта: зачем мне Atlas, что я получаю как участник, чем Atlas отличается от других проектов, куда движется Atlas, кто стоит за Atlas.",
+    englishText: "",
+    visual: "Карусель FAQ: 5 слайдов с короткими вопросами и спокойными ответами.",
+    videoScript: "",
+    edits: "",
+  },
+];
+
 function readSmmApprovals() {
   if (typeof window === "undefined") return {};
   try {
     return JSON.parse(window.localStorage.getItem(SMM_APPROVAL_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function readSmmEdits() {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(SMM_EDITS_STORAGE_KEY) || "{}");
   } catch {
     return {};
   }
@@ -837,6 +1020,7 @@ function ContentPlanBoard() {
   const [pendingPublishWithoutLinkId, setPendingPublishWithoutLinkId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
   const [smmApprovals, setSmmApprovals] = useState(readSmmApprovals);
+  const [smmEdits, setSmmEdits] = useState(readSmmEdits);
   const duplicateItemIds = useMemo(() => getDuplicateContentPlanIds(items), [items]);
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
@@ -1782,14 +1966,23 @@ function ContentPlanBoard() {
   }
 
   const smmStats = useMemo(() => {
-    const blocks = SMM_PLAN_SECTIONS.reduce((sum, section) => sum + section.blocks.length, 0);
-    const posts = SMM_PLAN_SECTIONS.reduce((sum, section) => (
+    const blocks = SMM_TOPIC_SECTIONS.reduce((sum, section) => sum + section.blocks.length, 0);
+    const plannedPosts = SMM_TOPIC_SECTIONS.reduce((sum, section) => (
       sum + section.blocks.reduce((blockSum, block) => blockSum + block.posts.length, 0)
     ), 0);
+    const facebookTopics = SMM_FACEBOOK_TOPICS.reduce((sum, block) => sum + block.posts.length, 0);
     const ok = Object.values(smmApprovals).filter((status) => status === "ok").length;
     const notOk = Object.values(smmApprovals).filter((status) => status === "not-ok").length;
 
-    return { blocks, posts, ok, notOk, pending: Math.max(blocks - ok - notOk, 0) };
+    return {
+      blocks,
+      facebookTopics,
+      plannedPosts,
+      productionRows: SMM_APPROVAL_ROWS.length,
+      ok,
+      notOk,
+      pending: Math.max(SMM_APPROVAL_ROWS.length - ok - notOk, 0),
+    };
   }, [smmApprovals]);
 
   function updateSmmApproval(blockId, status) {
@@ -1799,6 +1992,18 @@ function ContentPlanBoard() {
         window.localStorage.setItem(SMM_APPROVAL_STORAGE_KEY, JSON.stringify(next));
       } catch {
         // Согласование остается в состоянии страницы, даже если localStorage недоступен.
+      }
+      return next;
+    });
+  }
+
+  function updateSmmEdit(rowId, value) {
+    setSmmEdits((current) => {
+      const next = { ...current, [rowId]: value };
+      try {
+        window.localStorage.setItem(SMM_EDITS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Комментарий остается в состоянии страницы, даже если localStorage недоступен.
       }
       return next;
     });
@@ -1820,8 +2025,8 @@ function ContentPlanBoard() {
         </div>
       </div>
 
-      <div className="analytics-smm-board">
-        {SMM_PLAN_SECTIONS.map((section) => (
+      <div className="analytics-smm-topic-grid">
+        {SMM_TOPIC_SECTIONS.map((section) => (
           <section key={section.id} className="analytics-surface analytics-smm-section">
             <div className="analytics-smm-section-head">
               <div>
@@ -1831,75 +2036,135 @@ function ContentPlanBoard() {
               <strong>{section.blocks.length} блоков</strong>
             </div>
 
-            <div className="analytics-smm-table-wrap" aria-label={`${section.title}: таблица SMM-плана`}>
-              <table className="analytics-smm-table">
-                <thead>
-                  <tr>
-                    <th>Блок</th>
-                    <th>Пост 1</th>
-                    <th>Пост 2</th>
-                    <th>Пост 3</th>
-                    <th>Согласование</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {section.blocks.map((block) => {
-                    const approval = smmApprovals[block.id] || "";
-                    return (
-                      <tr
-                        key={block.id}
-                        data-smm-block={block.id}
-                        data-smm-approval={approval}
-                        className={approval ? `analytics-smm-row-${approval}` : ""}
-                      >
-                        <td>
-                          <strong>{block.title}</strong>
-                        </td>
-                        {[0, 1, 2].map((index) => (
-                          <td key={`${block.id}-${index}`}>
-                            {block.posts[index] ? <span>{block.posts[index]}</span> : <span className="analytics-smm-empty">-</span>}
-                          </td>
-                        ))}
-                        <td>
-                          <div className="analytics-smm-approval">
-                            <button
-                              type="button"
-                              data-smm-action={`ok-${block.id}`}
-                              className={approval === "ok" ? "is-active" : ""}
-                              onClick={() => updateSmmApproval(block.id, "ok")}
-                            >
-                              OK
-                            </button>
-                            <button
-                              type="button"
-                              data-smm-action={`not-ok-${block.id}`}
-                              className={approval === "not-ok" ? "is-active" : ""}
-                              onClick={() => updateSmmApproval(block.id, "not-ok")}
-                            >
-                              Не OK
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="analytics-smm-block-grid">
+              {section.blocks.map((block) => (
+                <article key={block.id} className="analytics-smm-topic-card">
+                  <strong>{block.title}</strong>
+                  <ol>
+                    {block.posts.map((post) => <li key={post}>{post}</li>)}
+                  </ol>
+                </article>
+              ))}
             </div>
           </section>
         ))}
+
+        <section className="analytics-surface analytics-smm-section">
+          <div className="analytics-smm-section-head">
+            <div>
+              <span>Отдельный список</span>
+              <h3>Темы для Facebook</h3>
+            </div>
+            <strong>{smmStats.facebookTopics} тем</strong>
+          </div>
+          <div className="analytics-smm-facebook-grid">
+            {SMM_FACEBOOK_TOPICS.map((block) => (
+              <article key={block.id} className="analytics-smm-topic-card">
+                <strong>{block.title}</strong>
+                <ol>
+                  {block.posts.map((post) => <li key={post}>{post}</li>)}
+                </ol>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
+
+      <section className="analytics-surface analytics-smm-section analytics-smm-production">
+        <div className="analytics-smm-section-head">
+          <div>
+            <span>Production table</span>
+            <h3>SMM-таблица из файла</h3>
+          </div>
+          <strong>{SMM_APPROVAL_ROWS.length} строк</strong>
+        </div>
+
+        <div className="analytics-smm-table-wrap" aria-label="SMM production table">
+          <table className="analytics-smm-table analytics-smm-production-table">
+            <thead>
+              <tr>
+                <th>Пост</th>
+                <th>Дата</th>
+                <th>Смысл</th>
+                <th>Формат</th>
+                <th>Текст</th>
+                <th>Текст Англ</th>
+                <th>Картинка</th>
+                <th>Сценарий видео</th>
+                <th>Правки</th>
+                <th>OK / Не OK</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SMM_APPROVAL_ROWS.map((row) => {
+                const approval = smmApprovals[row.id] || "";
+                const editValue = smmEdits[row.id] ?? row.edits ?? "";
+                return (
+                  <tr
+                    key={row.id}
+                    data-smm-block={row.id}
+                    data-smm-approval={approval}
+                    className={approval ? `analytics-smm-row-${approval}` : ""}
+                  >
+                    <td><strong>{row.post}</strong></td>
+                    <td><span>{row.date || "-"}</span></td>
+                    <td><span>{row.meaning || "-"}</span></td>
+                    <td><span>{row.format || "-"}</span></td>
+                    <td><span>{row.text || "-"}</span></td>
+                    <td><span>{row.englishText || "-"}</span></td>
+                    <td><span>{row.visual || "-"}</span></td>
+                    <td><span>{row.videoScript || "-"}</span></td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-edits-input"
+                        value={editValue}
+                        onChange={(event) => updateSmmEdit(row.id, event.target.value)}
+                        placeholder="Правки / комментарий"
+                      />
+                    </td>
+                    <td>
+                      <div className="analytics-smm-approval">
+                        <button
+                          type="button"
+                          data-smm-action={`ok-${row.id}`}
+                          className={approval === "ok" ? "is-active" : ""}
+                          onClick={() => updateSmmApproval(row.id, "ok")}
+                        >
+                          OK
+                        </button>
+                        <button
+                          type="button"
+                          data-smm-action={`not-ok-${row.id}`}
+                          className={approval === "not-ok" ? "is-active" : ""}
+                          onClick={() => updateSmmApproval(row.id, "not-ok")}
+                        >
+                          Не OK
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="analytics-smm-stats">
         <article className="analytics-surface">
           <span>Блоков</span>
           <strong>{smmStats.blocks}</strong>
-          <small>темы из SMM.pdf</small>
+          <small>до / после / рубрики</small>
         </article>
         <article className="analytics-surface">
-          <span>Постов</span>
-          <strong>{smmStats.posts}</strong>
-          <small>ближайший контент</small>
+          <span>Постов в планах</span>
+          <strong>{smmStats.plannedPosts}</strong>
+          <small>верхние блоки</small>
+        </article>
+        <article className="analytics-surface">
+          <span>Строк таблицы</span>
+          <strong>{smmStats.productionRows}</strong>
+          <small>на согласование</small>
         </article>
         <article className="analytics-surface">
           <span>OK</span>

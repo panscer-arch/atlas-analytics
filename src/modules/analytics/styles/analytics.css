@@ -1777,7 +1777,8 @@
   font-size: 12px;
 }
 
-.analytics-smm-board {
+.analytics-smm-board,
+.analytics-smm-topic-grid {
   display: grid;
   gap: 16px;
 }
@@ -1835,6 +1836,10 @@
   border-collapse: collapse;
 }
 
+.analytics-smm-production-table {
+  min-width: 2380px;
+}
+
 .analytics-smm-table th,
 .analytics-smm-table td {
   padding: 14px;
@@ -1859,6 +1864,21 @@
 .analytics-smm-table td:first-child {
   width: 210px;
   background: rgba(42, 190, 166, 0.06);
+}
+
+.analytics-smm-production-table td:first-child {
+  width: 220px;
+}
+
+.analytics-smm-production-table th:nth-child(5),
+.analytics-smm-production-table th:nth-child(6),
+.analytics-smm-production-table th:nth-child(7),
+.analytics-smm-production-table th:nth-child(8),
+.analytics-smm-production-table td:nth-child(5),
+.analytics-smm-production-table td:nth-child(6),
+.analytics-smm-production-table td:nth-child(7),
+.analytics-smm-production-table td:nth-child(8) {
+  width: 320px;
 }
 
 .analytics-smm-table td:last-child,
@@ -1932,9 +1952,66 @@
   color: #ffe2bd;
 }
 
+.analytics-smm-block-grid,
+.analytics-smm-facebook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.analytics-smm-topic-card {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgba(111, 255, 232, 0.13);
+  border-radius: 8px;
+  background: rgba(3, 12, 23, 0.42);
+}
+
+.analytics-smm-topic-card strong {
+  color: #f7fbff;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.analytics-smm-topic-card ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 20px;
+  color: rgba(229, 239, 252, 0.84);
+}
+
+.analytics-smm-topic-card li {
+  line-height: 1.35;
+}
+
+.analytics-smm-production {
+  border-color: rgba(111, 255, 232, 0.24);
+}
+
+.analytics-smm-edits-input {
+  width: 100%;
+  min-height: 92px;
+  padding: 10px;
+  border: 1px solid rgba(255, 151, 45, 0.26);
+  border-radius: 8px;
+  background: rgba(4, 15, 25, 0.66);
+  color: #f7fbff;
+  font: inherit;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.analytics-smm-edits-input:focus {
+  border-color: rgba(255, 151, 45, 0.58);
+  box-shadow: 0 0 0 1px rgba(255, 151, 45, 0.16);
+  outline: none;
+}
+
 .analytics-smm-stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
 }
 
