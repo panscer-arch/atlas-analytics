@@ -3,7 +3,7 @@ import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const DIARY_STORAGE_KEY = "atlas.analytics.lifeDiary.v1";
 const DIARY_UNLOCK_KEY = "atlas.analytics.lifeDiary.unlocked";
-const DIARY_PASSCODE = "4711122";
+const DIARY_PASSCODE = "1122";
 
 const MEALS = ["Завтрак", "Перекус", "Обед", "Полдник", "Ужин", "Поздний ужин"];
 const ACTIVITY_TYPES = ["Тренажерный зал", "Прогулка", "Горы", "Теннис", "Пробежка", "Растяжка", "Плавание", "Другое"];
