@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 
 const DIARY_STORAGE_KEY = "atlas.analytics.lifeDiary.v1";
+const DIARY_UNLOCK_KEY = "atlas.analytics.lifeDiary.unlocked";
+const DIARY_PASSCODE = "4711122";
 
 const MEALS = ["Завтрак", "Перекус", "Обед", "Полдник", "Ужин", "Поздний ужин"];
 const ACTIVITY_TYPES = ["Тренажерный зал", "Прогулка", "Горы", "Теннис", "Пробежка", "Растяжка", "Плавание", "Другое"];
@@ -199,6 +201,11 @@ function getActivityLabel(entry) {
 function LifeDiaryBoard() {
   const [entries, setEntries] = useState(readStoredEntries);
   const [activeEntryId, setActiveEntryId] = useState(() => readStoredEntries()[0]?.id || "");
+  const [isUnlocked, setIsUnlocked] = useState(() => (
+    typeof window !== "undefined" && window.localStorage.getItem(DIARY_UNLOCK_KEY) === "true"
+  ));
+  const [passcode, setPasscode] = useState("");
+  const [passcodeError, setPasscodeError] = useState("");
   const activeEntry = entries.find((entry) => entry.id === activeEntryId) || entries[0];
   const totals = useMemo(() => getEntryTotals(activeEntry), [activeEntry]);
   const sleepHours = calculateSleepHours(activeEntry);
@@ -217,6 +224,26 @@ function LifeDiaryBoard() {
   useEffect(() => {
     window.localStorage.setItem(DIARY_STORAGE_KEY, JSON.stringify(entries));
   }, [entries]);
+
+  function unlockDiary(event) {
+    event.preventDefault();
+    if (passcode.trim() !== DIARY_PASSCODE) {
+      setPasscodeError("Неверный код. Проверь цифры и попробуй еще раз.");
+      return;
+    }
+
+    window.localStorage.setItem(DIARY_UNLOCK_KEY, "true");
+    setIsUnlocked(true);
+    setPasscode("");
+    setPasscodeError("");
+  }
+
+  function lockDiary() {
+    window.localStorage.removeItem(DIARY_UNLOCK_KEY);
+    setIsUnlocked(false);
+    setPasscode("");
+    setPasscodeError("");
+  }
 
   function updateEntry(patch) {
     setEntries((current) => current.map((entry) => (
@@ -284,6 +311,35 @@ function LifeDiaryBoard() {
     setActiveEntryId(submittedEntries[nextIndex].id);
   }
 
+  if (!isUnlocked) {
+    return (
+      <section className="analytics-life-diary analytics-life-diary-locked">
+        <form className="analytics-life-diary-lock-card" onSubmit={unlockDiary}>
+          <span className="analytics-life-diary-lock-icon">🔐</span>
+          <span className="analytics-life-diary-kicker">Личная система</span>
+          <h2>Дневник закрыт</h2>
+          <p>Введите код доступа, чтобы открыть записи, питание, вес и итоги дней.</p>
+          <label>
+            Код доступа
+            <input
+              autoFocus
+              inputMode="numeric"
+              type="password"
+              value={passcode}
+              onChange={(event) => {
+                setPasscode(event.target.value.replace(/\D/g, ""));
+                setPasscodeError("");
+              }}
+              placeholder="Введите код"
+            />
+          </label>
+          {passcodeError ? <strong className="analytics-life-diary-lock-error">{passcodeError}</strong> : null}
+          <AnalyticsActionButton variant="primary" type="submit">Открыть дневник</AnalyticsActionButton>
+        </form>
+      </section>
+    );
+  }
+
   return (
     <section className="analytics-life-diary">
       <div className="analytics-life-diary-hero">
@@ -299,6 +355,7 @@ function LifeDiaryBoard() {
             ))}
           </select>
           <AnalyticsActionButton variant="primary" onClick={addEntry}>Новый день</AnalyticsActionButton>
+          <AnalyticsActionButton onClick={lockDiary}>Закрыть дневник</AnalyticsActionButton>
         </div>
       </div>
 
