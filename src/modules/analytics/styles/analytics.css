@@ -1750,7 +1750,7 @@
 
 .analytics-smm-plan-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: start;
   gap: 18px;
 }
@@ -1777,6 +1777,36 @@
 .analytics-smm-plan-save small {
   color: rgba(226, 240, 255, 0.72);
   font-size: 12px;
+}
+
+.analytics-smm-theme-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  min-width: 178px;
+  padding: 6px;
+  border: 1px solid rgba(124, 153, 190, 0.2);
+  border-radius: 8px;
+  background: rgba(3, 12, 23, 0.44);
+}
+
+.analytics-smm-theme-toggle button,
+.analytics-smm-section-actions button {
+  min-height: 36px;
+  border: 1px solid rgba(124, 153, 190, 0.24);
+  border-radius: 8px;
+  background: rgba(4, 15, 25, 0.62);
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.analytics-smm-theme-toggle button.is-active,
+.analytics-smm-section-actions button {
+  border-color: rgba(111, 255, 232, 0.42);
+  background: rgba(42, 190, 166, 0.16);
+  color: #dffefa;
 }
 
 .analytics-smm-board,
@@ -1824,6 +1854,18 @@
   color: #d8eaff;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.analytics-smm-section-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.analytics-smm-section-actions button {
+  padding: 0 12px;
 }
 
 .analytics-smm-table-wrap {
@@ -1916,6 +1958,38 @@
   color: rgba(168, 195, 222, 0.4);
 }
 
+.analytics-smm-cell-input {
+  width: 100%;
+  min-height: 92px;
+  padding: 10px;
+  border: 1px solid rgba(124, 153, 190, 0.2);
+  border-radius: 8px;
+  background: rgba(4, 15, 25, 0.66);
+  color: #f7fbff;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+input.analytics-smm-cell-input {
+  min-height: 40px;
+  resize: none;
+}
+
+.analytics-smm-cell-title {
+  color: #f7fbff;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.analytics-smm-cell-input:focus {
+  border-color: rgba(111, 255, 232, 0.5);
+  box-shadow: 0 0 0 1px rgba(111, 255, 232, 0.14);
+  outline: none;
+}
+
 .analytics-smm-row-ok td {
   background: rgba(42, 190, 166, 0.055);
 }
@@ -1999,16 +2073,7 @@
 }
 
 .analytics-smm-edits-input {
-  width: 100%;
-  min-height: 92px;
-  padding: 10px;
   border: 1px solid rgba(255, 151, 45, 0.26);
-  border-radius: 8px;
-  background: rgba(4, 15, 25, 0.66);
-  color: #f7fbff;
-  font: inherit;
-  line-height: 1.35;
-  resize: vertical;
 }
 
 .analytics-smm-edits-input:focus {
@@ -2041,6 +2106,87 @@
 .analytics-smm-stats small {
   color: rgba(226, 240, 255, 0.68);
   font-size: 12px;
+}
+
+.analytics-smm-plan-light {
+  color: #172033;
+}
+
+.analytics-smm-plan-light .analytics-surface {
+  border-color: rgba(40, 72, 112, 0.16);
+  background: rgba(248, 251, 255, 0.94);
+  box-shadow: 0 16px 42px rgba(34, 58, 92, 0.08);
+}
+
+.analytics-smm-plan-light .analytics-page-subtitle,
+.analytics-smm-plan-light .analytics-smm-stats small,
+.analytics-smm-plan-light .analytics-smm-plan-save small,
+.analytics-smm-plan-light .analytics-smm-topic-card ol,
+.analytics-smm-plan-light .analytics-smm-table td span {
+  color: rgba(38, 52, 74, 0.72);
+}
+
+.analytics-smm-plan-light .analytics-agent-template-title,
+.analytics-smm-plan-light .analytics-smm-section-head h3,
+.analytics-smm-plan-light .analytics-smm-topic-card strong,
+.analytics-smm-plan-light .analytics-smm-stats strong,
+.analytics-smm-plan-light .analytics-smm-cell-title {
+  color: #0f172a;
+}
+
+.analytics-smm-plan-light .analytics-smm-section-head span,
+.analytics-smm-plan-light .analytics-smm-stats span {
+  color: rgba(38, 52, 74, 0.62);
+}
+
+.analytics-smm-plan-light .analytics-smm-table-wrap,
+.analytics-smm-plan-light .analytics-smm-theme-toggle,
+.analytics-smm-plan-light .analytics-smm-topic-card {
+  border-color: rgba(40, 72, 112, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.analytics-smm-plan-light .analytics-smm-table th {
+  background: rgba(239, 246, 255, 0.98);
+  color: rgba(38, 52, 74, 0.74);
+}
+
+.analytics-smm-plan-light .analytics-smm-table th,
+.analytics-smm-plan-light .analytics-smm-table td {
+  border-color: rgba(40, 72, 112, 0.12);
+}
+
+.analytics-smm-plan-light .analytics-smm-table td:first-child,
+.analytics-smm-plan-light .analytics-smm-row-ok td {
+  background: rgba(30, 160, 139, 0.08);
+}
+
+.analytics-smm-plan-light .analytics-smm-row-not-ok td {
+  background: rgba(214, 118, 36, 0.08);
+}
+
+.analytics-smm-plan-light .analytics-smm-cell-input,
+.analytics-smm-plan-light .analytics-smm-approval button,
+.analytics-smm-plan-light .analytics-smm-theme-toggle button {
+  border-color: rgba(40, 72, 112, 0.18);
+  background: rgba(255, 255, 255, 0.86);
+  color: #172033;
+}
+
+.analytics-smm-plan-light .analytics-smm-plan-save,
+.analytics-smm-plan-light .analytics-smm-section-head strong,
+.analytics-smm-plan-light .analytics-smm-theme-toggle button.is-active,
+.analytics-smm-plan-light .analytics-smm-section-actions button,
+.analytics-smm-plan-light .analytics-smm-approval button:first-child.is-active {
+  border-color: rgba(22, 143, 123, 0.28);
+  background: rgba(30, 160, 139, 0.12);
+  color: #0d6758;
+}
+
+.analytics-smm-plan-light .analytics-smm-approval button:last-child.is-active {
+  border-color: rgba(214, 118, 36, 0.28);
+  background: rgba(214, 118, 36, 0.12);
+  color: #8a4a16;
 }
 
 @media (max-width: 1280px) {

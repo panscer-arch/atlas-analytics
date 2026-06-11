@@ -4,6 +4,9 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 export const CONTENT_PLAN_STORAGE_KEY = "atlas.analytics.contentPlan.v1";
 const SMM_APPROVAL_STORAGE_KEY = "atlas.analytics.smmPlan.approvals.v1";
 const SMM_EDITS_STORAGE_KEY = "atlas.analytics.smmPlan.edits.v1";
+const SMM_ROWS_STORAGE_KEY = "atlas.analytics.smmPlan.rows.v1";
+const SMM_THEME_STORAGE_KEY = "atlas.analytics.smmPlan.theme.v1";
+const SMM_TABLE_FIELDS = ["post", "date", "meaning", "format", "text", "englishText", "visual", "videoScript", "edits"];
 
 const SOCIAL_OPTIONS = ["Все каналы", "Telegram", "Instagram", "X", "TikTok", "YouTube", "Facebook"];
 const FORMAT_OPTIONS = ["Пост", "Карусель", "Рилс", "Видео", "Сторис", "Еженедельная рубрика"];
@@ -403,6 +406,50 @@ function readSmmEdits() {
   } catch {
     return {};
   }
+}
+
+function normalizeSmmRow(row = {}, index = 0) {
+  const fallbackId = `smm-row-${Date.now()}-${index}`;
+  return SMM_TABLE_FIELDS.reduce((nextRow, field) => ({
+    ...nextRow,
+    [field]: String(row[field] || ""),
+  }), {
+    id: String(row.id || fallbackId),
+  });
+}
+
+function readSmmRows() {
+  if (typeof window === "undefined") return SMM_APPROVAL_ROWS;
+  try {
+    const storedRows = JSON.parse(window.localStorage.getItem(SMM_ROWS_STORAGE_KEY) || "null");
+    if (Array.isArray(storedRows) && storedRows.length) {
+      return storedRows.map(normalizeSmmRow);
+    }
+  } catch {
+    // Если сохраненная таблица повреждена, показываем исходные строки из PDF.
+  }
+
+  const storedEdits = readSmmEdits();
+  return SMM_APPROVAL_ROWS.map((row, index) => normalizeSmmRow({
+    ...row,
+    edits: storedEdits[row.id] ?? row.edits,
+  }, index));
+}
+
+function readSmmTheme() {
+  if (typeof window === "undefined") return "dark";
+  try {
+    return window.localStorage.getItem(SMM_THEME_STORAGE_KEY) === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
+
+function createEmptySmmRow() {
+  return normalizeSmmRow({
+    id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    post: "Новый пост",
+  });
 }
 
 const defaultContentPlanItems = [
@@ -1019,8 +1066,9 @@ function ContentPlanBoard() {
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [pendingPublishWithoutLinkId, setPendingPublishWithoutLinkId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
+  const [smmRows, setSmmRows] = useState(readSmmRows);
   const [smmApprovals, setSmmApprovals] = useState(readSmmApprovals);
-  const [smmEdits, setSmmEdits] = useState(readSmmEdits);
+  const [smmTheme, setSmmTheme] = useState(readSmmTheme);
   const duplicateItemIds = useMemo(() => getDuplicateContentPlanIds(items), [items]);
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
@@ -1978,12 +2026,45 @@ function ContentPlanBoard() {
       blocks,
       facebookTopics,
       plannedPosts,
-      productionRows: SMM_APPROVAL_ROWS.length,
+      productionRows: smmRows.length,
       ok,
       notOk,
-      pending: Math.max(SMM_APPROVAL_ROWS.length - ok - notOk, 0),
+      pending: Math.max(smmRows.length - ok - notOk, 0),
     };
-  }, [smmApprovals]);
+  }, [smmApprovals, smmRows.length]);
+
+  function persistSmmRows(nextRows) {
+    try {
+      window.localStorage.setItem(SMM_ROWS_STORAGE_KEY, JSON.stringify(nextRows));
+    } catch {
+      // Таблица остается в состоянии страницы, даже если localStorage недоступен.
+    }
+  }
+
+  function updateSmmRow(rowId, field, value) {
+    setSmmRows((current) => {
+      const next = current.map((row) => (row.id === rowId ? { ...row, [field]: value } : row));
+      persistSmmRows(next);
+      return next;
+    });
+  }
+
+  function addSmmRow() {
+    setSmmRows((current) => {
+      const next = [...current, createEmptySmmRow()];
+      persistSmmRows(next);
+      return next;
+    });
+  }
+
+  function updateSmmTheme(theme) {
+    setSmmTheme(theme);
+    try {
+      window.localStorage.setItem(SMM_THEME_STORAGE_KEY, theme);
+    } catch {
+      // Тема меняется в текущей сессии, даже если localStorage недоступен.
+    }
+  }
 
   function updateSmmApproval(blockId, status) {
     setSmmApprovals((current) => {
@@ -1997,20 +2078,8 @@ function ContentPlanBoard() {
     });
   }
 
-  function updateSmmEdit(rowId, value) {
-    setSmmEdits((current) => {
-      const next = { ...current, [rowId]: value };
-      try {
-        window.localStorage.setItem(SMM_EDITS_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Комментарий остается в состоянии страницы, даже если localStorage недоступен.
-      }
-      return next;
-    });
-  }
-
   return (
-    <section className="analytics-content-plan analytics-smm-plan">
+    <section className={`analytics-content-plan analytics-smm-plan analytics-smm-plan-${smmTheme}`}>
       <div className="analytics-surface analytics-smm-plan-hero">
         <div>
           <span className="analytics-kicker">SMM / согласование</span>
@@ -2023,6 +2092,14 @@ function ContentPlanBoard() {
           <span>{SAVE_STATE_META[saveState]?.label || "Сохранено"}</span>
           <small>{SAVE_STATE_META[saveState]?.detail || "SMM-доска готова"}</small>
         </div>
+        <div className="analytics-smm-theme-toggle" aria-label="Тема таблицы SMM">
+          <button type="button" className={smmTheme === "dark" ? "is-active" : ""} onClick={() => updateSmmTheme("dark")}>
+            Темная
+          </button>
+          <button type="button" className={smmTheme === "light" ? "is-active" : ""} onClick={() => updateSmmTheme("light")}>
+            Светлая
+          </button>
+        </div>
       </div>
 
       <section className="analytics-surface analytics-smm-section analytics-smm-production">
@@ -2031,7 +2108,10 @@ function ContentPlanBoard() {
             <span>Production table</span>
             <h3>SMM-таблица из файла</h3>
           </div>
-          <strong>{SMM_APPROVAL_ROWS.length} строк</strong>
+          <div className="analytics-smm-section-actions">
+            <strong>{smmRows.length} строк</strong>
+            <button type="button" onClick={addSmmRow}>Добавить пост</button>
+          </div>
         </div>
 
         <div className="analytics-smm-table-wrap" aria-label="SMM production table">
@@ -2051,9 +2131,8 @@ function ContentPlanBoard() {
               </tr>
             </thead>
             <tbody>
-              {SMM_APPROVAL_ROWS.map((row) => {
+              {smmRows.map((row) => {
                 const approval = smmApprovals[row.id] || "";
-                const editValue = smmEdits[row.id] ?? row.edits ?? "";
                 return (
                   <tr
                     key={row.id}
@@ -2061,19 +2140,75 @@ function ContentPlanBoard() {
                     data-smm-approval={approval}
                     className={approval ? `analytics-smm-row-${approval}` : ""}
                   >
-                    <td><strong>{row.post}</strong></td>
-                    <td><span>{row.date || "-"}</span></td>
-                    <td><span>{row.meaning || "-"}</span></td>
-                    <td><span>{row.format || "-"}</span></td>
-                    <td><span>{row.text || "-"}</span></td>
-                    <td><span>{row.englishText || "-"}</span></td>
-                    <td><span>{row.visual || "-"}</span></td>
-                    <td><span>{row.videoScript || "-"}</span></td>
                     <td>
                       <textarea
-                        className="analytics-smm-edits-input"
-                        value={editValue}
-                        onChange={(event) => updateSmmEdit(row.id, event.target.value)}
+                        className="analytics-smm-cell-input analytics-smm-cell-title"
+                        value={row.post}
+                        onChange={(event) => updateSmmRow(row.id, "post", event.target.value)}
+                        placeholder="Название поста"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="analytics-smm-cell-input"
+                        value={row.date}
+                        onChange={(event) => updateSmmRow(row.id, "date", event.target.value)}
+                        placeholder="дд.мм.гггг"
+                      />
+                    </td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-cell-input"
+                        value={row.meaning}
+                        onChange={(event) => updateSmmRow(row.id, "meaning", event.target.value)}
+                        placeholder="Смысл"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="analytics-smm-cell-input"
+                        value={row.format}
+                        onChange={(event) => updateSmmRow(row.id, "format", event.target.value)}
+                        placeholder="Формат"
+                      />
+                    </td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-cell-input"
+                        value={row.text}
+                        onChange={(event) => updateSmmRow(row.id, "text", event.target.value)}
+                        placeholder="Текст"
+                      />
+                    </td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-cell-input"
+                        value={row.englishText}
+                        onChange={(event) => updateSmmRow(row.id, "englishText", event.target.value)}
+                        placeholder="Text EN"
+                      />
+                    </td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-cell-input"
+                        value={row.visual}
+                        onChange={(event) => updateSmmRow(row.id, "visual", event.target.value)}
+                        placeholder="Картинка"
+                      />
+                    </td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-cell-input"
+                        value={row.videoScript}
+                        onChange={(event) => updateSmmRow(row.id, "videoScript", event.target.value)}
+                        placeholder="Сценарий видео"
+                      />
+                    </td>
+                    <td>
+                      <textarea
+                        className="analytics-smm-cell-input analytics-smm-edits-input"
+                        value={row.edits}
+                        onChange={(event) => updateSmmRow(row.id, "edits", event.target.value)}
                         placeholder="Правки / комментарий"
                       />
                     </td>
