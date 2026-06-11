@@ -355,6 +355,7 @@ function getInitialAnalyticsTab() {
   const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
 
   if (board === "socialSubscriptions") return "socialSubscriptions";
+  if (board === "expenses") return "expenses";
   if (contentBoards.has(board)) return "content";
   if (taskBoards.has(board)) return "tasks";
   if (board) return "tasks";
@@ -832,6 +833,7 @@ function AnalyticsPage() {
     { id: "analytics", label: "Аналитика" },
     { id: "productLibrary", label: "Библиотека" },
     { id: "tasks", label: "Задачи" },
+    { id: "expenses", label: "Расходы" },
     { id: "content", label: "Контент" },
     { id: "socialSubscriptions", label: "Подписки" },
     { id: "developments", label: "Разработки" },

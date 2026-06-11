@@ -2,6 +2,7 @@ import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
 import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
 import CrmDashboardTab from "./CrmDashboardTab";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
+import ExpensesBoard from "./ExpensesBoard";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
@@ -29,6 +30,13 @@ export default function AnalyticsMainPanel({
   }
 
   if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" />;
+  if (activeTab === "expenses") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <ExpensesBoard />
+      </Wrapper>
+    );
+  }
   if (activeTab === "content") return <LaunchChecklistSection mode="content" />;
 
   if (activeTab === "socialSubscriptions") {
