@@ -13,11 +13,16 @@ const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "
 const DEFAULT_DAILY_PEOPLE = ["Бруно", "Гем", "Ротенберг", "Диджитекс", "Руби"];
 const DAILY_PERSON_ALIASES = {
   Бруно: ["Бруно", "Bruno"],
-  Гем: ["Гем", "Gem"],
-  Ротенберг: ["Ротенберг", "Roten Berg", "Rotenberg", "Roten", "roten_berg"],
+  Гем: ["Гем", "Game", "Gem"],
+  Ротенберг: ["Ротенберг", "Roten Berg", "Rotenberg", "roten_berg"],
   Диджитекс: ["Диджитекс", "Дигитекс", "Digitex"],
   Руби: ["Руби", "Rubi", "Ruby"],
 };
+const DAILY_PERSON_ALIAS_MAP = Object.fromEntries(
+  Object.entries(DAILY_PERSON_ALIASES).flatMap(([person, aliases]) => (
+    aliases.map((alias) => [alias.toLocaleLowerCase("ru-RU"), person])
+  )),
+);
 
 const defaultDailyTasks = [
   {
@@ -139,10 +144,16 @@ function normalizePersonName(value = "") {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
+function getCanonicalPersonName(value = "") {
+  const normalized = normalizePersonName(value);
+  return DAILY_PERSON_ALIAS_MAP[normalized.toLocaleLowerCase("ru-RU")] || normalized;
+}
+
 function normalizeDailyPeople(value) {
   const seen = new Set();
   return [...DEFAULT_DAILY_PEOPLE, ...normalizeArray(value)]
     .map(normalizePersonName)
+    .map(getCanonicalPersonName)
     .filter(Boolean)
     .filter((name) => {
       const key = name.toLocaleLowerCase("ru-RU");
@@ -304,26 +315,23 @@ function getFullSubtaskId(shortSubtaskId = "") {
   return `daily-subtask-${normalized}`;
 }
 
-function getPersonSearchTokens(personName = "") {
-  const name = normalizePersonName(personName);
-  return normalizeArray(DAILY_PERSON_ALIASES[name]).length ? DAILY_PERSON_ALIASES[name] : [name];
+function getResponsibleParts(value = "") {
+  return String(value || "")
+    .split(/[\/,;|]+/)
+    .map(getCanonicalPersonName)
+    .filter(Boolean);
 }
 
-function getTaskPeopleSearchText(task) {
-  const subtaskText = normalizeArray(task.subtasks)
-    .map((subtask) => `${subtask.responsible || ""} ${subtask.title || ""}`)
-    .join(" ");
-  return `${task.responsible || ""} ${task.title || ""} ${subtaskText}`.toLocaleLowerCase("ru-RU");
+function isResponsibleValueForPerson(value, personName) {
+  const canonicalPerson = getCanonicalPersonName(personName);
+  return getResponsibleParts(value).some((part) => part === canonicalPerson);
 }
 
 function isTaskAssignedToPerson(task, personName) {
   if (!personName || personName === ALL_PEOPLE_TAB_ID) return true;
 
-  const searchText = getTaskPeopleSearchText(task);
-  return getPersonSearchTokens(personName).some((token) => {
-    const normalizedToken = normalizePersonName(token).toLocaleLowerCase("ru-RU");
-    return normalizedToken && searchText.includes(normalizedToken);
-  });
+  return isResponsibleValueForPerson(task.responsible, personName)
+    || normalizeArray(task.subtasks).some((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
 }
 
 export default function DailyTasksBoard() {

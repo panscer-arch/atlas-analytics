@@ -5,6 +5,7 @@ import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
 import HyipParserPanel from "./HyipParserPanel";
 import LaunchChecklistSection from "./LaunchChecklistSection";
+import LifeDiaryBoard from "./LifeDiaryBoard";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import Wrapper from "./Wrapper";
@@ -76,6 +77,14 @@ export default function AnalyticsMainPanel({
     return (
       <Wrapper as="section" marginTop="lg">
         <AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" />
+      </Wrapper>
+    );
+  }
+
+  if (activeTab === "diary") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <LifeDiaryBoard />
       </Wrapper>
     );
   }

@@ -8,9 +8,25 @@ const TELEGRAM_PUSH_CHATS = [
   { id: "-4993332821", label: "SMM Atlas" },
   { id: "-5192533079", label: "Ananas" },
 ];
+const ASSIGNEE_ALIAS_MAP = {
+  bruno: "Бруно",
+  game: "Гем",
+  gem: "Гем",
+  "roten berg": "Ротенберг",
+  rotenberg: "Ротенберг",
+  roten_berg: "Ротенберг",
+  digitex: "Диджитекс",
+  rubi: "Руби",
+  ruby: "Руби",
+};
 
 function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function normalizeAssigneeName(value = "") {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ");
+  return ASSIGNEE_ALIAS_MAP[normalized.toLocaleLowerCase("ru-RU")] || normalized;
 }
 
 function getLaunchStatusTone(status) {
@@ -127,9 +143,10 @@ export default function DailyTaskCard({
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
     const deadlineMeta = getDailyDeadlineMeta(task.deadline);
-    const responsibleValue = task.responsible || "";
+    const responsibleValue = normalizeAssigneeName(task.responsible || "");
     const isResponsibleSaved = responsibleSavedTaskId === task.id;
-    const responsibleOptions = Array.from(new Set([...normalizeArray(assigneeOptions), responsibleValue].filter(Boolean)));
+    const responsibleOptions = Array.from(new Set(normalizeArray(assigneeOptions).map(normalizeAssigneeName).filter(Boolean)));
+    const selectedResponsibleValue = responsibleOptions.includes(responsibleValue) ? responsibleValue : "";
 
     function saveTaskResponsible(value) {
       patchTask(task.id, { responsible: value });
@@ -179,7 +196,8 @@ export default function DailyTaskCard({
               const pushState = telegramPushState?.[subtaskDraftKey] || "";
               const linkState = subtaskLinkState?.[subtaskDraftKey] || "";
               const selectedPushChatId = pushChatBySubtask[subtaskDraftKey] || TELEGRAM_PUSH_CHATS[0].id;
-              const subtaskResponsibleOptions = Array.from(new Set([...responsibleOptions, subtask.responsible || ""].filter(Boolean)));
+              const subtaskResponsibleValue = normalizeAssigneeName(subtask.responsible || "");
+              const selectedSubtaskResponsibleValue = responsibleOptions.includes(subtaskResponsibleValue) ? subtaskResponsibleValue : "";
 
               return (
                 <div id={`daily-subtask-${subtask.id}`} key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
@@ -252,11 +270,11 @@ export default function DailyTaskCard({
                         <span>Ответственный</span>
                         <select
                           className="analytics-launch-input"
-                          value={subtask.responsible || ""}
+                          value={selectedSubtaskResponsibleValue}
                           onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
                         >
                           <option value="">Не назначен</option>
-                          {subtaskResponsibleOptions.map((person) => <option key={person} value={person}>{person}</option>)}
+                          {responsibleOptions.map((person) => <option key={person} value={person}>{person}</option>)}
                         </select>
                       </label>
                       <label>
@@ -377,7 +395,7 @@ export default function DailyTaskCard({
             <div className="analytics-daily-responsible-control">
               <select
                 className="analytics-launch-input"
-                value={responsibleValue}
+                value={selectedResponsibleValue}
                 onChange={(event) => saveTaskResponsible(event.target.value)}
               >
                 <option value="">Не назначен</option>
