@@ -163,13 +163,56 @@ function formatNumber(value, digits = 0) {
   return number.toLocaleString("ru-RU", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 
+function formatDateLabel(value) {
+  if (!value) return "Без даты";
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function getMealItems(entry, meal) {
+  return (entry.meals?.[meal] || []).filter((item) => item.title || item.grams || item.manualCalories);
+}
+
+function getEntryDateOffset(date, offsetDays) {
+  const base = date ? new Date(`${date}T12:00:00`) : new Date();
+  base.setDate(base.getDate() + offsetDays);
+  const year = base.getFullYear();
+  const month = String(base.getMonth() + 1).padStart(2, "0");
+  const day = String(base.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getNextMarathonDay(entries) {
+  const maxDay = entries.reduce((max, entry) => Math.max(max, Number(entry.marathonDay) || 0), 0);
+  return maxDay + 1;
+}
+
+function getActivityLabel(entry) {
+  const parts = [...entry.activities];
+  if (entry.trainingMinutes) parts.push(`тренировка ${entry.trainingMinutes} мин`);
+  if (entry.walkMinutes) parts.push(`прогулка ${entry.walkMinutes} мин`);
+  if (entry.activityNote) parts.push(entry.activityNote);
+  return parts.length ? parts.join(", ") : "активность не указана";
+}
+
 function LifeDiaryBoard() {
   const [entries, setEntries] = useState(readStoredEntries);
   const [activeEntryId, setActiveEntryId] = useState(() => readStoredEntries()[0]?.id || "");
   const activeEntry = entries.find((entry) => entry.id === activeEntryId) || entries[0];
   const totals = useMemo(() => getEntryTotals(activeEntry), [activeEntry]);
   const sleepHours = calculateSleepHours(activeEntry);
-  const recentEntries = useMemo(() => [...entries].sort((left, right) => String(right.date).localeCompare(String(left.date))).slice(0, 7), [entries]);
+  const sortedEntries = useMemo(() => [...entries].sort((left, right) => {
+    const rightDay = Number(right.marathonDay) || 0;
+    const leftDay = Number(left.marathonDay) || 0;
+    if (rightDay !== leftDay) return rightDay - leftDay;
+    return String(right.date).localeCompare(String(left.date));
+  }), [entries]);
+  const submittedEntries = useMemo(() => sortedEntries.filter((entry) => entry.submittedAt), [sortedEntries]);
+  const pageEntry = activeEntry.submittedAt ? activeEntry : submittedEntries[0] || activeEntry;
+  const pageIndex = submittedEntries.findIndex((entry) => entry.id === pageEntry.id);
+  const pageTotals = useMemo(() => getEntryTotals(pageEntry), [pageEntry]);
+  const pageSleepHours = calculateSleepHours(pageEntry);
 
   useEffect(() => {
     window.localStorage.setItem(DIARY_STORAGE_KEY, JSON.stringify(entries));
@@ -177,7 +220,7 @@ function LifeDiaryBoard() {
 
   function updateEntry(patch) {
     setEntries((current) => current.map((entry) => (
-      entry.id === activeEntry.id ? { ...entry, ...patch, updatedAt: new Date().toISOString() } : entry
+      entry.id === activeEntry.id ? { ...entry, ...patch, updatedAt: new Date().toISOString(), submittedAt: "" } : entry
     )));
   }
 
@@ -217,12 +260,28 @@ function LifeDiaryBoard() {
   }
 
   function addEntry() {
+    const latest = sortedEntries[0];
     const next = createDiaryEntry({
-      date: getTodayInputDate(),
-      marathonDay: entries.length + 1,
+      date: getEntryDateOffset(latest?.date, 1),
+      marathonDay: getNextMarathonDay(entries),
     });
     setEntries((current) => [next, ...current]);
     setActiveEntryId(next.id);
+  }
+
+  function submitEntry() {
+    setEntries((current) => current.map((entry) => (
+      entry.id === activeEntry.id
+        ? { ...entry, updatedAt: new Date().toISOString(), submittedAt: new Date().toISOString() }
+        : entry
+    )));
+  }
+
+  function selectSubmitted(offset) {
+    if (!submittedEntries.length) return;
+    const fallbackIndex = pageIndex >= 0 ? pageIndex : 0;
+    const nextIndex = Math.min(Math.max(fallbackIndex + offset, 0), submittedEntries.length - 1);
+    setActiveEntryId(submittedEntries[nextIndex].id);
   }
 
   return (
@@ -231,12 +290,12 @@ function LifeDiaryBoard() {
         <div>
           <span className="analytics-life-diary-kicker">Личная система</span>
           <h2>Дневник марафона</h2>
-          <p>Сон, вес, питание, вода, активность, труд, встречи, соцсети и главный вывод дня в одной вкладке.</p>
+          <p>Заполняешь форму дня, нажимаешь «Отправить день», и система сохраняет красивую страницу дневника для перелистывания.</p>
         </div>
         <div className="analytics-life-diary-actions">
           <select value={activeEntry.id} onChange={(event) => setActiveEntryId(event.target.value)}>
-            {recentEntries.map((entry) => (
-              <option key={entry.id} value={entry.id}>{entry.date || "Без даты"} · день {entry.marathonDay || "—"}</option>
+            {sortedEntries.map((entry) => (
+              <option key={entry.id} value={entry.id}>{entry.date || "Без даты"} · день {entry.marathonDay || "—"}{entry.submittedAt ? " · сохранен" : " · черновик"}</option>
             ))}
           </select>
           <AnalyticsActionButton variant="primary" onClick={addEntry}>Новый день</AnalyticsActionButton>
@@ -253,7 +312,10 @@ function LifeDiaryBoard() {
 
       <div className="analytics-life-diary-grid">
         <section className="analytics-life-diary-card analytics-life-diary-card-wide">
-          <h3>День</h3>
+          <div className="analytics-life-diary-card-head">
+            <h3>Форма дня</h3>
+            <span>{activeEntry.submittedAt ? "сохраненная версия" : "черновик"}</span>
+          </div>
           <div className="analytics-life-diary-form-grid">
             <label>Дата<input type="date" value={activeEntry.date} onChange={(event) => updateEntry({ date: event.target.value })} /></label>
             <label>День марафона<input type="number" min="1" value={activeEntry.marathonDay} onChange={(event) => updateEntry({ marathonDay: event.target.value })} /></label>
@@ -334,8 +396,64 @@ function LifeDiaryBoard() {
             <label>Итог дня<textarea rows="4" value={activeEntry.daySummary} onChange={(event) => updateEntry({ daySummary: event.target.value })} /></label>
             <label>Главный вывод<textarea rows="4" value={activeEntry.mainLesson} onChange={(event) => updateEntry({ mainLesson: event.target.value })} /></label>
           </div>
+          <div className="analytics-life-diary-submit-row">
+            <AnalyticsActionButton variant="primary" onClick={submitEntry}>Отправить день</AnalyticsActionButton>
+            <span>{activeEntry.submittedAt ? `Сохранено: ${new Date(activeEntry.submittedAt).toLocaleString("ru-RU")}` : "После отправки ниже появится оформленная страница дня."}</span>
+          </div>
         </section>
       </div>
+
+      <section className="analytics-life-diary-page">
+        <div className="analytics-life-diary-page-nav">
+          <button type="button" onClick={() => selectSubmitted(1)} disabled={pageIndex === -1 || pageIndex >= submittedEntries.length - 1}>← прошлый</button>
+          <span>{submittedEntries.length ? `${Math.max(pageIndex, 0) + 1} из ${submittedEntries.length}` : "пока нет сохраненных дней"}</span>
+          <button type="button" onClick={() => selectSubmitted(-1)} disabled={pageIndex <= 0}>следующий →</button>
+        </div>
+
+        <article className="analytics-life-diary-story">
+          <header>
+            <span>📅 День {pageEntry.marathonDay || "—"} марафона</span>
+            <h3>{formatDateLabel(pageEntry.date)}</h3>
+            <p>{pageEntry.mainLesson || "Главный вывод появится здесь после заполнения дня."}</p>
+          </header>
+
+          <div className="analytics-life-diary-story-stats">
+            <div><span>😴 Сон</span><strong>{pageSleepHours || "—"} ч</strong><small>качество {pageEntry.sleepQuality || "—"}/10</small></div>
+            <div><span>⚖️ Вес</span><strong>{pageEntry.weight || "—"} кг</strong><small>вода {pageEntry.waterLiters || "—"} л</small></div>
+            <div><span>🔥 Питание</span><strong>{formatNumber(pageTotals.calories)} ккал</strong><small>Б {formatNumber(pageTotals.protein)} / Ж {formatNumber(pageTotals.fat)} / У {formatNumber(pageTotals.carbs)}</small></div>
+            <div><span>💪 Активность</span><strong>{pageEntry.activities.length || pageEntry.activityNote ? "была" : "—"}</strong><small>{getActivityLabel(pageEntry)}</small></div>
+            <div><span>🧠 Состояние</span><strong>{pageEntry.energy || "—"}/10</strong><small>настроение {pageEntry.mood || "—"}/10</small></div>
+          </div>
+
+          <div className="analytics-life-diary-story-grid">
+            <section>
+              <h4>🍽️ Что ел</h4>
+              {MEALS.map((meal) => {
+                const items = getMealItems(pageEntry, meal);
+                return (
+                  <div key={meal} className="analytics-life-diary-story-meal">
+                    <strong>{meal}</strong>
+                    <span>{items.length ? items.map((item) => `${item.title || "продукт"}${item.grams ? ` ${item.grams}г` : ""}`).join(", ") : "—"}</span>
+                    <em>{formatNumber(pageTotals.meals[meal]?.calories)} ккал</em>
+                  </div>
+                );
+              })}
+            </section>
+            <section>
+              <h4>🧭 Самонаблюдение</h4>
+              <p>{pageEntry.selfObservation || "Пока не заполнено."}</p>
+              <h4>🤝 Встречи</h4>
+              <p>{pageEntry.meetings || "Встречи не указаны."}</p>
+            </section>
+            <section>
+              <h4>🏁 Итог дня</h4>
+              <p>{pageEntry.daySummary || "Итог дня появится после отправки."}</p>
+              <h4>📱 Соцсети / новости</h4>
+              <p>{pageEntry.socialMinutes ? `${pageEntry.socialMinutes} мин` : "Не указано"}</p>
+            </section>
+          </div>
+        </article>
+      </section>
     </section>
   );
 }

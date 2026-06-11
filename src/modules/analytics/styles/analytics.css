@@ -15963,15 +15963,186 @@ input.analytics-smm-cell-input {
   margin-top: 1rem;
 }
 
+.analytics-life-diary-submit-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(123, 180, 255, 0.12);
+  padding-top: 1rem;
+}
+
+.analytics-life-diary-submit-row span {
+  color: #aebdd4;
+  font-size: 0.86rem;
+}
+
+.analytics-life-diary-page {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.analytics-life-diary-page-nav {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.analytics-life-diary-page-nav button {
+  border: 1px solid rgba(47, 217, 255, 0.18);
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(47, 217, 255, 0.08);
+  color: #dff8ff;
+  font-weight: 800;
+}
+
+.analytics-life-diary-page-nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.analytics-life-diary-page-nav span {
+  color: #aebdd4;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.analytics-life-diary-story {
+  overflow: hidden;
+  border: 1px solid rgba(120, 255, 224, 0.18);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(120, 255, 224, 0.13), transparent 30%),
+    radial-gradient(circle at 100% 18%, rgba(255, 204, 102, 0.11), transparent 28%),
+    linear-gradient(145deg, rgba(12, 23, 41, 0.98), rgba(4, 9, 18, 0.99));
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.analytics-life-diary-story header {
+  padding: 1.4rem;
+  border-bottom: 1px solid rgba(123, 180, 255, 0.12);
+}
+
+.analytics-life-diary-story header span {
+  color: #78ffe0;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analytics-life-diary-story header h3 {
+  margin: 0.4rem 0 0;
+  color: #ffffff;
+  font-size: clamp(1.5rem, 2.4vw, 2.45rem);
+}
+
+.analytics-life-diary-story header p {
+  max-width: 820px;
+  margin: 0.55rem 0 0;
+  color: #cdd8e8;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.analytics-life-diary-story-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 1rem 1.4rem;
+}
+
+.analytics-life-diary-story-stats div {
+  min-width: 0;
+  border: 1px solid rgba(123, 180, 255, 0.12);
+  border-radius: 16px;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.analytics-life-diary-story-stats span,
+.analytics-life-diary-story-stats small {
+  display: block;
+  color: #aebdd4;
+  font-size: 0.78rem;
+}
+
+.analytics-life-diary-story-stats strong {
+  display: block;
+  margin: 0.35rem 0;
+  color: #ffffff;
+  font-size: 1.2rem;
+}
+
+.analytics-life-diary-story-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 1rem;
+  padding: 0 1.4rem 1.4rem;
+}
+
+.analytics-life-diary-story-grid section {
+  min-width: 0;
+  border: 1px solid rgba(123, 180, 255, 0.12);
+  border-radius: 18px;
+  padding: 1rem;
+  background: rgba(4, 9, 18, 0.36);
+}
+
+.analytics-life-diary-story-grid h4 {
+  margin: 0 0 0.75rem;
+  color: #f7fbff;
+}
+
+.analytics-life-diary-story-grid p {
+  margin: 0 0 1rem;
+  color: #c2cede;
+  line-height: 1.5;
+}
+
+.analytics-life-diary-story-meal {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 74px;
+  gap: 0.55rem;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(123, 180, 255, 0.08);
+  padding: 0.45rem 0;
+}
+
+.analytics-life-diary-story-meal strong {
+  color: #ffffff;
+  font-size: 0.86rem;
+}
+
+.analytics-life-diary-story-meal span {
+  color: #c2cede;
+  font-size: 0.86rem;
+}
+
+.analytics-life-diary-story-meal em {
+  color: #78ffe0;
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 900;
+  text-align: right;
+}
+
 @media (max-width: 1199.98px) {
   .analytics-life-diary-hero,
   .analytics-life-diary-grid,
   .analytics-life-diary-meals,
-  .analytics-life-diary-summary-grid {
+  .analytics-life-diary-summary-grid,
+  .analytics-life-diary-story-grid {
     grid-template-columns: 1fr;
   }
 
-  .analytics-life-diary-kpis {
+  .analytics-life-diary-kpis,
+  .analytics-life-diary-story-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -15979,7 +16150,9 @@ input.analytics-smm-cell-input {
 @media (max-width: 767px) {
   .analytics-life-diary-actions,
   .analytics-life-diary-card-head,
-  .analytics-life-diary-meal-title {
+  .analytics-life-diary-meal-title,
+  .analytics-life-diary-submit-row,
+  .analytics-life-diary-page-nav {
     align-items: stretch;
     flex-direction: column;
   }
@@ -15988,8 +16161,16 @@ input.analytics-smm-cell-input {
   .analytics-life-diary-form-grid-small,
   .analytics-life-diary-activity-list,
   .analytics-life-diary-food-row,
-  .analytics-life-diary-kpis {
+  .analytics-life-diary-kpis,
+  .analytics-life-diary-story-stats,
+  .analytics-life-diary-story-meal {
     grid-template-columns: 1fr;
+  }
+
+  .analytics-life-diary-story header,
+  .analytics-life-diary-story-stats,
+  .analytics-life-diary-story-grid {
+    padding: 1rem;
   }
 
   .analytics-life-diary-food-row button {
