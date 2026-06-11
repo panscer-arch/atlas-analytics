@@ -211,6 +211,13 @@ function getTableCellTone(value = "") {
   return "";
 }
 
+function getWhitePaperTableRowTone(row = []) {
+  const flow = String(row[0] || "").toLowerCase();
+  if (flow.includes("daily")) return "daily";
+  if (flow.includes("lock")) return "lockup";
+  return "";
+}
+
 function WhitePaperReadableTable({ text }) {
   const table = parseMarkdownTable(text);
   if (!table.headers.length || !table.rows.length) {
@@ -227,7 +234,7 @@ function WhitePaperReadableTable({ text }) {
         </thead>
         <tbody>
           {table.rows.map((row, rowIndex) => (
-            <tr key={`${row.join("-")}-${rowIndex}`}>
+            <tr key={`${row.join("-")}-${rowIndex}`} className={getWhitePaperTableRowTone(row) ? `analytics-whitepaper-readable-table-row-${getWhitePaperTableRowTone(row)}` : undefined}>
               {table.headers.map((header, cellIndex) => {
                 const value = row[cellIndex] || "";
                 const tone = cellIndex === table.headers.length - 1 ? getTableCellTone(value) : "";
@@ -599,7 +606,7 @@ function WhitePaperBoard() {
   useEffect(() => {
     if (documentMode !== "edit" || typeof window === "undefined") return undefined;
 
-    function handleEditorSpace(event) {
+    function stopPageSpaceScroll(event) {
       if (event.key !== " " && event.code !== "Space") return;
       if (isEditableKeyboardTarget(event.target)) return;
 
@@ -611,10 +618,12 @@ function WhitePaperBoard() {
       editor.focus();
     }
 
-    window.addEventListener("keydown", handleEditorSpace, true);
+    window.addEventListener("keydown", stopPageSpaceScroll, true);
+    window.addEventListener("keyup", stopPageSpaceScroll, true);
 
     return () => {
-      window.removeEventListener("keydown", handleEditorSpace, true);
+      window.removeEventListener("keydown", stopPageSpaceScroll, true);
+      window.removeEventListener("keyup", stopPageSpaceScroll, true);
     };
   }, [documentMode]);
 
@@ -681,6 +690,34 @@ function WhitePaperBoard() {
     updateBlock(activeBlock.id, {
       text: replaceWhitePaperSubsectionText(activeBlock.text, activeSubsection, nextText),
     });
+  }
+
+  function insertReadableTextAtCursor(insertText) {
+    const editor = readableEditorRef.current;
+    if (!editor) return;
+
+    const start = editor.selectionStart ?? activeReadableText.length;
+    const end = editor.selectionEnd ?? activeReadableText.length;
+    const nextText = `${activeReadableText.slice(0, start)}${insertText}${activeReadableText.slice(end)}`;
+    const nextCursor = start + insertText.length;
+
+    updateReadableText(nextText);
+
+    window.requestAnimationFrame(() => {
+      const nextEditor = readableEditorRef.current;
+      if (!nextEditor) return;
+      nextEditor.focus();
+      nextEditor.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
+
+  function handleReadableEditorKeyDown(event) {
+    event.stopPropagation();
+
+    if (event.key !== " " && event.code !== "Space") return;
+
+    event.preventDefault();
+    insertReadableTextAtCursor(" ");
   }
 
   function switchView(viewId) {
@@ -874,7 +911,13 @@ function WhitePaperBoard() {
                     className="analytics-agent-template-input analytics-whitepaper-reader-input"
                     value={activeReadableText}
                     onChange={(event) => updateReadableText(event.target.value)}
-                    onKeyDown={(event) => event.stopPropagation()}
+                    onKeyDown={handleReadableEditorKeyDown}
+                    onKeyUp={(event) => {
+                      if (event.key === " " || event.code === "Space") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }
+                    }}
                     rows={activeSubsection ? 12 : 16}
                   />
                 </label>
