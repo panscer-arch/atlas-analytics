@@ -986,7 +986,10 @@ export default function DailyTasksBoard() {
             </label>
             <label>
               <span>Ответственный</span>
-              <input className="analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))} placeholder="Бруно, Руби, Digitex..." />
+              <select className="analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))}>
+                <option value="">Не назначен</option>
+                {dailyPeople.map((person) => <option key={person} value={person}>{person}</option>)}
+              </select>
             </label>
             <label className="analytics-daily-form-wide">
               <span>Доп. описание</span>
@@ -1074,6 +1077,7 @@ export default function DailyTasksBoard() {
               key={task.id}
               task={task}
               index={index}
+              assigneeOptions={dailyPeople}
               responsibleDrafts={responsibleDrafts}
               responsibleSavedTaskId={responsibleSavedTaskId}
               subtaskDrafts={subtaskDrafts}
@@ -1139,6 +1143,7 @@ export default function DailyTasksBoard() {
                   task={task}
                   index={index}
                   isCompleted
+                  assigneeOptions={dailyPeople}
                   responsibleDrafts={responsibleDrafts}
                   responsibleSavedTaskId={responsibleSavedTaskId}
                   subtaskDrafts={subtaskDrafts}

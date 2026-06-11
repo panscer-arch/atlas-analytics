@@ -356,7 +356,6 @@ function getInitialAnalyticsTab() {
 
   if (board === "socialSubscriptions") return "socialSubscriptions";
   if (board === "expenses") return "expenses";
-  if (board === "diary") return "diary";
   if (contentBoards.has(board)) return "content";
   if (taskBoards.has(board)) return "tasks";
   if (board) return "tasks";
@@ -841,7 +840,6 @@ function AnalyticsPage() {
     { id: "developments", label: "Разработки" },
     { id: "crmBoard", label: "CRM-доска" },
     { id: "quickNotes", label: "Заметки" },
-    { id: "diary", label: "Дневник" },
   ];
 
   const analyticsSectionTabs = [

@@ -84,6 +84,7 @@ export default function DailyTaskCard({
   task,
   index,
   isCompleted = false,
+  assigneeOptions = [],
   responsibleDrafts,
   responsibleSavedTaskId,
   subtaskDrafts,
@@ -126,10 +127,22 @@ export default function DailyTaskCard({
     const subtasks = normalizeArray(task.subtasks);
     const completedSubtasks = subtasks.filter((subtask) => subtask.done).length;
     const deadlineMeta = getDailyDeadlineMeta(task.deadline);
-    const hasResponsibleDraft = Object.prototype.hasOwnProperty.call(responsibleDrafts, task.id);
-    const responsibleValue = hasResponsibleDraft ? responsibleDrafts[task.id] : task.responsible;
-    const isResponsibleChanged = hasResponsibleDraft && responsibleValue.trim() !== task.responsible;
-    const isResponsibleSaved = responsibleSavedTaskId === task.id && !isResponsibleChanged;
+    const responsibleValue = task.responsible || "";
+    const isResponsibleSaved = responsibleSavedTaskId === task.id;
+    const responsibleOptions = Array.from(new Set([...normalizeArray(assigneeOptions), responsibleValue].filter(Boolean)));
+
+    function saveTaskResponsible(value) {
+      patchTask(task.id, { responsible: value });
+      setResponsibleSavedTaskId(task.id);
+      setResponsibleDrafts((current) => {
+        const next = { ...current };
+        delete next[task.id];
+        return next;
+      });
+      window.setTimeout(() => {
+        setResponsibleSavedTaskId((current) => (current === task.id ? "" : current));
+      }, 1400);
+    }
 
     return (
       <article key={task.id} className={`analytics-surface analytics-daily-card${isCompleted ? " analytics-daily-card-done" : ""}`}>
@@ -166,6 +179,7 @@ export default function DailyTaskCard({
               const pushState = telegramPushState?.[subtaskDraftKey] || "";
               const linkState = subtaskLinkState?.[subtaskDraftKey] || "";
               const selectedPushChatId = pushChatBySubtask[subtaskDraftKey] || TELEGRAM_PUSH_CHATS[0].id;
+              const subtaskResponsibleOptions = Array.from(new Set([...responsibleOptions, subtask.responsible || ""].filter(Boolean)));
 
               return (
                 <div id={`daily-subtask-${subtask.id}`} key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
@@ -236,12 +250,14 @@ export default function DailyTaskCard({
                     <div className="analytics-daily-subtask-meta">
                       <label>
                         <span>Ответственный</span>
-                        <input
+                        <select
                           className="analytics-launch-input"
                           value={subtask.responsible || ""}
                           onChange={(event) => updateSubtask(task.id, subtask.id, { responsible: event.target.value })}
-                          placeholder="Имя или роль"
-                        />
+                        >
+                          <option value="">Не назначен</option>
+                          {subtaskResponsibleOptions.map((person) => <option key={person} value={person}>{person}</option>)}
+                        </select>
                       </label>
                       <label>
                         <span>Приоритет</span>
@@ -356,6 +372,20 @@ export default function DailyTaskCard({
         </div>
 
         <div className="analytics-daily-details">
+          <label>
+            <span>Ответственный</span>
+            <div className="analytics-daily-responsible-control">
+              <select
+                className="analytics-launch-input"
+                value={responsibleValue}
+                onChange={(event) => saveTaskResponsible(event.target.value)}
+              >
+                <option value="">Не назначен</option>
+                {responsibleOptions.map((person) => <option key={person} value={person}>{person}</option>)}
+              </select>
+              {isResponsibleSaved ? <small className="analytics-daily-responsible-saved">Сохранено</small> : null}
+            </div>
+          </label>
           <label>
             <span>Доп. описание</span>
             <textarea className="analytics-launch-input" rows="3" value={task.description} onChange={(event) => patchTask(task.id, { description: event.target.value })} />
