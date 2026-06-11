@@ -24,7 +24,7 @@ const COUNTRY_OPTIONS = [
   "Глобально",
 ];
 const STATUS_OPTIONS = ["Все статусы", "Новый", "Проверить", "Готов к контакту", "В работе", "Не подходит"];
-const STORAGE_KEY = "atlas.analytics.hyipParserLeads.v1";
+const STORAGE_KEY = "atlas.analytics.hyipParserLeads.v2";
 
 const defaultLeads = [
   {
@@ -36,7 +36,7 @@ const defaultLeads = [
     trafficScore: 88,
     aliveScore: 90,
     fitScore: 86,
-    contacts: "Contact Us, Telegram Support, Telegram Group",
+    contacts: "Telegram Support: @he_aid\nTelegram Group: @hyipexplorer_com\nFeedback form: /contact/send_feedback/",
     status: "Готов к контакту",
     lastSeen: "проверено сегодня",
     notes: "Есть advertising page, заявлено 35k+ unique visitors/month. Хороший первый кандидат.",
@@ -50,7 +50,7 @@ const defaultLeads = [
     trafficScore: 82,
     aliveScore: 68,
     fitScore: 77,
-    contacts: "Buy Ads form: Contact E-mail field",
+    contacts: "Buy Ads form: https://www.hyip.com/buy_ads/\nContact page: https://www.hyip.com/support/\nOrder field: Contact E-mail",
     status: "Готов к контакту",
     lastSeen: "проверено сегодня",
     notes: "Есть buy_ads с ценами: sticky, rotating/static banners, premium/normal listings.",
@@ -64,7 +64,7 @@ const defaultLeads = [
     trafficScore: 74,
     aliveScore: 89,
     fitScore: 81,
-    contacts: "Buy Ads form, Contact E-mail field, Telegram chat link on advertise page",
+    contacts: "Buy Ads form: https://upayhyip.com/buy_ads/tid/6/\nAdvertise page: https://upayhyip.com/advertise/\nOrder field: Contact E-mail",
     status: "Готов к контакту",
     lastSeen: "проверено сегодня",
     notes: "Свежие listings/payouts за июнь 2026, много доступных banner slots.",
@@ -78,7 +78,7 @@ const defaultLeads = [
     trafficScore: 70,
     aliveScore: 82,
     fitScore: 76,
-    contacts: "Buy Ads form: Contact E-mail field",
+    contacts: "Buy Ads form: https://invest-monitoring.eu/buy_ads/\nOrder field: Contact E-mail",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "Есть рекламные форматы и цены, но часть дат старая: нужен ручной review живости.",
@@ -92,7 +92,7 @@ const defaultLeads = [
     trafficScore: 76,
     aliveScore: 84,
     fitScore: 80,
-    contacts: "Contacts page, support mention, Telegram community",
+    contacts: "Email: luckymonitorcom@gmail.com\nSupport: @LuckyMonitorSupport\nChannel: @LuckyMonitorChannel\nGroup: @LuckyMonitorGroup",
     status: "Готов к контакту",
     lastSeen: "проверено сегодня",
     notes: "Заявляют 3k+ Telegram subscribers и 500+ visitors/day. Хороший community-fit.",
@@ -106,7 +106,7 @@ const defaultLeads = [
     trafficScore: 73,
     aliveScore: 80,
     fitScore: 78,
-    contacts: "Telegram admins: @AMNAALE, @FNAALE",
+    contacts: "Telegram admins: @AMNAALE, @FNAALE\nSupport page protected by Cloudflare, do not bypass; verify in browser before payment.",
     status: "Готов к контакту",
     lastSeen: "проверено сегодня",
     notes: "На support page указаны Telegram admins и платежи для listing/advertise. Обязательно проверять impersonators.",
@@ -120,7 +120,7 @@ const defaultLeads = [
     trafficScore: 68,
     aliveScore: 78,
     fitScore: 73,
-    contacts: "Contact Us, Telegram, Reddit",
+    contacts: "Advertise page: https://hyip-monitor.net/advertise\nSupport links: Contact Us, Telegram, Reddit",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "Есть advertise page: leaderboard placement $75/week. Проверить фактический трафик.",
@@ -134,7 +134,7 @@ const defaultLeads = [
     trafficScore: 69,
     aliveScore: 76,
     fitScore: 72,
-    contacts: "Buy Ads flow",
+    contacts: "Buy Ads flow: https://mmhyip.com/buy_ads/tid/2/\nOrder form on site",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "Есть pricing по banner sizes и sticky listings. Нужна проверка актуальности аудитории.",
@@ -148,7 +148,7 @@ const defaultLeads = [
     trafficScore: 66,
     aliveScore: 74,
     fitScore: 70,
-    contacts: "Advertise, Telegram, Contact links",
+    contacts: "Site nav: Add Project, Advertise, Telegram, Contact\nVerify handles manually before outreach.",
     status: "Новый",
     lastSeen: "проверено сегодня",
     notes: "Есть Add Project, Advertise, Guarantees, Telegram. Проверить форматы размещения.",
@@ -162,7 +162,7 @@ const defaultLeads = [
     trafficScore: 64,
     aliveScore: 72,
     fitScore: 68,
-    contacts: "Buy Ads form",
+    contacts: "Buy Ads form: https://hyiphunter.biz/buy_ads/\nOrder form on site",
     status: "Новый",
     lastSeen: "проверено сегодня",
     notes: "Найден buy_ads с доступными banner slots. Проверить индексацию и последние payout updates.",
@@ -176,7 +176,7 @@ const defaultLeads = [
     trafficScore: 63,
     aliveScore: 61,
     fitScore: 58,
-    contacts: "Support, Banners & Ads",
+    contacts: "Site nav: Support, Banners & Ads\nVerify current contact page manually.",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "Есть Banners & Ads и Support, но часть activity выглядит старой. Нужен ручной review.",
@@ -190,7 +190,7 @@ const defaultLeads = [
     trafficScore: 61,
     aliveScore: 56,
     fitScore: 55,
-    contacts: "Email or Telegram mentioned",
+    contacts: "Site text mentions online support via email or Telegram\nVerify exact handle/email manually.",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "На странице указаны email/Telegram для вопросов. Проверить свежесть monitor listings.",
@@ -204,7 +204,7 @@ const defaultLeads = [
     trafficScore: 80,
     aliveScore: 70,
     fitScore: 75,
-    contacts: "Sign up via Telegram/Twitter/E-mail",
+    contacts: "Sign up options: Telegram, Twitter, E-mail\nUse account route, then contact support/ads inside.",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "Крупный aggregator/database, есть sign-up каналы. Нужен отдельный route для outreach.",
@@ -218,7 +218,7 @@ const defaultLeads = [
     trafficScore: 62,
     aliveScore: 77,
     fitScore: 52,
-    contacts: "Telegram Group, Telegram Channel",
+    contacts: "Telegram Group + Telegram Channel linked on site\nAnti-scam positioning: contact carefully, analytics-first angle.",
     status: "Проверить",
     lastSeen: "проверено сегодня",
     notes: "Антискам-позиционирование: скорее для аналитики рынка, не для рекламы high-yield claims.",
@@ -315,6 +315,21 @@ const parserStages = [
   ["Контакты", "email, Telegram, WhatsApp, contact form"],
   ["Оценка", "живость, трафик, свежесть, рекламный fit"],
   ["Очередь", "передача в outreach-таблицу"],
+];
+
+const outreachTemplates = [
+  {
+    title: "Telegram / короткое первое касание",
+    text: "Hi. We are preparing an international Web3 project launch and are looking for monitor/listing advertising options. Could you please send your current ad placements, prices, traffic stats, and listing requirements? We can provide website, creatives, and project materials for review.",
+  },
+  {
+    title: "Email / форма обратной связи",
+    text: "Hello. My name is [Name], I represent Atlas System. We are reviewing HYIP monitor and crypto-listing advertising placements for an upcoming international campaign. Please send your media kit, available banner/listing slots, weekly/monthly pricing, accepted payment methods, and moderation requirements. We do not need automated posting; we want to review compliant paid placement options first.",
+  },
+  {
+    title: "Что обязательно спросить",
+    text: "Traffic by country, Telegram/channel audience, banner sizes, listing type, price per week/month, moderation rules, refund policy, payment method, start date, examples of previous placements.",
+  },
 ];
 
 function readStoredLeads() {
@@ -501,6 +516,23 @@ export default function HyipParserPanel() {
             <li>Оценка пригодности: страна, язык, рекламные форматы, похожесть аудитории.</li>
             <li>Перед контактом нужен ручной review текста, без обещаний гарантированной доходности.</li>
           </ul>
+        </div>
+      </section>
+
+      <section className="analytics-parser-outreach analytics-surface">
+        <div className="analytics-parser-table-head">
+          <div>
+            <h2>Как связываться</h2>
+            <p>Готовые тексты для Telegram, email и contact form. Отправлять вручную после проверки площадки.</p>
+          </div>
+        </div>
+        <div className="analytics-parser-outreach-grid">
+          {outreachTemplates.map((template) => (
+            <article key={template.title}>
+              <strong>{template.title}</strong>
+              <textarea readOnly value={template.text} rows={template.title === "Email / форма обратной связи" ? 6 : 4} />
+            </article>
+          ))}
         </div>
       </section>
 

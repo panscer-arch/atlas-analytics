@@ -15539,6 +15539,46 @@ input.analytics-smm-cell-input {
   gap: 1rem;
 }
 
+.analytics-parser-outreach {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.analytics-parser-outreach-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.analytics-parser-outreach-grid article {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.analytics-parser-outreach-grid strong {
+  color: #ffffff;
+  font-weight: 950;
+}
+
+.analytics-parser-outreach-grid textarea {
+  width: 100%;
+  min-height: 8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(4, 10, 18, 0.74);
+  color: rgba(235, 244, 255, 0.9);
+  padding: 0.7rem;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .analytics-parser-table-scroll {
   overflow-x: auto;
 }
@@ -15689,6 +15729,7 @@ input.analytics-smm-cell-input {
   .analytics-parser-stats,
   .analytics-parser-grid,
   .analytics-parser-controls,
+  .analytics-parser-outreach-grid,
   .analytics-security-hero {
     grid-template-columns: 1fr;
   }
