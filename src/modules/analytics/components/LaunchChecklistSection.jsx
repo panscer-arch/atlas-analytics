@@ -174,8 +174,8 @@ const STATIC_BOARD_META = {
     description: "Маркетинговый чек-лист: парсеры, рассылки, короткие ролики, почта, адаптация и команда.",
   },
   dailyTasks: {
-    title: "Задачи на день",
-    description: "Фокус-команда на 22 мая: карточки задач, дедлайны, ответственные, материалы и чат по каждой задаче.",
+    title: "Ближайшие задачи",
+    description: "Оперативная доска команды: карточки задач, исполнители, дедлайны, материалы и чат по каждой задаче.",
   },
 };
 
@@ -912,13 +912,13 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     },
     { overdue: 0, today: 0, week: 0, focus: 0 },
   );
-  const boardTitle = isTaskCategoryBoard ? activeTaskCategoryBoard.title : isCustomBoard ? activeCustomChecklist.title : isDailyTasksBoard ? "Задачи на день" : isMarketingBoard ? "Задачи по маркетингу" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
+  const boardTitle = isTaskCategoryBoard ? activeTaskCategoryBoard.title : isCustomBoard ? activeCustomChecklist.title : isDailyTasksBoard ? "Ближайшие задачи" : isMarketingBoard ? "Задачи по маркетингу" : isIdeasBoard ? "Идеи" : isKnowledgeBaseBoard ? "Задачи базы знаний" : "Задачи запуска";
   const boardSubtitle = isCustomBoard
     ? "Пользовательский чек-лист с собственным набором задач."
     : isTaskCategoryBoard
       ? activeTaskCategoryBoard.description
     : isDailyTasksBoard
-      ? "Карточки фокуса на 22 мая: дедлайны, ответственные, материалы и чат по каждой задаче."
+      ? "Оперативные карточки команды: исполнители, дедлайны, материалы и чат по каждой задаче."
     : isIdeasBoard
       ? "Сырые идеи разложены по направлениям, чтобы их можно было приоритизировать и превращать в задачи."
     : isContentPlanBoard
@@ -957,7 +957,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     : isTaskCategoryBoard
       ? activeTaskCategoryBoard.emptyHint
     : isDailyTasksBoard
-      ? "Здесь можно быстро собрать задачи на день, поделиться ими с ребятами и вести обсуждение отдельно внутри каждой задачи."
+      ? "Здесь можно быстро собрать ближайшие задачи, разложить их по людям и вести обсуждение отдельно внутри каждой карточки."
     : isIdeasBoard
       ? "Здесь вычитаны и структурированы идеи по контенту, комьюнити, партнерке, лендингам, smart-contract, вебинарам и исследованиям."
     : isContentPlanBoard
@@ -1003,7 +1003,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "techTasks", label: "Tech" },
     { id: "knowledgeBase", label: "Задачи по базе знаний" },
     { id: "ideas", label: "Идеи" },
-    { id: "dailyTasks", label: "Задачи на день" },
+    { id: "dailyTasks", label: "Ближайшие задачи" },
   ];
   const contentBoardTabs = [
     { id: "contentPlan", label: "Контент-план" },

@@ -87,7 +87,7 @@ const DIRECT_BOARD_META = [
   { key: CONTENT_KEYS.marketing, boardId: "marketing", boardTitle: "Задачи маркетинга" },
   { key: CONTENT_KEYS.knowledgeBase, boardId: "knowledgeBase", boardTitle: "Задачи по базе знаний" },
   { key: CONTENT_KEYS.ideas, boardId: "ideas", boardTitle: "Идеи" },
-  { key: CONTENT_KEYS.daily, boardId: "dailyTasks", boardTitle: "Задачи на день" },
+  { key: CONTENT_KEYS.daily, boardId: "dailyTasks", boardTitle: "Ближайшие задачи" },
   ...Object.values(TASK_CATEGORY_META),
 ];
 
@@ -99,7 +99,7 @@ export function normalizeCategory(value = "") {
 export function boardTitleForCategory(category) {
   if (category === "launch") return "Задачи запуска";
   if (category === "marketing") return "Задачи маркетинга";
-  if (category === "daily") return "Задачи на день";
+  if (category === "daily") return "Ближайшие задачи";
   if (category === "knowledgeBase") return "Задачи по базе знаний";
   if (category === "ideas") return "Идеи";
   if (TASK_CATEGORY_META[category]) return TASK_CATEGORY_META[category].boardTitle;
@@ -237,8 +237,8 @@ export async function addTelegramTask({ category: rawCategory, title, descriptio
   if (category === "daily") {
     const task = createDailyTask({ title, description, category, assignee, dueDate, source });
     await appendToList(CONTENT_KEYS.daily, task);
-    await addTelegramHistory("Создание", task, "Добавлена дневная задача из Telegram", "dailyTasks", "Задачи на день");
-    return { task, boardId: "dailyTasks", boardTitle: "Задачи на день" };
+    await addTelegramHistory("Создание", task, "Добавлена ближайшая задача из Telegram", "dailyTasks", "Ближайшие задачи");
+    return { task, boardId: "dailyTasks", boardTitle: "Ближайшие задачи" };
   }
 
   const task = createChecklistTask({ title, description, category, assignee, dueDate, source });
@@ -326,7 +326,7 @@ export async function collectTasks({ category = "", assignee = "", onlyActive = 
 
   if (!category || categoryKey === "launch") await pushChecklist(CONTENT_KEYS.launch, "launch", "Задачи запуска");
   if (!category || categoryKey === "marketing") await pushChecklist(CONTENT_KEYS.marketing, "marketing", "Задачи маркетинга");
-  if (!category || categoryKey === "daily") await pushChecklist(CONTENT_KEYS.daily, "dailyTasks", "Задачи на день");
+  if (!category || categoryKey === "daily") await pushChecklist(CONTENT_KEYS.daily, "dailyTasks", "Ближайшие задачи");
   if (!category || categoryKey === "knowledgeBase") await pushChecklist(CONTENT_KEYS.knowledgeBase, "knowledgeBase", "Задачи по базе знаний");
   if (!category || categoryKey === "ideas") await pushChecklist(CONTENT_KEYS.ideas, "ideas", "Идеи");
   for (const [taskCategory, meta] of Object.entries(TASK_CATEGORY_META)) {

@@ -6,8 +6,18 @@ import { loadServerContent, postServerJson, saveServerContent } from "../service
 
 const DAILY_TASKS_STORAGE_KEY = "atlas.analytics.dailyTasks.2026-05-22.v1";
 const DAILY_CHAT_AUTHOR_STORAGE_KEY = "atlas.analytics.dailyTasks.chatAuthor.v1";
+const DAILY_PEOPLE_STORAGE_KEY = "atlas.analytics.dailyTasks.people.v1";
+const ALL_PEOPLE_TAB_ID = "__all__";
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
+const DEFAULT_DAILY_PEOPLE = ["Бруно", "Гем", "Ротенберг", "Диджитекс", "Руби"];
+const DAILY_PERSON_ALIASES = {
+  Бруно: ["Бруно", "Bruno"],
+  Гем: ["Гем", "Gem"],
+  Ротенберг: ["Ротенберг", "Roten Berg", "Rotenberg", "Roten", "roten_berg"],
+  Диджитекс: ["Диджитекс", "Дигитекс", "Digitex"],
+  Руби: ["Руби", "Rubi", "Ruby"],
+};
 
 const defaultDailyTasks = [
   {
@@ -125,6 +135,23 @@ function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function normalizePersonName(value = "") {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizeDailyPeople(value) {
+  const seen = new Set();
+  return [...DEFAULT_DAILY_PEOPLE, ...normalizeArray(value)]
+    .map(normalizePersonName)
+    .filter(Boolean)
+    .filter((name) => {
+      const key = name.toLocaleLowerCase("ru-RU");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 function readStoredDailyTasks() {
   if (typeof window === "undefined") return normalizeDailyTasks(defaultDailyTasks);
 
@@ -133,6 +160,17 @@ function readStoredDailyTasks() {
     return normalizeDailyTasks(saved ? JSON.parse(saved) : defaultDailyTasks);
   } catch {
     return normalizeDailyTasks(defaultDailyTasks);
+  }
+}
+
+function readStoredDailyPeople() {
+  if (typeof window === "undefined") return normalizeDailyPeople(DEFAULT_DAILY_PEOPLE);
+
+  try {
+    const saved = window.localStorage.getItem(DAILY_PEOPLE_STORAGE_KEY);
+    return normalizeDailyPeople(saved ? JSON.parse(saved) : DEFAULT_DAILY_PEOPLE);
+  } catch {
+    return normalizeDailyPeople(DEFAULT_DAILY_PEOPLE);
   }
 }
 
@@ -266,6 +304,28 @@ function getFullSubtaskId(shortSubtaskId = "") {
   return `daily-subtask-${normalized}`;
 }
 
+function getPersonSearchTokens(personName = "") {
+  const name = normalizePersonName(personName);
+  return normalizeArray(DAILY_PERSON_ALIASES[name]).length ? DAILY_PERSON_ALIASES[name] : [name];
+}
+
+function getTaskPeopleSearchText(task) {
+  const subtaskText = normalizeArray(task.subtasks)
+    .map((subtask) => `${subtask.responsible || ""} ${subtask.title || ""}`)
+    .join(" ");
+  return `${task.responsible || ""} ${task.title || ""} ${subtaskText}`.toLocaleLowerCase("ru-RU");
+}
+
+function isTaskAssignedToPerson(task, personName) {
+  if (!personName || personName === ALL_PEOPLE_TAB_ID) return true;
+
+  const searchText = getTaskPeopleSearchText(task);
+  return getPersonSearchTokens(personName).some((token) => {
+    const normalizedToken = normalizePersonName(token).toLocaleLowerCase("ru-RU");
+    return normalizedToken && searchText.includes(normalizedToken);
+  });
+}
+
 export default function DailyTasksBoard() {
   const [tasks, setTasks] = useState(readStoredDailyTasks);
   const [draft, setDraft] = useState(() => createDailyTask({ status: "В работе" }));
@@ -275,6 +335,9 @@ export default function DailyTasksBoard() {
   const [subtaskDrafts, setSubtaskDrafts] = useState({});
   const [responsibleDrafts, setResponsibleDrafts] = useState({});
   const [responsibleSavedTaskId, setResponsibleSavedTaskId] = useState("");
+  const [dailyPeople, setDailyPeople] = useState(readStoredDailyPeople);
+  const [activePerson, setActivePerson] = useState(ALL_PEOPLE_TAB_ID);
+  const [newPersonName, setNewPersonName] = useState("");
   const [chatAuthor, setChatAuthor] = useState(readStoredDailyChatAuthor);
   const [recordingTaskId, setRecordingTaskId] = useState("");
   const [recordingError, setRecordingError] = useState("");
@@ -288,6 +351,7 @@ export default function DailyTasksBoard() {
   const saveInFlightRef = useRef(false);
   const savePendingRef = useRef(false);
   const latestTasksRef = useRef(tasks);
+  const peopleLoadedRef = useRef(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioStreamRef = useRef(null);
@@ -312,6 +376,46 @@ export default function DailyTasksBoard() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(DAILY_PEOPLE_STORAGE_KEY).then((savedPeople) => {
+      if (!isMounted) return;
+
+      if (Array.isArray(savedPeople)) {
+        const normalizedPeople = normalizeDailyPeople(savedPeople);
+        setDailyPeople(normalizedPeople);
+        try {
+          window.localStorage.setItem(DAILY_PEOPLE_STORAGE_KEY, JSON.stringify(normalizedPeople));
+        } catch {
+          // Список вкладок всё равно доступен в состоянии страницы.
+        }
+      }
+      peopleLoadedRef.current = true;
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!dailyPeople.includes(activePerson) && activePerson !== ALL_PEOPLE_TAB_ID) {
+      setActivePerson(ALL_PEOPLE_TAB_ID);
+    }
+  }, [dailyPeople, activePerson]);
+
+  useEffect(() => {
+    if (!peopleLoadedRef.current) return;
+
+    try {
+      window.localStorage.setItem(DAILY_PEOPLE_STORAGE_KEY, JSON.stringify(dailyPeople));
+    } catch {
+      // Список исполнителей некритичен для работы самой доски.
+    }
+    saveServerContent(DAILY_PEOPLE_STORAGE_KEY, dailyPeople);
+  }, [dailyPeople]);
 
   useEffect(() => {
     try {
@@ -410,9 +514,27 @@ export default function DailyTasksBoard() {
 
   function addTask() {
     if (!draft.title.trim()) return;
-    persist((currentTasks) => [createDailyTask({ ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() }), ...currentTasks]);
-    setDraft(createDailyTask({ status: "В работе" }));
+    const selectedPerson = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
+    const nextResponsible = normalizePersonName(draft.responsible) || selectedPerson;
+    persist((currentTasks) => [createDailyTask({ ...draft, title: draft.title.trim(), responsible: nextResponsible, updatedAt: new Date().toISOString() }), ...currentTasks]);
+    setDraft(createDailyTask({ status: "В работе", responsible: selectedPerson }));
     setIsAddTaskOpen(false);
+  }
+
+  function openAddTaskForm() {
+    const selectedPerson = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
+    setDraft((current) => ({ ...current, responsible: normalizePersonName(current.responsible) || selectedPerson }));
+    setIsAddTaskOpen(true);
+  }
+
+  function addDailyPerson() {
+    const name = normalizePersonName(newPersonName);
+    if (!name) return;
+
+    setDailyPeople((currentPeople) => normalizeDailyPeople([...currentPeople, name]));
+    setActivePerson(name);
+    setDraft((current) => ({ ...current, responsible: normalizePersonName(current.responsible) || name }));
+    setNewPersonName("");
   }
 
   function archiveTask(taskId) {
@@ -835,9 +957,15 @@ export default function DailyTasksBoard() {
     }, 1800);
   }
 
-  const completedTasks = tasks.filter((task) => task.status === "Готово");
-  const activeTasks = tasks.filter((task) => task.status !== "Готово");
-  const doneCount = completedTasks.length;
+  const selectedPerson = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
+  const allActiveTasks = tasks.filter((task) => task.status !== "Готово");
+  const allCompletedTasks = tasks.filter((task) => task.status === "Готово");
+  const completedTasks = allCompletedTasks.filter((task) => isTaskAssignedToPerson(task, selectedPerson));
+  const activeTasks = allActiveTasks.filter((task) => isTaskAssignedToPerson(task, selectedPerson));
+  const personTaskCounts = dailyPeople.reduce((result, person) => {
+    result[person] = allActiveTasks.filter((task) => isTaskAssignedToPerson(task, person)).length;
+    return result;
+  }, {});
 
   return (
     <>
@@ -856,6 +984,10 @@ export default function DailyTasksBoard() {
               <span>Название задачи</span>
               <input className="analytics-launch-input" value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Например: согласовать первый экран сайта" />
             </label>
+            <label>
+              <span>Ответственный</span>
+              <input className="analytics-launch-input" value={draft.responsible} onChange={(event) => setDraft((current) => ({ ...current, responsible: event.target.value }))} placeholder="Бруно, Руби, Digitex..." />
+            </label>
             <label className="analytics-daily-form-wide">
               <span>Доп. описание</span>
               <textarea className="analytics-launch-input" rows="2" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Что конкретно нужно сделать" />
@@ -871,11 +1003,61 @@ export default function DailyTasksBoard() {
       ) : null}
 
       <Wrapper marginTop="lg">
+        <div className="analytics-daily-person-panel">
+          <div className="analytics-daily-person-head">
+            <div>
+              <span className="analytics-kicker">Исполнители</span>
+              <h3 className="analytics-section-title">Ближайшие задачи</h3>
+            </div>
+            <p>Кликни на человека, чтобы видеть только его активные карточки. Новую задачу можно сразу закрепить за выбранным человеком.</p>
+          </div>
+          <div className="analytics-daily-person-tabs" role="tablist" aria-label="Фильтр задач по исполнителю">
+            <button
+              type="button"
+              className={`analytics-daily-person-tab ${activePerson === ALL_PEOPLE_TAB_ID ? "is-active" : ""}`}
+              onClick={() => setActivePerson(ALL_PEOPLE_TAB_ID)}
+            >
+              <span>Все</span>
+              <strong>{allActiveTasks.length}</strong>
+            </button>
+            {dailyPeople.map((person) => (
+              <button
+                type="button"
+                key={person}
+                className={`analytics-daily-person-tab ${activePerson === person ? "is-active" : ""}`}
+                onClick={() => {
+                  setActivePerson(person);
+                  setDraft((current) => ({ ...current, responsible: normalizePersonName(current.responsible) || person }));
+                }}
+              >
+                <span>{person}</span>
+                <strong>{personTaskCounts[person] || 0}</strong>
+              </button>
+            ))}
+          </div>
+          <div className="analytics-daily-person-add">
+            <input
+              className="analytics-launch-input"
+              value={newPersonName}
+              onChange={(event) => setNewPersonName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addDailyPerson();
+              }}
+              placeholder="Добавить человека"
+            />
+            <AnalyticsActionButton variant="secondary" onClick={addDailyPerson} disabled={!newPersonName.trim()}>
+              Добавить
+            </AnalyticsActionButton>
+          </div>
+        </div>
+      </Wrapper>
+
+      <Wrapper marginTop="md">
         <div className="analytics-daily-section-head">
-          <span className="analytics-kicker">Активные задачи</span>
+          <span className="analytics-kicker">{selectedPerson ? `Задачи: ${selectedPerson}` : "Все активные задачи"}</span>
           <strong>{activeTasks.length}</strong>
           <div className="analytics-daily-section-actions">
-            <AnalyticsActionButton variant="primary" onClick={() => setIsAddTaskOpen((current) => !current)}>
+            <AnalyticsActionButton variant="primary" onClick={() => (isAddTaskOpen ? setIsAddTaskOpen(false) : openAddTaskForm())}>
               {isAddTaskOpen ? "Скрыть форму" : "Добавить задачу"}
             </AnalyticsActionButton>
             <AnalyticsActionButton variant="secondary" onClick={() => setIsDailyArchiveOpen((current) => !current)} disabled={!completedTasks.length}>
@@ -936,7 +1118,7 @@ export default function DailyTasksBoard() {
       {!activeTasks.length ? (
         <Wrapper marginTop="md">
           <div className="analytics-daily-empty">
-            Активных задач нет. Готовые задачи лежат в архиве и не мешают рабочему экрану.
+            {selectedPerson ? `У ${selectedPerson} пока нет активных задач. Добавь новую карточку или укажи этого человека в поле ответственного.` : "Активных задач нет. Готовые задачи лежат в архиве и не мешают рабочему экрану."}
           </div>
         </Wrapper>
       ) : null}
