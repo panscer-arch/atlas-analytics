@@ -1959,12 +1959,11 @@
 }
 
 .analytics-smm-read-cell {
-  max-height: 240px;
-  overflow: auto;
   color: rgba(229, 239, 252, 0.88);
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .analytics-smm-read-title {
