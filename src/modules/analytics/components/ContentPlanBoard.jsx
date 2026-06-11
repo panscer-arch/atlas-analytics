@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 export const CONTENT_PLAN_STORAGE_KEY = "atlas.analytics.contentPlan.v1";
+const SMM_APPROVAL_STORAGE_KEY = "atlas.analytics.smmPlan.approvals.v1";
 
 const SOCIAL_OPTIONS = ["Все каналы", "Telegram", "Instagram", "X", "TikTok", "YouTube", "Facebook"];
 const FORMAT_OPTIONS = ["Пост", "Карусель", "Рилс", "Видео", "Сторис", "Еженедельная рубрика"];
@@ -55,6 +56,171 @@ const SAVE_STATE_META = {
     tone: "warn",
   },
 };
+
+const SMM_PLAN_SECTIONS = [
+  {
+    id: "prelaunch",
+    title: "Контент-план Atlas",
+    subtitle: "До запуска / прогрев",
+    blocks: [
+      {
+        id: "pre-world",
+        title: "Мир меняется",
+        posts: [
+          "Эпоха одиночек заканчивается",
+          "Почему люди больше не верят системам",
+          "Новый интернет - это сообщества",
+        ],
+      },
+      {
+        id: "pre-who",
+        title: "Кто такие Atlas",
+        posts: [
+          "Atlas - система, которая не притворяется",
+          "Прозрачность - это не слоган",
+          "Почему появился Atlas",
+        ],
+      },
+      {
+        id: "pre-smart-cycle",
+        title: "Что такое Smart Cycle",
+        posts: [
+          "Smart Cycle простыми словами",
+          "Почему правила зашиты в код",
+          "FAQ: \"Это инвестиция?\"",
+        ],
+      },
+      {
+        id: "pre-community",
+        title: "Сообщество",
+        posts: [
+          "Atlas строится людьми",
+          "Почему ранние участники важны",
+          "Atlas - не про одиночек",
+        ],
+      },
+      {
+        id: "pre-ecosystem",
+        title: "Экосистема",
+        posts: [
+          "Atlas - это не один продукт",
+          "Что такое DAO",
+          "Почему Web3 меняет все",
+        ],
+      },
+      {
+        id: "pre-leaders",
+        title: "Для лидеров",
+        posts: [
+          "Почему Atlas делает ставку на community builders",
+          "Почему личный бренд становится новой валютой",
+          "Что такое Traffic RevShare",
+        ],
+      },
+      {
+        id: "pre-launch",
+        title: "Запуск",
+        posts: [
+          "Общая информация (пост вышел)",
+          "Обращение Архитектора перед запуском",
+          "Сейчас начинается первый этап Atlas",
+        ],
+      },
+    ],
+  },
+  {
+    id: "postlaunch",
+    title: "Контент-план после запуска",
+    subtitle: "Первые недели после старта",
+    blocks: [
+      {
+        id: "post-live-system",
+        title: "Живая система",
+        posts: [
+          "Atlas запущен, что происходит сейчас",
+          "Первые дни Atlas",
+          "За кулисами запуска",
+        ],
+      },
+      {
+        id: "post-how",
+        title: "Как это работает",
+        posts: [
+          "Что такое Smart Cycle за 60 секунд",
+          "Почему Atlas использует смарт-контракты",
+          "Почему прозрачность важнее обещаний",
+        ],
+      },
+      {
+        id: "post-community",
+        title: "Сообщество",
+        posts: [
+          "Кто уже строит Atlas",
+          "Почему люди приходят в Atlas",
+          "Один день внутри Atlas community",
+        ],
+      },
+      {
+        id: "post-ecosystem",
+        title: "Экосистема",
+        posts: [
+          "Atlas - это не один продукт",
+          "Что появится дальше",
+          "Почему мы строим экосистему",
+        ],
+      },
+      {
+        id: "post-philosophy",
+        title: "Философия Atlas",
+        posts: [
+          "Почему эпоха одиночек заканчивается",
+          "Доверие больше не сможет строиться на словах",
+          "Что значит \"Прозрачность - это код\"",
+        ],
+      },
+      {
+        id: "post-leaders",
+        title: "Лидеры и партнеры",
+        posts: [
+          "Кто такие Builders Atlas",
+          "Почему комьюнити важнее рекламы",
+          "Как развивается международное ядро Atlas",
+        ],
+      },
+    ],
+  },
+  {
+    id: "weekly",
+    title: "Еженедельные рубрики",
+    subtitle: "Повторяемые форматы",
+    blocks: [
+      {
+        id: "weekly-architect",
+        title: "Обращение Архитектора",
+        posts: ["Новости, развитие и ответы на вопросы"],
+      },
+      {
+        id: "weekly-faq",
+        title: "FAQ недели",
+        posts: ["Топ-5 вопросов аудитории"],
+      },
+      {
+        id: "weekly-digest",
+        title: "Atlas weekly",
+        posts: ["Новые страны, события, материалы и обновления"],
+      },
+    ],
+  },
+];
+
+function readSmmApprovals() {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(SMM_APPROVAL_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
 
 const defaultContentPlanItems = [
   {
@@ -670,6 +836,7 @@ function ContentPlanBoard() {
   const [shiftedDateItemId, setShiftedDateItemId] = useState("");
   const [pendingPublishWithoutLinkId, setPendingPublishWithoutLinkId] = useState("");
   const [targetItemId, setTargetItemId] = useState("");
+  const [smmApprovals, setSmmApprovals] = useState(readSmmApprovals);
   const duplicateItemIds = useMemo(() => getDuplicateContentPlanIds(items), [items]);
   const localTouchedRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
@@ -1613,6 +1780,145 @@ function ContentPlanBoard() {
   function clearFilter(filterKey) {
     setFilters((current) => ({ ...current, [filterKey]: DEFAULT_FILTERS[filterKey] }));
   }
+
+  const smmStats = useMemo(() => {
+    const blocks = SMM_PLAN_SECTIONS.reduce((sum, section) => sum + section.blocks.length, 0);
+    const posts = SMM_PLAN_SECTIONS.reduce((sum, section) => (
+      sum + section.blocks.reduce((blockSum, block) => blockSum + block.posts.length, 0)
+    ), 0);
+    const ok = Object.values(smmApprovals).filter((status) => status === "ok").length;
+    const notOk = Object.values(smmApprovals).filter((status) => status === "not-ok").length;
+
+    return { blocks, posts, ok, notOk, pending: Math.max(blocks - ok - notOk, 0) };
+  }, [smmApprovals]);
+
+  function updateSmmApproval(blockId, status) {
+    setSmmApprovals((current) => {
+      const next = { ...current, [blockId]: status };
+      try {
+        window.localStorage.setItem(SMM_APPROVAL_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Согласование остается в состоянии страницы, даже если localStorage недоступен.
+      }
+      return next;
+    });
+  }
+
+  return (
+    <section className="analytics-content-plan analytics-smm-plan">
+      <div className="analytics-surface analytics-smm-plan-hero">
+        <div>
+          <span className="analytics-kicker">SMM / согласование</span>
+          <h2 className="analytics-agent-template-title">Контент ближайших постов Atlas</h2>
+          <p className="analytics-page-subtitle">
+            Простая доска для согласования тем: смотрим блоки, отмечаем OK или не OK. Без лишних фильтров, публикационных гейтов и отчетов.
+          </p>
+        </div>
+        <div className="analytics-smm-plan-save">
+          <span>{SAVE_STATE_META[saveState]?.label || "Сохранено"}</span>
+          <small>{SAVE_STATE_META[saveState]?.detail || "SMM-доска готова"}</small>
+        </div>
+      </div>
+
+      <div className="analytics-smm-board">
+        {SMM_PLAN_SECTIONS.map((section) => (
+          <section key={section.id} className="analytics-surface analytics-smm-section">
+            <div className="analytics-smm-section-head">
+              <div>
+                <span>{section.subtitle}</span>
+                <h3>{section.title}</h3>
+              </div>
+              <strong>{section.blocks.length} блоков</strong>
+            </div>
+
+            <div className="analytics-smm-table-wrap" aria-label={`${section.title}: таблица SMM-плана`}>
+              <table className="analytics-smm-table">
+                <thead>
+                  <tr>
+                    <th>Блок</th>
+                    <th>Пост 1</th>
+                    <th>Пост 2</th>
+                    <th>Пост 3</th>
+                    <th>Согласование</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.blocks.map((block) => {
+                    const approval = smmApprovals[block.id] || "";
+                    return (
+                      <tr
+                        key={block.id}
+                        data-smm-block={block.id}
+                        data-smm-approval={approval}
+                        className={approval ? `analytics-smm-row-${approval}` : ""}
+                      >
+                        <td>
+                          <strong>{block.title}</strong>
+                        </td>
+                        {[0, 1, 2].map((index) => (
+                          <td key={`${block.id}-${index}`}>
+                            {block.posts[index] ? <span>{block.posts[index]}</span> : <span className="analytics-smm-empty">-</span>}
+                          </td>
+                        ))}
+                        <td>
+                          <div className="analytics-smm-approval">
+                            <button
+                              type="button"
+                              data-smm-action={`ok-${block.id}`}
+                              className={approval === "ok" ? "is-active" : ""}
+                              onClick={() => updateSmmApproval(block.id, "ok")}
+                            >
+                              OK
+                            </button>
+                            <button
+                              type="button"
+                              data-smm-action={`not-ok-${block.id}`}
+                              className={approval === "not-ok" ? "is-active" : ""}
+                              onClick={() => updateSmmApproval(block.id, "not-ok")}
+                            >
+                              Не OK
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className="analytics-smm-stats">
+        <article className="analytics-surface">
+          <span>Блоков</span>
+          <strong>{smmStats.blocks}</strong>
+          <small>темы из SMM.pdf</small>
+        </article>
+        <article className="analytics-surface">
+          <span>Постов</span>
+          <strong>{smmStats.posts}</strong>
+          <small>ближайший контент</small>
+        </article>
+        <article className="analytics-surface">
+          <span>OK</span>
+          <strong>{smmStats.ok}</strong>
+          <small>согласовано</small>
+        </article>
+        <article className="analytics-surface">
+          <span>Не OK</span>
+          <strong>{smmStats.notOk}</strong>
+          <small>нужна правка</small>
+        </article>
+        <article className="analytics-surface">
+          <span>Без решения</span>
+          <strong>{smmStats.pending}</strong>
+          <small>еще посмотреть</small>
+        </article>
+      </div>
+    </section>
+  );
 
   const saveMeta = SAVE_STATE_META[saveState] || SAVE_STATE_META.idle;
 
