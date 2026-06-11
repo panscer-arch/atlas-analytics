@@ -2016,58 +2016,13 @@ function ContentPlanBoard() {
           <span className="analytics-kicker">SMM / согласование</span>
           <h2 className="analytics-agent-template-title">Контент ближайших постов Atlas</h2>
           <p className="analytics-page-subtitle">
-            Простая доска для согласования тем: смотрим блоки, отмечаем OK или не OK. Без лишних фильтров, публикационных гейтов и отчетов.
+            Таблица перенесена из SMM-файла: пост, дата, смысл, формат, тексты, визуал, сценарий видео и правки. В конце каждой строки можно отметить OK или Не OK.
           </p>
         </div>
         <div className="analytics-smm-plan-save">
           <span>{SAVE_STATE_META[saveState]?.label || "Сохранено"}</span>
           <small>{SAVE_STATE_META[saveState]?.detail || "SMM-доска готова"}</small>
         </div>
-      </div>
-
-      <div className="analytics-smm-topic-grid">
-        {SMM_TOPIC_SECTIONS.map((section) => (
-          <section key={section.id} className="analytics-surface analytics-smm-section">
-            <div className="analytics-smm-section-head">
-              <div>
-                <span>{section.subtitle}</span>
-                <h3>{section.title}</h3>
-              </div>
-              <strong>{section.blocks.length} блоков</strong>
-            </div>
-
-            <div className="analytics-smm-block-grid">
-              {section.blocks.map((block) => (
-                <article key={block.id} className="analytics-smm-topic-card">
-                  <strong>{block.title}</strong>
-                  <ol>
-                    {block.posts.map((post) => <li key={post}>{post}</li>)}
-                  </ol>
-                </article>
-              ))}
-            </div>
-          </section>
-        ))}
-
-        <section className="analytics-surface analytics-smm-section">
-          <div className="analytics-smm-section-head">
-            <div>
-              <span>Отдельный список</span>
-              <h3>Темы для Facebook</h3>
-            </div>
-            <strong>{smmStats.facebookTopics} тем</strong>
-          </div>
-          <div className="analytics-smm-facebook-grid">
-            {SMM_FACEBOOK_TOPICS.map((block) => (
-              <article key={block.id} className="analytics-smm-topic-card">
-                <strong>{block.title}</strong>
-                <ol>
-                  {block.posts.map((post) => <li key={post}>{post}</li>)}
-                </ol>
-              </article>
-            ))}
-          </div>
-        </section>
       </div>
 
       <section className="analytics-surface analytics-smm-section analytics-smm-production">
@@ -2181,6 +2136,51 @@ function ContentPlanBoard() {
           <strong>{smmStats.pending}</strong>
           <small>еще посмотреть</small>
         </article>
+      </div>
+
+      <div className="analytics-smm-topic-grid">
+        {SMM_TOPIC_SECTIONS.map((section) => (
+          <section key={section.id} className="analytics-surface analytics-smm-section">
+            <div className="analytics-smm-section-head">
+              <div>
+                <span>{section.subtitle}</span>
+                <h3>{section.title}</h3>
+              </div>
+              <strong>{section.blocks.length} блоков</strong>
+            </div>
+
+            <div className="analytics-smm-block-grid">
+              {section.blocks.map((block) => (
+                <article key={block.id} className="analytics-smm-topic-card">
+                  <strong>{block.title}</strong>
+                  <ol>
+                    {block.posts.map((post) => <li key={post}>{post}</li>)}
+                  </ol>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+
+        <section className="analytics-surface analytics-smm-section">
+          <div className="analytics-smm-section-head">
+            <div>
+              <span>Отдельный список</span>
+              <h3>Темы для Facebook</h3>
+            </div>
+            <strong>{smmStats.facebookTopics} тем</strong>
+          </div>
+          <div className="analytics-smm-facebook-grid">
+            {SMM_FACEBOOK_TOPICS.map((block) => (
+              <article key={block.id} className="analytics-smm-topic-card">
+                <strong>{block.title}</strong>
+                <ol>
+                  {block.posts.map((post) => <li key={post}>{post}</li>)}
+                </ol>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
     </section>
   );
