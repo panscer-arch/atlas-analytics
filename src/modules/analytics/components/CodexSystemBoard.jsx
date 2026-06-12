@@ -3,6 +3,51 @@ import "./CodexSystemBoard.css";
 
 const CODEX_SOURCE_URL = "https://vibe.sukharev.dev/knowledge-base/#basic-principles";
 
+const CODEX_RESOURCE_FILTER = [
+  {
+    status: "Внедрить",
+    title: "Альманах практик Codex / Claude Code",
+    url: "https://vibe.sukharev.dev/knowledge-base/",
+    use: "База для наших рабочих правил: PRD, TASKS, review-loop, security gate, refactoring и production monitoring.",
+    codexFit: "Работает прямо в Codex: это промпты, процессы и чеклисты, без установки внешних инструментов.",
+  },
+  {
+    status: "Внедрить",
+    title: "GitHub spec-kit",
+    url: "https://github.com/github/spec-kit",
+    use: "Можно использовать как ориентир для spec-driven разработки, когда продукт большой и нужно дисциплинировать ТЗ.",
+    codexFit: "Полезно как структура мышления. В Codex достаточно PRD-интервью и TASKS.md; ставить spec-kit не обязательно.",
+  },
+  {
+    status: "Пробовать",
+    title: "di-sukharev/vibe template",
+    url: "https://github.com/di-sukharev/vibe",
+    use: "Шаблон старта web/mobile продукта: backend, auth, frontend, mobile, Postgres и deploy-доки.",
+    codexFit: "Полезно только для нового продукта. В текущую SuperSystem не тащить целиком, можно брать архитектурные идеи.",
+  },
+  {
+    status: "Пробовать",
+    title: "vibe mobile / iap branches",
+    url: "https://github.com/di-sukharev/vibe/tree/mobile",
+    use: "Ориентир, если понадобится мобильное приложение, push, Apple/Google login или платежи App Store / Google Play.",
+    codexFit: "Codex может разобрать ветку и перенести паттерны, но только под конкретную задачу mobile/IAP.",
+  },
+  {
+    status: "Не тащить",
+    title: "OpenCommit",
+    url: "https://github.com/di-sukharev/opencommit",
+    use: "AI-генерация commit messages.",
+    codexFit: "В Codex не нужен как зависимость: Codex уже пишет коммиты. Можно взять только идею качественного commit summary.",
+  },
+  {
+    status: "Проверять",
+    title: "GitHub Copilot / AI privacy settings",
+    url: "https://github.com/settings/copilot/features",
+    use: "Проверка приватности AI-фич для private repositories.",
+    codexFit: "Полезно как security checklist перед работой с приватным кодом и репозиториями.",
+  },
+];
+
 const CODEX_PLAYBOOK = [
   {
     id: "brief",
@@ -305,6 +350,24 @@ function CodexSystemBoard() {
                   <strong>{item.title}</strong>
                   <p>{item.text}</p>
                 </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="analytics-codex-system-resources">
+            <div>
+              <span className="analytics-codex-system-kicker">Фильтр полезности</span>
+              <h4>Что реально применять в Codex</h4>
+              <p>Сохраняем только то, что можно превратить в промпт, скилл, проверку, шаблон задачи или архитектурный ориентир.</p>
+            </div>
+            <div className="analytics-codex-system-resource-list">
+              {CODEX_RESOURCE_FILTER.map((item) => (
+                <a className="analytics-codex-system-resource-card" href={item.url} target="_blank" rel="noreferrer" key={item.title}>
+                  <span>{item.status}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.use}</p>
+                  <small>{item.codexFit}</small>
+                </a>
               ))}
             </div>
           </section>
