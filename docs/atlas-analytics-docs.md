@@ -158,6 +158,20 @@ Endpoints:
 
 Outreach-агент вкладки `Парсер` хранит очередь переговоров через content API по ключу `atlas.analytics.hyipOutreach.queue.v1`. Отправка email не работает без `RESEND_API_KEY`, `OUTREACH_FROM_EMAIL` и `OUTREACH_REPLY_TO_EMAIL`; в этом случае UI создаёт черновики и Telegram-тексты, но показывает понятную ошибку при попытке отправить email.
 
+На VPS эти переменные читаются сервисом `atlas-content-api.service` из файла `/etc/atlas-outreach.env`:
+
+```bash
+RESEND_API_KEY=re_...
+OUTREACH_FROM_EMAIL=Atlas System <partners@atlas-system.io>
+OUTREACH_REPLY_TO_EMAIL=partners@atlas-system.io
+```
+
+После изменения файла нужно перезапустить backend:
+
+```bash
+sudo systemctl restart atlas-content-api.service
+```
+
 ## Backup контента
 
 Для архивации content store есть скрипт:

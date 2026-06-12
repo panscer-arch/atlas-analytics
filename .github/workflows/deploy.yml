@@ -104,6 +104,7 @@ jobs:
 
           [Service]
           Type=simple
+          EnvironmentFile=-/etc/atlas-outreach.env
           Environment=ATLAS_CONTENT_API_PORT=8787
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
           ExecStart=/usr/bin/node /opt/atlas-content-api/content-api.mjs
