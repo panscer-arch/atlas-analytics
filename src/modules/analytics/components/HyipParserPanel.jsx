@@ -712,10 +712,25 @@ function getScoreTone(score) {
 }
 
 function getStatusTone(status) {
-  if (status === "Готов к контакту") return "success";
-  if (status === "В работе") return "accent";
-  if (status === "Не подходит") return "danger";
+  if (status === "Готов к контакту" || status === "Ответили" || status === "Цена получена" || status === "Договорились") return "success";
+  if (status === "В работе" || status === "Черновик" || status === "Отправлено") return "accent";
+  if (status === "Не подходит" || status === "Отказ") return "danger";
   return "default";
+}
+
+function getHostLabel(url = "") {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return String(url || "").replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] || "сайт";
+  }
+}
+
+function getChannelLabel(record = {}) {
+  if (record.email) return `Email: ${record.email}`;
+  if (record.telegram) return `Telegram: ${record.telegram}`;
+  if (record.channel === "form") return "Форма на сайте";
+  return "Контакт проверить";
 }
 
 function makeCsv(leads) {
@@ -739,7 +754,8 @@ export default function HyipParserPanel() {
   const [outreach, setOutreach] = useState(readStoredOutreach);
   const [isOutreachLoaded, setIsOutreachLoaded] = useState(false);
   const [outreachSaveState, setOutreachSaveState] = useState("Локально");
-  const [selectedLeadId, setSelectedLeadId] = useState(() => readStoredLeads()[0]?.id || "");
+  const [selectedLeadId, setSelectedLeadId] = useState("");
+  const [isTableEditing, setIsTableEditing] = useState(false);
   const [pipelineStatus, setPipelineStatus] = useState("Все этапы");
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
@@ -804,7 +820,7 @@ export default function HyipParserPanel() {
     contacts: leads.filter((lead) => lead.contacts && lead.contacts !== "form only").length,
   }), [leads]);
 
-  const selectedLead = leads.find((lead) => lead.id === selectedLeadId) || filteredLeads[0] || leads[0];
+  const selectedLead = selectedLeadId ? leads.find((lead) => lead.id === selectedLeadId) : null;
   const selectedOutreach = selectedLead ? getOutreachRecord(selectedLead, outreach) : null;
 
   function persist(nextLeads) {
@@ -925,128 +941,19 @@ export default function HyipParserPanel() {
 
   return (
     <WrapperShell>
-      <section className="analytics-parser-hero analytics-surface">
-        <div>
-          <p className="analytics-kicker">Parser / outreach</p>
-          <h1>Площадки и переговоры</h1>
-          <p>
-            База рекламных площадок, черновик письма, email-отправка и быстрый текст для Telegram. Задача простая:
-            выбрать контакт, запросить цену и довести до договорённости.
-          </p>
-        </div>
-        <div className="analytics-parser-run-card">
-          <span>Очередь outreach</span>
-          <strong>{summary.total}</strong>
-          <p>{outreachSaveState}</p>
-        </div>
-      </section>
-
-      <section className="analytics-parser-stats">
-        <Metric label="Найдено площадок" value={summary.total} tone="success" />
-        <Metric label="Готовы к контакту" value={summary.ready} tone="accent" />
-        <Metric label="Средний fit score" value={`${summary.avgFit}%`} tone={getScoreTone(summary.avgFit)} />
-        <Metric label="Есть контакты" value={summary.contacts} tone="success" />
-      </section>
-
-      {selectedLead && selectedOutreach && (
-        <section className="analytics-outreach-cockpit analytics-surface">
-          <div className="analytics-outreach-lead">
-            <p className="analytics-kicker">Площадка</p>
-            <h2>{selectedLead.name}</h2>
-            <a href={selectedLead.url} target="_blank" rel="noreferrer">{selectedLead.url}</a>
-            <div className="analytics-outreach-meta">
-              <span>{selectedLead.country}</span>
-              <span>{selectedLead.category}</span>
-              <span>Fit {selectedLead.fitScore}%</span>
-            </div>
-            <textarea
-              value={selectedLead.contacts}
-              onChange={(event) => updateLead(selectedLead.id, { contacts: event.target.value })}
-              rows="4"
-            />
-          </div>
-
-          <div className="analytics-outreach-agent">
-            <div className="analytics-outreach-agent-head">
-              <div>
-                <p className="analytics-kicker">Superflow Systems</p>
-                <h2>Написать и договориться</h2>
-              </div>
-              <select value={selectedOutreach.status} onChange={(event) => appendOutreachHistory(selectedLead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })}>
-                {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </div>
-
-            <div className="analytics-outreach-fields">
-              <label>
-                Email
-                <input value={selectedOutreach.email} onChange={(event) => updateOutreach(selectedLead.id, { email: event.target.value })} placeholder="ads@example.com" />
-              </label>
-              <label>
-                Telegram
-                <input value={selectedOutreach.telegram} onChange={(event) => updateOutreach(selectedLead.id, { telegram: event.target.value })} placeholder="@manager" />
-              </label>
-              <label>
-                Цена
-                <input value={selectedOutreach.price} onChange={(event) => updateOutreach(selectedLead.id, { price: event.target.value, status: event.target.value ? "Цена получена" : selectedOutreach.status })} placeholder="$ / week, $ / month" />
-              </label>
-              <label>
-                Follow-up
-                <input type="date" value={selectedOutreach.followUpAt} onChange={(event) => updateOutreach(selectedLead.id, { followUpAt: event.target.value })} />
-              </label>
-            </div>
-
-            <label className="analytics-outreach-subject">
-              Тема email
-              <input value={selectedOutreach.subject} onChange={(event) => updateOutreach(selectedLead.id, { subject: event.target.value })} placeholder="Advertising placement request..." />
-            </label>
-
-            <label className="analytics-outreach-draft">
-              Черновик агента
-              <textarea value={selectedOutreach.draft} onChange={(event) => updateOutreach(selectedLead.id, { draft: event.target.value, status: selectedOutreach.status === "Найден" ? "Черновик" : selectedOutreach.status })} rows="12" />
-            </label>
-
-            <div className="analytics-outreach-actions">
-              <button type="button" onClick={() => createDraft(selectedLead)}>Создать черновик</button>
-              <button type="button" onClick={() => sendEmail(selectedLead, selectedOutreach)}>
-                {selectedOutreach.sendState === "sending" ? "Отправляю..." : "Отправить email"}
-              </button>
-              <button type="button" onClick={() => copyTelegramDraft(selectedLead, selectedOutreach)}>Скопировать Telegram</button>
-              <a className={!selectedOutreach.telegram ? "is-disabled" : ""} href={makeTelegramUrl(selectedOutreach.telegram, selectedOutreach.draft)} target="_blank" rel="noreferrer">Открыть Telegram</a>
-            </div>
-
-            <div className="analytics-outreach-notes">
-              <label>
-                Условия размещения
-                <textarea value={selectedOutreach.conditions} onChange={(event) => updateOutreach(selectedLead.id, { conditions: event.target.value })} rows="3" />
-              </label>
-              <label>
-                Ответ / заметки
-                <textarea value={selectedOutreach.responseNotes} onChange={(event) => updateOutreach(selectedLead.id, { responseNotes: event.target.value, status: event.target.value ? "Ответили" : selectedOutreach.status })} rows="3" />
-              </label>
-              <label>
-                Следующий шаг
-                <input value={selectedOutreach.nextStep} onChange={(event) => updateOutreach(selectedLead.id, { nextStep: event.target.value })} />
-              </label>
-            </div>
-
-            <div className="analytics-outreach-history">
-              <strong>История</strong>
-              {(selectedOutreach.history.length ? selectedOutreach.history : [{ id: "empty", text: "Пока действий нет", createdAt: "" }]).slice(0, 5).map((item) => (
-                <p key={item.id}>{item.createdAt ? new Date(item.createdAt).toLocaleString("ru-RU") : ""} {item.text}</p>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       <section className="analytics-parser-table-wrap analytics-surface">
         <div className="analytics-parser-table-head">
           <div>
-            <h2>Найденные площадки</h2>
-            <p>{filteredLeads.length} строк в текущем фильтре</p>
+            <p className="analytics-kicker">Parser / outreach</p>
+            <h2>Площадки для размещения Atlas System</h2>
+            <p>
+              {filteredLeads.length} строк в фильтре · {summary.ready} готовы к контакту · {outreachSaveState}
+            </p>
           </div>
           <div>
+            <button type="button" onClick={() => setIsTableEditing((value) => !value)}>
+              {isTableEditing ? "Готово" : "Редактировать таблицу"}
+            </button>
             <button type="button" onClick={addManualLead}>Добавить вручную</button>
             <button type="button" onClick={() => downloadLeadsCsv(filteredLeads)}>Экспорт CSV</button>
           </div>
@@ -1075,64 +982,149 @@ export default function HyipParserPanel() {
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="название, страна, контакт..." />
           </label>
         </div>
-        <div className="analytics-parser-table-scroll">
-          <table className="analytics-table analytics-parser-table">
-            <thead>
-              <tr>
-                <th>Площадка</th>
-                <th>Страна</th>
-                <th>Контакты</th>
-                <th>Скоринг</th>
-                <th>Outreach</th>
-                <th>Лид</th>
-                <th>Заметки</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeads.map((lead) => {
-                const record = getOutreachRecord(lead, outreach);
-                return (
-                <tr key={lead.id} className={selectedLead?.id === lead.id ? "analytics-parser-row-active" : ""}>
-                  <td>
-                    <input value={lead.name} onChange={(event) => updateLead(lead.id, { name: event.target.value })} />
-                    <input value={lead.url} onChange={(event) => updateLead(lead.id, { url: event.target.value })} />
-                    <small>{lead.category} · {lead.lastSeen}</small>
-                  </td>
-                  <td>
-                    <select value={lead.country} onChange={(event) => updateLead(lead.id, { country: event.target.value })}>
-                      {COUNTRY_OPTIONS.filter((item) => item !== "Все страны").map((item) => <option key={item}>{item}</option>)}
-                    </select>
-                  </td>
-                  <td>
-                    <textarea value={lead.contacts} onChange={(event) => updateLead(lead.id, { contacts: event.target.value })} rows="3" />
-                  </td>
-                  <td>
-                    <Score label="Traffic" value={lead.trafficScore} />
-                    <Score label="Alive" value={lead.aliveScore} />
-                    <Score label="Fit" value={lead.fitScore} />
-                  </td>
-                  <td>
-                    <select className={`analytics-parser-status analytics-parser-status-${getStatusTone(record.status)}`} value={record.status} onChange={(event) => appendOutreachHistory(lead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })}>
-                      {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
-                    </select>
-                    <button type="button" className="analytics-parser-mini-button" onClick={() => { setSelectedLeadId(lead.id); createDraft(lead); }}>Черновик</button>
-                    <button type="button" className="analytics-parser-mini-button" onClick={() => setSelectedLeadId(lead.id)}>Открыть</button>
-                  </td>
-                  <td>
-                    <select className={`analytics-parser-status analytics-parser-status-${getStatusTone(lead.status)}`} value={lead.status} onChange={(event) => updateLead(lead.id, { status: event.target.value })}>
-                      {STATUS_OPTIONS.filter((item) => item !== "Все статусы").map((item) => <option key={item}>{item}</option>)}
-                    </select>
-                  </td>
-                  <td>
-                    <textarea value={lead.notes} onChange={(event) => updateLead(lead.id, { notes: event.target.value })} rows="4" />
-                  </td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="analytics-parser-lead-table" role="table" aria-label="Список площадок для outreach">
+          <div className="analytics-parser-lead-row analytics-parser-lead-row-head" role="row">
+            <span>Площадка</span>
+            <span>Сайт</span>
+            <span>Контакт</span>
+            <span>Статус</span>
+            <span>Описание портала</span>
+            <span>Ответ / заметка</span>
+          </div>
+          {filteredLeads.map((lead) => {
+            const record = getOutreachRecord(lead, outreach);
+            return (
+              <div key={lead.id} className={`analytics-parser-lead-row${selectedLead?.id === lead.id ? " analytics-parser-row-active" : ""}`} role="row">
+                <div>
+                  {isTableEditing ? (
+                    <>
+                      <input
+                        className="analytics-parser-lead-title"
+                        value={lead.name}
+                        onChange={(event) => updateLead(lead.id, { name: event.target.value })}
+                        aria-label={`Название ${lead.name}`}
+                      />
+                      <select value={lead.country} onChange={(event) => updateLead(lead.id, { country: event.target.value })} aria-label={`Страна ${lead.name}`}>
+                        {COUNTRY_OPTIONS.filter((item) => item !== "Все страны").map((item) => <option key={item}>{item}</option>)}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <strong className="analytics-parser-lead-name">{lead.name}</strong>
+                      <span className="analytics-parser-lead-country">{lead.country}</span>
+                    </>
+                  )}
+                  <small>{lead.category}</small>
+                </div>
+                <div>
+                  <a className="analytics-parser-site-link" href={lead.url} target="_blank" rel="noreferrer">Сайт</a>
+                  {isTableEditing ? (
+                    <input value={lead.url} onChange={(event) => updateLead(lead.id, { url: event.target.value })} aria-label={`Сайт ${lead.name}`} />
+                  ) : null}
+                  <small>{getHostLabel(lead.url)}</small>
+                </div>
+                <div>
+                  <strong>{getChannelLabel(record)}</strong>
+                  {isTableEditing ? (
+                    <textarea value={lead.contacts} onChange={(event) => updateLead(lead.id, { contacts: event.target.value })} rows="3" aria-label={`Контакты ${lead.name}`} />
+                  ) : (
+                    <p className="analytics-parser-static-text">{lead.contacts || "Контакты нужно проверить"}</p>
+                  )}
+                </div>
+                <div className="analytics-parser-status-cell">
+                  <select className={`analytics-parser-status analytics-parser-status-${getStatusTone(record.status)}`} value={record.status} onChange={(event) => appendOutreachHistory(lead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })} aria-label={`Статус переговоров ${lead.name}`}>
+                    {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                  {record.lastContactAt ? <small>{new Date(record.lastContactAt).toLocaleDateString("ru-RU")}</small> : <small>{record.nextStep}</small>}
+                  <button type="button" className="analytics-parser-mini-button" onClick={() => { setSelectedLeadId(lead.id); createDraft(lead); }}>Черновик</button>
+                  <button type="button" className="analytics-parser-mini-button" onClick={() => setSelectedLeadId(lead.id)}>Открыть карточку</button>
+                </div>
+                <div>
+                  {isTableEditing ? (
+                    <textarea value={lead.notes} onChange={(event) => updateLead(lead.id, { notes: event.target.value })} rows="4" aria-label={`Описание ${lead.name}`} />
+                  ) : (
+                    <p className="analytics-parser-static-text">{lead.notes}</p>
+                  )}
+                  <small>Fit {lead.fitScore}% · живость {lead.aliveScore}%</small>
+                </div>
+                <div>
+                  <textarea
+                    value={record.responseNotes}
+                    onChange={(event) => updateOutreach(lead.id, { responseNotes: event.target.value, status: event.target.value ? "Ответили" : record.status })}
+                    rows="4"
+                    placeholder="Написали в Telegram, ждём цены / ответили $..."
+                    aria-label={`Ответ или заметка ${lead.name}`}
+                  />
+                  {isTableEditing ? (
+                    <input value={record.price} onChange={(event) => updateOutreach(lead.id, { price: event.target.value, status: event.target.value ? "Цена получена" : record.status })} placeholder="Цена / бюджет" aria-label={`Цена ${lead.name}`} />
+                  ) : record.price ? (
+                    <small>Цена: {record.price}</small>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
+
+      {selectedLead && selectedOutreach && (
+        <section className="analytics-outreach-cockpit analytics-surface">
+          <div className="analytics-outreach-agent">
+            <div className="analytics-outreach-agent-head">
+              <div>
+                <p className="analytics-kicker">Карточка контакта</p>
+                <h2>{selectedLead.name} · {selectedLead.country}</h2>
+              </div>
+              <button type="button" className="analytics-parser-mini-button" onClick={() => setSelectedLeadId("")}>Скрыть</button>
+            </div>
+
+            <div className="analytics-outreach-fields">
+              <label>
+                Email
+                <input value={selectedOutreach.email} onChange={(event) => updateOutreach(selectedLead.id, { email: event.target.value })} placeholder="ads@example.com" />
+              </label>
+              <label>
+                Telegram
+                <input value={selectedOutreach.telegram} onChange={(event) => updateOutreach(selectedLead.id, { telegram: event.target.value })} placeholder="@manager" />
+              </label>
+              <label>
+                Follow-up
+                <input type="date" value={selectedOutreach.followUpAt} onChange={(event) => updateOutreach(selectedLead.id, { followUpAt: event.target.value })} />
+              </label>
+              <label>
+                Следующий шаг
+                <input value={selectedOutreach.nextStep} onChange={(event) => updateOutreach(selectedLead.id, { nextStep: event.target.value })} />
+              </label>
+            </div>
+
+            <label className="analytics-outreach-subject">
+              Тема email
+              <input value={selectedOutreach.subject} onChange={(event) => updateOutreach(selectedLead.id, { subject: event.target.value })} placeholder="Advertising placement request..." />
+            </label>
+
+            <label className="analytics-outreach-draft">
+              Черновик для отправки
+              <textarea value={selectedOutreach.draft} onChange={(event) => updateOutreach(selectedLead.id, { draft: event.target.value, status: selectedOutreach.status === "Найден" ? "Черновик" : selectedOutreach.status })} rows="10" />
+            </label>
+
+            <div className="analytics-outreach-actions">
+              <button type="button" onClick={() => createDraft(selectedLead)}>Создать черновик</button>
+              <button type="button" onClick={() => sendEmail(selectedLead, selectedOutreach)}>
+                {selectedOutreach.sendState === "sending" ? "Отправляю..." : "Отправить email"}
+              </button>
+              <button type="button" onClick={() => copyTelegramDraft(selectedLead, selectedOutreach)}>Скопировать Telegram</button>
+              <a className={!selectedOutreach.telegram ? "is-disabled" : ""} href={makeTelegramUrl(selectedOutreach.telegram, selectedOutreach.draft)} target="_blank" rel="noreferrer">Открыть Telegram</a>
+            </div>
+
+            <div className="analytics-outreach-history">
+              <strong>История</strong>
+              {(selectedOutreach.history.length ? selectedOutreach.history : [{ id: "empty", text: "Пока действий нет", createdAt: "" }]).slice(0, 5).map((item) => (
+                <p key={item.id}>{item.createdAt ? new Date(item.createdAt).toLocaleString("ru-RU") : ""} {item.text}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </WrapperShell>
   );
 }
