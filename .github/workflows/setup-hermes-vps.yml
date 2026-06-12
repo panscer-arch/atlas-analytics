@@ -96,7 +96,7 @@ jobs:
           Group=$HERMES_USER
           Environment=HOME=$HERMES_HOME
           WorkingDirectory=$HERMES_HOME
-          ExecStart=$HERMES_BIN dashboard --skip-build --no-open --host 127.0.0.1 --port 9119
+          ExecStart=$HERMES_BIN dashboard --no-open --host 127.0.0.1 --port 9119
           Restart=always
           RestartSec=5
 
@@ -173,6 +173,11 @@ jobs:
           sudo nginx -t
           sudo systemctl reload nginx
           sleep 3
+          if ! systemctl is-active --quiet hermes-dashboard.service; then
+            sudo journalctl -u hermes-dashboard.service -n 120 --no-pager
+            systemctl --no-pager --full status hermes-dashboard.service
+            exit 1
+          fi
           systemctl --no-pager --full status hermes-dashboard.service
           curl -fsS http://127.0.0.1:9119/ >/dev/null
           REMOTE
