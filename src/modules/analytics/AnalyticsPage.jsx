@@ -839,6 +839,7 @@ function AnalyticsPage() {
     { id: "content", label: "Контент" },
     { id: "socialSubscriptions", label: "Подписки" },
     { id: "developments", label: "Разработки" },
+    { id: "codexSystem", label: "Codex-система" },
     { id: "crmBoard", label: "CRM-доска" },
     { id: "quickNotes", label: "Заметки" },
     { id: "diary", label: "Дневник" },
