@@ -1,6 +1,6 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
-function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, onHermesOpen, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
+function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, hermesUrl, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
@@ -64,8 +64,8 @@ function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, onHermesOpen,
             </span>
           </button>
         ) : null}
-        {onHermesOpen ? (
-          <button type="button" className="analytics-header-hermes-button" onClick={onHermesOpen} aria-label="Открыть Гермес" title="Гермес">
+        {hermesUrl ? (
+          <a className="analytics-header-hermes-button" href={hermesUrl} target="_blank" rel="noreferrer" aria-label="Открыть Гермес" title="Гермес">
             <span className="analytics-header-hermes-mark" aria-hidden="true">
               <span className="analytics-header-hermes-core" />
               <span className="analytics-header-hermes-orbit analytics-header-hermes-orbit-1" />
@@ -73,7 +73,7 @@ function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, onHermesOpen,
               <span className="analytics-header-hermes-spark analytics-header-hermes-spark-1" />
               <span className="analytics-header-hermes-spark analytics-header-hermes-spark-2" />
             </span>
-          </button>
+          </a>
         ) : null}
         <AnalyticsDateTime />
       </div>

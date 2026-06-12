@@ -38,19 +38,31 @@ jobs:
       - name: Deploy on VPS
         shell: bash
         run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'bash -lc '"'"'
-              timeout 240s /opt/atlas-analytics/deploy.sh
-              status=$?
-              if [ "$status" -eq 124 ]; then
-                echo "deploy.sh timed out after 240s; continuing to deploy content API and nginx routes"
-                exit 0
-              fi
+          for attempt in 1 2 3 4 5 6; do
+            if ssh -i ~/.ssh/deploy_key \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=25 \
+              "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+              'bash -lc '"'"'
+                timeout 240s /opt/atlas-analytics/deploy.sh
+                status=$?
+                if [ "$status" -eq 124 ]; then
+                  echo "deploy.sh timed out after 240s; continuing to deploy content API and nginx routes"
+                  exit 0
+                fi
+                exit "$status"
+              '"'"''; then
+              exit 0
+            fi
+
+            status=$?
+            echo "Deploy SSH attempt $attempt failed with status $status"
+            if [ "$attempt" -eq 6 ]; then
               exit "$status"
-            '"'"''
+            fi
+            sleep 20
+          done
 
       - name: Deploy content API
         shell: bash

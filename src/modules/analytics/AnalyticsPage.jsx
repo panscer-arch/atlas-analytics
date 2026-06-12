@@ -25,7 +25,7 @@ import { VIDEO_SCRIPTS_STORAGE_KEY, defaultVideoScripts } from "./data/videoScri
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import Wrapper from "./components/Wrapper";
-import QuickNotesModal from "./components/QuickNotesModal";
+import QuickNotesModal, { QUICK_NOTES_STORAGE_KEY, countQuickNotes } from "./components/QuickNotesModal";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
 import { loadServerContent, saveServerContent } from "./services/contentStore";
@@ -58,6 +58,18 @@ import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
+
+function readStoredQuickNotesCount() {
+  if (typeof window === "undefined") return 0;
+
+  try {
+    const saved = window.localStorage.getItem(QUICK_NOTES_STORAGE_KEY);
+    return countQuickNotes(saved ? JSON.parse(saved) : null);
+  } catch {
+    return 0;
+  }
+}
+
 function scrollToSection(sectionId) {
   if (typeof document === "undefined") return;
 
@@ -91,6 +103,7 @@ function AnalyticsPage() {
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState(getInitialAnalyticsSectionTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
+  const [, setQuickNotesCount] = useState(readStoredQuickNotesCount);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
@@ -624,11 +637,11 @@ function AnalyticsPage() {
         }}
         onParserOpen={() => setActiveTab("parser")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
-        onHermesOpen={() => window.open("http://127.0.0.1:9119", "_blank", "noopener,noreferrer")}
+        hermesUrl="/hermes/"
         onLiveAnalyticsClick={() => setActiveTab("diary")}
       />
 
-      <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} />
+      <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} />
 
       {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
 

@@ -10,6 +10,7 @@ function AnalyticsTabs({ tabs = [], activeTab, onChange }) {
             onClick={() => onChange(tab.id)}
           >
             <span className="analytics-tab-label">{tab.label}</span>
+            {tab.badge ? <span className={`analytics-tab-badge analytics-tab-badge-${tab.badgeTone || "default"}`}>{tab.badge}</span> : null}
             {tab.hint ? <span className="analytics-tab-hint">{tab.hint}</span> : null}
           </button>
         ))}

@@ -16,6 +16,7 @@ import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
+import TransportRiskFaqBoard from "./TransportRiskFaqBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
@@ -115,6 +116,7 @@ export const CONTENT_BOARD_TABS = [
   { id: "videoScripts", label: "Ролики" },
   { id: "terminology", label: "Терминология" },
   { id: "securityReview", label: "Security Review" },
+  { id: "transportRiskFaq", label: "Audit Risk FAQ" },
   { id: "codexSystem", label: "Codex OS" },
 ];
 
@@ -138,6 +140,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "legalDocs",
   "terminology",
   "securityReview",
+  "transportRiskFaq",
   "codexSystem",
 ];
 
@@ -242,6 +245,10 @@ export const STATIC_BOARD_META = {
     title: "Security Review",
     description: "Внутренняя проверка smart-contract: взломоустойчивость, owner-полномочия, Transport, LP-риски и публичные формулировки.",
   },
+  transportRiskFaq: {
+    title: "Audit Risk FAQ",
+    description: "Пояснение к аудиту: Transport, owner powers и гибридная архитектура Atlas Core V1.",
+  },
   codexSystem: {
     title: "Codex OS",
     description: "Суперсистема работы с Codex: PRD, маленькие задачи, review-loop, security gate, refactoring и автоматизации.",
@@ -275,6 +282,7 @@ const STATIC_BOARD_RENDERERS = {
   legalDocs: () => <LegalDocumentsBoard />,
   terminology: () => <AgentTerminologyTemplate />,
   securityReview: () => <SecurityReviewBoard />,
+  transportRiskFaq: () => <TransportRiskFaqBoard />,
   codexSystem: () => <CodexSystemBoard />,
   dailyTasks: () => <DailyTasksBoard />,
 };

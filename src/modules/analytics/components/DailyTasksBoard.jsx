@@ -671,7 +671,7 @@ export default function DailyTasksBoard() {
   }
 
   const selectedPerson = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
-  const allActiveTasks = tasks.filter((task) => hasActiveItemForPerson(task, ""));
+  const allActiveTasks = tasks.filter((task) => hasActiveItemForPerson(task, ALL_PEOPLE_TAB_ID));
   const activeTasks = tasks.filter((task) => hasActiveItemForPerson(task, selectedPerson));
   const activeTaskIds = new Set(activeTasks.map((task) => task.id));
   const completedTasks = tasks.filter((task) => !activeTaskIds.has(task.id) && hasCompletedItemForPerson(task, selectedPerson));
