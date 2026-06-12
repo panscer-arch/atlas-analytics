@@ -1,6 +1,5 @@
 import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
 import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
-import CodexSystemBoard from "./CodexSystemBoard";
 import CrmDashboardTab from "./CrmDashboardTab";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
@@ -62,14 +61,6 @@ export default function AnalyticsMainPanel({
     return (
       <Wrapper as="section" marginTop="lg">
         <DevelopmentsRegistry />
-      </Wrapper>
-    );
-  }
-
-  if (activeTab === "codexSystem") {
-    return (
-      <Wrapper as="section" marginTop="lg">
-        <CodexSystemBoard />
       </Wrapper>
     );
   }

@@ -351,7 +351,7 @@ function getInitialAnalyticsTab() {
   const url = new URL(window.location.href);
   if (url.searchParams.get("b") === "d") return "tasks";
   const board = url.searchParams.get("board");
-  const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "videoScripts", "terminology", "securityReview", "transportRiskFaq", "contentPlan"]);
+  const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "videoScripts", "terminology", "securityReview", "transportRiskFaq", "contentPlan", "codexSystem"]);
   const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
 
   if (board === "socialSubscriptions") return "socialSubscriptions";
@@ -839,7 +839,6 @@ function AnalyticsPage() {
     { id: "content", label: "Контент" },
     { id: "socialSubscriptions", label: "Подписки" },
     { id: "developments", label: "Разработки" },
-    { id: "codexSystem", label: "Codex-система" },
     { id: "crmBoard", label: "CRM-доска" },
     { id: "quickNotes", label: "Заметки" },
     { id: "diary", label: "Дневник" },
