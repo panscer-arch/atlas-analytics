@@ -5208,6 +5208,19 @@ input.analytics-smm-cell-input {
   align-self: center;
 }
 
+.analytics-header-motion-button {
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.analytics-header-motion-button:hover,
+.analytics-header-motion-button:focus-visible {
+  border-color: rgba(109, 240, 194, 0.32);
+  box-shadow: 0 0 0 3px rgba(109, 240, 194, 0.08);
+}
+
 .analytics-header-motion-inline .analytics-header-motion-label {
   font-size: 0.67rem;
   letter-spacing: 0.08em;

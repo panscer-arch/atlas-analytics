@@ -351,11 +351,10 @@ function getInitialAnalyticsTab() {
   const url = new URL(window.location.href);
   if (url.searchParams.get("b") === "d") return "tasks";
   const board = url.searchParams.get("board");
-  const contentBoards = new Set(["materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "videoScripts", "terminology", "securityReview", "transportRiskFaq", "contentPlan", "codexSystem"]);
-  const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase"]);
+  const contentBoards = new Set(["materials", "presentation", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "videoScripts", "terminology", "securityReview", "transportRiskFaq", "contentPlan", "codexSystem"]);
+  const taskBoards = new Set(["launch", "ideas", "marketing", "knowledgeBase", "dailyTasks", "productLibrary", "socialSubscriptions", "developments", "crmBoard", "parser"]);
 
-  if (board === "socialSubscriptions") return "socialSubscriptions";
-  if (board === "expenses") return "expenses";
+  if (board === "expenses") return "analytics";
   if (board === "diary") return "diary";
   if (contentBoards.has(board)) return "content";
   if (taskBoards.has(board)) return "tasks";
@@ -364,6 +363,10 @@ function getInitialAnalyticsTab() {
 }
 
 function getInitialAnalyticsSectionTab() {
+  if (typeof window === "undefined") return "dashboard";
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("board") === "expenses") return "expenses";
   return "dashboard";
 }
 
@@ -832,16 +835,9 @@ function AnalyticsPage() {
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
     { id: "analytics", label: "Аналитика" },
-    { id: "productLibrary", label: "Библиотека" },
     { id: "tasks", label: "Задачи" },
-    { id: "expenses", label: "Расходы" },
-    { id: "parser", label: "Парсер" },
     { id: "content", label: "Контент" },
-    { id: "socialSubscriptions", label: "Подписки" },
-    { id: "developments", label: "Разработки" },
-    { id: "crmBoard", label: "CRM-доска" },
     { id: "quickNotes", label: "Заметки" },
-    { id: "diary", label: "Дневник" },
   ];
 
   const analyticsSectionTabs = [
@@ -855,6 +851,7 @@ function AnalyticsPage() {
     { id: "geography", label: "География", hint: "страны" },
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
+    { id: "expenses", label: "Расходы", hint: "бюджет" },
   ];
 
   const crmAnalyticsCoverageValue = Math.min(Math.max(outgoingCoverage, 0), 100);
@@ -905,10 +902,13 @@ function AnalyticsPage() {
 
   return (
     <main className="analytics-layout">
-      <AnalyticsHeader onAiReview={() => {
-        setActiveTab("dashboard");
-        setIsAiReviewOpen((current) => !current);
-      }} />
+      <AnalyticsHeader
+        onAiReview={() => {
+          setActiveTab("dashboard");
+          setIsAiReviewOpen((current) => !current);
+        }}
+        onLiveAnalyticsClick={() => setActiveTab("diary")}
+      />
 
       <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} />
 

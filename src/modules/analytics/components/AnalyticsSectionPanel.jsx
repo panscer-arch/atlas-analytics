@@ -1,6 +1,7 @@
 import AnalyticsTabs from "./AnalyticsTabs";
 import BaseCompositionTabSection from "./BaseCompositionTabSection";
 import DashboardTabSection from "./DashboardTabSection";
+import ExpensesBoard from "./ExpensesBoard";
 import GeographyTabSection from "./GeographyTabSection";
 import LeadersTabSection from "./LeadersTabSection";
 import OverviewTabSection from "./OverviewTabSection";
@@ -80,6 +81,11 @@ export default function AnalyticsSectionPanel({
       {activeAnalyticsTab === "geography" ? <GeographyTabSection geographyData={data.tabsData.geography} /> : null}
       {activeAnalyticsTab === "partner" ? <PartnerTabSection partnerData={data.tabsData.partner} /> : null}
       {activeAnalyticsTab === "wallets" ? <WalletsTabSection walletsData={data.tabsData.wallets} /> : null}
+      {activeAnalyticsTab === "expenses" ? (
+        <Wrapper as="section" marginTop="lg">
+          <ExpensesBoard />
+        </Wrapper>
+      ) : null}
       {activeAnalyticsTab === "overview" ? (
         <OverviewTabSection
           primaryKpis={primaryKpis}

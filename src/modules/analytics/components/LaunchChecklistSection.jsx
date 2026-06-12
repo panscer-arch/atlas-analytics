@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
 import CodexSystemBoard from "./CodexSystemBoard";
 import ContentPlanBoard from "./ContentPlanBoard";
 import DailyTasksBoard from "./DailyTasksBoard";
@@ -13,10 +14,13 @@ import LaunchEditableCell from "./LaunchEditableCell";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
 import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
+import HyipParserPanel from "./HyipParserPanel";
 import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import TransportRiskFaqBoard from "./TransportRiskFaqBoard";
+import DevelopmentsRegistry from "./DevelopmentsRegistry";
+import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import Wrapper from "./Wrapper";
 import WhitePaperBoard from "./WhitePaperBoard";
@@ -100,7 +104,7 @@ const TASK_CATEGORY_BOARDS = [
     emptyHint: "Сюда идут задачи по разработке, smart-contract, серверу, боту, API, деплою и проверкам.",
   },
 ];
-const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "securityReview", "transportRiskFaq", "contentPlan", "codexSystem", "marketing"];
+const STATIC_BOARD_IDS = ["launch", "knowledgeBase", "ideas", "dailyTasks", "videoScripts", "materials", "presentation", "productLibrary", "socialSubscriptions", "developments", "crmBoard", "parser", "agentTasks", "agentDataset", "agentFaq", "ceoPresentation", "whitePaper", "legalDocs", "terminology", "securityReview", "transportRiskFaq", "contentPlan", "codexSystem", "marketing"];
 const STATIC_BOARD_META = {
   launch: {
     title: "Задачи запуска",
@@ -131,8 +135,24 @@ const STATIC_BOARD_META = {
     description: "Универсальная презентация Atlas System: согласованный текст и финальные изображения слайдов.",
   },
   productLibrary: {
-    title: "Продукты",
+    title: "Библиотека",
     description: "Мини-библиотека продуктов Atlas / PUP: CRM, аналитика, AI и новые направления.",
+  },
+  socialSubscriptions: {
+    title: "Подписки",
+    description: "Рабочий список аккаунтов и каналов, на которые должны быть подписаны соцсети Atlas.",
+  },
+  developments: {
+    title: "Разработки",
+    description: "Реестр продуктовых и технических направлений, идей, статусов и следующих шагов.",
+  },
+  crmBoard: {
+    title: "CRM-доска",
+    description: "Встроенная CRM-доска для командной работы, задач, лидов и операционного контроля.",
+  },
+  parser: {
+    title: "Парсер",
+    description: "Рабочий инструмент поиска, отбора и обработки лидов для маркетинга и SMM.",
   },
   agentTasks: {
     title: "Параметры",
@@ -807,7 +827,7 @@ function shouldLogTaskPatch(patch) {
   return Object.keys(patch).some((key) => ["assignee", "status", "done", "priority", "focus"].includes(key));
 }
 
-function LaunchChecklistSection({ mode = "tasks" }) {
+function LaunchChecklistSection({ mode = "tasks", analyticsBoardUrl }) {
   const [activeBoard, setActiveBoard] = useState(() => {
     const fallbackBoard = mode === "content" ? "materials" : DEFAULT_BOARD_ID;
     if (typeof window === "undefined") return fallbackBoard;
@@ -884,6 +904,10 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isMaterialsBoard = activeBoard === "materials";
   const isPresentationBoard = activeBoard === "presentation";
   const isProductLibraryBoard = activeBoard === "productLibrary";
+  const isSocialSubscriptionsBoard = activeBoard === "socialSubscriptions";
+  const isDevelopmentsBoard = activeBoard === "developments";
+  const isCrmBoard = activeBoard === "crmBoard";
+  const isParserBoard = activeBoard === "parser";
   const isAgentTasksBoard = activeBoard === "agentTasks";
   const isAgentDatasetBoard = activeBoard === "agentDataset";
   const isAgentFaqBoard = activeBoard === "agentFaq";
@@ -897,7 +921,7 @@ function LaunchChecklistSection({ mode = "tasks" }) {
   const isMarketingBoard = activeBoard === "marketing";
   const activeTaskCategoryBoard = TASK_CATEGORY_BOARDS.find((board) => board.id === activeBoard);
   const isTaskCategoryBoard = Boolean(activeTaskCategoryBoard);
-  const isStaticContentBoard = isDailyTasksBoard || isContentPlanBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard || isSecurityReviewBoard || isTransportRiskFaqBoard || isCodexSystemBoard;
+  const isStaticContentBoard = isDailyTasksBoard || isContentPlanBoard || isVideoScriptsBoard || isMaterialsBoard || isPresentationBoard || isProductLibraryBoard || isSocialSubscriptionsBoard || isDevelopmentsBoard || isCrmBoard || isParserBoard || isAgentTasksBoard || isAgentDatasetBoard || isAgentFaqBoard || isCeoPresentationBoard || isWhitePaperBoard || isLegalDocsBoard || isTerminologyBoard || isSecurityReviewBoard || isTransportRiskFaqBoard || isCodexSystemBoard;
   const activeCustomChecklist = customChecklists.find((checklist) => checklist.id === activeBoard);
   const isCustomBoard = Boolean(activeCustomChecklist);
   const visibleTasks = isStaticContentBoard ? [] : isTaskCategoryBoard ? taskCategoryTasks[activeBoard] || [] : isCustomBoard ? activeCustomChecklist.tasks : isMarketingBoard ? marketingTasks : isIdeasBoard ? ideaTasks : isKnowledgeBaseBoard ? knowledgeBaseTasks : launchTasks;
@@ -936,7 +960,15 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     : isPresentationBoard
       ? "Рабочая сборка универсальной презентации: слева список слайдов, справа согласованный текст и финальная картинка."
     : isProductLibraryBoard
-      ? "Мини-библиотека продуктов, чтобы не путаться между CRM, аналитикой, Atlas AI и новыми направлениями."
+      ? "Библиотека продуктов, чтобы не путаться между CRM, аналитикой, Atlas AI и новыми направлениями."
+    : isSocialSubscriptionsBoard
+      ? "Списки подписок для X и Instagram: Web3, DAO, крипто-медиа, лидеры мнений, маркетинг и community building."
+    : isDevelopmentsBoard
+      ? "Разработки Atlas: продуктовые идеи, технические направления, статусы, ответственные и ближайшие шаги."
+    : isCrmBoard
+      ? "CRM-доска перенесена внутрь задач, чтобы все операционные рабочие разделы были собраны в одном месте."
+    : isParserBoard
+      ? "Парсер лидов теперь лежит рядом с задачами, чтобы поиск, обработка и follow-up не жили отдельной верхней вкладкой."
     : isAgentTasksBoard
       ? "Editable-документ параметров для обучения AI-агента Atlas System."
     : isAgentDatasetBoard
@@ -978,6 +1010,14 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       ? "Здесь фиксируем только то, что уже согласовано: понятную формулировку для новичка, визуал слайда и статус готовности. Каждый следующий слайд добавляется отдельным пунктом."
     : isProductLibraryBoard
       ? "Здесь можно быстро добавить продукт, закрепить ответственного, статус, ссылку и короткое описание."
+    : isSocialSubscriptionsBoard
+      ? "Здесь ведём аккуратный список аккаунтов, чтобы пустые каналы Atlas сразу выглядели как международный Web3-проект с сильной комьюнити-составляющей."
+    : isDevelopmentsBoard
+      ? "Здесь удобно держать разработки рядом с задачами: что придумали, что проверяем, что уже можно отдавать в работу."
+    : isCrmBoard
+      ? "Здесь открывается рабочая CRM-доска, но вход в неё теперь лежит внутри раздела задач, а не в верхнем меню."
+    : isParserBoard
+      ? "Здесь можно вести поиск и первичную обработку лидов, готовить черновики сообщений и отслеживать статус контактов."
     : isAgentTasksBoard
       ? "Здесь собраны параметры проекта, Web3, циклы, партнерка, DAO, юридика, риски, FAQ и ссылки на источники для AI-агента."
     : isAgentDatasetBoard
@@ -1014,12 +1054,16 @@ function LaunchChecklistSection({ mode = "tasks" }) {
     { id: "knowledgeBase", label: "Задачи по базе знаний" },
     { id: "ideas", label: "Идеи" },
     { id: "dailyTasks", label: "Ближайшие задачи" },
+    { id: "socialSubscriptions", label: "Подписки" },
+    { id: "productLibrary", label: "Библиотека" },
+    { id: "developments", label: "Разработки" },
+    { id: "crmBoard", label: "CRM-доска" },
+    { id: "parser", label: "Парсер" },
   ];
   const contentBoardTabs = [
     { id: "contentPlan", label: "Контент-план" },
     { id: "materials", label: "Материалы" },
     { id: "presentation", label: "Презентация" },
-    { id: "productLibrary", label: "Продукты" },
     { id: "agentTasks", label: "Параметры" },
     { id: "agentDataset", label: "Датасет" },
     { id: "agentFaq", label: "FAQ" },
@@ -1373,6 +1417,10 @@ function LaunchChecklistSection({ mode = "tasks" }) {
       {isContentPlanBoard ? <Wrapper as="section" marginTop="lg"><ContentPlanBoard /></Wrapper> : null}
       {isPresentationBoard ? <Wrapper as="section" marginTop="lg"><PresentationContentTab /></Wrapper> : null}
       {isProductLibraryBoard ? <Wrapper as="section" marginTop="lg"><ProductLibraryBoard /></Wrapper> : null}
+      {isSocialSubscriptionsBoard ? <Wrapper as="section" marginTop="lg"><SocialSubscriptionsBoard /></Wrapper> : null}
+      {isDevelopmentsBoard ? <Wrapper as="section" marginTop="lg"><DevelopmentsRegistry /></Wrapper> : null}
+      {isCrmBoard ? <Wrapper as="section" marginTop="lg"><AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" /></Wrapper> : null}
+      {isParserBoard ? <Wrapper as="section" marginTop="lg"><HyipParserPanel /></Wrapper> : null}
       {isVideoScriptsBoard ? <Wrapper as="section" marginTop="lg"><VideoScriptsBoard /></Wrapper> : null}
       {isAgentTasksBoard ? <Wrapper as="section" marginTop="lg"><AgentKnowledgeTemplate /></Wrapper> : null}
       {isAgentDatasetBoard ? <Wrapper as="section" marginTop="lg"><AgentTrainingDataset /></Wrapper> : null}

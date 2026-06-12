@@ -1,6 +1,6 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
-function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) {
+function AnalyticsHeader({ onAiReview, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
@@ -13,7 +13,12 @@ function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) 
           </span>
           <h1 className="analytics-page-title analytics-page-title-animated">Аналитика</h1>
           {showMotion ? (
-            <div className="analytics-header-motion analytics-header-motion-inline" aria-hidden="true">
+            <button
+              type="button"
+              className="analytics-header-motion analytics-header-motion-inline analytics-header-motion-button"
+              onClick={onLiveAnalyticsClick}
+              aria-label="Открыть дневник"
+            >
               <div className="analytics-header-motion-label">
                 <span className="analytics-header-motion-dot" />
                 <span>Live analytics</span>
@@ -27,7 +32,7 @@ function AnalyticsHeader({ onAiReview, showAdmins = false, showMotion = true }) 
                 <span className="analytics-header-wave-bar analytics-header-wave-bar-6" />
                 <span className="analytics-header-wave-bar analytics-header-wave-bar-7" />
               </div>
-            </div>
+            </button>
           ) : null}
         </div>
       </div>
