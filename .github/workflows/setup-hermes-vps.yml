@@ -1,0 +1,178 @@
+name: Setup Hermes on VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-hermes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/deploy_key
+          ${{ secrets.VPS_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            echo "ssh-keyscan failed, retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Install Hermes dashboard service
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          HERMES_USER=hermes
+          HERMES_HOME=/opt/hermes
+          HERMES_BIN="$HERMES_HOME/.local/bin/hermes"
+          HERMES_HTPASSWD_HASH='$apr1$vMctFlXl$cedlymMRz5z0q6RBIgiXT0'
+
+          if ! id "$HERMES_USER" >/dev/null 2>&1; then
+            sudo useradd --system --create-home --home-dir "$HERMES_HOME" --shell /bin/bash "$HERMES_USER"
+          fi
+
+          sudo mkdir -p "$HERMES_HOME"
+          sudo chown -R "$HERMES_USER:$HERMES_USER" "$HERMES_HOME"
+
+          if [ ! -x "$HERMES_BIN" ]; then
+            sudo -u "$HERMES_USER" env HOME="$HERMES_HOME" bash -lc \
+              'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup'
+          else
+            sudo -u "$HERMES_USER" env HOME="$HERMES_HOME" "$HERMES_BIN" update || true
+          fi
+
+          sudo mkdir -p "$HERMES_HOME/.hermes"
+          sudo tee "$HERMES_HOME/.hermes/SOUL.md" >/dev/null <<'SOUL'
+          # Hermes Agent Persona
+
+          Ты второй мозг Digitex для SuperSUS и Codex.
+
+          Говори на русском, просто и по делу. Твоя роль: помнить задачи, решения, историю изменений, превращать хаос в понятные поручения для Codex и помогать вести SuperSUS как личную операционную систему.
+
+          Не включай внешние интеграции, gateway, Telegram, cron и секреты без отдельного подтверждения.
+          SOUL
+
+          sudo mkdir -p "$HERMES_HOME/.hermes/memories"
+          sudo tee "$HERMES_HOME/.hermes/memories/USER.md" >/dev/null <<'USERMEM'
+          # User Profile
+
+          - Пользователь предпочитает русский язык.
+          - Пользователь строит SuperSUS как личную систему: дневник, контент, задачи, Codex OS, продукты и автоматизации.
+          - Hermes нужен как второй мозг на VPS: память задач, решений, сделанных изменений и следующих шагов.
+          USERMEM
+
+          sudo tee "$HERMES_HOME/.hermes/memories/MEMORY.md" >/dev/null <<'MEMORY'
+          # Hermes Memory
+
+          - Hermes установлен на VPS в `/opt/hermes`.
+          - Dashboard проксируется через `https://supersussystem.com/hermes/`.
+          - Сам сервис слушает только `127.0.0.1:9119`; публичный доступ закрыт Basic Auth.
+          - SuperSUS живёт на `https://supersussystem.com/`.
+          MEMORY
+
+          sudo chown -R "$HERMES_USER:$HERMES_USER" "$HERMES_HOME/.hermes"
+
+          sudo tee /etc/systemd/system/hermes-dashboard.service >/dev/null <<SERVICE
+          [Unit]
+          Description=Hermes Agent Dashboard
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=$HERMES_USER
+          Group=$HERMES_USER
+          Environment=HOME=$HERMES_HOME
+          WorkingDirectory=$HERMES_HOME
+          ExecStart=$HERMES_BIN dashboard --skip-build --no-open --host 127.0.0.1 --port 9119
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+          sudo install -m 640 -o root -g www-data /dev/null /etc/nginx/.htpasswd-hermes
+          printf 'digitex:%s\n' "$HERMES_HTPASSWD_HASH" | sudo tee /etc/nginx/.htpasswd-hermes >/dev/null
+          sudo chown root:www-data /etc/nginx/.htpasswd-hermes
+          sudo chmod 640 /etc/nginx/.htpasswd-hermes
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now hermes-dashboard.service
+          sudo systemctl restart hermes-dashboard.service
+
+          NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
+          if [ -z "$NGINX_FILES" ]; then
+            NGINX_FILES="$(sudo find /etc/nginx/sites-enabled /etc/nginx/conf.d -type f 2>/dev/null | head -n 1 || true)"
+          fi
+
+          for NGINX_FILE in $NGINX_FILES; do
+            sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding="utf-8")
+
+          snippet = r'''
+
+              location = /hermes {
+                  return 301 /hermes/;
+              }
+
+              location /hermes/ {
+                  auth_basic "Hermes";
+                  auth_basic_user_file /etc/nginx/.htpasswd-hermes;
+                  proxy_pass http://127.0.0.1:9119/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host 127.0.0.1;
+                  proxy_set_header X-Forwarded-Prefix /hermes;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                  proxy_set_header X-Forwarded-Host $host;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_read_timeout 3600;
+                  proxy_send_timeout 3600;
+                  client_max_body_size 20m;
+              }
+          '''
+
+          if "location /hermes/" not in text:
+              marker = "location /api/content/"
+              index = text.find(marker)
+              if index != -1:
+                  line_start = text.rfind("\n", 0, index) + 1
+                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+              else:
+                  marker = "location /"
+                  index = text.find(marker)
+                  if index != -1:
+                      line_start = text.rfind("\n", 0, index) + 1
+                      text = text[:line_start] + snippet + "\n" + text[line_start:]
+                  else:
+                      index = text.rfind("}")
+                      text = text[:index] + snippet + "\n" + text[index:]
+              path.write_text(text, encoding="utf-8")
+          PY
+          done
+
+          sudo nginx -t
+          sudo systemctl reload nginx
+          sleep 3
+          systemctl --no-pager --full status hermes-dashboard.service
+          curl -fsS http://127.0.0.1:9119/ >/dev/null
+          REMOTE
