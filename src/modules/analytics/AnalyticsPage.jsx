@@ -938,6 +938,7 @@ function AnalyticsPage() {
           setIsAiReviewOpen((current) => !current);
         }}
         onLiveAnalyticsClick={() => setActiveTab("diary")}
+        onHermesOpen={() => window.open("http://127.0.0.1:9119", "_blank", "noopener,noreferrer")}
       />
 
       <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} />
