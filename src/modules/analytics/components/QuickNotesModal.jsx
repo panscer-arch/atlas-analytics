@@ -2,11 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const QUICK_NOTES_STORAGE_KEY = "atlas.analytics.quickNotes.v1";
+export const QUICK_NOTES_STORAGE_KEY = "atlas.analytics.quickNotes.v1";
 const defaultQuickNotes = {
   text: "",
   checklist: [],
 };
+
+export function countQuickNotes(value = defaultQuickNotes) {
+  const textCount = String(value?.text || "").trim() ? 1 : 0;
+  const checklistCount = Array.isArray(value?.checklist)
+    ? value.checklist.filter((item) => String(item?.title || "").trim() && !item.done).length
+    : 0;
+
+  return textCount + checklistCount;
+}
 
 function createChecklistItem(title = "") {
   return {
@@ -27,7 +36,7 @@ function readStoredQuickNotes() {
   }
 }
 
-function QuickNotesModal({ isOpen, onClose }) {
+function QuickNotesModal({ isOpen, onClose, onCountChange }) {
   const [notes, setNotes] = useState(readStoredQuickNotes);
   const [draftItem, setDraftItem] = useState("");
   const [saveState, setSaveState] = useState("Сохранено");
@@ -46,6 +55,11 @@ function QuickNotesModal({ isOpen, onClose }) {
         ...savedNotes,
         checklist: Array.isArray(savedNotes.checklist) ? savedNotes.checklist : [],
       });
+      onCountChange?.(countQuickNotes({
+        ...defaultQuickNotes,
+        ...savedNotes,
+        checklist: Array.isArray(savedNotes.checklist) ? savedNotes.checklist : [],
+      }));
       setSaveState("Сохранено");
       try {
         window.localStorage.setItem(QUICK_NOTES_STORAGE_KEY, JSON.stringify({
@@ -91,6 +105,7 @@ function QuickNotesModal({ isOpen, onClose }) {
       }
 
       scheduleQuickNotesSave(next);
+      onCountChange?.(countQuickNotes(next));
       return next;
     });
   }

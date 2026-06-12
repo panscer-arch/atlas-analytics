@@ -24,7 +24,7 @@ import { VIDEO_SCRIPTS_STORAGE_KEY, defaultVideoScripts } from "./components/Vid
 import EmptyState from "./components/EmptyState";
 import LoadingState from "./components/LoadingState";
 import Wrapper from "./components/Wrapper";
-import QuickNotesModal from "./components/QuickNotesModal";
+import QuickNotesModal, { QUICK_NOTES_STORAGE_KEY, countQuickNotes } from "./components/QuickNotesModal";
 import useAnalyticsData from "./hooks/useAnalyticsData";
 import { exportAnalyticsCsv } from "./services/analyticsApi";
 import { loadServerContent, saveServerContent } from "./services/contentStore";
@@ -35,6 +35,17 @@ import { useEffect, useRef, useState } from "react";
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
 const CRM_MY_TASKS_STORAGE_KEY = "atlas.analytics.crmMyTasks.v1";
+
+function readStoredQuickNotesCount() {
+  if (typeof window === "undefined") return 0;
+
+  try {
+    const saved = window.localStorage.getItem(QUICK_NOTES_STORAGE_KEY);
+    return countQuickNotes(saved ? JSON.parse(saved) : null);
+  } catch {
+    return 0;
+  }
+}
 
 function normalizeCrmMyTasks(tasks) {
   return Array.isArray(tasks) ? tasks.map((task) => ({
@@ -375,6 +386,7 @@ function AnalyticsPage() {
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState(getInitialAnalyticsSectionTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState(false);
+  const [quickNotesCount, setQuickNotesCount] = useState(readStoredQuickNotesCount);
   const [activationPeriod, setActivationPeriod] = useState("30d");
   const [activationPage, setActivationPage] = useState(1);
   const [graphsOpenSignal, setGraphsOpenSignal] = useState(0);
@@ -401,6 +413,24 @@ function AnalyticsPage() {
   }));
   const [crmContentStats, setCrmContentStats] = useState(() => buildCrmContentStats());
   const { data, isLoading } = useAnalyticsData();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContent(QUICK_NOTES_STORAGE_KEY).then((savedNotes) => {
+      if (!isMounted || !savedNotes) return;
+      setQuickNotesCount(countQuickNotes(savedNotes));
+      try {
+        window.localStorage.setItem(QUICK_NOTES_STORAGE_KEY, JSON.stringify(savedNotes));
+      } catch {
+        // Счётчик уже обновлён из серверной версии.
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -837,7 +867,7 @@ function AnalyticsPage() {
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
-    { id: "quickNotes", label: "Заметки" },
+    { id: "quickNotes", label: "Заметки", badge: quickNotesCount, badgeTone: "danger" },
   ];
 
   const analyticsSectionTabs = [
@@ -910,7 +940,7 @@ function AnalyticsPage() {
         onLiveAnalyticsClick={() => setActiveTab("diary")}
       />
 
-      <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} />
+      <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} />
 
       {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
 
