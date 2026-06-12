@@ -83,6 +83,24 @@ jobs:
           - SuperSUS живёт на `https://supersussystem.com/`.
           MEMORY
 
+          import_secret_file() {
+            local secret_value="$1"
+            local target_path="$2"
+            local target_mode="${3:-600}"
+
+            if printf '%s' "$secret_value" | grep -q '[^[:space:]]'; then
+              sudo install -d -m 700 -o "$HERMES_USER" -g "$HERMES_USER" "$(dirname "$target_path")"
+              printf '%s' "$secret_value" | base64 -d | sudo tee "$target_path" >/dev/null
+              sudo chown "$HERMES_USER:$HERMES_USER" "$target_path"
+              sudo chmod "$target_mode" "$target_path"
+            fi
+          }
+
+          import_secret_file '${{ secrets.HERMES_ENV_B64 }}' "$HERMES_HOME/.hermes/.env"
+          import_secret_file '${{ secrets.HERMES_CONFIG_B64 }}' "$HERMES_HOME/.hermes/config.yaml" 644
+          import_secret_file '${{ secrets.HERMES_AUTH_B64 }}' "$HERMES_HOME/.hermes/auth.json"
+          import_secret_file '${{ secrets.HERMES_NOUS_AUTH_B64 }}' "$HERMES_HOME/.hermes/shared/nous_auth.json"
+
           sudo chown -R "$HERMES_USER:$HERMES_USER" "$HERMES_HOME/.hermes"
 
           sudo tee /etc/systemd/system/hermes-dashboard.service >/dev/null <<SERVICE
