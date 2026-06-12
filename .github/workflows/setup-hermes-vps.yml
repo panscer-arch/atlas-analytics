@@ -125,6 +125,7 @@ jobs:
 
           path = Path(sys.argv[1])
           text = path.read_text(encoding="utf-8")
+          original_text = text
 
           snippet = r'''
 
@@ -175,6 +176,7 @@ jobs:
                   else:
                       index = text.rfind("}")
                       text = text[:index] + snippet + "\n" + text[index:]
+          if text != original_text:
               path.write_text(text, encoding="utf-8")
           PY
           done
