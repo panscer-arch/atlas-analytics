@@ -96,6 +96,13 @@ jobs:
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
           sudo chown -R root:root /var/backups/atlas-analytics-content
           sudo chmod 750 /var/backups/atlas-analytics-content
+          sudo tee /etc/atlas-outreach.env >/dev/null <<'ENV'
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          OUTREACH_FROM_EMAIL=${{ secrets.OUTREACH_FROM_EMAIL }}
+          OUTREACH_REPLY_TO_EMAIL=${{ secrets.OUTREACH_REPLY_TO_EMAIL }}
+          ENV
+          sudo chown root:root /etc/atlas-outreach.env
+          sudo chmod 600 /etc/atlas-outreach.env
 
           sudo tee /etc/systemd/system/atlas-content-api.service >/dev/null <<'SERVICE'
           [Unit]
