@@ -113,6 +113,89 @@ function sanitizeEmailText(value = "", maxLength = 6000) {
   return normalizeEmailValue(value).slice(0, maxLength);
 }
 
+function escapeHtml(value = "") {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatEmailLine(line = "") {
+  const safeLine = escapeHtml(line);
+  return safeLine.replace(/https:\/\/atlas-system\.io\b/g, '<a href="https://atlas-system.io" style="color:#ff5500;text-decoration:none;font-weight:700;">atlas-system.io</a>');
+}
+
+function buildOutreachEmailHtml({ subject = "", body = "" }) {
+  const lines = sanitizeEmailText(body, 8000).split(/\r?\n/);
+  const content = [];
+  let listItems = [];
+
+  function flushList() {
+    if (!listItems.length) return;
+    content.push(`<ol style="margin:14px 0 18px 22px;padding:0;color:#21374a;">${listItems.map((item) => `<li style="margin:0 0 8px 0;padding-left:4px;">${item}</li>`).join("")}</ol>`);
+    listItems = [];
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      flushList();
+      continue;
+    }
+
+    const numbered = line.match(/^\d+\.\s+(.+)$/);
+    if (numbered) {
+      listItems.push(formatEmailLine(numbered[1]));
+      continue;
+    }
+
+    flushList();
+    content.push(`<p style="margin:0 0 14px 0;color:#21374a;line-height:1.58;">${formatEmailLine(line)}</p>`);
+  }
+  flushList();
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>${escapeHtml(subject || "Atlas System")}</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#21374a;">
+    <div style="display:none;max-height:0;overflow:hidden;color:transparent;">Atlas System partnerships request for media placements and listing options.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #e5edf4;border-radius:18px;overflow:hidden;">
+            <tr>
+              <td style="padding:26px 30px 22px;background:#143852;">
+                <div style="font-size:13px;line-height:1.2;color:#ffc227;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">Atlas System</div>
+                <div style="margin-top:8px;font-size:24px;line-height:1.25;color:#ffffff;font-weight:800;">Partnerships & media placements</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 30px 12px;">
+                ${content.join("")}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 30px 28px;">
+                <div style="height:1px;background:#e5edf4;margin-bottom:16px;"></div>
+                <p style="margin:0;color:#6a7c8e;font-size:13px;line-height:1.5;">
+                  Official Atlas System partnerships account.<br>
+                  Website: <a href="https://atlas-system.io" style="color:#ff5500;text-decoration:none;font-weight:700;">atlas-system.io</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 async function appendOutreachEmailLog(entry) {
   const log = await readContent(OUTREACH_LOG_KEY, []);
   const nextLog = Array.isArray(log) ? log : [];
@@ -150,6 +233,7 @@ async function sendOutreachEmail({ lead = {}, to = "", subject = "", body = "" }
       reply_to: replyTo,
       subject: cleanSubject,
       text: cleanBody,
+      html: buildOutreachEmailHtml({ subject: cleanSubject, body: cleanBody }),
     }),
   });
   const payload = await response.json().catch(() => ({}));

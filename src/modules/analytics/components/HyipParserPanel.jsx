@@ -660,26 +660,15 @@ function getOutreachRecord(lead, outreach) {
   return normalizeOutreachRecord(lead, outreach[lead.id]);
 }
 
-function formatLeadContext(lead) {
-  return [
-    `Platform: ${lead.name}`,
-    `Country/GEO: ${lead.country}`,
-    `Category: ${lead.category}`,
-    `Website: ${lead.url}`,
-    `Public contacts: ${lead.contacts || "not found yet"}`,
-    `Internal notes: ${lead.notes || "none"}`,
-  ].join("\n");
-}
-
 function buildOutreachDraft(lead, record = {}) {
-  const subject = `Advertising placement request - Superflow Systems x ${lead.name}`;
+  const subject = `Advertising placement request - Atlas System x ${lead.name}`;
   const intro = lead.country === "Индия"
     ? "We are preparing an India-focused Web3 advertising test and are reviewing relevant crypto, Telegram and monitor placements."
     : "We are preparing an international Web3 advertising campaign and are reviewing relevant crypto, Telegram and monitor placements.";
   const body = [
     "Hello,",
     "",
-    "My name is [Your Name], I represent Superflow Systems.",
+    "My name is [Your Name], I represent Atlas System.",
     intro,
     "",
     "Could you please send your current media kit and placement options?",
@@ -694,11 +683,10 @@ function buildOutreachDraft(lead, record = {}) {
     "",
     "We can provide the website, creatives and project details for your review before any placement. We are looking for compliant paid advertising options and want to confirm all requirements first.",
     "",
-    "Thank you.",
-    "Superflow Systems team",
+    "Official website: https://atlas-system.io",
     "",
-    "---",
-    formatLeadContext(lead),
+    "Thank you.",
+    "Atlas System Partnerships",
   ].join("\n");
 
   return {
