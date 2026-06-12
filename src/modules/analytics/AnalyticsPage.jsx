@@ -938,6 +938,8 @@ function AnalyticsPage() {
           setIsAiReviewOpen((current) => !current);
         }}
         onLiveAnalyticsClick={() => setActiveTab("diary")}
+        onParserOpen={() => setActiveTab("parser")}
+        onQuickNotes={() => setIsQuickNotesOpen(true)}
         hermesUrl="/hermes/"
       />
 

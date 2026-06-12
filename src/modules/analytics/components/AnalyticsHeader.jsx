@@ -1,6 +1,6 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
-function AnalyticsHeader({ onAiReview, hermesUrl, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
+function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, hermesUrl, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
@@ -42,6 +42,26 @@ function AnalyticsHeader({ onAiReview, hermesUrl, onLiveAnalyticsClick, showAdmi
           <button type="button" className="analytics-header-ai-button" onClick={onAiReview} aria-label="AI-разбор задач">
             <span>AI</span>
             <b>Разбор</b>
+          </button>
+        ) : null}
+        {onParserOpen ? (
+          <button type="button" className="analytics-header-parser-button" onClick={onParserOpen} aria-label="Открыть парсер" title="Парсер">
+            <span className="analytics-header-parser-radar" aria-hidden="true">
+              <span className="analytics-header-parser-ring analytics-header-parser-ring-1" />
+              <span className="analytics-header-parser-ring analytics-header-parser-ring-2" />
+              <span className="analytics-header-parser-sweep" />
+              <span className="analytics-header-parser-dot analytics-header-parser-dot-1" />
+              <span className="analytics-header-parser-dot analytics-header-parser-dot-2" />
+            </span>
+          </button>
+        ) : null}
+        {onQuickNotes ? (
+          <button type="button" className="analytics-header-notes-button" onClick={onQuickNotes} aria-label="Открыть заметки" title="Заметки">
+            <span className="analytics-header-notes-paper" aria-hidden="true">
+              <span className="analytics-header-notes-line analytics-header-notes-line-1" />
+              <span className="analytics-header-notes-line analytics-header-notes-line-2" />
+              <span className="analytics-header-notes-pen" />
+            </span>
           </button>
         ) : null}
         {hermesUrl ? (
