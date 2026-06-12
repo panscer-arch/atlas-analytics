@@ -271,11 +271,12 @@
 
 .analytics-codex-system-automation-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
 .analytics-codex-system-automation-card {
+  min-width: 0;
   padding: 1rem;
 }
 
@@ -373,9 +374,12 @@
 @media (max-width: 1199.98px) {
   .analytics-codex-system-layout,
   .analytics-codex-system-grid,
-  .analytics-codex-system-automation-list,
   .analytics-codex-system-resource-list {
     grid-template-columns: 1fr;
+  }
+
+  .analytics-codex-system-automation-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .analytics-codex-system-sidebar {
@@ -391,5 +395,9 @@
 
   .analytics-codex-system-score {
     justify-items: start;
+  }
+
+  .analytics-codex-system-automation-list {
+    grid-template-columns: 1fr;
   }
 }

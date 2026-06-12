@@ -46,6 +46,13 @@ const CODEX_RESOURCE_FILTER = [
     use: "Проверка приватности AI-фич для private repositories.",
     codexFit: "Полезно как security checklist перед работой с приватным кодом и репозиториями.",
   },
+  {
+    status: "Изучить",
+    title: "Hermes Agent",
+    url: "https://github.com/nousresearch/hermes-agent",
+    use: "Постоянный self-hosted агент с памятью, skills, Telegram/Discord-интерфейсом и делегированием coding-задач в Codex.",
+    codexFit: "Полезен как диспетчер над Codex, но ставить только после отдельного security/setup-плана для VPS, Telegram и доступов.",
+  },
 ];
 
 const CODEX_PLAYBOOK = [
@@ -245,6 +252,36 @@ const CODEX_PLAYBOOK = [
 Только сохрани actionable инциденты в errors/<error_name>.md:
 время, trace, контекст, частота, affected endpoint/page, ссылка на логи.`,
   },
+  {
+    id: "hermes",
+    icon: "🪽",
+    title: "Hermes Agent",
+    tag: "Постоянный агент",
+    readiness: "через setup",
+    summary: "Hermes можно использовать как постоянного диспетчера SuperSUS: он помнит проекты, принимает задачи из Telegram, ведет навыки и делегирует кодинг в Codex.",
+    useWhen: [
+      "Нужно писать задачи голосом/из Telegram и превращать их в понятные Codex-задачи.",
+      "Нужен постоянный агент, который помнит SuperSUS, Codex OS, деплой, дневник, контент и CRM.",
+      "Нужно мониторить рутину: статусы деплоев, ошибки, еженедельные отчеты, новые идеи, контент-задачи.",
+    ],
+    steps: [
+      "Поднять Hermes отдельно на VPS или локальной машине, не внутри production SuperSUS.",
+      "Подключить модель и Codex CLI как coding-исполнителя, а Hermes оставить диспетчером.",
+      "Подключить Telegram только после security gate: токены, права, кто может писать агенту.",
+      "Дать Hermes playbook SuperSUS: где repo, как запускать build/test/deploy, что нельзя делать без подтверждения.",
+    ],
+    output: [
+      "Telegram-командный центр для задач SuperSUS.",
+      "Память по проектам: Codex OS, контент, CRM, дневник, деплой, ошибки.",
+      "Автоматизации без хаоса: Hermes ставит задачу и следит, Codex пишет код и проверяет.",
+    ],
+    prompt: `Hermes/SuperSUS setup plan:
+1. Не устанавливай ничего сразу.
+2. Сначала составь security/setup план: где будет жить Hermes, какие токены нужны, кто имеет доступ, какие команды запрещены без подтверждения.
+3. Опиши роли: Hermes = диспетчер и память, Codex = coding executor, SuperSUS = продуктовая система.
+4. Составь список первых автоматизаций: Telegram intake, weekly audit, deploy canary, content task triage, error report.
+5. После согласования предложи минимальный pilot без доступа к production secrets.`,
+  },
 ];
 
 const AUTOMATION_IDEAS = [
@@ -262,6 +299,11 @@ const AUTOMATION_IDEAS = [
     cadence: "После деплоя",
     title: "Canary + logs",
     text: "Открыть живую страницу, проверить core flow, собрать console/server errors и сохранить инциденты.",
+  },
+  {
+    cadence: "Always-on",
+    title: "Hermes dispatcher",
+    text: "Принимать задачи из Telegram, раскладывать их по SuperSUS-направлениям и делегировать coding-задачи в Codex.",
   },
 ];
 
