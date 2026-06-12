@@ -180,6 +180,7 @@ jobs:
           done
 
           sudo nginx -t
+          sudo nginx -T 2>/dev/null | sed -n '/location \/hermes\//,/^    }/p' || true
           sudo systemctl reload nginx
           sleep 3
           if ! systemctl is-active --quiet hermes-dashboard.service; then
@@ -188,5 +189,6 @@ jobs:
             exit 1
           fi
           systemctl --no-pager --full status hermes-dashboard.service
+          sudo journalctl -u hermes-dashboard.service -n 80 --no-pager || true
           curl -fsS http://127.0.0.1:9119/ >/dev/null
           REMOTE
