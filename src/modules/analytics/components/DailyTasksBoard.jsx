@@ -3,380 +3,40 @@ import AnalyticsActionButton from "./AnalyticsActionButton";
 import DailyTaskCard from "./DailyTaskCard";
 import Wrapper from "./Wrapper";
 import { loadServerContent, postServerJson, saveServerContent } from "../services/contentStore";
-
-const DAILY_TASKS_STORAGE_KEY = "atlas.analytics.dailyTasks.2026-05-22.v1";
-const DAILY_CHAT_AUTHOR_STORAGE_KEY = "atlas.analytics.dailyTasks.chatAuthor.v1";
-const DAILY_PEOPLE_STORAGE_KEY = "atlas.analytics.dailyTasks.people.v1";
-const ALL_PEOPLE_TAB_ID = "__all__";
-const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
-const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
-const DEFAULT_DAILY_PEOPLE = ["Бруно", "Гем", "Ротенберг", "Диджитекс", "Руби"];
-const DAILY_PERSON_ALIASES = {
-  Бруно: ["Бруно", "Bruno"],
-  Гем: ["Гем", "Game", "Gem"],
-  Ротенберг: ["Ротенберг", "Roten Berg", "Rotenberg", "roten_berg"],
-  Диджитекс: ["Диджитекс", "Дигитекс", "Digitex"],
-  Руби: ["Руби", "Rubi", "Ruby"],
-  Прогер: ["Прогер", "Ivanov", "Иванов", "Programmer", "Developer"],
-};
-const DAILY_PERSON_ALIAS_MAP = Object.fromEntries(
-  Object.entries(DAILY_PERSON_ALIASES).flatMap(([person, aliases]) => (
-    aliases.map((alias) => [alias.toLocaleLowerCase("ru-RU"), person])
-  )),
-);
-
-const defaultDailyTasks = [
-  {
-    id: "daily-2026-05-22-prototype",
-    title: "Утвердить прототип заглушки atlas-system.io",
-    priority: "Срочно",
-    duration: "22 мая, до 12:00",
-    deadline: "22.05.2026 12:00",
-    responsible: "Digitex / UI-designer / Product-manager",
-    description: "Посмотреть 3-screen prototype: 1 экран Architect video + coming soon, 2 экран краткое описание Atlas + CTA, 3 экран соцсети и контакты команды. Зафиксировать, что берём в дизайн.",
-    materials: "https://analytics.pupanel.cc/atlas-site-concept/prototype-v2.html",
-    status: "В работе",
-    messages: [
-      {
-        id: "msg-daily-prototype-1",
-        author: "Codex",
-        text: "Фокус: не распыляться на весь сайт. Сначала утверждаем композицию первых 3 экранов.",
-        createdAt: "2026-05-21T20:30:00.000Z",
-      },
-    ],
-  },
-  {
-    id: "daily-2026-05-22-copy",
-    title: "Собрать короткий английский текст для первых 3 экранов",
-    priority: "Высокий",
-    duration: "22 мая, до 15:00",
-    deadline: "22.05.2026 15:00",
-    responsible: "Copywriter / Content architect",
-    description: "Нужны короткие блоки: Architect intro, Community idea, Ecosystem summary. Без обещаний гарантированного дохода и без агрессивного MLM.",
-    materials: "ТЗ в карточке “Заглушка на сайт → Дизайн hero и визуальная система”.",
-    status: "В работе",
-    messages: [],
-  },
-  {
-    id: "daily-2026-05-22-assets",
-    title: "Подготовить финальные контакты и медиа для заглушки",
-    priority: "Высокий",
-    duration: "22 мая, до 17:00",
-    deadline: "22.05.2026 17:00",
-    responsible: "Content ops / Assets",
-    description: "Дать Telegram-ссылки помощников, финальный логотип, ссылку на YouTube-ролик Архитектора или финальный placeholder до публикации.",
-    materials: "Telegram, WhatsApp, Email. Домен: atlas-system.io. English only.",
-    status: "Не в работе",
-    messages: [],
-  },
-  {
-    id: "daily-2026-05-22-front",
-    title: "Собрать рабочий HTML-прототип после утверждения дизайна",
-    priority: "Средний",
-    duration: "22 мая, после утверждения первых экранов",
-    deadline: "22.05.2026 20:00",
-    responsible: "Frontend-developer / QA",
-    description: "После утверждения направления собрать первый рабочий вариант страницы, проверить desktop/mobile, CTA, ссылки, читаемость и отсутствие визуального мусора.",
-    materials: "/atlas-site-concept/prototype-v2.html и /atlas-site-preview/index.html",
-    status: "Не в работе",
-    messages: [],
-  },
-];
-
-function getLaunchStatusTone(status) {
-  if (status === "Готово") return "done";
-  if (status === "Отложено") return "paused";
-  if (status === "Не в работе") return "idle";
-  return "active";
-}
-
-function getLaunchPriorityTone(priority) {
-  if (priority === "Срочно") return "urgent";
-  if (priority === "Высокий") return "high";
-  if (priority === "Низкий") return "low";
-  return "medium";
-}
-
-function normalizeDailyTasks(tasks) {
-  return normalizeArray(tasks).map((task) => ({
-    id: task.id || `daily-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: task.title || "",
-    priority: task.priority || "Средний",
-    duration: task.duration || "",
-    deadline: task.deadline || "",
-    responsible: task.responsible || "",
-    description: task.description || "",
-    materials: task.materials || "",
-    status: task.status || "Не в работе",
-    completedAt: task.completedAt || "",
-    updatedAt: task.updatedAt || "",
-    subtasks: normalizeArray(task.subtasks).map((subtask) => ({
-      id: subtask.id || `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      title: subtask.title || "",
-      responsible: subtask.responsible || "",
-      priority: subtask.priority || "Средний",
-      status: subtask.status || (subtask.done ? "Готово" : "В работе"),
-      deadline: subtask.deadline || "",
-      done: Boolean(subtask.done),
-      messages: normalizeArray(subtask.messages).map((message) => ({
-        id: message.id || `subtask-msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        author: message.author || "Команда",
-        text: message.text || "",
-        createdAt: message.createdAt || "",
-      })),
-    })),
-    questions: normalizeArray(task.questions).map((question) => ({
-      id: question.id || `daily-question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      author: question.author || "Команда",
-      text: question.text || "",
-      answered: Boolean(question.answered),
-      createdAt: question.createdAt || "",
-      closedAt: question.closedAt || "",
-    })),
-    messages: normalizeArray(task.messages),
-  }));
-}
-
-function normalizeArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function normalizePersonName(value = "") {
-  return String(value || "").trim().replace(/\s+/g, " ");
-}
-
-function getCanonicalPersonName(value = "") {
-  const normalized = normalizePersonName(value);
-  return DAILY_PERSON_ALIAS_MAP[normalized.toLocaleLowerCase("ru-RU")] || normalized;
-}
-
-function normalizeDailyPeople(value) {
-  const seen = new Set();
-  return [...DEFAULT_DAILY_PEOPLE, ...normalizeArray(value)]
-    .map(normalizePersonName)
-    .map(getCanonicalPersonName)
-    .filter(Boolean)
-    .filter((name) => {
-      const key = name.toLocaleLowerCase("ru-RU");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-}
-
-function readStoredDailyTasks() {
-  if (typeof window === "undefined") return normalizeDailyTasks(defaultDailyTasks);
-
-  try {
-    const saved = window.localStorage.getItem(DAILY_TASKS_STORAGE_KEY);
-    return normalizeDailyTasks(saved ? JSON.parse(saved) : defaultDailyTasks);
-  } catch {
-    return normalizeDailyTasks(defaultDailyTasks);
-  }
-}
-
-function readStoredDailyPeople() {
-  if (typeof window === "undefined") return normalizeDailyPeople(DEFAULT_DAILY_PEOPLE);
-
-  try {
-    const saved = window.localStorage.getItem(DAILY_PEOPLE_STORAGE_KEY);
-    return normalizeDailyPeople(saved ? JSON.parse(saved) : DEFAULT_DAILY_PEOPLE);
-  } catch {
-    return normalizeDailyPeople(DEFAULT_DAILY_PEOPLE);
-  }
-}
-
-function readStoredDailyChatAuthor() {
-  if (typeof window === "undefined") return "Digitex";
-
-  try {
-    return window.localStorage.getItem(DAILY_CHAT_AUTHOR_STORAGE_KEY) || "Digitex";
-  } catch {
-    return "Digitex";
-  }
-}
-
-function getStartOfDay(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function createDailyTask(overrides = {}) {
-  return {
-    id: `daily-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: "",
-    priority: "Средний",
-    duration: "22 мая",
-    deadline: "22.05.2026",
-    responsible: "",
-    description: "",
-    materials: "",
-    status: "Не в работе",
-    subtasks: [],
-    messages: [],
-    ...overrides,
-  };
-}
-
-function createDailySubtask(title = "", responsible = "") {
-  return {
-    id: `daily-subtask-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title,
-    responsible,
-    priority: "Средний",
-    status: "В работе",
-    deadline: "",
-    done: false,
-    messages: [],
-  };
-}
-
-function createDailySubtaskMessage(text = "", author = "Команда") {
-  return {
-    id: `subtask-msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    author: author || "Команда",
-    text,
-    createdAt: new Date().toISOString(),
-  };
-}
-
-function getSupportedAudioMimeType() {
-  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
-
-  return [
-    "audio/mp4",
-    "audio/mp4;codecs=mp4a.40.2",
-    "audio/webm;codecs=opus",
-    "audio/webm",
-  ].find((type) => MediaRecorder.isTypeSupported(type)) || "";
-}
-
-function getAudioPlaybackMimeType(mimeType = "") {
-  if (mimeType.includes("mp4")) return "audio/mp4";
-  if (mimeType.includes("webm")) return "audio/webm";
-  return mimeType || "audio/webm";
-}
-
-function normalizeAudioDataUrl(dataUrl = "", mimeType = "") {
-  if (!dataUrl.startsWith("data:")) return dataUrl;
-
-  const marker = ";base64,";
-  const markerIndex = dataUrl.indexOf(marker);
-  if (markerIndex === -1) return dataUrl;
-
-  return `data:${getAudioPlaybackMimeType(mimeType)}${dataUrl.slice(markerIndex)}`;
-}
-
-function formatDailyMessageTime(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-}
-
-function parseDailyDeadline(value) {
-  if (!value) return null;
-  const normalized = String(value).trim();
-  const ruMatch = normalized.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  const isoMatch = normalized.match(/(\d{4})-(\d{2})-(\d{2})/);
-
-  if (ruMatch) {
-    const date = new Date(Number(ruMatch[3]), Number(ruMatch[2]) - 1, Number(ruMatch[1]));
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  if (isoMatch) {
-    const date = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  return null;
-}
-
-function getDailyDeadlineMeta(deadline) {
-  const date = parseDailyDeadline(deadline);
-  if (!date) return { label: "Без даты", tone: "idle" };
-
-  const today = getStartOfDay();
-  const deadlineDay = getStartOfDay(date);
-  const diffDays = Math.ceil((deadlineDay.getTime() - today.getTime()) / 86400000);
-
-  if (diffDays < 0) return { label: `Просрочено ${Math.abs(diffDays)} дн.`, tone: "danger" };
-  if (diffDays === 0) return { label: "Сегодня дедлайн", tone: "urgent" };
-  if (diffDays === 1) return { label: "Остался 1 день", tone: "accent" };
-  return { label: `Осталось ${diffDays} дн.`, tone: diffDays <= 3 ? "accent" : "safe" };
-}
-
-function getShortSubtaskId(subtaskId = "") {
-  return String(subtaskId || "").replace(/^daily-subtask-/, "");
-}
-
-function getFullSubtaskId(shortSubtaskId = "") {
-  const normalized = String(shortSubtaskId || "");
-  if (!normalized || normalized.startsWith("daily-subtask-")) return normalized;
-  return `daily-subtask-${normalized}`;
-}
-
-function getResponsibleParts(value = "") {
-  return String(value || "")
-    .split(/\s+(?:и|and)\s+|[\/,;|]+/i)
-    .map(getCanonicalPersonName)
-    .filter(Boolean);
-}
-
-function isResponsibleValueForPerson(value, personName) {
-  const canonicalPerson = getCanonicalPersonName(personName);
-  return getResponsibleParts(value).some((part) => part === canonicalPerson);
-}
-
-function isSubtaskDone(subtask) {
-  return Boolean(subtask.done) || subtask.status === "Готово";
-}
-
-function isTaskAssignedToPerson(task, personName) {
-  if (!personName || personName === ALL_PEOPLE_TAB_ID) return true;
-
-  return isResponsibleValueForPerson(task.responsible, personName)
-    || normalizeArray(task.subtasks).some((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
-}
-
-function hasActiveItemForPerson(task, personName) {
-  if (!personName || personName === ALL_PEOPLE_TAB_ID) return task.status !== "Готово";
-
-  const matchingSubtasks = normalizeArray(task.subtasks)
-    .filter((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
-
-  if (matchingSubtasks.length) {
-    return matchingSubtasks.some((subtask) => !isSubtaskDone(subtask));
-  }
-
-  return task.status !== "Готово" && isResponsibleValueForPerson(task.responsible, personName);
-}
-
-function hasCompletedItemForPerson(task, personName) {
-  if (!personName || personName === ALL_PEOPLE_TAB_ID) return task.status === "Готово";
-
-  const matchingSubtasks = normalizeArray(task.subtasks)
-    .filter((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
-
-  if (matchingSubtasks.length) {
-    return matchingSubtasks.every(isSubtaskDone);
-  }
-
-  return task.status === "Готово" && isResponsibleValueForPerson(task.responsible, personName);
-}
-
-function countActiveItemsForPerson(tasks, personName) {
-  return tasks.reduce((count, task) => {
-    const matchingSubtasks = normalizeArray(task.subtasks)
-      .filter((subtask) => isResponsibleValueForPerson(subtask.responsible, personName));
-
-    if (matchingSubtasks.length) {
-      return count + matchingSubtasks.filter((subtask) => !isSubtaskDone(subtask)).length;
-    }
-
-    return count + (task.status !== "Готово" && isResponsibleValueForPerson(task.responsible, personName) ? 1 : 0);
-  }, 0);
-}
+import {
+  ALL_PEOPLE_TAB_ID,
+  DAILY_CHAT_AUTHOR_STORAGE_KEY,
+  DAILY_PEOPLE_STORAGE_KEY,
+  DAILY_TASKS_STORAGE_KEY,
+  LAUNCH_PRIORITIES,
+  LAUNCH_STATUSES,
+} from "../data/dailyTasksData";
+import {
+  countActiveItemsForPerson,
+  createDailySubtask,
+  createDailySubtaskMessage,
+  createDailyTask,
+  formatDailyMessageTime,
+  getAudioPlaybackMimeType,
+  getCanonicalPersonName,
+  getDailyDeadlineMeta,
+  getFullSubtaskId,
+  getLaunchPriorityTone,
+  getLaunchStatusTone,
+  getShortSubtaskId,
+  getSupportedAudioMimeType,
+  hasActiveItemForPerson,
+  hasCompletedItemForPerson,
+  isTaskAssignedToPerson,
+  normalizeArray,
+  normalizeAudioDataUrl,
+  normalizeDailyPeople,
+  normalizeDailyTasks,
+  normalizePersonName,
+  readStoredDailyChatAuthor,
+  readStoredDailyPeople,
+  readStoredDailyTasks,
+} from "../utils/dailyTasksUtils";
 
 export default function DailyTasksBoard() {
   const [tasks, setTasks] = useState(readStoredDailyTasks);
@@ -1011,6 +671,7 @@ export default function DailyTasksBoard() {
   }
 
   const selectedPerson = activePerson === ALL_PEOPLE_TAB_ID ? "" : activePerson;
+  const allActiveTasks = tasks.filter((task) => hasActiveItemForPerson(task, ""));
   const activeTasks = tasks.filter((task) => hasActiveItemForPerson(task, selectedPerson));
   const activeTaskIds = new Set(activeTasks.map((task) => task.id));
   const completedTasks = tasks.filter((task) => !activeTaskIds.has(task.id) && hasCompletedItemForPerson(task, selectedPerson));
@@ -1018,6 +679,56 @@ export default function DailyTasksBoard() {
     result[person] = countActiveItemsForPerson(tasks, person);
     return result;
   }, {});
+
+  function renderDailyTaskCard(task, index, isCompleted = false) {
+    return (
+      <DailyTaskCard
+        key={task.id}
+        task={task}
+        index={index}
+        isCompleted={isCompleted}
+        assigneeOptions={dailyPeople}
+        selectedPerson={selectedPerson}
+        responsibleDrafts={responsibleDrafts}
+        responsibleSavedTaskId={responsibleSavedTaskId}
+        subtaskDrafts={subtaskDrafts}
+        subtaskChatDrafts={subtaskChatDrafts}
+        chatDrafts={chatDrafts}
+        messageEditDrafts={messageEditDrafts}
+        chatAuthor={chatAuthor}
+        recordingTaskId={recordingTaskId}
+        recordingError={recordingError}
+        telegramPushState={telegramPushState}
+        subtaskLinkState={subtaskLinkState}
+        patchTask={patchTask}
+        archiveTask={archiveTask}
+        restoreTask={restoreTask}
+        deleteArchivedTask={deleteArchivedTask}
+        commitResponsible={commitResponsible}
+        setResponsibleSavedTaskId={setResponsibleSavedTaskId}
+        setResponsibleDrafts={setResponsibleDrafts}
+        updateSubtask={updateSubtask}
+        removeSubtask={removeSubtask}
+        setSubtaskDrafts={setSubtaskDrafts}
+        setSubtaskChatDrafts={setSubtaskChatDrafts}
+        addSubtask={addSubtask}
+        addSubtaskMessage={addSubtaskMessage}
+        removeSubtaskMessage={removeSubtaskMessage}
+        setChatAuthor={setChatAuthor}
+        setMessageEditDrafts={setMessageEditDrafts}
+        saveEditedMessage={saveEditedMessage}
+        cancelEditMessage={cancelEditMessage}
+        startEditMessage={startEditMessage}
+        removeMessage={removeMessage}
+        setChatDrafts={setChatDrafts}
+        addMessage={addMessage}
+        stopVoiceRecording={stopVoiceRecording}
+        startVoiceRecording={startVoiceRecording}
+        pushSubtaskToTelegram={pushSubtaskToTelegram}
+        copySubtaskLink={copySubtaskLink}
+      />
+    );
+  }
 
   return (
     <>
@@ -1124,52 +835,7 @@ export default function DailyTasksBoard() {
       </Wrapper>
       <Wrapper as="section" marginTop="md">
         <div className="analytics-daily-grid">
-          {activeTasks.map((task, index) => (
-            <DailyTaskCard
-              key={task.id}
-              task={task}
-              index={index}
-              assigneeOptions={dailyPeople}
-              selectedPerson={selectedPerson}
-              responsibleDrafts={responsibleDrafts}
-              responsibleSavedTaskId={responsibleSavedTaskId}
-              subtaskDrafts={subtaskDrafts}
-              subtaskChatDrafts={subtaskChatDrafts}
-              chatDrafts={chatDrafts}
-              messageEditDrafts={messageEditDrafts}
-              chatAuthor={chatAuthor}
-              recordingTaskId={recordingTaskId}
-              recordingError={recordingError}
-              telegramPushState={telegramPushState}
-              subtaskLinkState={subtaskLinkState}
-              patchTask={patchTask}
-              archiveTask={archiveTask}
-              restoreTask={restoreTask}
-              deleteArchivedTask={deleteArchivedTask}
-              commitResponsible={commitResponsible}
-              setResponsibleSavedTaskId={setResponsibleSavedTaskId}
-              setResponsibleDrafts={setResponsibleDrafts}
-              updateSubtask={updateSubtask}
-              removeSubtask={removeSubtask}
-              setSubtaskDrafts={setSubtaskDrafts}
-              setSubtaskChatDrafts={setSubtaskChatDrafts}
-              addSubtask={addSubtask}
-              addSubtaskMessage={addSubtaskMessage}
-              removeSubtaskMessage={removeSubtaskMessage}
-              setChatAuthor={setChatAuthor}
-              setMessageEditDrafts={setMessageEditDrafts}
-              saveEditedMessage={saveEditedMessage}
-              cancelEditMessage={cancelEditMessage}
-              startEditMessage={startEditMessage}
-              removeMessage={removeMessage}
-              setChatDrafts={setChatDrafts}
-              addMessage={addMessage}
-              stopVoiceRecording={stopVoiceRecording}
-              startVoiceRecording={startVoiceRecording}
-              pushSubtaskToTelegram={pushSubtaskToTelegram}
-              copySubtaskLink={copySubtaskLink}
-            />
-          ))}
+          {activeTasks.map((task, index) => renderDailyTaskCard(task, index))}
         </div>
       </Wrapper>
       {!activeTasks.length ? (
@@ -1190,53 +856,7 @@ export default function DailyTasksBoard() {
           </Wrapper>
           <Wrapper as="section" marginTop="md">
             <div className="analytics-daily-grid analytics-daily-archive-grid">
-              {completedTasks.map((task, index) => (
-                <DailyTaskCard
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  isCompleted
-                  assigneeOptions={dailyPeople}
-                  selectedPerson={selectedPerson}
-                  responsibleDrafts={responsibleDrafts}
-                  responsibleSavedTaskId={responsibleSavedTaskId}
-                  subtaskDrafts={subtaskDrafts}
-                  subtaskChatDrafts={subtaskChatDrafts}
-                  chatDrafts={chatDrafts}
-                  messageEditDrafts={messageEditDrafts}
-                  chatAuthor={chatAuthor}
-                  recordingTaskId={recordingTaskId}
-                  recordingError={recordingError}
-                  telegramPushState={telegramPushState}
-                  subtaskLinkState={subtaskLinkState}
-                  patchTask={patchTask}
-                  archiveTask={archiveTask}
-                  restoreTask={restoreTask}
-                  deleteArchivedTask={deleteArchivedTask}
-                  commitResponsible={commitResponsible}
-                  setResponsibleSavedTaskId={setResponsibleSavedTaskId}
-                  setResponsibleDrafts={setResponsibleDrafts}
-                  updateSubtask={updateSubtask}
-                  removeSubtask={removeSubtask}
-                  setSubtaskDrafts={setSubtaskDrafts}
-                  setSubtaskChatDrafts={setSubtaskChatDrafts}
-                  addSubtask={addSubtask}
-                  addSubtaskMessage={addSubtaskMessage}
-                  removeSubtaskMessage={removeSubtaskMessage}
-                  setChatAuthor={setChatAuthor}
-                  setMessageEditDrafts={setMessageEditDrafts}
-                  saveEditedMessage={saveEditedMessage}
-                  cancelEditMessage={cancelEditMessage}
-                  startEditMessage={startEditMessage}
-                  removeMessage={removeMessage}
-                  setChatDrafts={setChatDrafts}
-                  addMessage={addMessage}
-                  stopVoiceRecording={stopVoiceRecording}
-                  startVoiceRecording={startVoiceRecording}
-                  pushSubtaskToTelegram={pushSubtaskToTelegram}
-                  copySubtaskLink={copySubtaskLink}
-                />
-              ))}
+              {completedTasks.map((task, index) => renderDailyTaskCard(task, index, true))}
             </div>
           </Wrapper>
         </>

@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check:local": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-local-page.mjs",
+    "check:boards": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-analytics-boards.mjs",
     "open:atlas": "node scripts/open-atlas-browser.mjs",
     "api:content": "node server/content-api.mjs",
     "bot:telegram": "node server/telegram-bot.mjs"

@@ -2,276 +2,34 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 import formatCurrency from "../utils/formatCurrency";
 
-export const EXPENSES_STORAGE_KEY = "atlas.analytics.expenses.v1";
-export const EXPENSE_FUNDS_STORAGE_KEY = "atlas.analytics.expenseFunds.v1";
-
-const EXPENSE_CATEGORIES = [
-  "Маркетинг",
-  "SMM / контент",
-  "Разработка",
-  "Серверы / инфраструктура",
-  "Сервисы / подписки",
-  "Зарплаты",
-  "Legal / Security",
-  "Дизайн",
-  "Долги",
-  "Операционные",
-  "Прочее",
-];
-
-const EXPENSE_STATUSES = ["План", "Счёт", "К оплате", "Оплачено", "Просрочено"];
-const EXPENSE_PRIORITIES = ["Высокий", "Средний", "Низкий"];
-const EXPENSE_PERIODS = ["Разово", "Ежемесячно", "Еженедельно", "Ежегодно"];
-const EXPENSE_OWNERS = ["", "Digitex", "Bruno", "Gem", "Rotenberg", "Команда"];
-const OBLIGATION_CATEGORIES = ["Серверы / инфраструктура", "Сервисы / подписки", "Долги", "Зарплаты", "Legal / Security"];
-
-const defaultExpenses = [
-  {
-    id: "expense-server-001",
-    title: "VPS / сервер аналитики",
-    category: "Серверы / инфраструктура",
-    amount: 80,
-    currency: "USDT",
-    date: "2026-06-15",
-    status: "К оплате",
-    priority: "Высокий",
-    owner: "Digitex",
-    period: "Ежемесячно",
-    vendor: "VPS / hosting",
-    comment: "Основной сервер аналитики, content API и публичная сборка.",
-  },
-  {
-    id: "expense-smm-001",
-    title: "Контент и оформление соцсетей",
-    category: "SMM / контент",
-    amount: 350,
-    currency: "USDT",
-    date: "2026-06-20",
-    status: "План",
-    priority: "Средний",
-    owner: "Команда",
-    period: "Разово",
-    vendor: "SMM",
-    comment: "Посты, визуалы, упаковка каналов Atlas.",
-  },
-  {
-    id: "expense-dev-001",
-    title: "Доработки кабинета и аналитики",
-    category: "Разработка",
-    amount: 1200,
-    currency: "USDT",
-    date: "2026-06-25",
-    status: "Счёт",
-    priority: "Высокий",
-    owner: "Digitex",
-    period: "Разово",
-    vendor: "Frontend / backend",
-    comment: "Личный кабинет, аналитика, задачи, контент-план, security review.",
-  },
-  {
-    id: "expense-legal-001",
-    title: "Web3 legal / security консультация",
-    category: "Legal / Security",
-    amount: 700,
-    currency: "USDT",
-    date: "2026-06-30",
-    status: "План",
-    priority: "Высокий",
-    owner: "Digitex",
-    period: "Разово",
-    vendor: "External review",
-    comment: "Вычитка White Paper, risk wording, audit/security status.",
-  },
-  {
-    id: "expense-debt-001",
-    title: "Долг по запуску",
-    category: "Долги",
-    amount: 500,
-    currency: "USDT",
-    date: "2026-07-01",
-    status: "К оплате",
-    priority: "Средний",
-    owner: "Digitex",
-    period: "Разово",
-    vendor: "Internal",
-    comment: "Фиксировать отдельно от операционных расходов, чтобы видеть долговую нагрузку.",
-  },
-  {
-    id: "expense-domain-001",
-    title: "Домен supersussystem.com",
-    category: "Сервисы / подписки",
-    amount: 18,
-    currency: "USDT",
-    date: "2026-07-15",
-    status: "План",
-    priority: "Высокий",
-    owner: "Digitex",
-    period: "Ежегодно",
-    vendor: "Domain registrar",
-    comment: "Обязательная дата продления домена. Проверить точную дату у регистратора.",
-  },
-  {
-    id: "expense-content-api-001",
-    title: "Content API / инфраструктурный сервис",
-    category: "Серверы / инфраструктура",
-    amount: 120,
-    currency: "USDT",
-    date: "2026-06-28",
-    status: "План",
-    priority: "Высокий",
-    owner: "Digitex",
-    period: "Ежемесячно",
-    vendor: "Infrastructure",
-    comment: "Резерв под API, деплой, хранение данных и обязательные технические сервисы.",
-  },
-];
-
-const defaultFunds = [
-  {
-    id: "fund-launch-wallet-001",
-    title: "Стартовый бюджет запуска",
-    amount: 50000,
-    currency: "USDT",
-    date: "2026-06-11",
-    source: "Кошелек Atlas",
-    comment: "Пример пополнения бюджета. Можно заменить на фактическое поступление.",
-  },
-];
-
-function getTodayInputDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function createExpense(overrides = {}) {
-  return {
-    id: `expense-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: "",
-    category: "Маркетинг",
-    amount: 0,
-    currency: "USDT",
-    date: getTodayInputDate(),
-    status: "План",
-    priority: "Средний",
-    owner: "",
-    period: "Разово",
-    vendor: "",
-    comment: "",
-    ...overrides,
-  };
-}
-
-function normalizeExpense(item = {}) {
-  return {
-    id: item.id || `expense-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: item.title || "",
-    category: EXPENSE_CATEGORIES.includes(item.category) ? item.category : "Прочее",
-    amount: Number(item.amount || 0),
-    currency: item.currency || "USDT",
-    date: item.date || getTodayInputDate(),
-    status: EXPENSE_STATUSES.includes(item.status) ? item.status : "План",
-    priority: EXPENSE_PRIORITIES.includes(item.priority) ? item.priority : "Средний",
-    owner: item.owner || "",
-    period: EXPENSE_PERIODS.includes(item.period) ? item.period : "Разово",
-    vendor: item.vendor || "",
-    comment: item.comment || "",
-  };
-}
-
-function normalizeExpenses(items) {
-  return Array.isArray(items) ? items.map(normalizeExpense) : defaultExpenses.map(normalizeExpense);
-}
-
-function createFund(overrides = {}) {
-  return {
-    id: `fund-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: "",
-    amount: 0,
-    currency: "USDT",
-    date: getTodayInputDate(),
-    source: "",
-    comment: "",
-    ...overrides,
-  };
-}
-
-function normalizeFund(item = {}) {
-  return {
-    id: item.id || `fund-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    title: item.title || "",
-    amount: Number(item.amount || 0),
-    currency: item.currency || "USDT",
-    date: item.date || getTodayInputDate(),
-    source: item.source || "",
-    comment: item.comment || "",
-  };
-}
-
-function normalizeFunds(items) {
-  return Array.isArray(items) ? items.map(normalizeFund) : defaultFunds.map(normalizeFund);
-}
-
-function mergeMissingDefaultObligations(items) {
-  const normalized = normalizeExpenses(items);
-  const existingIds = new Set(normalized.map((item) => item.id));
-  const missingObligations = defaultExpenses
-    .filter((item) => ["expense-domain-001", "expense-content-api-001"].includes(item.id))
-    .filter((item) => !existingIds.has(item.id))
-    .map(normalizeExpense);
-
-  return [...normalized, ...missingObligations];
-}
-
-function getMonthKey(value) {
-  if (!value) return "Без даты";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Без даты";
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function getStatusTone(status) {
-  if (status === "Оплачено") return "paid";
-  if (status === "Просрочено") return "overdue";
-  if (status === "К оплате") return "due";
-  if (status === "Счёт") return "invoice";
-  return "plan";
-}
-
-function getPriorityTone(priority) {
-  if (priority === "Высокий") return "high";
-  if (priority === "Низкий") return "low";
-  return "medium";
-}
-
-function formatDate(value) {
-  if (!value) return "Без даты";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function getDaysUntil(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
-  return Math.ceil((date.getTime() - today.getTime()) / 86400000);
-}
-
-function getExpenseSummary(expenses) {
-  const total = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const paid = expenses.filter((item) => item.status === "Оплачено").reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const due = expenses.filter((item) => ["К оплате", "Просрочено", "Счёт"].includes(item.status)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const recurring = expenses.filter((item) => item.period !== "Разово").reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const debts = expenses.filter((item) => item.category === "Долги").reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const urgent = expenses.filter((item) => item.priority === "Высокий" && item.status !== "Оплачено").length;
-
-  return { total, paid, due, recurring, debts, urgent };
-}
+import {
+  EXPENSES_STORAGE_KEY,
+  EXPENSE_FUNDS_STORAGE_KEY,
+  EXPENSE_CATEGORIES,
+  EXPENSE_PRIORITIES,
+  EXPENSE_STATUSES,
+  EXPENSE_PERIODS,
+  EXPENSE_OWNERS,
+  OBLIGATION_CATEGORIES,
+  defaultExpenses,
+  defaultFunds,
+} from "../data/expensesData";
+import {
+  createExpense,
+  createFund,
+  formatDate,
+  getDaysUntil,
+  getExpenseSummary,
+  getMonthKey,
+  getPriorityTone,
+  getStatusTone,
+  getTodayInputDate,
+  mergeMissingDefaultObligations,
+  normalizeExpense,
+  normalizeExpenses,
+  normalizeFund,
+  normalizeFunds,
+} from "../utils/expensesUtils";
 
 function ExpensesBoard() {
   const [expenses, setExpenses] = useState(() => normalizeExpenses(defaultExpenses));

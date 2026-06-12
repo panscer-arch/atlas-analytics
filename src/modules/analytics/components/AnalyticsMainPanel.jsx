@@ -31,7 +31,7 @@ export default function AnalyticsMainPanel({
     );
   }
 
-  if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" />;
+  if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" analyticsBoardUrl={analyticsBoardUrl} />;
   if (activeTab === "expenses") {
     return (
       <Wrapper as="section" marginTop="lg">
@@ -39,7 +39,7 @@ export default function AnalyticsMainPanel({
       </Wrapper>
     );
   }
-  if (activeTab === "content") return <LaunchChecklistSection mode="content" />;
+  if (activeTab === "content") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
 
   if (activeTab === "parser") {
     return (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
+import { normalizeAudioDataUrl } from "../utils/dailyTasksUtils";
 
 const LAUNCH_STATUSES = ["В работе", "Не в работе", "Готово", "Отложено"];
 const LAUNCH_PRIORITIES = ["Срочно", "Высокий", "Средний", "Низкий"];
@@ -57,20 +58,6 @@ function getLaunchPriorityTone(priority) {
   if (priority === "Высокий") return "high";
   if (priority === "Низкий") return "low";
   return "medium";
-}
-
-function getAudioPlaybackMimeType(mimeType = "") {
-  if (mimeType.includes("mp4")) return "audio/mp4";
-  if (mimeType.includes("webm")) return "audio/webm";
-  return mimeType || "audio/webm";
-}
-
-function normalizeAudioDataUrl(dataUrl = "", mimeType = "") {
-  if (!dataUrl.startsWith("data:")) return dataUrl;
-  const marker = ";base64,";
-  const markerIndex = dataUrl.indexOf(marker);
-  if (markerIndex === -1) return dataUrl;
-  return `data:${getAudioPlaybackMimeType(mimeType)}${dataUrl.slice(markerIndex)}`;
 }
 
 function formatDailyMessageTime(value) {
@@ -157,6 +144,7 @@ export default function DailyTaskCard({
   copySubtaskLink,
 }) {
     const [pushChatBySubtask, setPushChatBySubtask] = useState({});
+    const [subtaskChatOpenByKey, setSubtaskChatOpenByKey] = useState({});
     const subtasks = normalizeArray(task.subtasks);
     const normalizedSelectedPerson = normalizeAssigneeName(selectedPerson);
     const visibleSubtasks = normalizedSelectedPerson
@@ -219,6 +207,9 @@ export default function DailyTaskCard({
               const selectedPushChatId = pushChatBySubtask[subtaskDraftKey] || TELEGRAM_PUSH_CHATS[0].id;
               const subtaskResponsibleValue = normalizeAssigneeName(subtask.responsible || "");
               const selectedSubtaskResponsibleValue = responsibleOptions.includes(subtaskResponsibleValue) ? subtaskResponsibleValue : "";
+              const isSubtaskChatOpen = Object.prototype.hasOwnProperty.call(subtaskChatOpenByKey, subtaskDraftKey)
+                ? subtaskChatOpenByKey[subtaskDraftKey]
+                : subtaskMessages.length > 0;
 
               return (
                 <div id={`daily-subtask-${subtask.id}`} key={subtask.id} className={`analytics-daily-subtask${subtask.done ? " is-done" : ""}`}>
@@ -330,7 +321,16 @@ export default function DailyTaskCard({
                     </div>
                   </details>
 
-                  <details className="analytics-daily-subtask-chat" defaultOpen={subtaskMessages.length > 0}>
+                  <details
+                    className="analytics-daily-subtask-chat"
+                    open={isSubtaskChatOpen}
+                    onToggle={(event) => {
+                      const nextOpen = event.currentTarget.open;
+                      setSubtaskChatOpenByKey((current) => (
+                        current[subtaskDraftKey] === nextOpen ? current : { ...current, [subtaskDraftKey]: nextOpen }
+                      ));
+                    }}
+                  >
                     <summary className="analytics-daily-subtask-chat-head">
                       <span>Чат по подзадаче</span>
                       <small>{subtaskMessages.length}</small>
