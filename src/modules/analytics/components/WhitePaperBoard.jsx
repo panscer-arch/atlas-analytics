@@ -118,15 +118,17 @@ function WhitePaperBoard({ initialView = "document", boardId = "whitePaper" } = 
   }, [activeBlock, isStructuredWhitePaper]);
 
   useEffect(() => {
+    if (saveState.status === "idle") return;
     if (!isStructuredWhitePaper || !activeSubsectionId) return;
     if (activeSubsections.some((section) => section.id === activeSubsectionId)) return;
     setActiveSubsectionId("");
-  }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper]);
+  }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper, saveState.status]);
 
   useEffect(() => {
+    if (saveState.status === "idle") return;
     if (!isStructuredWhitePaper || activeSubsectionId || !activeSubsections.length) return;
     setActiveSubsectionId(activeSubsections[0].id);
-  }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper]);
+  }, [activeSubsectionId, activeSubsections, isStructuredWhitePaper, saveState.status]);
 
   useEffect(() => {
     if (documentMode !== "edit") return undefined;
