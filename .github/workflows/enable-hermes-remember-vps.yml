@@ -1,0 +1,126 @@
+name: Enable Hermes Remember Me on VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  enable-hermes-remember:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/deploy_key
+          ${{ secrets.VPS_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            echo "ssh-keyscan failed, retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Enable remember cookie for Hermes
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          TOKEN_FILE=/etc/nginx/hermes_remember_token
+          MAP_FILE=/etc/nginx/conf.d/hermes-remember-map.conf
+
+          if sudo test -s "$TOKEN_FILE"; then
+            TOKEN="$(sudo cat "$TOKEN_FILE")"
+          else
+            TOKEN="$(openssl rand -hex 32)"
+            printf '%s\n' "$TOKEN" | sudo tee "$TOKEN_FILE" >/dev/null
+            sudo chown root:root "$TOKEN_FILE"
+            sudo chmod 600 "$TOKEN_FILE"
+          fi
+
+          sudo tee "$MAP_FILE" >/dev/null <<MAP
+          map \$cookie_hermes_remember \$hermes_auth_realm {
+              default "Hermes";
+              "$TOKEN" off;
+          }
+          MAP
+          sudo chown root:root "$MAP_FILE"
+          sudo chmod 644 "$MAP_FILE"
+
+          NGINX_FILES="$(sudo grep -rlE 'location /hermes/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | grep -v 'hermes-remember-map.conf' || true)"
+          if [ -z "$NGINX_FILES" ]; then
+            echo "No nginx file with location /hermes/ found" >&2
+            exit 1
+          fi
+
+          for NGINX_FILE in $NGINX_FILES; do
+            sudo python3 - "$NGINX_FILE" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding="utf-8")
+          marker = "location /hermes/ {"
+          start = text.find(marker)
+          if start == -1:
+              continue
+
+          depth = 0
+          end = None
+          for index in range(start, len(text)):
+              if text[index] == "{":
+                  depth += 1
+              elif text[index] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      end = index
+                      break
+          if end is None:
+              raise SystemExit(f"location /hermes/ block is not closed in {path}")
+
+          block = text[start:end + 1]
+          block = block.replace('auth_basic "Hermes";', 'auth_basic $hermes_auth_realm;')
+          block = re.sub(r'\n\s*add_header Set-Cookie "hermes_remember=[^"]+";\n', '\n', block)
+
+          cookie_line = (
+              '\n        add_header Set-Cookie '
+              '"hermes_remember=$cookie_hermes_remember; Max-Age=2592000; Path=/hermes; Secure; HttpOnly; SameSite=Lax";\n'
+          )
+          # Nginx cannot emit the hidden token through a variable here, so the deploy step
+          # substitutes it after writing this block.
+          if "hermes_remember=" not in block:
+              insert_after = 'auth_basic_user_file /etc/nginx/.htpasswd-hermes;'
+              if insert_after in block:
+                  block = block.replace(insert_after, insert_after + cookie_line, 1)
+              else:
+                  block = block.replace(marker, marker + cookie_line, 1)
+
+          text = text[:start] + block + text[end + 1:]
+          path.write_text(text, encoding="utf-8")
+          PY
+
+            sudo python3 - "$NGINX_FILE" "$TOKEN" <<'PY'
+          import sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          token = sys.argv[2]
+          text = path.read_text(encoding="utf-8")
+          text = text.replace("hermes_remember=$cookie_hermes_remember;", f"hermes_remember={token};")
+          path.write_text(text, encoding="utf-8")
+          PY
+          done
+
+          sudo nginx -t
+          sudo systemctl reload nginx
+          echo "Hermes remember cookie enabled."
+          REMOTE
