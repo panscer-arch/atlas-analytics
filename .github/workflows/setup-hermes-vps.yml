@@ -55,6 +55,27 @@ jobs:
             sudo -u "$HERMES_USER" env HOME="$HERMES_HOME" "$HERMES_BIN" update || true
           fi
 
+          GITHUB_MCP_VERSION="1.3.0"
+          GITHUB_MCP_ARCH="$(uname -m)"
+          case "$GITHUB_MCP_ARCH" in
+            x86_64|amd64) GITHUB_MCP_ASSET_ARCH="x86_64" ;;
+            aarch64|arm64) GITHUB_MCP_ASSET_ARCH="arm64" ;;
+            i386|i686) GITHUB_MCP_ASSET_ARCH="i386" ;;
+            *) echo "Skipping GitHub MCP install: unsupported architecture $GITHUB_MCP_ARCH" ;;
+          esac
+          if [ -n "${GITHUB_MCP_ASSET_ARCH:-}" ]; then
+            GITHUB_MCP_TMP="$(mktemp -d)"
+            GITHUB_MCP_URL="https://github.com/github/github-mcp-server/releases/download/v${GITHUB_MCP_VERSION}/github-mcp-server_Linux_${GITHUB_MCP_ASSET_ARCH}.tar.gz"
+            curl -fsSL "$GITHUB_MCP_URL" -o "$GITHUB_MCP_TMP/github-mcp-server.tar.gz"
+            tar -xzf "$GITHUB_MCP_TMP/github-mcp-server.tar.gz" -C "$GITHUB_MCP_TMP"
+            GITHUB_MCP_BINARY="$(find "$GITHUB_MCP_TMP" -type f -name github-mcp-server -perm -111 | head -n 1)"
+            if [ -n "$GITHUB_MCP_BINARY" ]; then
+              sudo install -d -m 755 -o "$HERMES_USER" -g "$HERMES_USER" "$HERMES_HOME/.local/bin"
+              sudo install -m 755 -o "$HERMES_USER" -g "$HERMES_USER" "$GITHUB_MCP_BINARY" "$HERMES_HOME/.local/bin/github-mcp-server"
+            fi
+            rm -rf "$GITHUB_MCP_TMP"
+          fi
+
           sudo mkdir -p "$HERMES_HOME/.hermes"
           sudo tee "$HERMES_HOME/.hermes/SOUL.md" >/dev/null <<'SOUL'
           # Hermes Agent Persona
