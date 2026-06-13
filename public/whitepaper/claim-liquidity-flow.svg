@@ -19,8 +19,9 @@
     </style>
   </defs>
   <rect width="1440" height="900" rx="34" fill="url(#bg)"/>
-  <text x="76" y="86" class="title">Схема 2. Claim после наступления условий</text>
-  <text x="76" y="126" class="subtitle">Claim — это запрос помощи по правилам цикла. Исполнение зависит от условий order и доступной ликвидности.</text>
+  <text x="76" y="86" class="title">Схема 2. Claim и ликвидность</text>
+  <text x="76" y="126" class="subtitle">Claim — это запрос помощи по правилам цикла.</text>
+  <text x="76" y="154" class="subtitle">Исполнение зависит от условий order и доступной ликвидности.</text>
 
   <g filter="url(#shadow)">
     <g transform="translate(90 190)">
@@ -98,6 +99,7 @@
   <path class="badline" d="M1088 684L884 746"/>
   <text x="978" y="718" class="no">Нет</text>
 
-  <rect x="90" y="790" width="380" height="54" rx="27" fill="#fee2e2"/>
-  <text x="124" y="824" class="body">Нет условий или нет ликвидности ≠ гарантированный сбой навсегда. Нужен понятный статус.</text>
+  <rect x="90" y="790" width="760" height="70" rx="28" fill="#fee2e2"/>
+  <text x="124" y="820" class="body">Нет условий или нет ликвидности — Claim не исполняется в ожидаемый момент.</text>
+  <text x="124" y="844" class="body">Пользователю нужен понятный статус в интерфейсе и официальных каналах.</text>
 </svg>

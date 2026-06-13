@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">Transport и партнерские начисления</title>
+  <desc id="desc">Блок-схема партнерского начисления через off-chain расчет, authorized process, Transport и запись проверяемого результата в блокчейн.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff7ed"/>
+      <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop offset="0" stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f172a" flood-opacity=".13"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+      <path d="M2,2 L12,7 L2,12 Z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      .title{font:900 42px Inter,Arial,sans-serif;fill:#111827}
+      .subtitle{font:700 19px Inter,Arial,sans-serif;fill:#475569}
+      .step{font:900 22px Inter,Arial,sans-serif;fill:#111827}
+      .body{font:700 15px Inter,Arial,sans-serif;fill:#475569}
+      .tag{font:900 13px Inter,Arial,sans-serif;fill:#7c3aed;letter-spacing:.08em;text-transform:uppercase}
+      .warn{font:900 16px Inter,Arial,sans-serif;fill:#b45309}
+      .line{stroke:#7c3aed;stroke-width:4;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+
+  <rect width="1440" height="760" rx="34" fill="url(#bg)"/>
+  <text x="76" y="86" class="title">Схема 3. Transport payout</text>
+  <text x="76" y="126" class="subtitle">Партнерская логика считается отдельно от пользовательского Claim.</text>
+  <text x="76" y="154" class="subtitle">Исполнение проходит через раскрытый privileged process.</text>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(80 205)">
+      <rect width="260" height="132" rx="22" fill="#fff" stroke="#fed7aa"/>
+      <text x="28" y="38" class="tag">Step 1</text>
+      <text x="28" y="72" class="step">Referral event</text>
+      <text x="28" y="104" class="body">Нижестоящий участник</text>
+      <text x="28" y="125" class="body">создает Smart Cycle.</text>
+    </g>
+    <g transform="translate(400 205)">
+      <rect width="260" height="132" rx="22" fill="#fff" stroke="#fed7aa"/>
+      <text x="28" y="38" class="tag">Step 2</text>
+      <text x="28" y="72" class="step">Backend accounting</text>
+      <text x="28" y="104" class="body">Расчет статуса, уровней,</text>
+      <text x="28" y="125" class="body">компрессии и лимитов.</text>
+    </g>
+    <g transform="translate(720 205)">
+      <rect width="260" height="132" rx="22" fill="#fff" stroke="#ddd6fe"/>
+      <text x="28" y="38" class="tag">Step 3</text>
+      <text x="28" y="72" class="step">Authorized role</text>
+      <text x="28" y="104" class="body">Уполномоченный адрес</text>
+      <text x="28" y="125" class="body">инициирует выплату.</text>
+    </g>
+    <g transform="translate(1040 205)">
+      <rect width="300" height="132" rx="22" fill="#fff" stroke="#ddd6fe"/>
+      <text x="28" y="38" class="tag">Step 4</text>
+      <text x="28" y="72" class="step">Transport</text>
+      <text x="28" y="104" class="body">Выполняет перевод</text>
+      <text x="28" y="125" class="body">по партнерской логике.</text>
+    </g>
+  </g>
+
+  <path class="line" d="M340 271H394"/>
+  <path class="line" d="M660 271H714"/>
+  <path class="line" d="M980 271H1034"/>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(230 455)">
+      <rect width="300" height="124" rx="24" fill="#fff" stroke="#bfdbfe"/>
+      <text x="30" y="43" class="step">Partner wallet</text>
+      <text x="30" y="75" class="body">Получатель партнерского</text>
+      <text x="30" y="96" class="body">начисления видит сумму</text>
+      <text x="30" y="117" class="body">в истории операций.</text>
+    </g>
+    <g transform="translate(600 455)">
+      <rect width="300" height="124" rx="24" fill="#fff" stroke="#bfdbfe"/>
+      <text x="30" y="43" class="step">Platform fee</text>
+      <text x="30" y="75" class="body">Системная комиссия</text>
+      <text x="30" y="96" class="body">фиксируется отдельно</text>
+      <text x="30" y="117" class="body">и проверяется on-chain.</text>
+    </g>
+    <g transform="translate(970 455)">
+      <rect width="300" height="124" rx="24" fill="#fff" stroke="#bfdbfe"/>
+      <text x="30" y="43" class="step">Explorer records</text>
+      <text x="30" y="75" class="body">Транзакция, адреса,</text>
+      <text x="30" y="96" class="body">суммы и события доступны</text>
+      <text x="30" y="117" class="body">для независимой проверки.</text>
+    </g>
+  </g>
+
+  <path class="line" d="M1190 337V442"/>
+  <path class="line" d="M1190 398H750V448"/>
+  <path class="line" d="M750 398H380V448"/>
+
+  <rect x="80" y="640" width="1260" height="70" rx="28" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="114" y="670" class="warn">Важно:</text>
+  <text x="184" y="670" class="body">Transport не является пользовательским Claim. Это отдельная административная зона,</text>
+  <text x="184" y="694" class="body">которая раскрывается как архитектурный риск и проверяется через публичные транзакции.</text>
+</svg>

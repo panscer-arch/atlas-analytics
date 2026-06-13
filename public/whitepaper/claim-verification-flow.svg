@@ -15,7 +15,7 @@
     </style>
   </defs>
   <rect width="1440" height="620" rx="34" fill="url(#bg)"/>
-  <text x="74" y="86" class="title">Схема 3. Как пользователь проверяет Claim</text>
+  <text x="74" y="86" class="title">Схема 4. Как пользователь проверяет Claim</text>
   <text x="74" y="126" class="subtitle">Интерфейс удобен, но проверка начинается с tx hash, explorer и официального Contract Registry.</text>
 
   <g filter="url(#shadow)">
@@ -63,5 +63,6 @@
 
   <rect x="80" y="440" width="1310" height="74" rx="24" fill="#dbeafe" opacity=".75"/>
   <text x="112" y="470" class="step">Правило проверки</text>
-  <text x="112" y="500" class="body">Если dashboard, FAQ, партнерское сообщение и explorer расходятся, пользователь должен сверять действие через официальный Contract Registry, verified contract и правила Smart Cycle.</text>
+  <text x="112" y="500" class="body">Если dashboard, FAQ, партнерское сообщение и explorer расходятся, пользователь сверяет действие</text>
+  <text x="112" y="524" class="body">через официальный Contract Registry, verified contract и правила Smart Cycle.</text>
 </svg>
