@@ -73,7 +73,7 @@ jobs:
           marker = "location /hermes/ {"
           start = text.find(marker)
           if start == -1:
-              continue
+              raise SystemExit(0)
 
           depth = 0
           end = None
