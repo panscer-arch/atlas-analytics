@@ -2539,8 +2539,6 @@ const WHITE_PAPER_50_SECTIONS = [
       "| DailyFlow address | Будет внесен после deployment | Адрес нельзя публиковать как финальный до explorer-подтверждения. |",
       "| Transport address | Будет внесен после deployment | Должен быть раскрыт отдельно от пользовательского Claim. |",
       "",
-      "После deployment этот блок должен сверяться с explorer, verified source code, ABI, интерфейсом и changelog. Если публичный текст, интерфейс и verified contracts расходятся, участник должен ориентироваться на актуальный Contract Registry и verified contracts в explorer.",
-      "",
       "4.3 Пользовательский путь внутри Smart Cycle-1",
       "",
       "Блок-схема ниже показывает базовый путь участника внутри Smart Cycle-1: от подключения кошелька и изучения параметров до создания on-chain order, ожидания условий, Claim и проверки результата через официальный explorer.",
