@@ -17,7 +17,7 @@ import {
   replaceWhitePaperSubsectionText,
 } from "../utils/whitePaperUtils";
 
-function WhitePaperBoard() {
+function WhitePaperBoard({ initialView = "document", boardId = "whitePaper" } = {}) {
   const [blocks, setBlocks] = useState(readStoredBlocks);
   const [saveState, setSaveState] = useState({ status: "idle", message: "Сервер не синхронизирован" });
   const saveTimerRef = useRef(null);
@@ -32,13 +32,13 @@ function WhitePaperBoard() {
     return url.searchParams.get("block") || defaultWhitePaperBlocks[0].id;
   });
   const [activeView, setActiveView] = useState(() => {
-    if (typeof window === "undefined") return "document";
+    if (typeof window === "undefined") return initialView;
     const url = new URL(window.location.href);
     const requestedView = url.searchParams.get("view");
     if (WHITE_PAPER_VIEWS.some((view) => view.id === requestedView)) return requestedView;
     if (url.searchParams.get("block") === "full-manifest") return "manifest";
     if (url.searchParams.get("block")?.startsWith("archive-")) return "archive";
-    return "document";
+    return initialView;
   });
   const [activeSubsectionId, setActiveSubsectionId] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -96,7 +96,7 @@ function WhitePaperBoard() {
     if (!activeBlock || typeof window === "undefined") return;
 
     const url = new URL(window.location.href);
-    url.searchParams.set("board", "whitePaper");
+    url.searchParams.set("board", boardId);
     url.searchParams.set("view", activeView);
     url.searchParams.set("block", activeBlock.id);
     if (activeSubsection) {
@@ -105,7 +105,7 @@ function WhitePaperBoard() {
       url.searchParams.delete("subblock");
     }
     window.history.replaceState({}, "", url.toString());
-  }, [activeBlock, activeSubsection, activeView]);
+  }, [activeBlock, activeSubsection, activeView, boardId]);
 
   useEffect(() => {
     if (!activeBlock || !isStructuredWhitePaper) return;
