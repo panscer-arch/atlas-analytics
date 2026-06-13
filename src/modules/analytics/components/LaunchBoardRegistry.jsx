@@ -16,7 +16,6 @@ import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
-import TransportRiskFaqBoard from "./TransportRiskFaqBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
@@ -116,7 +115,6 @@ export const CONTENT_BOARD_TABS = [
   { id: "videoScripts", label: "Ролики" },
   { id: "terminology", label: "Терминология" },
   { id: "securityReview", label: "Security Review" },
-  { id: "transportRiskFaq", label: "Audit Risk FAQ" },
   { id: "codexSystem", label: "Codex OS" },
 ];
 
@@ -140,13 +138,11 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "legalDocs",
   "terminology",
   "securityReview",
-  "transportRiskFaq",
   "codexSystem",
 ];
 
 export const CONTENT_BOARD_IDS = [
   ...CONTENT_BOARD_TABS.map((tab) => tab.id),
-  "transportRiskFaq",
 ];
 
 export const TASK_BOARD_IDS = [
@@ -159,6 +155,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "expenses") return "analytics";
   if (boardId === "parser") return "parser";
   if (boardId === "diary") return "diary";
+  if (boardId === "transportRiskFaq") return "content";
   if (CONTENT_BOARD_IDS.includes(boardId)) return "content";
   if (TASK_BOARD_IDS.includes(boardId)) return "tasks";
   return "tasks";
@@ -245,10 +242,6 @@ export const STATIC_BOARD_META = {
     title: "Security Review",
     description: "Внутренняя проверка smart-contract: взломоустойчивость, owner-полномочия, Transport, LP-риски и публичные формулировки.",
   },
-  transportRiskFaq: {
-    title: "Audit Risk FAQ",
-    description: "Пояснение к аудиту: Transport, owner powers и гибридная архитектура Atlas Core V1.",
-  },
   codexSystem: {
     title: "Codex OS",
     description: "Суперсистема работы с Codex: PRD, маленькие задачи, review-loop, security gate, refactoring и автоматизации.",
@@ -282,7 +275,6 @@ const STATIC_BOARD_RENDERERS = {
   legalDocs: () => <LegalDocumentsBoard />,
   terminology: () => <AgentTerminologyTemplate />,
   securityReview: () => <SecurityReviewBoard />,
-  transportRiskFaq: () => <TransportRiskFaqBoard />,
   codexSystem: () => <CodexSystemBoard />,
   dailyTasks: () => <DailyTasksBoard />,
 };
