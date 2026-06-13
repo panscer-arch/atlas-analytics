@@ -104,6 +104,7 @@ jobs:
           - Сам сервис слушает только `127.0.0.1:9119`; публичный доступ закрыт Basic Auth.
           - SuperSUS живёт на `https://supersussystem.com/`.
           - Вкладка Files смотрит в `/opt/hermes/files`; сюда можно складывать документы проекта.
+          - GitHub MCP подключён read-only через `/opt/hermes/.local/bin/github-mcp-server`; подробности: `/opt/hermes/files/decisions/GITHUB-MCP-HERMES.md`.
           MEMORY
 
           import_secret_file() {
