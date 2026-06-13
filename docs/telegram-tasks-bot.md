@@ -16,6 +16,7 @@
 ## Команды
 
 ```text
+/hermes что мне сегодня важно сделать по SuperSUS
 /task marketing Сделать 10 картинок для FB
 /task launch @rubi до 01.06 Проверить ссылку TikTok в закрепе
 /task daily Созвониться по запуску
@@ -31,6 +32,16 @@
 /report FB создан, ссылка в закрепе, жду правки по КП
 /remind завтра 12:00 проверить КП по FB
 ```
+
+Гермес:
+
+```text
+/hermes запомни решение: дневник в SuperSUS ведём каждый день
+гермес разложи последние задачи по приоритетам
+```
+
+Команда `/hermes` отправляет сообщение в Hermes Agent на VPS через локальный мост `hermes-telegram-bridge.service`.
+Текущий Telegram-бот остаётся единственным процессом, который читает Telegram updates, поэтому команды задач и голосовые не ломаются.
 
 Reply-сценарий:
 
@@ -147,6 +158,7 @@ sudo systemctl status atlas-telegram-bot.service
 
 ```bash
 sudo journalctl -u atlas-telegram-bot.service -f
+sudo journalctl -u hermes-telegram-bridge.service -f
 ```
 
 Если `TELEGRAM_BOT_TOKEN` не задан, сервис не падает, а работает в disabled-режиме.

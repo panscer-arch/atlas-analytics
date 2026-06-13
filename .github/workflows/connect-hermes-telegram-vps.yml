@@ -1,0 +1,133 @@
+name: Connect Hermes Telegram Bridge on VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  connect-hermes-telegram:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/deploy_key
+          ${{ secrets.VPS_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            echo "ssh-keyscan failed, retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Upload bridge
+        shell: bash
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            server/hermes-telegram-bridge.py \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/hermes-telegram-bridge.py"
+
+      - name: Install and connect bridge
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          HERMES_USER=hermes
+          HERMES_HOME=/opt/hermes
+          BRIDGE_PORT=9120
+          BRIDGE_URL="http://127.0.0.1:${BRIDGE_PORT}/message"
+          ATLAS_ENV=/etc/atlas-telegram-bot.env
+          BRIDGE_ENV="$HERMES_HOME/.hermes/telegram-bridge.env"
+
+          if ! id "$HERMES_USER" >/dev/null 2>&1; then
+            echo "Hermes user is missing. Run setup-hermes-vps first." >&2
+            exit 1
+          fi
+
+          if [ ! -f "$ATLAS_ENV" ] || ! sudo grep -q '^TELEGRAM_BOT_TOKEN=' "$ATLAS_ENV"; then
+            echo "/etc/atlas-telegram-bot.env with TELEGRAM_BOT_TOKEN is missing. Existing Telegram bot is not configured." >&2
+            exit 1
+          fi
+
+          sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
+          sudo mkdir -p "$HERMES_HOME/.hermes"
+
+          if sudo test -f "$BRIDGE_ENV" && sudo grep -q '^HERMES_TELEGRAM_BRIDGE_TOKEN=' "$BRIDGE_ENV"; then
+            BRIDGE_TOKEN="$(sudo sed -n 's/^HERMES_TELEGRAM_BRIDGE_TOKEN=//p' "$BRIDGE_ENV" | tail -n 1)"
+          else
+            BRIDGE_TOKEN="$(openssl rand -hex 32)"
+          fi
+
+          sudo tee "$BRIDGE_ENV" >/dev/null <<ENV
+          HERMES_TELEGRAM_BRIDGE_HOST=127.0.0.1
+          HERMES_TELEGRAM_BRIDGE_PORT=$BRIDGE_PORT
+          HERMES_TELEGRAM_BRIDGE_TOKEN=$BRIDGE_TOKEN
+          HERMES_HOME=$HERMES_HOME
+          HERMES_BIN=$HERMES_HOME/.local/bin/hermes
+          HERMES_TELEGRAM_BRIDGE_TIMEOUT=180
+          ENV
+          sudo chown "$HERMES_USER:$HERMES_USER" "$BRIDGE_ENV"
+          sudo chmod 600 "$BRIDGE_ENV"
+
+          sudo tee /etc/systemd/system/hermes-telegram-bridge.service >/dev/null <<SERVICE
+          [Unit]
+          Description=Hermes Telegram Bridge for Atlas Bot
+          After=network.target hermes-dashboard.service
+
+          [Service]
+          Type=simple
+          User=$HERMES_USER
+          Group=$HERMES_USER
+          EnvironmentFile=$BRIDGE_ENV
+          WorkingDirectory=$HERMES_HOME
+          ExecStart=/usr/bin/python3 /opt/hermes/hermes-telegram-bridge.py
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+          if sudo grep -q '^HERMES_BRIDGE_URL=' "$ATLAS_ENV"; then
+            sudo sed -i "s|^HERMES_BRIDGE_URL=.*|HERMES_BRIDGE_URL=$BRIDGE_URL|" "$ATLAS_ENV"
+          else
+            printf '\nHERMES_BRIDGE_URL=%s\n' "$BRIDGE_URL" | sudo tee -a "$ATLAS_ENV" >/dev/null
+          fi
+
+          if sudo grep -q '^HERMES_BRIDGE_TOKEN=' "$ATLAS_ENV"; then
+            sudo sed -i "s|^HERMES_BRIDGE_TOKEN=.*|HERMES_BRIDGE_TOKEN=$BRIDGE_TOKEN|" "$ATLAS_ENV"
+          else
+            printf 'HERMES_BRIDGE_TOKEN=%s\n' "$BRIDGE_TOKEN" | sudo tee -a "$ATLAS_ENV" >/dev/null
+          fi
+
+          if ! sudo grep -q '^HERMES_BRIDGE_TIMEOUT_MS=' "$ATLAS_ENV"; then
+            printf 'HERMES_BRIDGE_TIMEOUT_MS=180000\n' | sudo tee -a "$ATLAS_ENV" >/dev/null
+          fi
+
+          sudo chmod 600 "$ATLAS_ENV"
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now hermes-telegram-bridge.service
+          sudo systemctl restart hermes-telegram-bridge.service
+          sudo systemctl restart atlas-telegram-bot.service
+
+          sleep 3
+          systemctl is-active --quiet hermes-telegram-bridge.service
+          systemctl is-active --quiet atlas-telegram-bot.service
+          curl -fsS http://127.0.0.1:${BRIDGE_PORT}/health >/dev/null
+          echo "Hermes Telegram bridge connected. Use /hermes in the existing Telegram bot."
+          REMOTE

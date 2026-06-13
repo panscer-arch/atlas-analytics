@@ -13,6 +13,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || "whisper-1";
 const MAX_AUDIO_BYTES = Number(process.env.TELEGRAM_TRANSCRIBE_MAX_BYTES || 25 * 1024 * 1024);
+const HERMES_BRIDGE_URL = process.env.HERMES_BRIDGE_URL || "";
+const HERMES_BRIDGE_TOKEN = process.env.HERMES_BRIDGE_TOKEN || "";
+const HERMES_TIMEOUT_MS = Number(process.env.HERMES_BRIDGE_TIMEOUT_MS || 180_000);
 const ALLOWED_CHAT_IDS = new Set(
   String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || "")
     .split(",")
@@ -145,6 +148,7 @@ async function handleUpdate(update) {
   if (text.startsWith("/question")) return handleOperationCommand(message, text, "questions", "Вопрос сохранён");
   if (text.startsWith("/report")) return handleOperationCommand(message, text, "reports", "Отчёт сохранён");
   if (text.startsWith("/remind")) return handleOperationCommand(message, text, "reminders", "Напоминание сохранено");
+  if (isHermesCommand(text)) return handleHermesCommand(message, text);
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
 
   if (text.includes(TASK_TRIGGER_EMOJI)) {
@@ -557,11 +561,101 @@ async function handleOperationCommand(message, text, type, successText) {
   });
 }
 
+function isHermesCommand(text = "") {
+  const value = stripBotMention(String(text || "").trim());
+  return /^\/hermes(?:\s|$)/i.test(value) || /^гермес(?:\s|,|:|-|—|$)/i.test(value);
+}
+
+function parseHermesPrompt(text = "") {
+  return stripBotMention(String(text || "").trim())
+    .replace(/^\/hermes(?:\s+|$)/i, "")
+    .replace(/^гермес(?:\s|,|:|-|—)+/i, "")
+    .trim();
+}
+
+async function handleHermesCommand(message, text) {
+  if (!HERMES_BRIDGE_URL || !HERMES_BRIDGE_TOKEN) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Гермес ещё не подключён к этому боту на сервере. Нужны HERMES_BRIDGE_URL и HERMES_BRIDGE_TOKEN.",
+    });
+    return;
+  }
+
+  let prompt = parseHermesPrompt(text);
+  if (!prompt && message.reply_to_message) {
+    try {
+      prompt = await getMessageText(message.reply_to_message);
+    } catch (error) {
+      log("hermes reply transcription error:", error?.message || String(error));
+    }
+  }
+
+  if (!prompt.trim()) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Напиши так: /hermes что нужно разобрать, запомнить или сделать",
+    });
+    return;
+  }
+
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: "Передал Гермесу, думаю...",
+  });
+
+  try {
+    const result = await askHermesBridge({
+      prompt,
+      source: buildSource(message, prompt),
+    });
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: result || "Гермес ответил пусто. Проверь логи hermes-telegram-bridge.service.",
+    });
+  } catch (error) {
+    log("hermes bridge error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: `Гермес не ответил: ${error?.message || "ошибка моста"}`,
+    });
+  }
+}
+
+async function askHermesBridge(payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), HERMES_TIMEOUT_MS);
+  try {
+    const response = await fetch(HERMES_BRIDGE_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${HERMES_BRIDGE_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(json?.error || `HTTP ${response.status}`);
+    }
+    return String(json?.answer || "").trim();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function sendHelp(chatId) {
   await telegram("sendMessage", {
     chat_id: chatId,
     text: [
       "Команды Atlas Tasks:",
+      "/hermes текст — спросить Гермеса / второй мозг",
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",
       "Reply на сообщение + /task marketing — взять текст из сообщения",
