@@ -12,6 +12,7 @@ export const WHITE_PAPER_VIEWS = [
   { id: "whitepaper30", label: "White Paper 3.0" },
   { id: "whitepaper40", label: "White Paper 4.0" },
   { id: "whitepaper50", label: "White Paper 5.0" },
+  { id: "whitepaper50SmartCycle", label: "Пункт 4: Smart Cycle-1" },
   { id: "aaveRu", label: "Aave RU" },
   { id: "manifest", label: "Манифест" },
   { id: "archive", label: "Архив v6.4" },
