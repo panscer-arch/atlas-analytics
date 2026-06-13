@@ -566,6 +566,7 @@ function AnalyticsPage() {
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
+    { id: "agentDataset", label: "Датасет" },
   ];
 
   const analyticsSectionTabs = [
@@ -623,6 +624,12 @@ function AnalyticsPage() {
     if (nextTab === "quickNotes") {
       setIsQuickNotesOpen(true);
       return;
+    }
+
+    if (nextTab === "agentDataset") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("board", "agentDataset");
+      window.history.replaceState({}, "", url.toString());
     }
 
     setActiveTab(nextTab);

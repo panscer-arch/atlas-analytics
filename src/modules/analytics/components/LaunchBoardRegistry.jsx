@@ -155,6 +155,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "expenses") return "analytics";
   if (boardId === "parser") return "parser";
   if (boardId === "diary") return "diary";
+  if (boardId === "agentDataset") return "agentDataset";
   if (boardId === "transportRiskFaq") return "content";
   if (CONTENT_BOARD_IDS.includes(boardId)) return "content";
   if (TASK_BOARD_IDS.includes(boardId)) return "tasks";
