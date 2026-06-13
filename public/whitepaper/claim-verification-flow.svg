@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="620" viewBox="0 0 1440 620" role="img" aria-labelledby="title desc">
+  <title id="title">Проверка Claim пользователем</title>
+  <desc id="desc">Блок-схема проверки статуса Claim через интерфейс, tx hash, explorer, Contract Registry и правила Smart Cycle.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="1" stop-color="#ecfeff"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f172a" flood-opacity=".12"/></filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto"><path d="M2,2 L12,7 L2,12 Z" fill="#2563eb"/></marker>
+    <style>
+      .title{font:900 40px Inter,Arial,sans-serif;fill:#0f172a}
+      .subtitle{font:700 19px Inter,Arial,sans-serif;fill:#475569}
+      .step{font:900 22px Inter,Arial,sans-serif;fill:#0f172a}
+      .body{font:700 15px Inter,Arial,sans-serif;fill:#475569}
+      .tag{font:900 13px Inter,Arial,sans-serif;fill:#2563eb;letter-spacing:.08em;text-transform:uppercase}
+      .line{stroke:#2563eb;stroke-width:4;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1440" height="620" rx="34" fill="url(#bg)"/>
+  <text x="74" y="86" class="title">Схема 3. Как пользователь проверяет Claim</text>
+  <text x="74" y="126" class="subtitle">Интерфейс удобен, но проверка начинается с tx hash, explorer и официального Contract Registry.</text>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(80 220)">
+      <rect width="230" height="132" rx="22" fill="#fff" stroke="#bfdbfe"/>
+      <text x="26" y="38" class="tag">Step 1</text>
+      <text x="26" y="72" class="step">Dashboard</text>
+      <text x="26" y="104" class="body">Показывает статус</text>
+      <text x="26" y="125" class="body">цикла и Claim.</text>
+    </g>
+    <g transform="translate(360 220)">
+      <rect width="230" height="132" rx="22" fill="#fff" stroke="#bfdbfe"/>
+      <text x="26" y="38" class="tag">Step 2</text>
+      <text x="26" y="72" class="step">TX hash</text>
+      <text x="26" y="104" class="body">Пользователь сверяет</text>
+      <text x="26" y="125" class="body">хэш операции.</text>
+    </g>
+    <g transform="translate(640 220)">
+      <rect width="230" height="132" rx="22" fill="#fff" stroke="#bfdbfe"/>
+      <text x="26" y="38" class="tag">Step 3</text>
+      <text x="26" y="72" class="step">BscScan</text>
+      <text x="26" y="104" class="body">Проверка события,</text>
+      <text x="26" y="125" class="body">адресов и статуса.</text>
+    </g>
+    <g transform="translate(920 220)">
+      <rect width="230" height="132" rx="22" fill="#fff" stroke="#bfdbfe"/>
+      <text x="26" y="38" class="tag">Step 4</text>
+      <text x="26" y="72" class="step">Registry</text>
+      <text x="26" y="104" class="body">Сверка официальных</text>
+      <text x="26" y="125" class="body">адресов и ABI.</text>
+    </g>
+    <g transform="translate(1200 220)">
+      <rect width="190" height="132" rx="22" fill="#fff" stroke="#bfdbfe"/>
+      <text x="26" y="38" class="tag">Step 5</text>
+      <text x="26" y="72" class="step">Rules</text>
+      <text x="26" y="104" class="body">Правила Smart</text>
+      <text x="26" y="125" class="body">Cycle и Claim.</text>
+    </g>
+  </g>
+
+  <path class="line" d="M310 286H354"/>
+  <path class="line" d="M590 286H634"/>
+  <path class="line" d="M870 286H914"/>
+  <path class="line" d="M1150 286H1194"/>
+
+  <rect x="80" y="440" width="1310" height="74" rx="24" fill="#dbeafe" opacity=".75"/>
+  <text x="112" y="470" class="step">Правило проверки</text>
+  <text x="112" y="500" class="body">Если dashboard, FAQ, партнерское сообщение и explorer расходятся, пользователь должен сверять действие через официальный Contract Registry, verified contract и правила Smart Cycle.</text>
+</svg>

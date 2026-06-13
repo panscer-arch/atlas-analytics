@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">Создание Smart Cycle</title>
+  <desc id="desc">Блок-схема создания Smart Cycle от выбора параметров до отображения в личном кабинете.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#eef7ff"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f7fbff"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop offset="0" stop-color="#ff7a1a"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.13"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="10" refY="7" orient="auto">
+      <path d="M2,2 L12,7 L2,12 Z" fill="#0f766e"/>
+    </marker>
+    <style>
+      .title{font:900 42px Inter,Arial,sans-serif;fill:#0f172a}
+      .subtitle{font:700 19px Inter,Arial,sans-serif;fill:#475569}
+      .step{font:900 22px Inter,Arial,sans-serif;fill:#0f172a}
+      .body{font:700 16px Inter,Arial,sans-serif;fill:#475569}
+      .small{font:800 13px Inter,Arial,sans-serif;fill:#64748b;text-transform:uppercase;letter-spacing:.08em}
+      .num{font:900 18px Inter,Arial,sans-serif;fill:#fff}
+      .line{stroke:#0f766e;stroke-width:4;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1440" height="760" rx="34" fill="url(#bg)"/>
+  <path d="M74 96H1366" stroke="#dbeafe" stroke-width="2"/>
+  <circle cx="1242" cy="132" r="84" fill="#ccfbf1" opacity=".55"/>
+  <circle cx="1305" cy="96" r="56" fill="#fed7aa" opacity=".5"/>
+  <text x="74" y="72" class="small">Atlas System / White Paper 5.0 / Smart Cycle-1</text>
+  <text x="74" y="136" class="title">Схема 1. Создание Smart Cycle</text>
+  <text x="74" y="176" class="subtitle">От выбора параметров до on-chain события и отображения цикла в кабинете.</text>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(74 250)">
+      <rect width="250" height="132" rx="22" fill="url(#card)" stroke="#bfdbfe"/>
+      <circle cx="35" cy="36" r="18" fill="#ff7a1a"/><text x="29" y="43" class="num">1</text>
+      <text x="66" y="42" class="step">Пользователь</text>
+      <text x="28" y="79" class="body">Выбирает flow, сумму</text>
+      <text x="28" y="103" class="body">и срок Smart Cycle.</text>
+    </g>
+    <g transform="translate(380 250)">
+      <rect width="250" height="132" rx="22" fill="url(#card)" stroke="#bfdbfe"/>
+      <circle cx="35" cy="36" r="18" fill="#ff7a1a"/><text x="29" y="43" class="num">2</text>
+      <text x="66" y="42" class="step">Frontend</text>
+      <text x="28" y="79" class="body">Показывает сумму, fee,</text>
+      <text x="28" y="103" class="body">сеть и предупреждения.</text>
+    </g>
+    <g transform="translate(686 250)">
+      <rect width="250" height="132" rx="22" fill="url(#card)" stroke="#bfdbfe"/>
+      <circle cx="35" cy="36" r="18" fill="#ff7a1a"/><text x="29" y="43" class="num">3</text>
+      <text x="66" y="42" class="step">Wallet</text>
+      <text x="28" y="79" class="body">Участник подписывает</text>
+      <text x="28" y="103" class="body">транзакцию сам.</text>
+    </g>
+    <g transform="translate(992 250)">
+      <rect width="300" height="132" rx="22" fill="url(#card)" stroke="#bfdbfe"/>
+      <circle cx="35" cy="36" r="18" fill="#ff7a1a"/><text x="29" y="43" class="num">4</text>
+      <text x="66" y="42" class="step">Lockup / Daily</text>
+      <text x="28" y="79" class="body">Контракт создает order</text>
+      <text x="28" y="103" class="body">по правилам flow.</text>
+    </g>
+  </g>
+  <path class="line" d="M324 316H374"/>
+  <path class="line" d="M630 316H680"/>
+  <path class="line" d="M936 316H986"/>
+
+  <path class="line" d="M1142 382V456"/>
+  <g filter="url(#shadow)">
+    <g transform="translate(992 476)">
+      <rect width="300" height="132" rx="22" fill="url(#card)" stroke="#bbf7d0"/>
+      <circle cx="35" cy="36" r="18" fill="#10b981"/><text x="29" y="43" class="num">5</text>
+      <text x="66" y="42" class="step">PositionHandler</text>
+      <text x="28" y="79" class="body">Отправляет средства</text>
+      <text x="28" y="103" class="body">в liquidity layer.</text>
+    </g>
+    <g transform="translate(686 476)">
+      <rect width="250" height="132" rx="22" fill="url(#card)" stroke="#bbf7d0"/>
+      <circle cx="35" cy="36" r="18" fill="#10b981"/><text x="29" y="43" class="num">6</text>
+      <text x="66" y="42" class="step">Pancake V3</text>
+      <text x="28" y="79" class="body">Обновляется общая</text>
+      <text x="28" y="103" class="body">liquidity position.</text>
+    </g>
+    <g transform="translate(380 476)">
+      <rect width="250" height="132" rx="22" fill="url(#card)" stroke="#bbf7d0"/>
+      <circle cx="35" cy="36" r="18" fill="#10b981"/><text x="29" y="43" class="num">7</text>
+      <text x="66" y="42" class="step">Event</text>
+      <text x="28" y="79" class="body">Locked / OrderCreated</text>
+      <text x="28" y="103" class="body">доступен в explorer.</text>
+    </g>
+    <g transform="translate(74 476)">
+      <rect width="250" height="132" rx="22" fill="url(#card)" stroke="#bbf7d0"/>
+      <circle cx="35" cy="36" r="18" fill="#10b981"/><text x="29" y="43" class="num">8</text>
+      <text x="66" y="42" class="step">Dashboard</text>
+      <text x="28" y="79" class="body">Backend индексирует</text>
+      <text x="28" y="103" class="body">и показывает цикл.</text>
+    </g>
+  </g>
+  <path class="line" d="M992 542H942"/>
+  <path class="line" d="M686 542H636"/>
+  <path class="line" d="M380 542H330"/>
+
+  <rect x="74" y="662" width="1218" height="46" rx="23" fill="url(#accent)" opacity=".12"/>
+  <text x="105" y="692" class="body">Ключевая идея: пользователь сам подписывает действие, а первичная проверка идет через on-chain событие и Contract Registry.</text>
+</svg>

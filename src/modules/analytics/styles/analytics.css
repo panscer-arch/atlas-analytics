@@ -10265,6 +10265,46 @@ input.analytics-smm-cell-input {
   border-left: 3px solid #99f6e4;
 }
 
+.analytics-whitepaper-readable-figure {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.3rem 0 0.8rem;
+  padding: clamp(0.75rem, 1.6vw, 1.1rem);
+  border: 1px solid #dbeafe;
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.analytics-whitepaper-readable-figure img {
+  display: block;
+  width: 100%;
+  max-width: 1180px;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.analytics-whitepaper-readable-figure figcaption {
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.analytics-whitepaper-reader-theme-dark .analytics-whitepaper-readable-figure {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(8, 17, 31, 0.96));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+.analytics-whitepaper-reader-theme-dark .analytics-whitepaper-readable-figure figcaption {
+  color: #bfdbfe;
+}
+
 .analytics-whitepaper-readable-table-wrap {
   overflow: auto;
   margin: 0;

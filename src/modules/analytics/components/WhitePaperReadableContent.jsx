@@ -75,6 +75,12 @@ function buildReadableChunks(text) {
     }
 
     flushTable();
+    const imageMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imageMatch) {
+      flushBuffer();
+      chunks.push({ type: "image", alt: imageMatch[1], src: imageMatch[2] });
+      return;
+    }
     if (/^\d+\.\d+\s+/.test(trimmed)) {
       flushBuffer();
       chunks.push({ type: "heading", text: trimmed });
@@ -110,6 +116,14 @@ export function WhitePaperReadableText({ text }) {
       {buildReadableChunks(text).map((chunk, index) => {
         if (chunk.type === "heading") return <h3 key={`${chunk.type}-${index}`}>{chunk.text}</h3>;
         if (chunk.type === "table") return <WhitePaperReadableTable key={`${chunk.type}-${index}`} text={chunk.text} />;
+        if (chunk.type === "image") {
+          return (
+            <figure key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-figure">
+              <img src={chunk.src} alt={chunk.alt || ""} loading="lazy" />
+              {chunk.alt ? <figcaption>{chunk.alt}</figcaption> : null}
+            </figure>
+          );
+        }
         if (chunk.type === "todo") return <div key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-callout analytics-whitepaper-readable-todo">{chunk.text}</div>;
         if (chunk.type === "action") return <div key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-callout analytics-whitepaper-readable-action">{chunk.text}</div>;
         if (chunk.type === "list") return <p key={`${chunk.type}-${index}`} className="analytics-whitepaper-readable-list">{chunk.text}</p>;
