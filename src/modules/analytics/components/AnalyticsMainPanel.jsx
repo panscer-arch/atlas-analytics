@@ -40,7 +40,6 @@ export default function AnalyticsMainPanel({
     );
   }
   if (activeTab === "content") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
-  if (activeTab === "agentDataset") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
 
   if (activeTab === "parser") {
     return (

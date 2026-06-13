@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { atlasPdfDatasetBlocks, atlasPdfFullText } from "../data/agentTrainingDatasetPdf";
+import { atlasMdDatasetBlocks, atlasMdFullText } from "../data/agentTrainingDatasetMd";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-export const AGENT_TRAINING_DATASET_STORAGE_KEY = "atlas.analytics.agentTrainingDataset.v2";
+export const AGENT_TRAINING_DATASET_STORAGE_KEY = "atlas.analytics.agentTrainingDataset.v3";
 
-const defaultDatasetBlocks = atlasPdfDatasetBlocks;
-export const defaultTrainingDataset = { blocks: defaultDatasetBlocks, fullText: atlasPdfFullText };
+const defaultDatasetBlocks = atlasMdDatasetBlocks;
+export const defaultTrainingDataset = { blocks: defaultDatasetBlocks, fullText: atlasMdFullText };
 const DATASET_STATUSES = ["Черновик", "На вычитке", "Готово", "Не включать"];
 
 function inferGroup(block) {
@@ -24,7 +24,7 @@ function normalizeBlock(block, index = 0) {
     id: block.id || `dataset-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
     type: block.type || "Блок",
     title: block.title || "",
-    source: block.source || "Atlas_System_final.pdf",
+    source: block.source || "/opt/hermes/files/atlas/dataset/",
     pages: block.pages || "",
     prompt: block.prompt || "",
     response: block.response || block.sourceText || "",
@@ -57,7 +57,7 @@ function hydrateDataset(dataset) {
 
   return {
     blocks: [...hydratedDefaults, ...customBlocks],
-    fullText: dataset.fullText || atlasPdfFullText,
+    fullText: dataset.fullText || atlasMdFullText,
   };
 }
 
@@ -84,9 +84,9 @@ function persistDataset(dataset) {
 function createBlock() {
   return normalizeBlock({
     id: `dataset-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    type: "Новый блок",
-    title: "Новая запись датасета",
-    source: "Atlas_System_final.pdf",
+    type: "Markdown-документ",
+    title: "Новая MD-запись датасета",
+    source: "/opt/hermes/files/atlas/dataset/",
     pages: "",
     prompt: "",
     response: "",
@@ -203,7 +203,7 @@ function AgentTrainingDataset() {
   }, [dataset.blocks, groupFilter, onlyEnabled, searchQuery]);
   const stats = useMemo(() => {
     const types = new Set(dataset.blocks.map((block) => block.type.trim()).filter(Boolean));
-    const pdfBlocks = dataset.blocks.filter((block) => block.source === "Atlas_System_final.pdf").length;
+    const mdFiles = dataset.blocks.filter((block) => String(block.source || "").endsWith(".md")).length;
     const enabledBlocks = dataset.blocks.filter((block) => block.enabled !== false && block.status !== "Не включать");
     const readyBlocks = dataset.blocks.filter((block) => block.status === "Готово").length;
 
@@ -211,7 +211,7 @@ function AgentTrainingDataset() {
       ["Блоков", dataset.blocks.length],
       ["В обучении", enabledBlocks.length],
       ["Готово", readyBlocks],
-      ["PDF-блоков", pdfBlocks],
+      ["MD-файлов", mdFiles],
       ["Символов", countCharacters(enabledBlocks).toLocaleString("ru-RU")],
       ["Типов", types.size],
     ];
@@ -239,9 +239,9 @@ function AgentTrainingDataset() {
       <div className="analytics-data-table-head">
         <div>
           <span className="analytics-kicker">Датасет агентов</span>
-          <h2 className="analytics-agent-template-title">Atlas System: полный датасет из PDF</h2>
+          <h2 className="analytics-agent-template-title">Atlas System: MD-датасет из Hermes</h2>
           <p className="analytics-page-subtitle">
-            `Atlas_System_final.pdf` сохранён блоками без смысловых сокращений: каждый блок содержит полный извлечённый текст страниц, prompt/response пару и JSONL-экспорт.
+            Рабочие markdown-файлы Atlas из `/opt/hermes/files/atlas/dataset/`: манифест, сайт, FAQ, терминология, презентация, голосование и сценарии роликов.
           </p>
         </div>
         <AnalyticsActionButton variant="primary" size="sm" onClick={addBlock}>
@@ -265,7 +265,7 @@ function AgentTrainingDataset() {
             className="analytics-agent-template-input"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Партнерская, риск, BscScan..."
+            placeholder="FAQ, терминология, голосование, ролик..."
           />
         </label>
         <label>
@@ -315,7 +315,7 @@ function AgentTrainingDataset() {
         <aside className="analytics-dataset-sidebar">
           <span className="analytics-kicker">Активный блок</span>
           <strong>{activeBlock.title}</strong>
-          <small>{activeBlock.group || inferGroup(activeBlock)} · {activeBlock.type} · стр. {activeBlock.pages || "не указаны"}</small>
+          <small>{activeBlock.group || inferGroup(activeBlock)} · {activeBlock.type} · {activeBlock.pages || "путь не указан"}</small>
           <small>{activeBlock.status || "Черновик"} · {activeBlock.enabled === false || activeBlock.status === "Не включать" ? "не входит в JSONL" : "входит в JSONL"}</small>
           <small>{(activeBlock.sourceText || "").length.toLocaleString("ru-RU")} символов исходника</small>
         </aside>
@@ -350,7 +350,7 @@ function AgentTrainingDataset() {
               <input className="analytics-agent-template-input" value={activeBlock.type} onChange={(event) => updateBlock(activeBlock.id, "type", event.target.value)} />
             </label>
             <label>
-              Страницы
+              Путь / файл
               <input className="analytics-agent-template-input" value={activeBlock.pages} onChange={(event) => updateBlock(activeBlock.id, "pages", event.target.value)} />
             </label>
           </div>
@@ -367,7 +367,7 @@ function AgentTrainingDataset() {
 
           {viewMode === "source" ? (
             <label className="analytics-program-field">
-              Полный текст из PDF
+              Полный markdown-текст
               <textarea
                 className="analytics-agent-template-input analytics-dataset-source"
                 value={activeBlock.sourceText}
