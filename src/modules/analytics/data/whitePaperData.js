@@ -14,6 +14,7 @@ export const WHITE_PAPER_VIEWS = [
   { id: "whitepaper50", label: "White Paper 5.0" },
   { id: "whitepaper50SmartCycle", label: "Пункт 4: Smart Cycle-1" },
   { id: "smartCycleAuditV3", label: "Audit V3: Smart Cycle" },
+  { id: "atlasInstructions", label: "Инструкции" },
   { id: "aaveRu", label: "Aave RU" },
   { id: "manifest", label: "Манифест" },
   { id: "archive", label: "Архив v6.4" },

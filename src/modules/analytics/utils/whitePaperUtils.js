@@ -31,7 +31,7 @@ export function mergeDefaultBlocks(savedBlocks = []) {
     const normalizedBlock = normalizeBlock(block);
     const defaultBlock = defaultBlocksById.get(normalizedBlock.id);
     if (!defaultBlock) return normalizedBlock;
-    if (normalizedBlock.id.startsWith("wp20-") || normalizedBlock.id.startsWith("wp30-") || normalizedBlock.id.startsWith("wp40-") || normalizedBlock.id.startsWith("wp50-") || normalizedBlock.id.startsWith("wp50sc-") || normalizedBlock.id.startsWith("scauditv3-") || normalizedBlock.id.startsWith("aave-")) {
+    if (normalizedBlock.id.startsWith("wp20-") || normalizedBlock.id.startsWith("wp30-") || normalizedBlock.id.startsWith("wp40-") || normalizedBlock.id.startsWith("wp50-") || normalizedBlock.id.startsWith("wp50sc-") || normalizedBlock.id.startsWith("scauditv3-") || normalizedBlock.id.startsWith("atlasinst-") || normalizedBlock.id.startsWith("aave-")) {
       return {
         ...normalizedBlock,
         title: normalizedBlock.title || defaultBlock.title,
