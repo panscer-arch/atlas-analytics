@@ -48,6 +48,8 @@ jobs:
           fi
 
           sudo tee "$MAP_FILE" >/dev/null <<MAP
+          map_hash_bucket_size 128;
+
           map \$cookie_hermes_remember \$hermes_auth_realm {
               default "Hermes";
               "$TOKEN" off;
