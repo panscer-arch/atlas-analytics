@@ -306,6 +306,7 @@ function WhitePaperBoard() {
       whitepaper40: { title: "Новый блок White Paper 4.0", role: "Структурный раздел" },
       whitepaper50: { title: "Новый блок White Paper 5.0", role: "Структурный раздел" },
       whitepaper50SmartCycle: { title: "Новый блок пункта 4", role: "Альтернативная структура" },
+      smartCycleAuditV3: { title: "Новый пункт Audit V3", role: "Проблема и решение" },
       aaveRu: { title: "Новый блок Aave RU", role: "Учебный перевод" },
       manifest: { title: "Новый блок манифеста", role: "Манифест" },
       archive: { title: "Новый блок архива v6.4", role: "Архив v6.4" },
