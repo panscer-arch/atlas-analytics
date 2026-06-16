@@ -8,15 +8,14 @@ import AgentKnowledgeTemplate from "./AgentKnowledgeTemplate";
 import AgentTerminologyTemplate from "./AgentTerminologyTemplate";
 import AgentTrainingDataset from "./AgentTrainingDataset";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
-import HyipParserPanel from "./HyipParserPanel";
 import ImageContentBoard from "./ImageContentBoard";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
+import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
-import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
@@ -100,7 +99,6 @@ export const TASK_BOARD_TABS = [
   { id: "productLibrary", label: "Библиотека" },
   { id: "developments", label: "Разработки" },
   { id: "crmBoard", label: "CRM-доска" },
-  { id: "telegramParser", label: "TG-парсер" },
 ];
 
 export const CONTENT_BOARD_TABS = [
@@ -158,7 +156,7 @@ export const TASK_BOARD_IDS = [
 export function getAnalyticsTabForBoard(boardId) {
   if (!boardId) return "dashboard";
   if (boardId === "expenses") return "analytics";
-  if (boardId === "parser") return "parser";
+  if (boardId === "parser" || boardId === "telegramParser") return "parser";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";
   if (CONTENT_BOARD_IDS.includes(boardId)) return "content";
@@ -278,8 +276,8 @@ const STATIC_BOARD_RENDERERS = {
   socialSubscriptions: () => <SocialSubscriptionsBoard />,
   developments: () => <DevelopmentsRegistry />,
   crmBoard: ({ analyticsBoardUrl }) => <AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" />,
-  parser: () => <HyipParserPanel />,
-  telegramParser: () => <TelegramChannelsParserPanel />,
+  parser: () => <ParserWorkspacePanel />,
+  telegramParser: () => <ParserWorkspacePanel initialTab="telegram" />,
   videoScripts: () => <VideoScriptsBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
   agentDataset: () => <AgentTrainingDataset />,

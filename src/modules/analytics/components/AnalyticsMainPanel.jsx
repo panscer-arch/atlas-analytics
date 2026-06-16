@@ -3,9 +3,9 @@ import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
 import CrmDashboardTab from "./CrmDashboardTab";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
-import HyipParserPanel from "./HyipParserPanel";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import LifeDiaryBoard from "./LifeDiaryBoard";
+import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import Wrapper from "./Wrapper";
@@ -44,7 +44,7 @@ export default function AnalyticsMainPanel({
   if (activeTab === "parser") {
     return (
       <Wrapper as="section" marginTop="lg">
-        <HyipParserPanel />
+        <ParserWorkspacePanel />
       </Wrapper>
     );
   }

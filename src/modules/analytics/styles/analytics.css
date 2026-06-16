@@ -16183,6 +16183,45 @@ input.analytics-smm-cell-input {
   gap: 1rem;
 }
 
+.analytics-parser-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-parser-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.65rem;
+}
+
+.analytics-parser-subtab {
+  min-height: 3.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(235, 243, 255, 0.78);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.analytics-parser-subtab small {
+  color: rgba(161, 178, 203, 0.72);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.analytics-parser-subtab-active {
+  border-color: rgba(79, 134, 255, 0.7);
+  background: rgba(79, 134, 255, 0.16);
+  color: #ffffff;
+}
+
 .analytics-parser-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
