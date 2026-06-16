@@ -101,6 +101,8 @@ cp .env.example .env.local
 | `RESEND_API_KEY` | API-ключ Resend для outreach-агента в парсере |
 | `OUTREACH_FROM_EMAIL` | email отправителя, например `Superflow Systems <ads@superflowsystems.com>` |
 | `OUTREACH_REPLY_TO_EMAIL` | email для ответов площадок |
+| `TELEMETR_API_KEY` | API-ключ Telemetr для проверки Telegram-каналов в TG-парсере |
+| `TGSTAT_TOKEN` | API-токен TGStat для проверки Telegram-каналов, если Telemetr не подключен или не нашёл канал |
 
 Если переменные не заданы, приложение продолжит работать на mock/fallback-данных. Редактируемый контент будет сохраняться в `localStorage`, а попытки серверного сохранения просто не будут ломать интерфейс.
 
@@ -151,6 +153,7 @@ Endpoints:
 | `GET` | `/api/content/:key` | загрузить JSON по ключу |
 | `PUT` | `/api/content/:key` | сохранить JSON по ключу |
 | `POST` | `/api/outreach/send-email` | отправить outreach email через Resend после подтверждения в UI |
+| `POST` | `/api/telegram/verify-channel` | проверить Telegram-канал через Telemetr/TGStat и вернуть контакты, живость, просмотры и дату последнего поста |
 
 Сервер хранит файлы как `${ATLAS_CONTENT_STORE_DIR}/${key}.json`. Перед перезаписью существующего файла сервер кладёт копию в `${ATLAS_CONTENT_STORE_DIR}/_backups/${key}/`.
 
@@ -164,6 +167,8 @@ Outreach-агент вкладки `Парсер` хранит очередь п
 RESEND_API_KEY=re_...
 OUTREACH_FROM_EMAIL=Atlas System <partners@atlas-system.io>
 OUTREACH_REPLY_TO_EMAIL=partners@atlas-system.io
+TELEMETR_API_KEY=...
+TGSTAT_TOKEN=...
 ```
 
 После изменения файла нужно перезапустить backend:

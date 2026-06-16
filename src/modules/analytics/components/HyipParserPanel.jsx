@@ -201,6 +201,7 @@ export default function HyipParserPanel({
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
   const [query, setQuery] = useState("");
+  const [verificationRequests, setVerificationRequests] = useState({});
 
   useEffect(() => {
     let isMounted = true;
@@ -362,6 +363,27 @@ export default function HyipParserPanel({
     });
   }
 
+  async function verifyLeadByApi(lead) {
+    setVerificationRequests((current) => ({ ...current, [lead.id]: "loading" }));
+    const result = await postServerJson("/api/telegram/verify-channel", { lead });
+    setVerificationRequests((current) => {
+      const next = { ...current };
+      delete next[lead.id];
+      return next;
+    });
+
+    if (!result.ok) {
+      const errorText = result.payload?.error === "telegram_analytics_not_configured"
+        ? "Нужно подключить TELEMETR_API_KEY или TGSTAT_TOKEN на сервере."
+        : "Не удалось проверить канал через API. Можно оставить маршрут поиска вручную.";
+      window.alert(errorText);
+      return;
+    }
+
+    updateLead(lead.id, result.payload?.patch || {});
+    appendOutreachHistory(lead.id, `Канал проверен через ${result.payload?.provider || "analytics API"}`);
+  }
+
   function addManualLead() {
     const nextLead = {
       id: `lead-${Date.now()}`,
@@ -499,6 +521,14 @@ export default function HyipParserPanel({
                         <p className="analytics-parser-static-text">{lead.verificationNotes || "Нужно проверить живость и админа."}</p>
                       </>
                     )}
+                    <button
+                      type="button"
+                      className="analytics-parser-mini-button"
+                      onClick={() => verifyLeadByApi(lead)}
+                      disabled={verificationRequests[lead.id] === "loading"}
+                    >
+                      {verificationRequests[lead.id] === "loading" ? "Проверяю..." : "Проверить API"}
+                    </button>
                   </div>
                 ) : null}
                 <div className="analytics-parser-status-cell">

@@ -113,6 +113,217 @@ function sanitizeEmailText(value = "", maxLength = 6000) {
   return normalizeEmailValue(value).slice(0, maxLength);
 }
 
+function normalizeHandle(value = "") {
+  const raw = String(value || "").trim();
+  const fromUrl = raw.match(/t\.me\/(?:s\/)?([a-zA-Z0-9_]{5,})/)?.[1] || "";
+  const fromAt = raw.match(/@([a-zA-Z0-9_]{5,})/)?.[1] || "";
+  return (fromUrl || fromAt || raw.replace(/^@/, "").trim()).replace(/[^a-zA-Z0-9_]/g, "");
+}
+
+function numberValue(...values) {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return 0;
+}
+
+function stringValue(...values) {
+  for (const value of values) {
+    const text = String(value || "").trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function extractPublicContacts(...values) {
+  const text = values.map((value) => String(value || "")).join("\n");
+  const handles = [...new Set((text.match(/@[a-zA-Z0-9_]{5,}/g) || [])
+    .filter((handle) => !["@durov", "@telegram"].includes(handle.toLowerCase())))];
+  const emails = [...new Set(text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [])];
+  return [...handles, ...emails].slice(0, 4).join(", ");
+}
+
+function toIsoDate(value) {
+  if (!value) return "";
+  if (typeof value === "number") return new Date(value * (value > 100000000000 ? 1 : 1000)).toISOString().slice(0, 10);
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+}
+
+function buildChannelQuality({ members = 0, avgViews = 0, er = 0, lastPostDate = "", hasContact = false, found = false }) {
+  if (!found) return { status: "Не найден", aliveScore: 35, fitScore: 45 };
+
+  const viewsRatio = members ? (avgViews / members) * 100 : er;
+  const daysSincePost = lastPostDate ? Math.max(0, Math.round((Date.now() - new Date(lastPostDate).getTime()) / 86400000)) : 999;
+  let aliveScore = 52;
+  if (members >= 1000) aliveScore += 8;
+  if (members >= 10000) aliveScore += 8;
+  if (avgViews >= 500) aliveScore += 10;
+  if (avgViews >= 2000) aliveScore += 8;
+  if (viewsRatio >= 5) aliveScore += 8;
+  if (viewsRatio >= 15) aliveScore += 6;
+  if (daysSincePost <= 3) aliveScore += 10;
+  if (daysSincePost > 30) aliveScore -= 18;
+  if (hasContact) aliveScore += 4;
+
+  aliveScore = Math.max(30, Math.min(96, Math.round(aliveScore)));
+  return {
+    status: aliveScore >= 78 ? "Подтверждён" : aliveScore >= 58 ? "Частично проверен" : "Сомнительный",
+    aliveScore,
+    fitScore: Math.max(50, Math.min(94, Math.round(aliveScore + (hasContact ? 2 : -4)))),
+  };
+}
+
+function summarizeVerification(source, details = {}) {
+  const parts = [source];
+  if (details.members) parts.push(`подписчики: ${details.members}`);
+  if (details.avgViews) parts.push(`ср. просмотры: ${details.avgViews}`);
+  if (details.er) parts.push(`ER/ERR: ${details.er}%`);
+  if (details.lastPostDate) parts.push(`последний пост: ${details.lastPostDate}`);
+  if (details.adsIndex) parts.push(`ads index: ${details.adsIndex}`);
+  if (details.contact) parts.push(`контакт: ${details.contact}`);
+  return parts.join(" · ");
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, payload };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function verifyWithTelemetr({ handle = "", name = "", url = "" }) {
+  const apiKey = normalizeEmailValue(process.env.TELEMETR_API_KEY || process.env.TELEMETRIO_API_KEY || "");
+  if (!apiKey) return { ok: false, error: "telemetr_api_key_not_configured" };
+
+  const term = handle ? `@${handle}` : url || name;
+  const headers = { "x-api-key": apiKey, Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
+  const searchUrl = new URL("https://api.telemetr.io/v1/channels/search");
+  searchUrl.searchParams.set("term", term);
+  searchUrl.searchParams.set("limit", "5");
+  const search = await fetchJsonWithTimeout(searchUrl, { headers });
+  if (!search.ok) return { ok: false, status: search.status, error: search.payload?.message || "telemetr_search_failed" };
+
+  const items = Array.isArray(search.payload) ? search.payload : search.payload?.items || [];
+  const lowerHandle = handle.toLowerCase();
+  const selected = items.find((item) => {
+    const username = stringValue(item.username, item.link, item.telegram_link, item.tg_link).toLowerCase();
+    return lowerHandle && username.includes(lowerHandle);
+  }) || items[0];
+  const internalId = stringValue(selected?.internal_id, selected?.id, selected?.channel_id);
+  if (!selected || !internalId) return { ok: false, error: "telemetr_channel_not_found" };
+
+  const [info, stats] = await Promise.all([
+    fetchJsonWithTimeout(new URL(`/v1/channel/info?internal_id=${encodeURIComponent(internalId)}`, "https://api.telemetr.io"), { headers }),
+    fetchJsonWithTimeout(new URL(`/v1/channel/stats?internal_id=${encodeURIComponent(internalId)}`, "https://api.telemetr.io"), { headers }),
+  ]);
+
+  const infoItem = Array.isArray(info.payload) ? info.payload[0] : info.payload;
+  const statsItem = Array.isArray(stats.payload) ? stats.payload[0] : stats.payload;
+  const about = stringValue(infoItem?.about, infoItem?.description, selected?.about, selected?.description);
+  const members = numberValue(statsItem?.members_count, statsItem?.participants_count, statsItem?.subscribers_count, infoItem?.members_count, selected?.members_count);
+  const avgViews = numberValue(statsItem?.views_avg, statsItem?.avg_views, statsItem?.views_per_post, selected?.views_avg);
+  const er = numberValue(statsItem?.er_percent, statsItem?.err_percent, statsItem?.err24_percent, selected?.er_percent);
+  const lastPostDate = toIsoDate(statsItem?.last_message_at || statsItem?.last_post_at || selected?.last_message_at || selected?.last_post_at);
+  const contact = extractPublicContacts(about, infoItem?.contacts, selected?.contacts);
+  const quality = buildChannelQuality({ members, avgViews, er, lastPostDate, hasContact: Boolean(contact), found: true });
+
+  return {
+    ok: true,
+    source: "Telemetr",
+    patch: {
+      adminContact: contact,
+      verificationStatus: contact ? "Контакт найден" : quality.status,
+      verificationNotes: summarizeVerification("Telemetr API", {
+        members,
+        avgViews,
+        er,
+        lastPostDate,
+        adsIndex: stringValue(statsItem?.ads_index_grade, statsItem?.ads_index),
+        contact,
+      }),
+      aliveScore: quality.aliveScore,
+      fitScore: quality.fitScore,
+      contacts: `Channel: @${handle || normalizeHandle(infoItem?.link || selected?.link || term)}\n${contact ? `Admin/ads: ${contact}` : "Contact: проверить описание/закреп после API-проверки"}\nSource: Telemetr`,
+      lastSeen: `Telemetr API · ${new Date().toISOString().slice(0, 10)}`,
+    },
+    raw: { selected, info: infoItem, stats: statsItem },
+  };
+}
+
+async function verifyWithTgstat({ handle = "", name = "", url = "" }) {
+  const token = normalizeEmailValue(process.env.TGSTAT_TOKEN || process.env.TGSTAT_API_TOKEN || "");
+  if (!token) return { ok: false, error: "tgstat_token_not_configured" };
+
+  const channelId = handle ? `@${handle}` : url || name;
+  const headers = { Accept: "application/json" };
+  const getUrl = new URL("https://api.tgstat.ru/channels/get");
+  getUrl.searchParams.set("token", token);
+  getUrl.searchParams.set("channelId", channelId);
+  const info = await fetchJsonWithTimeout(getUrl, { headers });
+  if (!info.ok || info.payload?.status === "error") return { ok: false, status: info.status, error: info.payload?.error || "tgstat_channel_not_found" };
+
+  const postsUrl = new URL("https://api.tgstat.ru/channels/posts");
+  postsUrl.searchParams.set("token", token);
+  postsUrl.searchParams.set("channelId", channelId);
+  postsUrl.searchParams.set("limit", "10");
+  postsUrl.searchParams.set("hideForwards", "1");
+  postsUrl.searchParams.set("extended", "1");
+  const posts = await fetchJsonWithTimeout(postsUrl, { headers });
+
+  const channel = info.payload?.response || posts.payload?.response?.channel || {};
+  const items = posts.payload?.response?.items || [];
+  const avgViews = items.length ? Math.round(items.reduce((sum, item) => sum + numberValue(item.views), 0) / items.length) : 0;
+  const lastPostDate = toIsoDate(items[0]?.date);
+  const members = numberValue(channel.participants_count);
+  const er = members && avgViews ? Number(((avgViews / members) * 100).toFixed(2)) : 0;
+  const contact = extractPublicContacts(channel.about);
+  const quality = buildChannelQuality({ members, avgViews, er, lastPostDate, hasContact: Boolean(contact), found: true });
+
+  return {
+    ok: true,
+    source: "TGStat",
+    patch: {
+      adminContact: contact,
+      verificationStatus: contact ? "Контакт найден" : quality.status,
+      verificationNotes: summarizeVerification("TGStat API", { members, avgViews, er, lastPostDate, contact }),
+      aliveScore: quality.aliveScore,
+      fitScore: quality.fitScore,
+      contacts: `Channel: @${handle || normalizeHandle(channel.username || channel.link || channelId)}\n${contact ? `Admin/ads: ${contact}` : "Contact: проверить описание/закреп после API-проверки"}\nSource: TGStat`,
+      lastSeen: `TGStat API · ${new Date().toISOString().slice(0, 10)}`,
+    },
+    raw: { channel, posts: items.slice(0, 3) },
+  };
+}
+
+async function verifyTelegramChannel(lead = {}) {
+  const handle = normalizeHandle(`${lead.contacts || ""}\n${lead.url || ""}\n${lead.name || ""}`);
+  if (!handle && !lead.url && !lead.name) return { ok: false, status: 400, error: "telegram_channel_missing" };
+
+  const attempts = [];
+  const telemetr = await verifyWithTelemetr({ handle, name: lead.name, url: lead.url }).catch((error) => ({ ok: false, error: error?.message || "telemetr_failed" }));
+  attempts.push({ provider: "Telemetr", ok: telemetr.ok, error: telemetr.error || "", status: telemetr.status || 0 });
+  if (telemetr.ok) return { ok: true, provider: "Telemetr", patch: telemetr.patch, attempts };
+
+  const tgstat = await verifyWithTgstat({ handle, name: lead.name, url: lead.url }).catch((error) => ({ ok: false, error: error?.message || "tgstat_failed" }));
+  attempts.push({ provider: "TGStat", ok: tgstat.ok, error: tgstat.error || "", status: tgstat.status || 0 });
+  if (tgstat.ok) return { ok: true, provider: "TGStat", patch: tgstat.patch, attempts };
+
+  const missingAllKeys = attempts.every((attempt) => ["telemetr_api_key_not_configured", "tgstat_token_not_configured"].includes(attempt.error));
+  return {
+    ok: false,
+    status: missingAllKeys ? 503 : 502,
+    error: missingAllKeys ? "telegram_analytics_not_configured" : "telegram_channel_verification_failed",
+    attempts,
+  };
+}
+
 function escapeHtml(value = "") {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -380,6 +591,20 @@ const server = http.createServer(async (request, response) => {
       const text = formatTelegramSubtaskPush(parsed);
       const result = await sendTelegramMessage(text, { parse_mode: "HTML" }, String(parsed.chatId || "").trim());
       sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/verify-channel" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const result = await verifyTelegramChannel(parsed.lead || parsed);
+      sendJson(
+        response,
+        result.ok ? 200 : result.status || 502,
+        result.ok
+          ? { ok: true, provider: result.provider, patch: result.patch, attempts: result.attempts || [] }
+          : { ok: false, error: result.error, attempts: result.attempts || [] },
+      );
       return;
     }
 
