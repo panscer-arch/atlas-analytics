@@ -373,8 +373,11 @@ export default function HyipParserPanel({
     });
 
     if (!result.ok) {
+      const attemptErrors = result.payload?.attempts?.map((attempt) => attempt.error).filter(Boolean) || [];
       const errorText = result.payload?.error === "telegram_analytics_not_configured"
         ? "Нужно подключить TELEMETR_API_KEY или TGSTAT_TOKEN на сервере."
+        : attemptErrors.includes("quota_foreign_channel")
+          ? "TGStat токен подключен, но текущий тариф/квота не даёт проверить этот канал. Нужен тариф TGStat с доступом к чужим/foreign channels или Telemetr API."
         : "Не удалось проверить канал через API. Можно оставить маршрут поиска вручную.";
       window.alert(errorText);
       return;
