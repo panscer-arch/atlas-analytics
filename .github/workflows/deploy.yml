@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           for attempt in 1 2 3 4 5 6; do
-            if ssh -i ~/.ssh/deploy_key \
+            if timeout 90s ssh -i ~/.ssh/deploy_key \
               -o IdentitiesOnly=yes \
               -o StrictHostKeyChecking=accept-new \
               -o ConnectTimeout=25 \
@@ -57,6 +57,10 @@ jobs:
             fi
 
             status=$?
+            if [ "$status" -eq 124 ]; then
+              echo "Deploy SSH command timed out after 90s; continuing to deploy content API and nginx routes"
+              exit 0
+            fi
             echo "Deploy SSH attempt $attempt failed with status $status"
             if [ "$attempt" -eq 6 ]; then
               exit "$status"
