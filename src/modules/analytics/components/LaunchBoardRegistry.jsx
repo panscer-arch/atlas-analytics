@@ -16,6 +16,7 @@ import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
+import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
@@ -99,6 +100,7 @@ export const TASK_BOARD_TABS = [
   { id: "productLibrary", label: "Библиотека" },
   { id: "developments", label: "Разработки" },
   { id: "crmBoard", label: "CRM-доска" },
+  { id: "telegramParser", label: "TG-парсер" },
 ];
 
 export const CONTENT_BOARD_TABS = [
@@ -131,6 +133,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "developments",
   "crmBoard",
   "parser",
+  "telegramParser",
   "agentTasks",
   "agentDataset",
   "agentFaq",
@@ -212,6 +215,10 @@ export const STATIC_BOARD_META = {
     title: "Парсер",
     description: "Рабочий инструмент поиска, отбора и обработки лидов для маркетинга и SMM.",
   },
+  telegramParser: {
+    title: "Парсер по Telegram-каналам",
+    description: "Поиск и обработка Telegram-каналов по странам: крипта, DeFi, NFT, smart-contract, Web3 и похожие проекты.",
+  },
   agentTasks: {
     title: "Параметры",
     description: "Параметры и факты проекта для AI-агента: Web3, циклы, партнерка, DAO, риски и ссылки.",
@@ -272,6 +279,7 @@ const STATIC_BOARD_RENDERERS = {
   developments: () => <DevelopmentsRegistry />,
   crmBoard: ({ analyticsBoardUrl }) => <AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" />,
   parser: () => <HyipParserPanel />,
+  telegramParser: () => <TelegramChannelsParserPanel />,
   videoScripts: () => <VideoScriptsBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
   agentDataset: () => <AgentTrainingDataset />,

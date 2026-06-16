@@ -4,33 +4,33 @@ import { loadServerContent, postServerJson, saveServerContent } from "../service
 import {
   COUNTRY_OPTIONS,
   OUTREACH_STATUS_OPTIONS,
-  OUTREACH_STORAGE_KEY,
+  OUTREACH_STORAGE_KEY as HYIP_OUTREACH_STORAGE_KEY,
   STATUS_OPTIONS,
-  STORAGE_KEY,
-  defaultLeads,
+  STORAGE_KEY as HYIP_STORAGE_KEY,
+  defaultLeads as hyipDefaultLeads,
 } from "../data/hyipParserData";
 
-function readStoredLeads() {
-  if (typeof window === "undefined") return defaultLeads;
+function readStoredLeads(storageKey, seedLeads) {
+  if (typeof window === "undefined") return seedLeads;
 
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const saved = window.localStorage.getItem(storageKey);
     const parsed = saved ? JSON.parse(saved) : null;
-    if (!Array.isArray(parsed) || !parsed.length) return defaultLeads;
+    if (!Array.isArray(parsed) || !parsed.length) return seedLeads;
 
     const savedIds = new Set(parsed.map((lead) => lead.id));
-    const missingSeedLeads = defaultLeads.filter((lead) => !savedIds.has(lead.id));
+    const missingSeedLeads = seedLeads.filter((lead) => !savedIds.has(lead.id));
     return [...parsed, ...missingSeedLeads];
   } catch {
-    return defaultLeads;
+    return seedLeads;
   }
 }
 
-function readStoredOutreach() {
+function readStoredOutreach(outreachStorageKey) {
   if (typeof window === "undefined") return {};
 
   try {
-    const saved = window.localStorage.getItem(OUTREACH_STORAGE_KEY);
+    const saved = window.localStorage.getItem(outreachStorageKey);
     const parsed = saved ? JSON.parse(saved) : {};
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
@@ -78,23 +78,25 @@ function getOutreachRecord(lead, outreach) {
   return normalizeOutreachRecord(lead, outreach[lead.id]);
 }
 
-function buildOutreachDraft(lead, record = {}) {
-  const subject = `Advertising placement request - Atlas System x ${lead.name}`;
-  const intro = lead.country === "Индия"
+function buildOutreachDraft(lead, record = {}, draftOptions = {}) {
+  const subject = record.subject || `Advertising placement request - Atlas System x ${lead.name}`;
+  const intro = draftOptions.intro || (lead.country === "Индия"
     ? "We are preparing an India-focused Web3 advertising test and are reviewing relevant crypto, Telegram and monitor placements."
-    : "We are preparing an international Web3 advertising campaign and are reviewing relevant crypto, Telegram and monitor placements.";
+    : "We are preparing an international Web3 advertising campaign and are reviewing relevant crypto, Telegram and monitor placements.");
+  const placementLine = draftOptions.placementLine || "Could you please send your current media kit and placement options?";
+  const trafficLine = draftOptions.trafficLine || "3. Traffic by country, especially India and global crypto/Web3 audience";
   const body = [
     "Hello,",
     "",
     "My name is [Your Name], I represent Atlas System.",
     intro,
     "",
-    "Could you please send your current media kit and placement options?",
+    placementLine,
     "",
     "We would like to understand:",
     "1. Available ad formats: banners, listings, reviews, Telegram/channel placements, newsletter or social posts",
     "2. Prices per week/month and available start dates",
-    "3. Traffic by country, especially India and global crypto/Web3 audience",
+    trafficLine,
     "4. Telegram/social audience size and engagement",
     "5. Moderation requirements and materials you need from our side",
     "6. Payment methods and invoice/confirmation process",
@@ -157,19 +159,30 @@ function makeCsv(leads) {
   return [header.join(","), ...rows].join("\n");
 }
 
-function downloadLeadsCsv(leads) {
+function downloadLeadsCsv(leads, filename = "hyip-monitor-leads.csv") {
   const blob = new Blob([makeCsv(leads)], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "hyip-monitor-leads.csv";
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
 }
 
-export default function HyipParserPanel() {
-  const [leads, setLeads] = useState(readStoredLeads);
-  const [outreach, setOutreach] = useState(readStoredOutreach);
+export default function HyipParserPanel({
+  title = "Площадки для размещения Atlas System",
+  kicker = "Parser / outreach",
+  seedLeads = hyipDefaultLeads,
+  storageKey = HYIP_STORAGE_KEY,
+  outreachStorageKey = HYIP_OUTREACH_STORAGE_KEY,
+  csvFilename = "hyip-monitor-leads.csv",
+  manualLeadDefaults = {},
+  draftOptions = {},
+  tableAriaLabel = "Список площадок для outreach",
+  searchPlaceholder = "название, страна, контакт...",
+} = {}) {
+  const [leads, setLeads] = useState(() => readStoredLeads(storageKey, seedLeads));
+  const [outreach, setOutreach] = useState(() => readStoredOutreach(outreachStorageKey));
   const [isOutreachLoaded, setIsOutreachLoaded] = useState(false);
   const [outreachSaveState, setOutreachSaveState] = useState("Локально");
   const [selectedLeadId, setSelectedLeadId] = useState("");
@@ -182,12 +195,12 @@ export default function HyipParserPanel() {
   useEffect(() => {
     let isMounted = true;
 
-    loadServerContent(OUTREACH_STORAGE_KEY).then((savedOutreach) => {
+    loadServerContent(outreachStorageKey).then((savedOutreach) => {
       if (!isMounted) return;
       if (savedOutreach && typeof savedOutreach === "object" && !Array.isArray(savedOutreach)) {
         setOutreach(savedOutreach);
         try {
-          window.localStorage.setItem(OUTREACH_STORAGE_KEY, JSON.stringify(savedOutreach));
+          window.localStorage.setItem(outreachStorageKey, JSON.stringify(savedOutreach));
         } catch {
           // Серверная очередь уже загружена в состояние страницы.
         }
@@ -199,7 +212,7 @@ export default function HyipParserPanel() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [outreachStorageKey]);
 
   useEffect(() => {
     if (!isOutreachLoaded) return undefined;
@@ -207,18 +220,18 @@ export default function HyipParserPanel() {
     const timer = window.setTimeout(() => {
       setOutreachSaveState("Сохраняю...");
       try {
-        window.localStorage.setItem(OUTREACH_STORAGE_KEY, JSON.stringify(outreach));
+        window.localStorage.setItem(outreachStorageKey, JSON.stringify(outreach));
       } catch {
         // Очередь останется доступна в состоянии страницы.
       }
 
-      saveServerContent(OUTREACH_STORAGE_KEY, outreach).then((ok) => {
+      saveServerContent(outreachStorageKey, outreach).then((ok) => {
         setOutreachSaveState(ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
       });
     }, 450);
 
     return () => window.clearTimeout(timer);
-  }, [isOutreachLoaded, outreach]);
+  }, [isOutreachLoaded, outreach, outreachStorageKey]);
 
   const filteredLeads = useMemo(() => leads.filter((lead) => {
     const record = getOutreachRecord(lead, outreach);
@@ -244,7 +257,7 @@ export default function HyipParserPanel() {
   function persist(nextLeads) {
     setLeads(nextLeads);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextLeads));
+      window.localStorage.setItem(storageKey, JSON.stringify(nextLeads));
     }
   }
 
@@ -279,12 +292,12 @@ export default function HyipParserPanel() {
 
   function createDraft(lead) {
     const currentRecord = getOutreachRecord(lead, outreach);
-    const nextRecord = buildOutreachDraft(lead, currentRecord);
+    const nextRecord = buildOutreachDraft(lead, currentRecord, draftOptions);
     appendOutreachHistory(lead.id, "Агент создал черновик письма", nextRecord);
   }
 
   async function copyTelegramDraft(lead, record) {
-    const draft = record.draft || buildOutreachDraft(lead, record).draft;
+    const draft = record.draft || buildOutreachDraft(lead, record, draftOptions).draft;
     try {
       await navigator.clipboard.writeText(draft);
       appendOutreachHistory(lead.id, "Telegram-текст скопирован", {
@@ -299,8 +312,8 @@ export default function HyipParserPanel() {
   }
 
   async function sendEmail(lead, record) {
-    const draft = record.draft || buildOutreachDraft(lead, record).draft;
-    const subject = record.subject || buildOutreachDraft(lead, record).subject;
+    const draft = record.draft || buildOutreachDraft(lead, record, draftOptions).draft;
+    const subject = record.subject || buildOutreachDraft(lead, record, draftOptions).subject;
     const email = record.email || extractEmail(lead.contacts);
     if (!email) {
       window.alert("У этого лида нет email. Добавь email в карточку outreach или используй Telegram/contact form.");
@@ -342,17 +355,17 @@ export default function HyipParserPanel() {
   function addManualLead() {
     const nextLead = {
       id: `lead-${Date.now()}`,
-      name: "Новая площадка",
+      name: manualLeadDefaults.name || "Новая площадка",
       country: country === "Все страны" ? "Россия" : country,
       url: "https://",
-      category: "HYIP monitor",
+      category: manualLeadDefaults.category || "HYIP monitor",
       trafficScore: 50,
       aliveScore: 50,
       fitScore: 50,
       contacts: "",
       status: "Новый",
       lastSeen: "только что",
-      notes: "Добавлено вручную, нужно проверить контакты и активность.",
+      notes: manualLeadDefaults.notes || "Добавлено вручную, нужно проверить контакты и активность.",
     };
     persist([nextLead, ...leads]);
   }
@@ -362,8 +375,8 @@ export default function HyipParserPanel() {
       <section className="analytics-parser-table-wrap analytics-surface">
         <div className="analytics-parser-table-head">
           <div>
-            <p className="analytics-kicker">Parser / outreach</p>
-            <h2>Площадки для размещения Atlas System</h2>
+            <p className="analytics-kicker">{kicker}</p>
+            <h2>{title}</h2>
             <p>
               {filteredLeads.length} строк в фильтре · {summary.ready} готовы к контакту · {outreachSaveState}
             </p>
@@ -373,7 +386,7 @@ export default function HyipParserPanel() {
               {isTableEditing ? "Готово" : "Редактировать таблицу"}
             </button>
             <button type="button" onClick={addManualLead}>Добавить вручную</button>
-            <button type="button" onClick={() => downloadLeadsCsv(filteredLeads)}>Экспорт CSV</button>
+            <button type="button" onClick={() => downloadLeadsCsv(filteredLeads, csvFilename)}>Экспорт CSV</button>
           </div>
         </div>
         <div className="analytics-parser-controls analytics-parser-controls-compact">
@@ -397,10 +410,10 @@ export default function HyipParserPanel() {
           </label>
           <label>
             Поиск
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="название, страна, контакт..." />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} />
           </label>
         </div>
-        <div className="analytics-parser-lead-table" role="table" aria-label="Список площадок для outreach">
+        <div className="analytics-parser-lead-table" role="table" aria-label={tableAriaLabel}>
           <div className="analytics-parser-lead-row analytics-parser-lead-row-head" role="row">
             <span>Площадка</span>
             <span>Сайт</span>
