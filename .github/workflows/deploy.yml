@@ -37,6 +37,7 @@ jobs:
 
       - name: Deploy on VPS
         shell: bash
+        timeout-minutes: 3
         run: |
           for attempt in 1 2 3 4 5 6; do
             if timeout 90s ssh -i ~/.ssh/deploy_key \
@@ -117,6 +118,7 @@ jobs:
           OUTREACH_FROM_EMAIL=${{ secrets.OUTREACH_FROM_EMAIL }}
           OUTREACH_REPLY_TO_EMAIL=${{ secrets.OUTREACH_REPLY_TO_EMAIL }}
           TGSTAT_TOKEN=${{ secrets.TGSTAT_TOKEN }}
+          TELEMETR_API_KEY=${{ secrets.TELEMETR_API_KEY }}
           ENV
           sudo chown root:root /etc/atlas-outreach.env
           sudo chmod 600 /etc/atlas-outreach.env
