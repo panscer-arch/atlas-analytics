@@ -18,9 +18,11 @@ function readStoredLeads(storageKey, seedLeads) {
     const parsed = saved ? JSON.parse(saved) : null;
     if (!Array.isArray(parsed) || !parsed.length) return seedLeads;
 
-    const savedIds = new Set(parsed.map((lead) => lead.id));
+    const seedById = new Map(seedLeads.map((lead) => [lead.id, lead]));
+    const hydrated = parsed.map((lead) => ({ ...(seedById.get(lead.id) || {}), ...lead }));
+    const savedIds = new Set(hydrated.map((lead) => lead.id));
     const missingSeedLeads = seedLeads.filter((lead) => !savedIds.has(lead.id));
-    return [...parsed, ...missingSeedLeads];
+    return [...hydrated, ...missingSeedLeads];
   } catch {
     return seedLeads;
   }
@@ -154,9 +156,16 @@ function getChannelLabel(record = {}) {
 }
 
 function makeCsv(leads) {
-  const header = ["name", "country", "url", "category", "trafficScore", "aliveScore", "fitScore", "contacts", "status", "notes"];
+  const header = ["name", "country", "url", "category", "trafficScore", "aliveScore", "fitScore", "contacts", "adminContact", "verificationStatus", "verificationNotes", "status", "notes"];
   const rows = leads.map((lead) => header.map((key) => `"${String(lead[key] ?? "").replaceAll('"', '""')}"`).join(","));
   return [header.join(","), ...rows].join("\n");
+}
+
+function getVerificationTone(status = "") {
+  if (status.includes("Подтвержд") || status.includes("Контакт найден")) return "success";
+  if (status.includes("Сомн") || status.includes("Не подходит")) return "danger";
+  if (status.includes("Маршрут") || status.includes("Частично") || status.includes("Найден")) return "accent";
+  return "default";
 }
 
 function downloadLeadsCsv(leads, filename = "hyip-monitor-leads.csv") {
@@ -180,6 +189,7 @@ export default function HyipParserPanel({
   draftOptions = {},
   tableAriaLabel = "Список площадок для outreach",
   searchPlaceholder = "название, страна, контакт...",
+  showVerification = false,
 } = {}) {
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, seedLeads));
   const [outreach, setOutreach] = useState(() => readStoredOutreach(outreachStorageKey));
@@ -239,7 +249,7 @@ export default function HyipParserPanel({
     const statusMatch = status === "Все статусы" || lead.status === status;
     const pipelineMatch = pipelineStatus === "Все этапы" || record.status === pipelineStatus;
     const search = query.trim().toLowerCase();
-    const queryMatch = !search || [lead.name, lead.country, lead.url, lead.category, lead.contacts, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
+    const queryMatch = !search || [lead.name, lead.country, lead.url, lead.category, lead.contacts, lead.adminContact, lead.verificationStatus, lead.verificationNotes, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
       .some((value) => String(value).toLowerCase().includes(search));
     return countryMatch && statusMatch && pipelineMatch && queryMatch;
   }), [country, leads, outreach, pipelineStatus, query, status]);
@@ -366,9 +376,14 @@ export default function HyipParserPanel({
       status: "Новый",
       lastSeen: "только что",
       notes: manualLeadDefaults.notes || "Добавлено вручную, нужно проверить контакты и активность.",
+      adminContact: manualLeadDefaults.adminContact || "",
+      verificationStatus: manualLeadDefaults.verificationStatus || "Не проверен",
+      verificationNotes: manualLeadDefaults.verificationNotes || "Нужно проверить TGStat/Telegram, просмотры, дату последних постов и контакт админа.",
     };
     persist([nextLead, ...leads]);
   }
+
+  const rowClassName = showVerification ? "analytics-parser-lead-row analytics-parser-lead-row-verified" : "analytics-parser-lead-row";
 
   return (
     <WrapperShell>
@@ -414,10 +429,11 @@ export default function HyipParserPanel({
           </label>
         </div>
         <div className="analytics-parser-lead-table" role="table" aria-label={tableAriaLabel}>
-          <div className="analytics-parser-lead-row analytics-parser-lead-row-head" role="row">
+          <div className={`${rowClassName} analytics-parser-lead-row-head`} role="row">
             <span>Площадка</span>
             <span>Сайт</span>
             <span>Контакт</span>
+            {showVerification ? <span>Проверка</span> : null}
             <span>Статус</span>
             <span>Описание портала</span>
             <span>Ответ / заметка</span>
@@ -425,7 +441,7 @@ export default function HyipParserPanel({
           {filteredLeads.map((lead) => {
             const record = getOutreachRecord(lead, outreach);
             return (
-              <div key={lead.id} className={`analytics-parser-lead-row${selectedLead?.id === lead.id ? " analytics-parser-row-active" : ""}`} role="row">
+              <div key={lead.id} className={`${rowClassName}${selectedLead?.id === lead.id ? " analytics-parser-row-active" : ""}`} role="row">
                 <div>
                   {isTableEditing ? (
                     <>
@@ -457,11 +473,34 @@ export default function HyipParserPanel({
                 <div>
                   <strong>{getChannelLabel(record)}</strong>
                   {isTableEditing ? (
-                    <textarea value={lead.contacts} onChange={(event) => updateLead(lead.id, { contacts: event.target.value })} rows="3" aria-label={`Контакты ${lead.name}`} />
+                    <>
+                      <textarea value={lead.contacts} onChange={(event) => updateLead(lead.id, { contacts: event.target.value })} rows="3" aria-label={`Контакты ${lead.name}`} />
+                      {showVerification ? <input value={lead.adminContact || ""} onChange={(event) => updateLead(lead.id, { adminContact: event.target.value })} placeholder="@admin / ads email" aria-label={`Админ ${lead.name}`} /> : null}
+                    </>
                   ) : (
-                    <p className="analytics-parser-static-text">{lead.contacts || "Контакты нужно проверить"}</p>
+                    <>
+                      <p className="analytics-parser-static-text">{lead.contacts || "Контакты нужно проверить"}</p>
+                      {showVerification && lead.adminContact ? <small>Админ/реклама: {lead.adminContact}</small> : null}
+                    </>
                   )}
                 </div>
+                {showVerification ? (
+                  <div>
+                    {isTableEditing ? (
+                      <>
+                        <select className={`analytics-parser-status analytics-parser-status-${getVerificationTone(lead.verificationStatus)}`} value={lead.verificationStatus || "Не проверен"} onChange={(event) => updateLead(lead.id, { verificationStatus: event.target.value })} aria-label={`Проверка ${lead.name}`}>
+                          {["Не проверен", "Маршрут поиска", "Найден в TGStat", "Частично проверен", "Контакт найден", "Подтверждён", "Сомнительный", "Не подходит"].map((item) => <option key={item}>{item}</option>)}
+                        </select>
+                        <textarea value={lead.verificationNotes || ""} onChange={(event) => updateLead(lead.id, { verificationNotes: event.target.value })} rows="3" placeholder="Подписчики, просмотры, дата постов, источник контакта" aria-label={`Заметка проверки ${lead.name}`} />
+                      </>
+                    ) : (
+                      <>
+                        <strong className={`analytics-parser-status analytics-parser-status-${getVerificationTone(lead.verificationStatus)}`}>{lead.verificationStatus || "Не проверен"}</strong>
+                        <p className="analytics-parser-static-text">{lead.verificationNotes || "Нужно проверить живость и админа."}</p>
+                      </>
+                    )}
+                  </div>
+                ) : null}
                 <div className="analytics-parser-status-cell">
                   <select className={`analytics-parser-status analytics-parser-status-${getStatusTone(record.status)}`} value={record.status} onChange={(event) => appendOutreachHistory(lead.id, `Статус изменён: ${event.target.value}`, { status: event.target.value })} aria-label={`Статус переговоров ${lead.name}`}>
                     {OUTREACH_STATUS_OPTIONS.map((item) => <option key={item}>{item}</option>)}

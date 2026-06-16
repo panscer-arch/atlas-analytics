@@ -156,6 +156,36 @@ function toUrl(handleOrUrl = "") {
   return `https://t.me/${handleOrUrl.replace(/^@/, "")}`;
 }
 
+const knownAdminContacts = {
+  "Crypto Arena": "@elenafml",
+  "Crypto Fight": "@iqcash_admin",
+  "TONLICIOUS": "@Durov420",
+  "TGB Crypto Marketing Agency": "@marketing_telegrambooster",
+  "CoinGape": "advertise/contact page + проверить Telegram admin",
+  "CoinCodeCap": "website contact + проверить Telegram admin",
+};
+
+const knownVerificationNotes = {
+  "Crypto Arena": "Проверено через TGStat: World/English, cryptocurrencies, в описании указан Contact: @elenafml.",
+  "Crypto Fight": "Проверено через TGStat: в описании указан advertising enquiries contact @iqcash_admin.",
+  "TONLICIOUS": "Проверено через TGStat/Tonlicious Talk: partner/cols указан @Durov420; перед оплатой проверить, что это актуальный advertising contact.",
+  "MAHEE CRYPTO": "Проверено через TGStat India: канал найден, гео India/English, crypto/trading content; публичный admin contact не выделен.",
+};
+
+function getVerificationStatus(name, handleOrUrl, note) {
+  if (knownAdminContacts[name]) return "Контакт найден";
+  if (handleOrUrl.startsWith("http")) return "Маршрут поиска";
+  if (note.includes("TGStat")) return "Найден в TGStat";
+  return "Не проверен";
+}
+
+function getVerificationNotes(name, handleOrUrl, note) {
+  if (knownVerificationNotes[name]) return knownVerificationNotes[name];
+  if (handleOrUrl.startsWith("http")) return "Это не готовый канал, а маршрут поиска. Нужно открыть выдачу, выбрать конкретный канал, проверить подписчиков, просмотры, свежесть и contact/admin.";
+  if (note.includes("TGStat")) return "Канал найден через TGStat/search. Нужно проверить дату последних постов, средние просмотры, ER и актуальность admin/contact в описании.";
+  return "Нужно проверить Telegram/TGStat: существует ли канал, свежесть постов, просмотры, накрутки, admin/contact и условия рекламы.";
+}
+
 export const defaultTelegramLeads = Object.entries(channelGroups).flatMap(([country, channels]) => (
   channels.map(([name, handleOrUrl, category, fitScore, status, note], index) => ({
     id: `tg-${slug(country)}-${String(index + 1).padStart(2, "0")}-${slug(name)}`,
@@ -169,6 +199,9 @@ export const defaultTelegramLeads = Object.entries(channelGroups).flatMap(([coun
     contacts: handleOrUrl.startsWith("@")
       ? `Channel: ${handleOrUrl}\nContact: проверить pinned/admin/описание канала перед outreach`
       : `Discovery route: ${handleOrUrl}\nContact: добавить конкретный канал после проверки выдачи`,
+    adminContact: knownAdminContacts[name] || "",
+    verificationStatus: getVerificationStatus(name, handleOrUrl, note),
+    verificationNotes: getVerificationNotes(name, handleOrUrl, note),
     status,
     lastSeen: "seed 100 · проверить перед оплатой",
     notes: `${countryMarketNotes[country]} ${note}`,

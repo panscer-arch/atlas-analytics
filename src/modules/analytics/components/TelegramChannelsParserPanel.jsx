@@ -16,9 +16,12 @@ export default function TelegramChannelsParserPanel() {
       csvFilename="telegram-web3-channel-leads.csv"
       tableAriaLabel="Список Telegram-каналов для outreach"
       searchPlaceholder="канал, страна, DeFi, NFT, Web3..."
+      showVerification
       manualLeadDefaults={{
         name: "Новый Telegram-канал",
         category: "Telegram / crypto / Web3",
+        verificationStatus: "Не проверен",
+        verificationNotes: "Проверить TGStat/Telegram, дату последних постов, средние просмотры, ER и публичный контакт админа.",
         notes: "Добавлено вручную: проверить страну, тематику, подписчиков, просмотры, контакты админа и условия рекламы.",
       }}
       draftOptions={{
