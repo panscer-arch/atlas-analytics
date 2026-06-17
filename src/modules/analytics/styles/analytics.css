@@ -17880,6 +17880,32 @@ input.analytics-smm-cell-input {
   text-align: right;
 }
 
+.analytics-localization-qa-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.analytics-localization-qa-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  color: #dbeafe;
+}
+
+.analytics-localization-qa-actions button:hover:not(:disabled) {
+  border-color: rgba(255, 139, 26, 0.58);
+  background: rgba(255, 139, 26, 0.17);
+  color: #ffe2bd;
+}
+
+.analytics-localization-qa-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .analytics-localization-pipeline {
   padding: 16px;
 }
@@ -18523,6 +18549,10 @@ input.analytics-smm-cell-input {
   }
 
   .analytics-localization-qa-score {
+    justify-items: start;
+  }
+
+  .analytics-localization-qa-actions {
     justify-items: start;
   }
 

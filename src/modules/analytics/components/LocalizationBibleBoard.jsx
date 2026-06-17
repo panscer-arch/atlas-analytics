@@ -344,6 +344,28 @@ function LocalizationBibleBoard() {
     setActivePageId(nextPage.id);
   }
 
+  function applyQaResultToActiveLocale() {
+    if (!activePage) return;
+    const nextStatus = qaResult.high > 0 ? "needs-fix" : "ai-reviewed";
+    const nextNotes = qaResult.issues.length
+      ? `AI QA: ${qaResult.high} high / ${qaResult.medium} medium. ${qaResult.issues.slice(0, 3).map((issue) => `${issue.topic}: ${issue.term}`).join("; ")}`
+      : `AI QA: no automatic issues found. Score ${qaResult.score}.`;
+    setTranslationPages((pages) => pages.map((page) => {
+      if (page.id !== activePage.id) return page;
+      return {
+        ...page,
+        locales: {
+          ...page.locales,
+          [activeLanguage.code]: {
+            ...page.locales?.[activeLanguage.code],
+            status: nextStatus,
+            notes: nextNotes,
+          },
+        },
+      };
+    }));
+  }
+
   return (
     <section className="analytics-surface analytics-localization-board">
       <div className="analytics-data-table-head">
@@ -540,9 +562,12 @@ function LocalizationBibleBoard() {
             <span className="analytics-kicker">Live QA</span>
             <h3>Проверка перевода перед публикацией</h3>
           </div>
-          <div className="analytics-localization-qa-score">
-            <strong>{qaResult.score}</strong>
-            <span>{activeLanguage.flag} {activeLanguage.nativeName} · {qaResult.wordsCount} words · {qaResult.high} high / {qaResult.medium} medium</span>
+          <div className="analytics-localization-qa-actions">
+            <div className="analytics-localization-qa-score">
+              <strong>{qaResult.score}</strong>
+              <span>{activeLanguage.flag} {activeLanguage.nativeName} · {qaResult.wordsCount} words · {qaResult.high} high / {qaResult.medium} medium</span>
+            </div>
+            <button type="button" onClick={applyQaResultToActiveLocale} disabled={!qaSourceText.trim()}>Apply QA to locale</button>
           </div>
         </div>
 
