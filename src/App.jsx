@@ -8,6 +8,7 @@ const ACCESS_ATTEMPTS_STORAGE_KEY = "supersus.access.attempts.v1";
 const ACCESS_PASSWORD_HASH = "734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e";
 const ACCESS_MAX_FAILED_ATTEMPTS = 5;
 const ACCESS_LOCKOUT_MS = 10 * 60 * 1000;
+const PUBLIC_BOARD_IDS = new Set(["localization"]);
 
 async function sha256Hex(value) {
   const bytes = new TextEncoder().encode(value);
@@ -22,6 +23,19 @@ function getStoredAccess() {
 
   try {
     return window.localStorage.getItem(ACCESS_STORAGE_KEY) === ACCESS_PASSWORD_HASH;
+  } catch {
+    return false;
+  }
+}
+
+function isPublicAccessRoute() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return PUBLIC_BOARD_IDS.has(params.get("board"));
   } catch {
     return false;
   }
@@ -92,6 +106,7 @@ function MatrixGateAnimation() {
 }
 
 function AccessGate({ children }) {
+  const isPublicRoute = isPublicAccessRoute();
   const [hasAccess, setHasAccess] = useState(getStoredAccess);
   const [attempts, setAttempts] = useState(readAccessAttempts);
   const [password, setPassword] = useState("");
@@ -156,7 +171,7 @@ function AccessGate({ children }) {
     }
   }
 
-  if (hasAccess) {
+  if (isPublicRoute || hasAccess) {
     return children;
   }
 
