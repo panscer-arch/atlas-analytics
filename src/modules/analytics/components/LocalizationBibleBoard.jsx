@@ -70,6 +70,32 @@ function normalizePage(page, index = 0) {
   };
 }
 
+function makeTermLocales(masterEn = "", overrides = {}) {
+  return atlasLocalizationLanguages.reduce((acc, language) => {
+    acc[language.code] = overrides?.[language.code] || (language.code === "ru" ? "" : masterEn);
+    return acc;
+  }, {});
+}
+
+function normalizeGlossaryTerm(term, index = 0) {
+  const masterEn = term?.masterEn || "";
+  return {
+    id: term?.id || `custom-term-${Date.now()}-${index}`,
+    category: term?.category || "Product",
+    sourceRu: term?.sourceRu || "",
+    masterEn,
+    meaning: term?.meaning || "",
+    keepEnglish: Boolean(term?.keepEnglish),
+    forbidden: term?.forbidden || "",
+    locales: makeTermLocales(masterEn, term?.locales),
+    isCustom: true,
+  };
+}
+
+function mergeGlossaryTerms(savedTerms) {
+  return Array.isArray(savedTerms) ? savedTerms.map(normalizeGlossaryTerm) : [];
+}
+
 function mergeLocalizationPages(savedPages) {
   const saved = Array.isArray(savedPages) ? savedPages.map(normalizePage) : [];
   const savedById = new Map(saved.map((page) => [page.id, page]));
@@ -133,8 +159,8 @@ function analyzeLocalizedText(text, languageCode, pageContext = "") {
   return { issues, high, medium, wordsCount, score };
 }
 
-function buildTranslationPackage({ page, language, languageGuide, localeCopy, qaResult, prompt }) {
-  const glossaryRows = localizationTermRows
+function buildTranslationPackage({ page, language, languageGuide, localeCopy, qaResult, prompt, terms = localizationTermRows }) {
+  const glossaryRows = terms
     .filter((row) => {
       const context = normalizeSearchText(`${page?.title || ""} ${page?.ruSource || ""} ${page?.enMaster || ""} ${page?.notes || ""}`);
       return [row.id, row.sourceRu, row.masterEn, row.meaning].map(normalizeSearchText).some((hint) => hint && context.includes(hint));
@@ -363,9 +389,9 @@ ${localizationPrompts.englishMaster}
   };
 }
 
-function getPageTerminology(page) {
+function getPageTerminology(page, terms = localizationTermRows) {
   const context = normalizeSearchText(`${page?.title || ""} ${page?.path || ""} ${page?.ruSource || ""} ${page?.enMaster || ""} ${page?.notes || ""}`);
-  return localizationTermRows.filter((row) => (
+  return terms.filter((row) => (
     [row.id, row.sourceRu, row.masterEn, row.meaning]
       .map(normalizeSearchText)
       .some((hint) => hint && context.includes(hint))
@@ -470,9 +496,9 @@ ${localizationPrompts.translate}
 `;
 }
 
-function buildWorkspaceExportPackage({ pages }) {
+function buildWorkspaceExportPackage({ pages, terms = localizationTermRows }) {
   const pageMarkdown = pages.map((page) => {
-    const terminology = getPageTerminology(page);
+    const terminology = getPageTerminology(page, terms);
     const locales = atlasLocalizationLanguages.map((language) => {
       const locale = page.locales?.[language.code] || makeLocaleProgress()[language.code];
       return [
@@ -511,7 +537,7 @@ ${locales}
 Generated from SuperSUS Localization Bible.
 Pages: ${pages.length}
 Languages: ${atlasLocalizationLanguages.map((language) => `${language.nativeName} (${language.code})`).join(", ")}
-Glossary terms: ${localizationTermRows.length}
+Glossary terms: ${terms.length}
 Meaning memory phrases: ${localizationMeaningMemory.length}
 UI phrases: ${localizationUiPhrases.length}
 
@@ -525,7 +551,7 @@ ${localizationCoreRules.map((rule) => `- ${rule}`).join("\n")}
 ${localizationLanguageGuides.map((guide) => `### ${guide.code}\nTone: ${guide.tone}\nKeep: ${guide.keep}\nAvoid: ${guide.avoid}\nNote: ${guide.note}`).join("\n\n")}
 
 ## Glossary
-${localizationTermRows.map((row) => `- ${row.id} / ${row.masterEn}: ${row.meaning} | keepEnglish: ${row.keepEnglish ? "yes" : "no"} | avoid: ${row.forbidden}`).join("\n")}
+${terms.map((row) => `- ${row.id} / ${row.masterEn}: ${row.meaning} | keepEnglish: ${row.keepEnglish ? "yes" : "no"} | avoid: ${row.forbidden}`).join("\n")}
 
 ## Meaning Memory
 ${localizationMeaningMemory.map((phrase) => `### ${phrase.id}\nRU: ${phrase.ruSource}\nEN: ${phrase.enMaster}`).join("\n\n")}
@@ -555,6 +581,7 @@ function LocalizationBibleBoard() {
   const [activeLanguageCode, setActiveLanguageCode] = useState("en");
   const [activeCategory, setActiveCategory] = useState("all");
   const [translationPages, setTranslationPages] = useState(() => mergeLocalizationPages());
+  const [customGlossaryRows, setCustomGlossaryRows] = useState(() => mergeGlossaryTerms());
   const [activePageId, setActivePageId] = useState(defaultLocalizationPages[0]?.id || "home");
   const [qaText, setQaText] = useState("");
   const [saveState, setSaveState] = useState("Сохранено");
@@ -562,13 +589,14 @@ function LocalizationBibleBoard() {
   const isHydratedRef = useRef(false);
   const activeLanguage = atlasLocalizationLanguages.find((language) => language.code === activeLanguageCode) || atlasLocalizationLanguages[1];
   const activeLanguageGuide = localizationLanguageGuides.find((guide) => guide.code === activeLanguage.code) || localizationLanguageGuides[1];
-  const categories = useMemo(() => ["all", ...Array.from(new Set(localizationTermRows.map((row) => row.category)))], []);
-  const visibleTerms = localizationTermRows.filter((row) => activeCategory === "all" || row.category === activeCategory);
-  const lockedTermsCount = localizationTermRows.filter((row) => row.keepEnglish).length;
+  const allTermRows = useMemo(() => [...localizationTermRows, ...customGlossaryRows], [customGlossaryRows]);
+  const categories = useMemo(() => ["all", ...Array.from(new Set(allTermRows.map((row) => row.category)))], [allTermRows]);
+  const visibleTerms = allTermRows.filter((row) => activeCategory === "all" || row.category === activeCategory);
+  const lockedTermsCount = allTermRows.filter((row) => row.keepEnglish).length;
   const activePage = translationPages.find((page) => page.id === activePageId) || translationPages[0];
   const activeLocaleCopy = activePage?.locales?.[activeLanguage.code]?.copy || "";
   const localeStatusById = useMemo(() => new Map(localizationLocaleStatuses.map((status) => [status.id, status])), []);
-  const workspaceExportPackage = useMemo(() => buildWorkspaceExportPackage({ pages: translationPages }), [translationPages]);
+  const workspaceExportPackage = useMemo(() => buildWorkspaceExportPackage({ pages: translationPages, terms: allTermRows }), [translationPages, allTermRows]);
   const workspaceExportJson = useMemo(() => JSON.stringify({
     storageKey: ATLAS_LOCALIZATION_STORAGE_KEY,
     languages: atlasLocalizationLanguages,
@@ -578,13 +606,14 @@ function LocalizationBibleBoard() {
     qaChecks: localizationQaChecks,
     forbiddenPatterns: localizationForbiddenPatterns,
     languageGuides: localizationLanguageGuides,
-    glossary: localizationTermRows,
+    glossary: allTermRows,
+    customGlossary: customGlossaryRows,
     meaningMemory: localizationMeaningMemory,
     uiPhrases: localizationUiPhrases,
     prompts: localizationPrompts,
     pages: translationPages,
     exportedAt: new Date().toISOString(),
-  }, null, 2), [translationPages]);
+  }, null, 2), [translationPages, allTermRows, customGlossaryRows]);
   const localeProgress = useMemo(() => {
     const localeCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
     const total = translationPages.length * localeCodes.length;
@@ -635,7 +664,7 @@ function LocalizationBibleBoard() {
   const qaSourceText = qaText || activeLocaleCopy;
   const qaPageContext = `${activePage?.title || ""}\n${activePage?.path || ""}\n${activePage?.ruSource || ""}\n${activePage?.enMaster || ""}\n${activePage?.notes || ""}`;
   const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
-  const activePageTerms = useMemo(() => getPageTerminology(activePage), [activePage]);
+  const activePageTerms = useMemo(() => getPageTerminology(activePage, allTermRows), [activePage, allTermRows]);
   const activePageTerminologyPackage = useMemo(() => buildPageTerminologyPackage({
     page: activePage,
     language: activeLanguage,
@@ -703,10 +732,10 @@ function LocalizationBibleBoard() {
   const languageHandoffPackage = useMemo(() => buildLanguageHandoffPackage({
     language: activeLanguage,
     languageGuide: activeLanguageGuide,
-    terms: localizationTermRows,
+    terms: allTermRows,
     meaningMemory: activeMeaningMemoryPack,
     uiPhrases: activeUiPhrasePack,
-  }), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack]);
+  }), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack, allTermRows]);
   const languageHandoffJson = useMemo(() => JSON.stringify({
     language: activeLanguage,
     languageGuide: activeLanguageGuide,
@@ -721,7 +750,7 @@ function LocalizationBibleBoard() {
     })),
     meaningMemory: activeMeaningMemoryPack,
     uiPhrases: activeUiPhrasePack,
-    glossary: localizationTermRows.map((row) => ({
+    glossary: allTermRows.map((row) => ({
       id: row.id,
       category: row.category,
       sourceRu: row.sourceRu,
@@ -732,7 +761,7 @@ function LocalizationBibleBoard() {
       forbidden: row.forbidden,
     })),
     exportedAt: new Date().toISOString(),
-  }, null, 2), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack]);
+  }, null, 2), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack, allTermRows]);
   const languageQaReport = useMemo(() => buildLanguageQaReport({
     language: activeLanguage,
     pages: translationPages,
@@ -765,7 +794,8 @@ function LocalizationBibleBoard() {
     localeCopy: activeLocaleCopy,
     qaResult,
     prompt: activeLocalePrompt,
-  }), [activePage, activeLanguage, activeLanguageGuide, activeLocaleCopy, qaResult, activeLocalePrompt]);
+    terms: allTermRows,
+  }), [activePage, activeLanguage, activeLanguageGuide, activeLocaleCopy, qaResult, activeLocalePrompt, allTermRows]);
   const translationPackageJson = useMemo(() => JSON.stringify({
     page: activePage,
     language: activeLanguage,
@@ -783,7 +813,9 @@ function LocalizationBibleBoard() {
       if (saved) {
         const parsed = JSON.parse(saved);
         const pages = mergeLocalizationPages(parsed?.pages || parsed);
+        const customTerms = mergeGlossaryTerms(parsed?.customTerms);
         setTranslationPages(pages);
+        setCustomGlossaryRows(customTerms);
         setActivePageId((current) => pages.some((page) => page.id === current) ? current : pages[0]?.id);
       }
     } catch {
@@ -793,10 +825,12 @@ function LocalizationBibleBoard() {
     loadServerContent(ATLAS_LOCALIZATION_STORAGE_KEY).then((saved) => {
       if (!isMounted || !saved) return;
       const pages = mergeLocalizationPages(saved?.pages || saved);
+      const customTerms = mergeGlossaryTerms(saved?.customTerms);
       setTranslationPages(pages);
+      setCustomGlossaryRows(customTerms);
       setActivePageId((current) => pages.some((page) => page.id === current) ? current : pages[0]?.id);
       try {
-        window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify({ pages }));
+        window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify({ pages, customTerms }));
       } catch {
         // Server content is still loaded even if local cache is unavailable.
       }
@@ -814,7 +848,7 @@ function LocalizationBibleBoard() {
     const saveTimer = window.setTimeout(() => {
       const requestId = saveRequestRef.current + 1;
       saveRequestRef.current = requestId;
-      const payload = { pages: translationPages };
+      const payload = { pages: translationPages, customTerms: customGlossaryRows };
       setSaveState("Сохраняю...");
       try {
         window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify(payload));
@@ -828,7 +862,7 @@ function LocalizationBibleBoard() {
     }, 500);
 
     return () => window.clearTimeout(saveTimer);
-  }, [translationPages]);
+  }, [translationPages, customGlossaryRows]);
 
   function updateActivePage(field, value) {
     if (!activePage) return;
@@ -865,6 +899,50 @@ function LocalizationBibleBoard() {
     });
     setTranslationPages((pages) => [nextPage, ...pages]);
     setActivePageId(nextPage.id);
+  }
+
+  function addCustomGlossaryTerm() {
+    const nextTerm = normalizeGlossaryTerm({
+      id: `custom-term-${Date.now()}`,
+      category: "Product",
+      sourceRu: "Новый термин",
+      masterEn: "New term",
+      meaning: "Опишите точный смысл термина.",
+      forbidden: "Что нельзя использовать в переводе.",
+      locales: { ru: "Новый термин", en: "New term" },
+    });
+    setCustomGlossaryRows((terms) => [nextTerm, ...terms]);
+    setActiveCategory("Product");
+  }
+
+  function updateCustomGlossaryTerm(termId, field, value) {
+    setCustomGlossaryRows((terms) => terms.map((term) => {
+      if (term.id !== termId) return term;
+      if (field === "keepEnglish") return { ...term, keepEnglish: Boolean(value) };
+      if (field === "masterEn") {
+        return {
+          ...term,
+          masterEn: value,
+          locales: {
+            ...term.locales,
+            en: value,
+          },
+        };
+      }
+      return { ...term, [field]: value };
+    }));
+  }
+
+  function updateCustomGlossaryLocale(termId, languageCode, value) {
+    setCustomGlossaryRows((terms) => terms.map((term) => (
+      term.id === termId
+        ? { ...term, locales: { ...term.locales, [languageCode]: value } }
+        : term
+    )));
+  }
+
+  function removeCustomGlossaryTerm(termId) {
+    setCustomGlossaryRows((terms) => terms.filter((term) => term.id !== termId));
   }
 
   function applyQaResultToActiveLocale() {
@@ -920,7 +998,7 @@ function LocalizationBibleBoard() {
         </div>
         <div className="analytics-localization-hero-card">
           <span>Glossary</span>
-          <strong>{localizationTermRows.length} terms</strong>
+          <strong>{allTermRows.length} terms</strong>
           <p>{lockedTermsCount} терминов закреплены как English/Web3 terms и не должны переводиться произвольно.</p>
         </div>
         <div className="analytics-localization-hero-card">
@@ -1532,6 +1610,68 @@ function LocalizationBibleBoard() {
             </div>
           </div>
 
+          <div className="analytics-localization-custom-glossary">
+            <div className="analytics-localization-custom-glossary-head">
+              <div>
+                <span className="analytics-kicker">Custom Glossary</span>
+                <h3>Новые термины Atlas</h3>
+                <p>Добавляйте сюда термины, которые появились на новых страницах и ещё не вошли в базовый glossary.</p>
+              </div>
+              <button type="button" onClick={addCustomGlossaryTerm}>+ Term</button>
+            </div>
+            {customGlossaryRows.length ? (
+              <div className="analytics-localization-custom-term-list">
+                {customGlossaryRows.map((term) => (
+                  <article key={term.id} className="analytics-localization-custom-term">
+                    <div className="analytics-localization-custom-term-grid">
+                      <label>
+                        <span>ID</span>
+                        <input value={term.id} onChange={(event) => updateCustomGlossaryTerm(term.id, "id", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Category</span>
+                        <select value={term.category} onChange={(event) => updateCustomGlossaryTerm(term.id, "category", event.target.value)}>
+                          {Object.keys(categoryLabels).filter((category) => category !== "all").map((category) => (
+                            <option key={category} value={category}>{category}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>RU source</span>
+                        <input value={term.sourceRu} onChange={(event) => updateCustomGlossaryTerm(term.id, "sourceRu", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>EN master</span>
+                        <input value={term.masterEn} onChange={(event) => updateCustomGlossaryTerm(term.id, "masterEn", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>{activeLanguage.nativeName}</span>
+                        <input value={term.locales?.[activeLanguage.code] || ""} onChange={(event) => updateCustomGlossaryLocale(term.id, activeLanguage.code, event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Meaning</span>
+                        <input value={term.meaning} onChange={(event) => updateCustomGlossaryTerm(term.id, "meaning", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Avoid</span>
+                        <input value={term.forbidden} onChange={(event) => updateCustomGlossaryTerm(term.id, "forbidden", event.target.value)} />
+                      </label>
+                    </div>
+                    <div className="analytics-localization-custom-term-actions">
+                      <label>
+                        <input type="checkbox" checked={term.keepEnglish} onChange={(event) => updateCustomGlossaryTerm(term.id, "keepEnglish", event.target.checked)} />
+                        <span>keep EN</span>
+                      </label>
+                      <button type="button" onClick={() => removeCustomGlossaryTerm(term.id)}>Delete</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="analytics-localization-custom-empty">Пользовательских терминов пока нет. Базовый glossary уже работает, а новые понятия можно добавить кнопкой выше.</p>
+            )}
+          </div>
+
           <div className="analytics-table-responsive">
             <table className="analytics-table analytics-localization-table">
               <thead>
@@ -1550,6 +1690,7 @@ function LocalizationBibleBoard() {
                       <strong>{row.id}</strong>
                       <span>{row.category}</span>
                       {row.keepEnglish ? <em>keep EN</em> : null}
+                      {row.isCustom ? <em>custom</em> : null}
                     </td>
                     <td>{row.sourceRu}</td>
                     <td>

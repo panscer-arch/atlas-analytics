@@ -18558,6 +18558,111 @@ input.analytics-smm-cell-input {
   font-size: 12px;
 }
 
+.analytics-localization-custom-glossary {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.48);
+  padding: 14px;
+}
+
+.analytics-localization-custom-glossary-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.analytics-localization-custom-glossary-head h3 {
+  margin: 6px 0 4px;
+  color: #f8fafc;
+}
+
+.analytics-localization-custom-glossary-head p,
+.analytics-localization-custom-empty {
+  margin: 0;
+  color: rgba(226, 240, 255, 0.68);
+  line-height: 1.45;
+}
+
+.analytics-localization-custom-glossary-head button,
+.analytics-localization-custom-term-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  border-radius: 10px;
+  background: rgba(20, 184, 166, 0.1);
+  color: #99f6e4;
+  font-weight: 900;
+}
+
+.analytics-localization-custom-glossary-head button:hover,
+.analytics-localization-custom-term-actions button:hover {
+  border-color: rgba(20, 184, 166, 0.62);
+  background: rgba(20, 184, 166, 0.17);
+}
+
+.analytics-localization-custom-term-list {
+  display: grid;
+  gap: 10px;
+}
+
+.analytics-localization-custom-term {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 10px;
+}
+
+.analytics-localization-custom-term-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.analytics-localization-custom-term-grid label {
+  display: grid;
+  gap: 5px;
+  color: rgba(226, 240, 255, 0.66);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.analytics-localization-custom-term-grid input,
+.analytics-localization-custom-term-grid select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.38);
+  color: #f8fafc;
+  font: inherit;
+  letter-spacing: 0;
+  padding: 8px 9px;
+}
+
+.analytics-localization-custom-term-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.analytics-localization-custom-term-actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(226, 240, 255, 0.74);
+  font-weight: 900;
+}
+
+.analytics-localization-custom-term-actions button {
+  border-color: rgba(239, 68, 68, 0.32);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fecaca;
+}
+
 .analytics-localization-status-table td {
   vertical-align: middle;
 }
@@ -19011,6 +19116,7 @@ input.analytics-smm-cell-input {
   .analytics-localization-locale-meta,
   .analytics-localization-page-terms-head,
   .analytics-localization-memory-bank-head,
+  .analytics-localization-custom-glossary-head,
   .analytics-localization-language-report-head,
   .analytics-localization-en-gate-head,
   .analytics-localization-phrase-bank-head {
@@ -19047,6 +19153,10 @@ input.analytics-smm-cell-input {
   }
 
   .analytics-localization-page-term-list {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-localization-custom-term-grid {
     grid-template-columns: 1fr;
   }
 
