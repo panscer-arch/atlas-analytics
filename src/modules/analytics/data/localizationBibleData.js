@@ -1245,6 +1245,93 @@ export const localizationTerminologyFirewall = [
   },
 ];
 
+export const localizationNativeReviewerPrompts = [
+  {
+    code: "ru",
+    reviewer: "Русскоязычный Web3/crypto редактор",
+    prompt: "Выступай как профессиональный русскоязычный Web3/crypto редактор Atlas System. Ты вычитываешь русский текст сайта как человек из реальной русскоязычной крипто-среды: понимаешь кошельки, смарт-контракты, lockup, Claim, DAO, партнерские программы и юридически чувствительные формулировки. Проверяй каждую страницу не как буквальный перевод, а как публичный текст Web3-проекта. Исправляй грамматику, машинные кальки, странные термины, перегретые обещания дохода и любые слова, которые звучат как банк, депозит, инвестиционный продукт или гарантия. Protected terms оставляй по glossary: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20.",
+  },
+  {
+    code: "en",
+    reviewer: "International English Web3 copy editor",
+    prompt: "Act as a senior international English Web3 copy editor for Atlas System. Review every website page as a native-level crypto/product editor, not as a literal translator. Preserve protected Atlas terms: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20. Fix typos, awkward copy, wrong grammar, legal-risk phrasing, overpromises and anything that sounds like guaranteed profit, bank deposit, investment product or fixed return. Use calm, professional Web3 language suitable for a global project.",
+  },
+  {
+    code: "de",
+    reviewer: "Deutschsprachiger Web3-Lokalisierungsredakteur",
+    prompt: "Handle die Prüfung als deutschsprachiger Web3- und Crypto-Lokalisierungsredakteur. Lies jede Seite so, wie sie ein deutscher Crypto-Nutzer lesen würde. Bewahre geschützte Begriffe wie Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain und USDT BEP20. Entferne wörtliche Maschinenübersetzungen wie Hilfsfahrräder oder Straßenkarte, wenn Roadmap gemeint ist. Achte darauf, dass der Text professionell, natürlich und nicht wie Bankprodukt, Anlageversprechen, garantierte Rendite oder unseriöses MLM klingt.",
+  },
+  {
+    code: "fr",
+    reviewer: "Rédacteur crypto/Web3 francophone",
+    prompt: "Agis comme un rédacteur francophone spécialisé en Web3, crypto et localisation produit. Relis chaque page comme un utilisateur crypto francophone, pas comme une traduction automatique. Garde les termes protégés: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20. Corrige les erreurs de genre, les articles maladroits, les calques russes/anglais, les traductions littérales comme biscuit pour cookies, et tout vocabulaire qui pourrait sonner comme un produit bancaire, un investissement garanti ou une promesse de revenu.",
+  },
+  {
+    code: "tr",
+    reviewer: "Türkçe Web3 yerelleştirme editörü",
+    prompt: "Türkçe konuşan profesyonel bir Web3/crypto yerelleştirme editörü gibi davran. Her sayfayı Türkiye'deki crypto kullanıcılarının okuyacağı şekilde kontrol et. Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain ve USDT BEP20 terimlerini glossary'ye göre koru. Azerice karışmış ifadeleri, Telgraf gibi marka çevirilerini, doğal olmayan Web3 terimlerini ve garanti gelir, yatırım ürünü, banka mevduatı veya sabit getiri gibi riskli ifadeleri düzelt.",
+  },
+  {
+    code: "pt-BR",
+    reviewer: "Editor brasileiro de localização Web3",
+    prompt: "Atue como editor brasileiro nativo especializado em Web3, crypto e localização de produto. Revise cada página como um usuário brasileiro de crypto leria. Preserve os termos protegidos: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20. Corrija traduções literais como biscoito para cookies, inconsistência de marca como Sistema Atlas, frases artificiais e qualquer linguagem que soe como investimento garantido, depósito bancário, renda fixa ou promessa de lucro.",
+  },
+  {
+    code: "id",
+    reviewer: "Editor lokalisasi Web3 Bahasa Indonesia",
+    prompt: "Bertindak sebagai editor native Bahasa Indonesia untuk Web3/crypto dan lokalisasi produk. Tinjau setiap halaman seperti pembaca crypto Indonesia. Pertahankan istilah yang dilindungi: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20. Perbaiki terjemahan literal seperti lalu lintas untuk digital traffic, label kuartal yang tidak natural seperti K2 2027, istilah brand yang diterjemahkan, dan semua kalimat yang terdengar seperti produk investasi, deposito bank, penghasilan terjamin, atau janji profit.",
+  },
+  {
+    code: "vi",
+    reviewer: "Biên tập viên bản địa tiếng Việt về Web3",
+    prompt: "Hãy đóng vai biên tập viên bản địa tiếng Việt chuyên về Web3/crypto và bản địa hóa sản phẩm. Đọc từng trang như người dùng crypto Việt Nam. Giữ nguyên các thuật ngữ được bảo vệ: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20. Sửa các bản dịch máy như Hỗ trợ Xe đạp, Danh bạ khi ý nghĩa là Liên hệ, tài chính vi mô khi ý nghĩa là hỗ trợ/tài trợ tương hỗ, và mọi câu tạo cảm giác như tiền gửi ngân hàng, sản phẩm đầu tư, lợi nhuận đảm bảo hoặc thu nhập cố định.",
+  },
+  {
+    code: "hi",
+    reviewer: "Hindi Web3 localization editor",
+    prompt: "Act as a native Hindi Web3/crypto localization editor. Review every page for Indian Hindi-speaking crypto users. Keep protected terms according to the glossary: Atlas System, Smart Cycle, Claim, Web3, DAO, BNB Smart Chain, USDT BEP20. Use Hindi where natural, but keep English Web3 terms when Hindi would sound forced or misleading. Remove machine translation, awkward grammar and any wording that sounds like bank deposit, investment product, guaranteed income, fixed return or financial advice.",
+  },
+  {
+    code: "zh-CN",
+    reviewer: "中国大陆简体中文 Web3 本地化编辑",
+    prompt: "请以中国大陆简体中文 Web3/crypto 本地化编辑的身份审阅 Atlas System 网站的每一页。你熟悉中文加密社区、钱包、智能合约、DAO、Claim、lockup、用户增长和项目文档表达。不要做字面机器翻译。保留受保护术语：Atlas System、Smart Cycle、Claim、Web3、DAO、BNB Smart Chain、USDT BEP20。纠正饼干/Cookie、上市/上线、交通/数字流量、重复标点、俄式或英式生硬表达，以及任何听起来像银行存款、投资产品、保证收益、固定回报或金融承诺的措辞。",
+  },
+];
+
+export const localizationSiteAuditRows = [
+  { id: "site-audit-01", severity: "High", lang: "de", pages: ["ALL_SITE_PAGES"], current: "Hilfsfahrräder", fix: "Hilfszyklen / Smart Cycle", reason: "Means assistance bicycles; wrong product term.", sampleUrl: "https://atlas-system.io/de/", sampleContext: "Atlas System Hilfsfahrräder Smart Cycle 1 Kernfinanzprodukt und Ökosystemquelle Smart Cycle 2 Der Zyklus, der Smart C" },
+  { id: "site-audit-02", severity: "Medium", lang: "de", pages: ["/"], current: "Mätzchen", fix: "ohne falsche Versprechen / ohne Spielchen", reason: "Awkward colloquial wording for brand copy.", sampleUrl: "https://atlas-system.io/de/", sampleContext: "s-Ökosystems. Mehr Informationen Atlas System – ein System, das keine Mätzchen macht Freiwillige gegenseitige Finanzierung im digitalen Format Teilnehmen Video ansehen" },
+  { id: "site-audit-03", severity: "High", lang: "de", pages: ["/"], current: "Straßenkarte", fix: "Roadmap / Produkt-Roadmap", reason: "Roadmap must not become a road map.", sampleUrl: "https://atlas-system.io/de/", sampleContext: "egenseitige Finanzierung im digitalen Format Teilnehmen Video ansehen Straßenkarte Verfügbar zum Start Das erste Pilot-Finanzprodukt und der Kern des Ökosystems des Atlas-S" },
+  { id: "site-audit-04", severity: "Medium", lang: "en", pages: ["/smartcycle-1/"], current: "0,3% for 1 days", fix: "0.3% for 1 day", reason: "English number/date grammar.", sampleUrl: "https://atlas-system.io/smartcycle-1/", sampleContext: "5, 10, 20 and 30 days provide additional assistance in the amount of: 0,3% for 1 days; 2% for 5 days; 5% for 10 days; 12% for 20 days; 22.5% in 30 days." },
+  { id: "site-audit-05", severity: "Medium", lang: "en", pages: ["/smartcycle-1/"], current: "for 1 days", fix: "for 1 day", reason: "Singular day grammar.", sampleUrl: "https://atlas-system.io/smartcycle-1/", sampleContext: "0,3% for 1 days; 2% for 5 days; 5% for 10 days; 12% for 20 days; 22.5% in 30 days." },
+  { id: "site-audit-06", severity: "High", lang: "en", pages: ["/smartcycle-1/"], current: "Outcoming assistance", fix: "Outgoing assistance", reason: "Wrong English word.", sampleUrl: "https://atlas-system.io/smartcycle-1/", sampleContext: "Incoming assistance $0 Pool balance $0 Paid delta $0 Outcoming assistance $0 Smart Contract Audit in Progress" },
+  { id: "site-audit-07", severity: "High", lang: "en", pages: ["/"], current: "Perfomance parters program", fix: "Performance Partners Program", reason: "English typo in protected partner-program name.", sampleUrl: "https://atlas-system.io/", sampleContext: "P2P exchange Cryptowallet Perfomance parters program Talk Messenger Governance Swap DAO Bank DAO" },
+  { id: "site-audit-08", severity: "High", lang: "es", pages: ["/", "/smartcycle-1/"], current: "sistema Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System. Spanish is live but not in the approved target-language list.", sampleUrl: "https://atlas-system.io/es/", sampleContext: "Ecosistema Atlas System Smart Cycle 1 Invite & Earn Knowledge Hub Academy" },
+  { id: "site-audit-09", severity: "High", lang: "fr", pages: ["ALL_SITE_PAGES"], current: "biscuit", fix: "cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "Nous utilisons biscuit, pour améliorer votre expérience sur le site" },
+  { id: "site-audit-10", severity: "Medium", lang: "fr", pages: ["/", "/risk-disclosure/", "/system-rules/"], current: "du Atlas System", fix: "d'Atlas System / de l'Atlas System depending sentence", reason: "Awkward French preposition/article.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "La base de connaissances de l'écosystème du Atlas System" },
+  { id: "site-audit-11", severity: "High", lang: "fr", pages: ["/", "/smartcycle-1/"], current: "système Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "Écosystème du système Atlas Smart Cycle 1" },
+  { id: "site-audit-12", severity: "Medium", lang: "fr", pages: ["/"], current: "Une portefeuille", fix: "Un portefeuille", reason: "French gender agreement.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "Une portefeuille crypto sécurisé non dépositaire de nouvelle génération" },
+  { id: "site-audit-13", severity: "Medium", lang: "id", pages: ["/"], current: "K2 2027", fix: "Q2 2027 / Kuartal 2 2027", reason: "Quarter label should not be K2.", sampleUrl: "https://atlas-system.io/id/", sampleContext: "K2 2027 Dompet kripto nir-penjaga" },
+  { id: "site-audit-14", severity: "High", lang: "id", pages: ["/", "/cookie/"], current: "lalu lintas", fix: "traffic digital / akuisisi audiens", reason: "Means road traffic; wrong for digital traffic.", sampleUrl: "https://atlas-system.io/id/", sampleContext: "para profesional periklanan dan lalu lintas" },
+  { id: "site-audit-15", severity: "High", lang: "id", pages: ["/", "/smartcycle-1/"], current: "sistem Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/id/", sampleContext: "Ekosistem Atlas System Smart Cycle 1" },
+  { id: "site-audit-16", severity: "High", lang: "ms", pages: ["/", "/smartcycle-1/"], current: "sistem Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System. Malay is live but not in the approved target-language list.", sampleUrl: "https://atlas-system.io/ms/", sampleContext: "Ekosistem Atlas System Smart Cycle 1" },
+  { id: "site-audit-17", severity: "High", lang: "pt-BR", pages: ["/", "/contacts/", "/dao-inspired-governance-framework/", "/documents/", "/interface-terms-of-use/", "/invite-and-earn/", "/partner-program-rules/", "/privacy_policy/", "/risk-disclosure/", "/smart-cycle-2/", "/smartcycle-1/", "/system-rules/"], current: "biscoito", fix: "cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/pt/", sampleContext: "Nós usamos biscoito, para melhorar sua experiência no site" },
+  { id: "site-audit-18", severity: "High", lang: "pt-BR", pages: ["/cookie/"], current: "Biscoito", fix: "cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/pt/cookie/", sampleContext: "Voltar Biscoito Política de Cookies" },
+  { id: "site-audit-19", severity: "High", lang: "pt-BR", pages: ["/smartcycle-1/"], current: "sistema Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/pt/smartcycle-1/", sampleContext: "o primeiro produto financeiro piloto do ecossistema Atlas System" },
+  { id: "site-audit-20", severity: "High", lang: "pt-BR", pages: ["/"], current: "Sistema Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/pt/", sampleContext: "Ecossistema do Sistema Atlas Smart Cycle 1" },
+  { id: "site-audit-21", severity: "Medium", lang: "ru", pages: ["/smartcycle-1/"], current: "добавночн", fix: "добавочн-", reason: "Typo: should be добавочная/добавочную.", sampleUrl: "https://atlas-system.io/ru/smartcycle-1/", sampleContext: "с дельтой (добавночная помощь)и участвовать в реферальной программе" },
+  { id: "site-audit-22", severity: "Medium", lang: "ru", pages: ["/"], current: "некостодиального хранение", fix: "некастодиального хранения", reason: "Russian grammar and standard crypto term.", sampleUrl: "https://atlas-system.io/ru/", sampleContext: "криптокошелек нового поколения для некостодиального хранение криптовалют" },
+  { id: "site-audit-23", severity: "High", lang: "tr", pages: ["ALL_SITE_PAGES"], current: "İstifadə edirik", fix: "Çerezleri kullanıyoruz...", reason: "Azerbaijani text mixed into Turkish.", sampleUrl: "https://atlas-system.io/tr/", sampleContext: "İstifadə edirik çerez, sitedeki deneyiminizi iyileştirmek için" },
+  { id: "site-audit-24", severity: "High", lang: "tr", pages: ["/", "/contacts/", "/invite-and-earn/", "/smart-cycle-2/", "/smartcycle-1/"], current: "Telgraf", fix: "Telegram", reason: "Telegram brand must stay unchanged.", sampleUrl: "https://atlas-system.io/tr/", sampleContext: "Youtube GitHub X Telgraf Instagram TikTok Facebook" },
+  { id: "site-audit-25", severity: "Medium", lang: "tr", pages: ["/"], current: "vesayetsiz", fix: "non-custodial / saklamasız", reason: "Awkward/wrong term for non-custodial wallet.", sampleUrl: "https://atlas-system.io/tr/", sampleContext: "Yeni nesil güvenli, vesayetsiz kripto cüzdanı" },
+  { id: "site-audit-26", severity: "High", lang: "vi", pages: ["ALL_SITE_PAGES"], current: "Hỗ trợ Xe đạp", fix: "chu kỳ hỗ trợ / Smart Cycle", reason: "Means assistance bicycle; wrong product term.", sampleUrl: "https://atlas-system.io/vi/", sampleContext: "Atlas System Hỗ trợ Xe đạp Smart Cycle 1" },
+  { id: "site-audit-27", severity: "High", lang: "vi", pages: ["/"], current: "tài chính vi mô", fix: "tài trợ tương hỗ / hỗ trợ lẫn nhau", reason: "Microfinance is wrong positioning for mutual financing.", sampleUrl: "https://atlas-system.io/vi/", sampleContext: "nắm vững các nguyên tắc tài chính vi mô" },
+  { id: "site-audit-28", severity: "Medium", lang: "zh-CN", pages: ["/", "/contacts/", "/cookie/", "/dao-inspired-governance-framework/", "/interface-terms-of-use/", "/invite-and-earn/", "/partner-program-rules/", "/privacy_policy/", "/risk-disclosure/", "/smart-cycle-2/", "/smartcycle-1/", "/system-rules/"], current: "。.", fix: "。", reason: "Double punctuation.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "Atlas System 生态系统的核心。. 它允许参与者加入互助周期" },
+  { id: "site-audit-29", severity: "High", lang: "zh-CN", pages: ["/"], current: "上市时可用", fix: "上线时可用 / 发布时可用", reason: "Sounds like exchange listing, not product launch availability.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "路线图 上市时可用 首个试点金融产品" },
+  { id: "site-audit-30", severity: "High", lang: "zh-CN", pages: ["/"], current: "广告和交通专业人士", fix: "广告和用户获取/数字流量专业人士", reason: "Traffic was translated as transport traffic.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "它允许广告和交通专业人士与Atlas生态系统合作" },
+  { id: "site-audit-31", severity: "High", lang: "zh-CN", pages: ["ALL_SITE_PAGES"], current: "饼干", fix: "Cookie / cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "我们使用 饼干，以改善您在本网站上的体验" },
+];
+
 export const localizationTermRows = [
   {
     id: "smart-cycle",

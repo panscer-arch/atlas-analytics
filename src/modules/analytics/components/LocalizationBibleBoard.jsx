@@ -9,9 +9,11 @@ import {
   localizationMeaningMemory,
   localizationLocaleStatuses,
   localizationNativeReviewChecks,
+  localizationNativeReviewerPrompts,
   localizationPagePipeline,
   localizationPrompts,
   localizationQaChecks,
+  localizationSiteAuditRows,
   localizationTermRows,
   localizationTerminologyFirewall,
   localizationUiPhrases,
@@ -1050,6 +1052,31 @@ function LocalizationBibleBoard() {
     ]);
     return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
   }, [allTermRows]);
+  const siteAuditStats = useMemo(() => ({
+    total: localizationSiteAuditRows.length,
+    high: localizationSiteAuditRows.filter((row) => row.severity === "High").length,
+    languages: new Set(localizationSiteAuditRows.map((row) => row.lang)).size,
+    global: localizationSiteAuditRows.filter((row) => row.pages?.includes("ALL_SITE_PAGES")).length,
+  }), []);
+  const siteAuditTableTsv = useMemo(() => {
+    const header = ["Severity", "Language", "Pages", "Current", "Fix", "Reason", "Sample URL", "Sample context"];
+    const rows = localizationSiteAuditRows.map((row) => [
+      row.severity,
+      row.lang,
+      row.pages?.includes("ALL_SITE_PAGES") ? "ALL SITE PAGES" : row.pages?.join(", "),
+      row.current,
+      row.fix,
+      row.reason,
+      row.sampleUrl,
+      row.sampleContext,
+    ]);
+    return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
+  }, []);
+  const nativeReviewerPromptsTsv = useMemo(() => {
+    const header = ["Language", "Reviewer role", "Prompt"];
+    const rows = localizationNativeReviewerPrompts.map((row) => [row.code, row.reviewer, row.prompt]);
+    return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1315,6 +1342,107 @@ function LocalizationBibleBoard() {
           <span>Locales</span>
           <strong>{atlasLocalizationLanguages.length} languages</strong>
           <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
+        </div>
+      </div>
+
+      <div className="analytics-localization-simple-table">
+        <div className="analytics-localization-simple-table-head">
+          <div>
+            <span className="analytics-kicker">Native Review Roles</span>
+            <h3>Промты для вычитки по языковой среде</h3>
+            <p>Перед вычиткой каждой страницы редактор включает роль локального Web3-носителя языка. Это защищает от буквальной машинной кальки и странных терминов.</p>
+          </div>
+          <div className="analytics-localization-simple-table-actions">
+            <button type="button" onClick={() => copyToClipboard(nativeReviewerPromptsTsv)}>Copy prompts</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-native-review-prompts.tsv", nativeReviewerPromptsTsv, "text/tab-separated-values")}>Download TSV</button>
+          </div>
+        </div>
+        <div className="analytics-localization-simple-table-scroll">
+          <table className="analytics-table analytics-localization-report-table">
+            <thead>
+              <tr>
+                <th>Язык</th>
+                <th>Роль</th>
+                <th>Prompt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localizationNativeReviewerPrompts.map((row) => (
+                <tr key={row.code}>
+                  <td><strong>{row.code}</strong></td>
+                  <td>{row.reviewer}</td>
+                  <td>{row.prompt}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="analytics-localization-simple-table">
+        <div className="analytics-localization-simple-table-head">
+          <div>
+            <span className="analytics-kicker">Site Translation Audit</span>
+            <h3>Что поправить на atlas-system.io</h3>
+            <p>Первый постраничный scan сайта: 156 языковых URL, сгруппировано в понятные правки. Глобальные ошибки в шапке/футере отмечены как ALL SITE PAGES.</p>
+          </div>
+          <div className="analytics-localization-simple-table-actions">
+            <button type="button" onClick={() => copyToClipboard(siteAuditTableTsv)}>Copy audit</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-site-translation-audit.tsv", siteAuditTableTsv, "text/tab-separated-values")}>Download TSV</button>
+          </div>
+        </div>
+        <div className="analytics-localization-hero">
+          <div className="analytics-localization-hero-card">
+            <span>Total</span>
+            <strong>{siteAuditStats.total}</strong>
+            <p>Сгруппированных правок после обхода языковых страниц сайта.</p>
+          </div>
+          <div className="analytics-localization-hero-card">
+            <span>High</span>
+            <strong>{siteAuditStats.high}</strong>
+            <p>Критичные правки по бренду, Web3-терминам и машинной кальке.</p>
+          </div>
+          <div className="analytics-localization-hero-card">
+            <span>Languages</span>
+            <strong>{siteAuditStats.languages}</strong>
+            <p>Языковых версий с найденными ошибками, включая live extras.</p>
+          </div>
+          <div className="analytics-localization-hero-card">
+            <span>Global</span>
+            <strong>{siteAuditStats.global}</strong>
+            <p>Ошибок, которые повторяются по всем страницам языка.</p>
+          </div>
+        </div>
+        <div className="analytics-localization-simple-table-scroll">
+          <table className="analytics-table analytics-localization-report-table">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Язык</th>
+                <th>Страницы</th>
+                <th>Сейчас</th>
+                <th>Поставить</th>
+                <th>Почему</th>
+                <th>Пример</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localizationSiteAuditRows.map((row) => (
+                <tr key={row.id}>
+                  <td><strong className={row.severity === "High" ? "analytics-localization-report-score-danger" : ""}>{row.severity}</strong></td>
+                  <td>{row.lang}</td>
+                  <td>{row.pages?.includes("ALL_SITE_PAGES") ? "ALL SITE PAGES" : row.pages?.join(", ")}</td>
+                  <td>{row.current}</td>
+                  <td>{row.fix}</td>
+                  <td>{row.reason}</td>
+                  <td>
+                    <a href={row.sampleUrl} target="_blank" rel="noreferrer">{row.sampleUrl}</a>
+                    <small>{row.sampleContext}</small>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
