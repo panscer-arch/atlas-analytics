@@ -4,6 +4,7 @@ import {
   atlasLocalizationLanguages,
   defaultLocalizationPages,
   localizationCoreRules,
+  localizationForbiddenPatterns,
   localizationLanguageGuides,
   localizationLocaleStatuses,
   localizationPagePipeline,
@@ -66,11 +67,64 @@ function mergeLocalizationPages(savedPages) {
   return [...mergedDefaults, ...extraPages];
 }
 
+function normalizeSearchText(value) {
+  return String(value || "").toLocaleLowerCase();
+}
+
+function analyzeLocalizedText(text, languageCode, pageContext = "") {
+  const normalizedText = normalizeSearchText(text);
+  const normalizedContext = normalizeSearchText(pageContext);
+  const issues = [];
+  const wordsCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+
+  localizationForbiddenPatterns.forEach((pattern) => {
+    const terms = [...(pattern.terms?.[languageCode] || []), ...(languageCode === "en" ? [] : pattern.terms?.en || [])];
+    terms.forEach((term) => {
+      if (!term) return;
+      if (normalizedText.includes(normalizeSearchText(term))) {
+        issues.push({
+          id: `${pattern.id}-${term}`,
+          severity: pattern.severity,
+          topic: pattern.topic,
+          term,
+          message: pattern.message,
+        });
+      }
+    });
+  });
+
+  const lockedTerms = localizationTermRows.filter((row) => row.keepEnglish);
+  lockedTerms.forEach((row) => {
+    const expected = row.locales?.[languageCode] || row.masterEn;
+    const mustContain = row.masterEn.split("/")[0].trim();
+    const contextHints = [row.id, row.sourceRu, row.masterEn, expected].map(normalizeSearchText);
+    const isExpectedOnPage = contextHints.some((hint) => hint && normalizedContext.includes(hint));
+    if (!expected || !mustContain || languageCode === "ru") return;
+    if (!isExpectedOnPage) return;
+    if (!normalizedText.includes(normalizeSearchText(mustContain))) {
+      issues.push({
+        id: `missing-${row.id}`,
+        severity: "Medium",
+        topic: "Terminology lock",
+        term: mustContain,
+        message: `Проверьте, не потерян ли закреплённый English/Web3 term: ${row.masterEn}.`,
+      });
+    }
+  });
+
+  const high = issues.filter((issue) => issue.severity === "High").length;
+  const medium = issues.filter((issue) => issue.severity === "Medium").length;
+  const score = Math.max(0, 100 - high * 24 - medium * 10);
+
+  return { issues, high, medium, wordsCount, score };
+}
+
 function LocalizationBibleBoard() {
   const [activeLanguageCode, setActiveLanguageCode] = useState("en");
   const [activeCategory, setActiveCategory] = useState("all");
   const [translationPages, setTranslationPages] = useState(() => mergeLocalizationPages());
   const [activePageId, setActivePageId] = useState(defaultLocalizationPages[0]?.id || "home");
+  const [qaText, setQaText] = useState("");
   const [saveState, setSaveState] = useState("Сохранено");
   const saveRequestRef = useRef(0);
   const isHydratedRef = useRef(false);
@@ -92,6 +146,8 @@ function LocalizationBibleBoard() {
     ), 0);
     return { total, completed, needsFix, percent: total ? Math.round((completed / total) * 100) : 0 };
   }, [translationPages]);
+  const qaPageContext = `${activePage?.title || ""}\n${activePage?.path || ""}\n${activePage?.ruSource || ""}\n${activePage?.enMaster || ""}\n${activePage?.notes || ""}`;
+  const qaResult = useMemo(() => analyzeLocalizedText(qaText, activeLanguage.code, qaPageContext), [qaText, activeLanguage.code, qaPageContext]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
 
   useEffect(() => {
@@ -346,6 +402,57 @@ function LocalizationBibleBoard() {
             <p>{step.text}</p>
           </article>
         ))}
+      </div>
+
+      <div className="analytics-localization-qa-checker">
+        <div className="analytics-localization-section-head">
+          <div>
+            <span className="analytics-kicker">Live QA</span>
+            <h3>Проверка перевода перед публикацией</h3>
+          </div>
+          <div className="analytics-localization-qa-score">
+            <strong>{qaResult.score}</strong>
+            <span>{activeLanguage.flag} {activeLanguage.nativeName} · {qaResult.wordsCount} words · {qaResult.high} high / {qaResult.medium} medium</span>
+          </div>
+        </div>
+
+        <div className="analytics-localization-qa-grid">
+          <label className="analytics-localization-qa-input">
+            <span>Вставьте текст переведённой страницы для выбранного языка</span>
+            <textarea
+              value={qaText}
+              onChange={(event) => setQaText(event.target.value)}
+              placeholder="Paste localized Atlas page copy here..."
+            />
+          </label>
+
+          <div className="analytics-localization-qa-results">
+            {qaText.trim() ? (
+              qaResult.issues.length ? (
+                qaResult.issues.map((issue) => (
+                  <article key={issue.id} className={`analytics-localization-qa-issue analytics-localization-qa-issue-${issue.severity.toLowerCase()}`}>
+                    <div>
+                      <strong>{issue.severity}</strong>
+                      <span>{issue.topic}</span>
+                    </div>
+                    <p>{issue.message}</p>
+                    <em>{issue.term}</em>
+                  </article>
+                ))
+              ) : (
+                <article className="analytics-localization-qa-empty">
+                  <strong>Явных рисков не найдено</strong>
+                  <p>Автопроверка не заменяет native review, но быстрые стоп-слова и glossary lock выглядят чисто.</p>
+                </article>
+              )
+            ) : (
+              <article className="analytics-localization-qa-empty">
+                <strong>Готово к проверке</strong>
+                <p>Выберите язык слева ниже, вставьте перевод сюда и посмотрите, какие термины или обещания нужно вычитать вручную.</p>
+              </article>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="analytics-localization-pipeline">
