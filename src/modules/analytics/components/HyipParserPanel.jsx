@@ -190,6 +190,8 @@ export default function HyipParserPanel({
   tableAriaLabel = "Список площадок для outreach",
   searchPlaceholder = "название, страна, контакт...",
   showVerification = false,
+  platformFilterOptions = [],
+  platformFilterLabel = "Соцсеть",
 } = {}) {
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, seedLeads));
   const [outreach, setOutreach] = useState(() => readStoredOutreach(outreachStorageKey));
@@ -200,6 +202,7 @@ export default function HyipParserPanel({
   const [pipelineStatus, setPipelineStatus] = useState("Все этапы");
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
+  const [platform, setPlatform] = useState("Все соцсети");
   const [query, setQuery] = useState("");
   const [verificationRequests, setVerificationRequests] = useState({});
 
@@ -248,12 +251,13 @@ export default function HyipParserPanel({
     const record = getOutreachRecord(lead, outreach);
     const countryMatch = country === "Все страны" || lead.country === country;
     const statusMatch = status === "Все статусы" || lead.status === status;
+    const platformMatch = !platformFilterOptions.length || platform === "Все соцсети" || String(lead.category || "").startsWith(`${platform} /`);
     const pipelineMatch = pipelineStatus === "Все этапы" || record.status === pipelineStatus;
     const search = query.trim().toLowerCase();
     const queryMatch = !search || [lead.name, lead.country, lead.url, lead.audienceInfo, lead.category, lead.contacts, lead.adminContact, lead.verificationStatus, lead.verificationNotes, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
       .some((value) => String(value).toLowerCase().includes(search));
-    return countryMatch && statusMatch && pipelineMatch && queryMatch;
-  }), [country, leads, outreach, pipelineStatus, query, status]);
+    return countryMatch && statusMatch && platformMatch && pipelineMatch && queryMatch;
+  }), [country, leads, outreach, pipelineStatus, platform, platformFilterOptions.length, query, status]);
 
   const summary = useMemo(() => ({
     total: leads.length,
@@ -449,6 +453,14 @@ export default function HyipParserPanel({
               {["Все этапы", ...OUTREACH_STATUS_OPTIONS].map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
+          {platformFilterOptions.length ? (
+            <label>
+              {platformFilterLabel}
+              <select value={platform} onChange={(event) => setPlatform(event.target.value)}>
+                {["Все соцсети", ...platformFilterOptions].map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+          ) : null}
           <label>
             Поиск
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} />
