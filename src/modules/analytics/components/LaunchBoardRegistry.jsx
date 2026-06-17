@@ -10,6 +10,7 @@ import AgentTrainingDataset from "./AgentTrainingDataset";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ImageContentBoard from "./ImageContentBoard";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
+import LocalizationBibleBoard from "./LocalizationBibleBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import PresentationContentTab from "./PresentationContentTab";
@@ -115,6 +116,7 @@ export const CONTENT_BOARD_TABS = [
   { id: "legalDocs", label: "Документы" },
   { id: "videoScripts", label: "Ролики" },
   { id: "terminology", label: "Терминология" },
+  { id: "localization", label: "Локализация" },
   { id: "securityReview", label: "Security Review" },
   { id: "codexSystem", label: "Codex OS" },
 ];
@@ -140,6 +142,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "atlasInstructions",
   "legalDocs",
   "terminology",
+  "localization",
   "securityReview",
   "codexSystem",
 ];
@@ -249,6 +252,10 @@ export const STATIC_BOARD_META = {
     title: "Терминология",
     description: "Глоссарий Atlas System: термины, понятные описания, категории и комментарии для вычитки.",
   },
+  localization: {
+    title: "Локализация",
+    description: "Localization Bible Atlas: языки сайта, glossary, запретные переводы, AI-prompts и QA переводов.",
+  },
   securityReview: {
     title: "Security Review",
     description: "Внутренняя проверка smart-contract: взломоустойчивость, owner-полномочия, Transport, LP-риски и публичные формулировки.",
@@ -287,6 +294,7 @@ const STATIC_BOARD_RENDERERS = {
   atlasInstructions: () => <WhitePaperBoard initialView="atlasInstructions" boardId="atlasInstructions" />,
   legalDocs: () => <LegalDocumentsBoard />,
   terminology: () => <AgentTerminologyTemplate />,
+  localization: () => <LocalizationBibleBoard />,
   securityReview: () => <SecurityReviewBoard />,
   codexSystem: () => <CodexSystemBoard />,
   dailyTasks: () => <DailyTasksBoard />,

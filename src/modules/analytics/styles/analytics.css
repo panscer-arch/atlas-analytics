@@ -17752,3 +17752,274 @@ input.analytics-smm-cell-input {
     grid-template-columns: 1fr;
   }
 }
+
+.analytics-localization-board {
+  display: grid;
+  gap: 18px;
+}
+
+.analytics-localization-hero,
+.analytics-localization-workflow,
+.analytics-localization-bottom-grid,
+.analytics-localization-panels {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analytics-localization-hero-card,
+.analytics-localization-step,
+.analytics-localization-panel,
+.analytics-localization-rules {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.48);
+  padding: 14px;
+}
+
+.analytics-localization-hero-card span,
+.analytics-localization-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(255, 139, 26, 0.16);
+  color: #ffbe7a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.analytics-localization-hero-card strong {
+  display: block;
+  margin-top: 10px;
+  color: #f8fafc;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.analytics-localization-hero-card p,
+.analytics-localization-step p,
+.analytics-localization-language-head p,
+.analytics-localization-rules li {
+  color: rgba(226, 240, 255, 0.74);
+  line-height: 1.45;
+}
+
+.analytics-localization-step h3,
+.analytics-localization-panel h3,
+.analytics-localization-rules h3,
+.analytics-localization-sidebar h3,
+.analytics-localization-language-head h3 {
+  margin: 10px 0 6px;
+  color: #f8fafc;
+  letter-spacing: 0;
+}
+
+.analytics-localization-layout {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.analytics-localization-sidebar {
+  position: sticky;
+  top: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.48);
+  padding: 14px;
+}
+
+.analytics-localization-language-list {
+  display: grid;
+  gap: 8px;
+}
+
+.analytics-localization-language-list button {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  padding: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.35);
+  color: #e5eefb;
+  text-align: left;
+}
+
+.analytics-localization-language-list button.is-active {
+  border-color: rgba(255, 139, 26, 0.65);
+  background: rgba(255, 139, 26, 0.16);
+}
+
+.analytics-localization-flag {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.analytics-localization-language-list strong,
+.analytics-localization-language-list small {
+  display: block;
+}
+
+.analytics-localization-language-list small {
+  margin-top: 3px;
+  color: rgba(226, 240, 255, 0.58);
+}
+
+.analytics-localization-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.analytics-localization-language-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.48);
+  padding: 14px;
+}
+
+.analytics-localization-category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.analytics-localization-category-filter button,
+.analytics-localization-panel-head button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  color: #dbeafe;
+}
+
+.analytics-localization-category-filter button.is-active,
+.analytics-localization-panel-head button:hover {
+  border-color: rgba(255, 139, 26, 0.58);
+  background: rgba(255, 139, 26, 0.17);
+  color: #ffe2bd;
+}
+
+.analytics-localization-table td {
+  vertical-align: top;
+}
+
+.analytics-localization-table td:first-child strong,
+.analytics-localization-table td:first-child span,
+.analytics-localization-table td:first-child em,
+.analytics-localization-table td:nth-child(3) small {
+  display: block;
+}
+
+.analytics-localization-table td:first-child span,
+.analytics-localization-table td:nth-child(3) small {
+  margin-top: 6px;
+  color: rgba(226, 240, 255, 0.58);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.analytics-localization-table td:first-child em {
+  width: max-content;
+  margin-top: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.14);
+  color: #7dd3fc;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.analytics-localization-approved-term {
+  color: #fed7aa;
+  font-weight: 900;
+}
+
+.analytics-localization-panels,
+.analytics-localization-bottom-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-localization-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.analytics-localization-panel pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 10px 0 0;
+  color: rgba(226, 240, 255, 0.78);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.analytics-localization-severity {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.analytics-localization-severity-high {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+}
+
+.analytics-localization-severity-medium {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fde68a;
+}
+
+@media (max-width: 1100px) {
+  .analytics-localization-hero,
+  .analytics-localization-workflow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-localization-layout,
+  .analytics-localization-panels,
+  .analytics-localization-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-localization-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .analytics-localization-hero,
+  .analytics-localization-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-localization-language-head {
+    display: grid;
+  }
+
+  .analytics-localization-category-filter {
+    justify-content: flex-start;
+  }
+}
