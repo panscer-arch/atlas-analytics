@@ -18278,6 +18278,7 @@ input.analytics-smm-cell-input {
   font-size: 12px;
 }
 
+.analytics-localization-memory-bank,
 .analytics-localization-phrase-bank {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 14px;
@@ -18285,6 +18286,7 @@ input.analytics-smm-cell-input {
   padding: 14px;
 }
 
+.analytics-localization-memory-bank-head,
 .analytics-localization-phrase-bank-head {
   display: flex;
   align-items: flex-end;
@@ -18293,11 +18295,13 @@ input.analytics-smm-cell-input {
   margin-bottom: 12px;
 }
 
+.analytics-localization-memory-bank-head h3,
 .analytics-localization-phrase-bank-head h3 {
   margin: 6px 0 0;
   color: #f8fafc;
 }
 
+.analytics-localization-memory-bank-head button,
 .analytics-localization-phrase-bank-head button {
   min-height: 34px;
   padding: 0 10px;
@@ -18307,17 +18311,30 @@ input.analytics-smm-cell-input {
   color: #dbeafe;
 }
 
+.analytics-localization-memory-bank-head button:hover,
 .analytics-localization-phrase-bank-head button:hover {
   border-color: rgba(255, 139, 26, 0.58);
   background: rgba(255, 139, 26, 0.17);
   color: #ffe2bd;
 }
 
+.analytics-localization-memory-table td {
+  vertical-align: top;
+  line-height: 1.42;
+}
+
+.analytics-localization-memory-table td:first-child {
+  min-width: 150px;
+}
+
+.analytics-localization-memory-table td:first-child strong,
+.analytics-localization-memory-table td:first-child span,
 .analytics-localization-phrase-table td:first-child strong,
 .analytics-localization-phrase-table td:first-child span {
   display: block;
 }
 
+.analytics-localization-memory-table td:first-child span,
 .analytics-localization-phrase-table td:first-child span {
   margin-top: 4px;
   color: rgba(226, 240, 255, 0.55);
@@ -18627,6 +18644,7 @@ input.analytics-smm-cell-input {
 
   .analytics-localization-locale-editor-head,
   .analytics-localization-locale-meta,
+  .analytics-localization-memory-bank-head,
   .analytics-localization-phrase-bank-head {
     display: grid;
   }

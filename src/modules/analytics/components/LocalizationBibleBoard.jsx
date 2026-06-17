@@ -6,6 +6,7 @@ import {
   localizationCoreRules,
   localizationForbiddenPatterns,
   localizationLanguageGuides,
+  localizationMeaningMemory,
   localizationLocaleStatuses,
   localizationPagePipeline,
   localizationPrompts,
@@ -262,6 +263,16 @@ function LocalizationBibleBoard() {
   const activeUiPhraseMarkdown = useMemo(() => activeUiPhrasePack
     .map((phrase) => `- ${phrase.context}: ${phrase.value} (EN: ${phrase.enMaster})`)
     .join("\n"), [activeUiPhrasePack]);
+  const activeMeaningMemoryPack = useMemo(() => localizationMeaningMemory.map((phrase) => ({
+    id: phrase.id,
+    topic: phrase.topic,
+    ruSource: phrase.ruSource,
+    enMaster: phrase.enMaster,
+    value: phrase.translations?.[activeLanguage.code] || phrase.enMaster,
+  })), [activeLanguage.code]);
+  const activeMeaningMemoryMarkdown = useMemo(() => activeMeaningMemoryPack
+    .map((phrase) => `## ${phrase.topic} / ${phrase.id}\nRU: ${phrase.ruSource}\nEN: ${phrase.enMaster}\n${activeLanguage.code}: ${phrase.value}`)
+    .join("\n\n"), [activeMeaningMemoryPack, activeLanguage.code]);
   const translationPackage = useMemo(() => buildTranslationPackage({
     page: activePage,
     language: activeLanguage,
@@ -779,6 +790,41 @@ function LocalizationBibleBoard() {
               <span>Note</span>
               <p>{activeLanguageGuide.note}</p>
             </article>
+          </div>
+
+          <div className="analytics-localization-memory-bank">
+            <div className="analytics-localization-memory-bank-head">
+              <div>
+                <span className="analytics-kicker">Meaning Memory</span>
+                <h3>Готовые смысловые фразы Atlas</h3>
+              </div>
+              <button type="button" onClick={() => copyToClipboard(activeMeaningMemoryMarkdown)}>Copy meaning pack</button>
+            </div>
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-localization-memory-table">
+                <thead>
+                  <tr>
+                    <th>Тема</th>
+                    <th>RU смысл</th>
+                    <th>EN master</th>
+                    <th>{activeLanguage.nativeName}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeMeaningMemoryPack.map((phrase) => (
+                    <tr key={phrase.id}>
+                      <td>
+                        <strong>{phrase.topic}</strong>
+                        <span>{phrase.id}</span>
+                      </td>
+                      <td>{phrase.ruSource}</td>
+                      <td>{phrase.enMaster}</td>
+                      <td className="analytics-localization-approved-term">{phrase.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="analytics-localization-phrase-bank">
