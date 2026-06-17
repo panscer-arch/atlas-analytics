@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import {
   atlasLocalizationLanguages,
   localizationCoreRules,
+  localizationLanguageGuides,
+  localizationPagePipeline,
   localizationPrompts,
   localizationQaChecks,
   localizationTermRows,
@@ -27,6 +29,7 @@ function LocalizationBibleBoard() {
   const [activeLanguageCode, setActiveLanguageCode] = useState("en");
   const [activeCategory, setActiveCategory] = useState("all");
   const activeLanguage = atlasLocalizationLanguages.find((language) => language.code === activeLanguageCode) || atlasLocalizationLanguages[1];
+  const activeLanguageGuide = localizationLanguageGuides.find((guide) => guide.code === activeLanguage.code) || localizationLanguageGuides[1];
   const categories = useMemo(() => ["all", ...Array.from(new Set(localizationTermRows.map((row) => row.category)))], []);
   const visibleTerms = localizationTermRows.filter((row) => activeCategory === "all" || row.category === activeCategory);
   const lockedTermsCount = localizationTermRows.filter((row) => row.keepEnglish).length;
@@ -78,6 +81,24 @@ function LocalizationBibleBoard() {
         ))}
       </div>
 
+      <div className="analytics-localization-pipeline">
+        <div className="analytics-localization-section-head">
+          <div>
+            <span className="analytics-kicker">Page workflow</span>
+            <h3>Как переводить любую страницу Atlas</h3>
+          </div>
+          <p>Это рабочий конвейер: от русского смыслового черновика до локальной версии, которую можно публиковать без потери смысла.</p>
+        </div>
+        <div className="analytics-localization-pipeline-grid">
+          {localizationPagePipeline.map((step) => (
+            <article key={step.title} className="analytics-localization-pipeline-card">
+              <h4>{step.title}</h4>
+              <p>{step.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+
       <div className="analytics-localization-layout">
         <aside className="analytics-localization-sidebar">
           <h3>Языки сайта</h3>
@@ -120,6 +141,25 @@ function LocalizationBibleBoard() {
             </div>
           </div>
 
+          <div className="analytics-localization-language-guide">
+            <article>
+              <span>Tone</span>
+              <p>{activeLanguageGuide.tone}</p>
+            </article>
+            <article>
+              <span>Keep</span>
+              <p>{activeLanguageGuide.keep}</p>
+            </article>
+            <article>
+              <span>Avoid</span>
+              <p>{activeLanguageGuide.avoid}</p>
+            </article>
+            <article>
+              <span>Note</span>
+              <p>{activeLanguageGuide.note}</p>
+            </article>
+          </div>
+
           <div className="analytics-table-responsive">
             <table className="analytics-table analytics-localization-table">
               <thead>
@@ -155,6 +195,13 @@ function LocalizationBibleBoard() {
           <div className="analytics-localization-panels">
             <article className="analytics-localization-panel">
               <div className="analytics-localization-panel-head">
+                <h3>EN master prompt</h3>
+                <button type="button" onClick={() => copyToClipboard(localizationPrompts.englishMaster)}>Copy</button>
+              </div>
+              <pre>{localizationPrompts.englishMaster}</pre>
+            </article>
+            <article className="analytics-localization-panel">
+              <div className="analytics-localization-panel-head">
                 <h3>AI translation prompt</h3>
                 <button type="button" onClick={() => copyToClipboard(translationPrompt)}>Copy</button>
               </div>
@@ -166,6 +213,13 @@ function LocalizationBibleBoard() {
                 <button type="button" onClick={() => copyToClipboard(localizationPrompts.review)}>Copy</button>
               </div>
               <pre>{localizationPrompts.review}</pre>
+            </article>
+            <article className="analytics-localization-panel">
+              <div className="analytics-localization-panel-head">
+                <h3>Terminology extract prompt</h3>
+                <button type="button" onClick={() => copyToClipboard(localizationPrompts.terminologyExtract)}>Copy</button>
+              </div>
+              <pre>{localizationPrompts.terminologyExtract}</pre>
             </article>
           </div>
         </div>
