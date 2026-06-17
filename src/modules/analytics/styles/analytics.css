@@ -18124,6 +18124,165 @@ input.analytics-smm-cell-input {
   color: #fde68a;
 }
 
+.analytics-localization-simple-table {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.5);
+  padding: 16px;
+}
+
+.analytics-localization-simple-table-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analytics-localization-simple-table-head h3 {
+  margin: 6px 0 4px;
+  color: #f8fafc;
+}
+
+.analytics-localization-simple-table-head p {
+  margin: 0;
+  color: rgba(226, 240, 255, 0.68);
+  line-height: 1.45;
+}
+
+.analytics-localization-simple-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.analytics-localization-simple-table-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  border-radius: 10px;
+  background: rgba(20, 184, 166, 0.1);
+  color: #99f6e4;
+  font-weight: 900;
+}
+
+.analytics-localization-simple-table-actions button:hover {
+  border-color: rgba(20, 184, 166, 0.62);
+  background: rgba(20, 184, 166, 0.17);
+}
+
+.analytics-localization-simple-table-scroll {
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+}
+
+.analytics-localization-grid-table {
+  min-width: 2920px;
+  width: max-content;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: rgba(2, 6, 23, 0.28);
+}
+
+.analytics-localization-grid-table th,
+.analytics-localization-grid-table td {
+  width: 260px;
+  min-width: 260px;
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 10px;
+  vertical-align: top;
+}
+
+.analytics-localization-grid-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #101827;
+  color: #f8fafc;
+  text-align: left;
+}
+
+.analytics-localization-grid-table th span,
+.analytics-localization-grid-table th strong,
+.analytics-localization-grid-table th small {
+  display: block;
+}
+
+.analytics-localization-grid-table th span {
+  font-size: 20px;
+}
+
+.analytics-localization-grid-table th small {
+  margin-top: 3px;
+  color: rgba(226, 240, 255, 0.58);
+  font-size: 11px;
+}
+
+.analytics-localization-grid-table .analytics-localization-grid-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 260px;
+  min-width: 260px;
+  background: #0b1220;
+  box-shadow: 10px 0 18px rgba(2, 6, 23, 0.2);
+}
+
+.analytics-localization-grid-table td.analytics-localization-grid-sticky {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.analytics-localization-grid-sticky label {
+  display: grid;
+  gap: 5px;
+  color: rgba(226, 240, 255, 0.62);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.analytics-localization-grid-sticky input,
+.analytics-localization-grid-table textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  color: #f8fafc;
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.analytics-localization-grid-sticky input {
+  padding: 8px 9px;
+}
+
+.analytics-localization-grid-table textarea {
+  min-height: 170px;
+  padding: 10px;
+  line-height: 1.42;
+  resize: vertical;
+}
+
+.analytics-localization-grid-sticky button {
+  min-height: 32px;
+  border: 1px solid rgba(255, 139, 26, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 139, 26, 0.1);
+  color: #fed7aa;
+  font-weight: 900;
+}
+
+.analytics-localization-grid-sticky button:hover {
+  border-color: rgba(255, 139, 26, 0.58);
+  background: rgba(255, 139, 26, 0.17);
+}
+
 .analytics-localization-coverage-table {
   min-width: 1120px;
 }

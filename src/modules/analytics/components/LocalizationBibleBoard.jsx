@@ -996,6 +996,19 @@ function LocalizationBibleBoard() {
     prompt: activeLocalePrompt,
     exportedAt: new Date().toISOString(),
   }, null, 2), [activePage, activeLanguage, activeLanguageGuide, activeLocaleCopy, qaResult, activeLocalePrompt]);
+  const simpleTranslationTableTsv = useMemo(() => {
+    const header = ["Блок", "URL", ...atlasLocalizationLanguages.map((language) => language.code.toUpperCase())];
+    const rows = translationPages.map((page) => [
+      page.title,
+      page.path,
+      ...atlasLocalizationLanguages.map((language) => {
+        if (language.code === "ru") return page.ruSource || page.locales?.ru?.copy || "";
+        if (language.code === "en") return page.enMaster || page.locales?.en?.copy || "";
+        return page.locales?.[language.code]?.copy || "";
+      }),
+    ]);
+    return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
+  }, [translationPages]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1072,6 +1085,35 @@ function LocalizationBibleBoard() {
             ...page.locales?.[code],
             [field]: value,
           },
+        },
+      };
+    }));
+  }
+
+  function updateTranslationTablePage(pageId, field, value) {
+    setTranslationPages((pages) => pages.map((page) => (
+      page.id === pageId ? { ...page, [field]: value } : page
+    )));
+  }
+
+  function updateTranslationTableCell(pageId, languageCode, value) {
+    setTranslationPages((pages) => pages.map((page) => {
+      if (page.id !== pageId) return page;
+      const currentLocale = page.locales?.[languageCode] || makeLocaleProgress()[languageCode];
+      const nextLocale = {
+        ...currentLocale,
+        copy: value,
+        status: value.trim()
+          ? (["native-reviewed", "published", "ai-reviewed"].includes(currentLocale.status) ? currentLocale.status : languageCode === "ru" ? "ru-source" : languageCode === "en" ? "en-master" : "translated")
+          : "not-started",
+      };
+      return {
+        ...page,
+        ruSource: languageCode === "ru" ? value : page.ruSource,
+        enMaster: languageCode === "en" ? value : page.enMaster,
+        locales: {
+          ...page.locales,
+          [languageCode]: nextLocale,
         },
       };
     }));
@@ -1210,6 +1252,84 @@ function LocalizationBibleBoard() {
           <span>Locales</span>
           <strong>{atlasLocalizationLanguages.length} languages</strong>
           <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
+        </div>
+      </div>
+
+      <div className="analytics-localization-simple-table">
+        <div className="analytics-localization-simple-table-head">
+          <div>
+            <span className="analytics-kicker">Translation Table</span>
+            <h3>Таблица переводов как контент-план</h3>
+            <p>Одна строка — один блок сайта. Колонки — языки. Правьте тексты прямо здесь, изменения сохраняются автоматически.</p>
+          </div>
+          <div className="analytics-localization-simple-table-actions">
+            <button type="button" onClick={addTranslationPage}>+ Строка</button>
+            <button type="button" onClick={() => copyToClipboard(simpleTranslationTableTsv)}>Copy table</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-localization-table.tsv", simpleTranslationTableTsv, "text/tab-separated-values")}>Download TSV</button>
+          </div>
+        </div>
+        <div className="analytics-localization-simple-table-scroll">
+          <table className="analytics-localization-grid-table">
+            <thead>
+              <tr>
+                <th className="analytics-localization-grid-sticky">Блок</th>
+                {atlasLocalizationLanguages.map((language) => (
+                  <th key={language.code}>
+                    <span>{language.flag}</span>
+                    <strong>{language.code.toUpperCase()}</strong>
+                    <small>{language.nativeName}</small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {translationPages.map((page) => (
+                <tr key={page.id}>
+                  <td className="analytics-localization-grid-sticky">
+                    <label>
+                      <span>Название</span>
+                      <input
+                        value={page.title}
+                        onChange={(event) => updateTranslationTablePage(page.id, "title", event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      <span>URL</span>
+                      <input
+                        value={page.path}
+                        onChange={(event) => updateTranslationTablePage(page.id, "path", event.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePageId(page.id);
+                        setActiveLanguageCode("en");
+                      }}
+                    >
+                      Открыть детали
+                    </button>
+                  </td>
+                  {atlasLocalizationLanguages.map((language) => {
+                    const value = language.code === "ru"
+                      ? page.ruSource || page.locales?.ru?.copy || ""
+                      : language.code === "en"
+                        ? page.enMaster || page.locales?.en?.copy || ""
+                        : page.locales?.[language.code]?.copy || "";
+                    return (
+                      <td key={language.code}>
+                        <textarea
+                          value={value}
+                          onChange={(event) => updateTranslationTableCell(page.id, language.code, event.target.value)}
+                          placeholder={`${language.nativeName} текст`}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
