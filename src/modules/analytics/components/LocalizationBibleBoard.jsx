@@ -129,6 +129,38 @@ function normalizeSearchText(value) {
   return String(value || "").toLocaleLowerCase();
 }
 
+function isNegatedRiskTerm(normalizedText, termIndex) {
+  const prefix = normalizedText.slice(Math.max(0, termIndex - 56), termIndex);
+  return [
+    "not ",
+    "no ",
+    "not a ",
+    "not an ",
+    "does not ",
+    "is not ",
+    "are not ",
+    "не ",
+    "не является ",
+    "не счита",
+    "kein ",
+    "keine ",
+    "nicht ",
+    "n'est pas ",
+    "ne constitue pas ",
+    "não é ",
+    "não constitui ",
+    "bukan ",
+    "tidak ",
+    "không phải ",
+    "không ",
+    "नहीं ",
+    "कोई ",
+    "不是",
+    "并不",
+    "不构成",
+  ].some((marker) => prefix.includes(marker));
+}
+
 function analyzeLocalizedText(text, languageCode, pageContext = "") {
   const normalizedText = normalizeSearchText(text);
   const normalizedContext = normalizeSearchText(pageContext);
@@ -139,7 +171,9 @@ function analyzeLocalizedText(text, languageCode, pageContext = "") {
     const terms = [...(pattern.terms?.[languageCode] || []), ...(languageCode === "en" ? [] : pattern.terms?.en || [])];
     terms.forEach((term) => {
       if (!term) return;
-      if (normalizedText.includes(normalizeSearchText(term))) {
+      const normalizedTerm = normalizeSearchText(term);
+      const termIndex = normalizedText.indexOf(normalizedTerm);
+      if (termIndex >= 0 && !isNegatedRiskTerm(normalizedText, termIndex)) {
         issues.push({
           id: `${pattern.id}-${term}`,
           severity: pattern.severity,
