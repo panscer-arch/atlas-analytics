@@ -18069,7 +18069,8 @@ input.analytics-smm-cell-input {
 
 .analytics-localization-form-grid label,
 .analytics-localization-copy-grid label,
-.analytics-localization-notes {
+.analytics-localization-notes,
+.analytics-localization-locale-editor label {
   display: grid;
   gap: 6px;
   color: rgba(226, 240, 255, 0.72);
@@ -18081,6 +18082,7 @@ input.analytics-smm-cell-input {
 .analytics-localization-form-grid select,
 .analytics-localization-copy-grid textarea,
 .analytics-localization-notes textarea,
+.analytics-localization-locale-editor textarea,
 .analytics-localization-status-table input,
 .analytics-localization-status-table select {
   width: 100%;
@@ -18103,6 +18105,56 @@ input.analytics-smm-cell-input {
   min-height: 78px;
   resize: vertical;
   line-height: 1.45;
+}
+
+.analytics-localization-locale-editor {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 12px;
+}
+
+.analytics-localization-locale-editor-head,
+.analytics-localization-locale-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.analytics-localization-locale-editor h4 {
+  margin: 4px 0 0;
+  color: #f8fafc;
+}
+
+.analytics-localization-locale-editor textarea {
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.analytics-localization-locale-editor button,
+.analytics-localization-locale-meta button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  color: #dbeafe;
+}
+
+.analytics-localization-locale-editor button:hover,
+.analytics-localization-locale-meta button:hover {
+  border-color: rgba(255, 139, 26, 0.58);
+  background: rgba(255, 139, 26, 0.17);
+  color: #ffe2bd;
+}
+
+.analytics-localization-locale-meta span {
+  color: rgba(226, 240, 255, 0.62);
+  font-size: 12px;
 }
 
 .analytics-localization-status-table td {
@@ -18398,6 +18450,11 @@ input.analytics-smm-cell-input {
   }
 
   .analytics-localization-section-head {
+    display: grid;
+  }
+
+  .analytics-localization-locale-editor-head,
+  .analytics-localization-locale-meta {
     display: grid;
   }
 

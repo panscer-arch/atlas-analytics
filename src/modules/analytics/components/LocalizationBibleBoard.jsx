@@ -37,6 +37,7 @@ function makeLocaleProgress(overrides = {}) {
       status: saved.status || (language.code === "ru" ? "ru-source" : language.code === "en" ? "en-master" : "not-started"),
       reviewer: saved.reviewer || "",
       notes: saved.notes || "",
+      copy: saved.copy || "",
     };
     return acc;
   }, {});
@@ -134,6 +135,7 @@ function LocalizationBibleBoard() {
   const visibleTerms = localizationTermRows.filter((row) => activeCategory === "all" || row.category === activeCategory);
   const lockedTermsCount = localizationTermRows.filter((row) => row.keepEnglish).length;
   const activePage = translationPages.find((page) => page.id === activePageId) || translationPages[0];
+  const activeLocaleCopy = activePage?.locales?.[activeLanguage.code]?.copy || "";
   const localeStatusById = useMemo(() => new Map(localizationLocaleStatuses.map((status) => [status.id, status])), []);
   const localeProgress = useMemo(() => {
     const localeCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
@@ -146,9 +148,11 @@ function LocalizationBibleBoard() {
     ), 0);
     return { total, completed, needsFix, percent: total ? Math.round((completed / total) * 100) : 0 };
   }, [translationPages]);
+  const qaSourceText = qaText || activeLocaleCopy;
   const qaPageContext = `${activePage?.title || ""}\n${activePage?.path || ""}\n${activePage?.ruSource || ""}\n${activePage?.enMaster || ""}\n${activePage?.notes || ""}`;
-  const qaResult = useMemo(() => analyzeLocalizedText(qaText, activeLanguage.code, qaPageContext), [qaText, activeLanguage.code, qaPageContext]);
+  const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
+  const activeLocalePrompt = `${translationPrompt}\n\nPage: ${activePage?.title || ""}\nPath: ${activePage?.path || ""}\n\nRU source of meaning:\n${activePage?.ruSource || ""}\n\nEN master copy:\n${activePage?.enMaster || ""}\n\nPage notes:\n${activePage?.notes || ""}`;
 
   useEffect(() => {
     let isMounted = true;
@@ -389,6 +393,28 @@ function LocalizationBibleBoard() {
                   </tbody>
                 </table>
               </div>
+
+              <div className="analytics-localization-locale-editor">
+                <div className="analytics-localization-locale-editor-head">
+                  <div>
+                    <span className="analytics-kicker">Locale copy</span>
+                    <h4>{activeLanguage.flag} {activeLanguage.nativeName}</h4>
+                  </div>
+                  <button type="button" onClick={() => copyToClipboard(activeLocalePrompt)}>Copy prompt</button>
+                </div>
+                <label>
+                  <span>Текст перевода для выбранного языка</span>
+                  <textarea
+                    value={activeLocaleCopy}
+                    onChange={(event) => updateLocale(activeLanguage.code, "copy", event.target.value)}
+                    placeholder="Здесь хранится финальный или черновой текст локализации для выбранной страницы и языка."
+                  />
+                </label>
+                <div className="analytics-localization-locale-meta">
+                  <span>QA ниже проверяет этот текст автоматически, если отдельное поле Live QA пустое.</span>
+                  <button type="button" onClick={() => setQaText(activeLocaleCopy)}>Проверить в Live QA</button>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
@@ -418,16 +444,16 @@ function LocalizationBibleBoard() {
 
         <div className="analytics-localization-qa-grid">
           <label className="analytics-localization-qa-input">
-            <span>Вставьте текст переведённой страницы для выбранного языка</span>
+            <span>Вставьте текст для разовой проверки или оставьте пустым, чтобы проверять locale copy выше</span>
             <textarea
               value={qaText}
               onChange={(event) => setQaText(event.target.value)}
-              placeholder="Paste localized Atlas page copy here..."
+              placeholder="Paste localized Atlas page copy here, or keep empty to analyze saved locale copy..."
             />
           </label>
 
           <div className="analytics-localization-qa-results">
-            {qaText.trim() ? (
+            {qaSourceText.trim() ? (
               qaResult.issues.length ? (
                 qaResult.issues.map((issue) => (
                   <article key={issue.id} className={`analytics-localization-qa-issue analytics-localization-qa-issue-${issue.severity.toLowerCase()}`}>
