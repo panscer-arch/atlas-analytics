@@ -263,6 +263,53 @@ Translate from the EN master while preserving the RU source meaning. Keep Atlas 
 `;
 }
 
+function buildLanguageQaReport({ language, pages, localeStatusById }) {
+  const rows = pages.map((page) => {
+    const locale = page.locales?.[language.code] || makeLocaleProgress()[language.code];
+    const pageContext = `${page.title}\n${page.path}\n${page.ruSource}\n${page.enMaster}\n${page.notes}`;
+    const qa = analyzeLocalizedText(locale.copy || "", language.code, pageContext);
+    return {
+      page,
+      locale,
+      qa,
+      statusLabel: localeStatusById.get(locale.status)?.label || locale.status,
+      isEmpty: !String(locale.copy || "").trim(),
+    };
+  });
+
+  const empty = rows.filter((row) => row.isEmpty).length;
+  const needsFix = rows.filter((row) => row.locale.status === "needs-fix" || row.qa.high > 0).length;
+  const reviewed = rows.filter((row) => ["native-reviewed", "published"].includes(row.locale.status)).length;
+  const averageScore = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.qa.score, 0) / rows.length) : 0;
+
+  const markdown = `# Atlas Localization QA Report
+
+Language: ${language.nativeName} (${language.englishName}, ${language.code})
+Pages: ${rows.length}
+Native/published: ${reviewed}
+Needs fix: ${needsFix}
+Empty locale copy: ${empty}
+Average QA score: ${averageScore}
+
+| Page | Path | Status | Words | Score | High | Medium | Reviewer | Notes |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+${rows.map((row) => `| ${row.page.title} | ${row.page.path} | ${row.statusLabel} | ${row.qa.wordsCount} | ${row.qa.score} | ${row.qa.high} | ${row.qa.medium} | ${row.locale.reviewer || "-"} | ${(row.locale.notes || "-").replace(/\|/g, "/")} |`).join("\n")}
+
+## Issues
+${rows.map((row) => {
+    if (row.isEmpty) return `### ${row.page.title}\n- [High] Missing locale copy: no text saved for ${language.code}.`;
+    if (!row.qa.issues.length) return `### ${row.page.title}\n- No automatic QA issues found.`;
+    return `### ${row.page.title}\n${row.qa.issues.map((issue) => `- [${issue.severity}] ${issue.topic}: ${issue.message} (${issue.term})`).join("\n")}`;
+  }).join("\n\n")}
+`;
+
+  return {
+    rows,
+    summary: { pages: rows.length, reviewed, needsFix, empty, averageScore },
+    markdown,
+  };
+}
+
 function downloadTextFile(filename, content, type = "text/plain") {
   if (typeof window === "undefined") return;
   const blob = new Blob([content], { type });
@@ -378,6 +425,31 @@ function LocalizationBibleBoard() {
     })),
     exportedAt: new Date().toISOString(),
   }, null, 2), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack]);
+  const languageQaReport = useMemo(() => buildLanguageQaReport({
+    language: activeLanguage,
+    pages: translationPages,
+    localeStatusById,
+  }), [activeLanguage, translationPages, localeStatusById]);
+  const languageQaReportJson = useMemo(() => JSON.stringify({
+    language: activeLanguage,
+    summary: languageQaReport.summary,
+    rows: languageQaReport.rows.map((row) => ({
+      pageId: row.page.id,
+      title: row.page.title,
+      path: row.page.path,
+      status: row.locale.status,
+      statusLabel: row.statusLabel,
+      reviewer: row.locale.reviewer,
+      notes: row.locale.notes,
+      wordsCount: row.qa.wordsCount,
+      score: row.qa.score,
+      high: row.qa.high,
+      medium: row.qa.medium,
+      issues: row.qa.issues,
+      isEmpty: row.isEmpty,
+    })),
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [activeLanguage, languageQaReport]);
   const translationPackage = useMemo(() => buildTranslationPackage({
     page: activePage,
     language: activeLanguage,
@@ -880,6 +952,71 @@ function LocalizationBibleBoard() {
                   {categoryLabels[category] || category}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="analytics-localization-language-report">
+            <div className="analytics-localization-language-report-head">
+              <div>
+                <span className="analytics-kicker">Locale QA Report</span>
+                <h3>Состояние перевода по всем страницам</h3>
+              </div>
+              <div className="analytics-localization-report-actions">
+                <button type="button" onClick={() => copyToClipboard(languageQaReport.markdown)}>Copy report</button>
+                <button type="button" onClick={() => downloadTextFile(`atlas-localization-${activeLanguage.code}-qa-report.md`, languageQaReport.markdown, "text/markdown")}>Download MD</button>
+                <button type="button" onClick={() => downloadTextFile(`atlas-localization-${activeLanguage.code}-qa-report.json`, languageQaReportJson, "application/json")}>Download JSON</button>
+              </div>
+            </div>
+            <div className="analytics-localization-report-stats">
+              <article>
+                <span>QA score</span>
+                <strong>{languageQaReport.summary.averageScore}</strong>
+              </article>
+              <article>
+                <span>Native/published</span>
+                <strong>{languageQaReport.summary.reviewed}/{languageQaReport.summary.pages}</strong>
+              </article>
+              <article>
+                <span>Needs fix</span>
+                <strong>{languageQaReport.summary.needsFix}</strong>
+              </article>
+              <article>
+                <span>Empty copy</span>
+                <strong>{languageQaReport.summary.empty}</strong>
+              </article>
+            </div>
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-localization-report-table">
+                <thead>
+                  <tr>
+                    <th>Страница</th>
+                    <th>Статус</th>
+                    <th>Words</th>
+                    <th>Score</th>
+                    <th>Issues</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {languageQaReport.rows.map((row) => (
+                    <tr key={row.page.id}>
+                      <td>
+                        <button
+                          type="button"
+                          className="analytics-localization-report-page"
+                          onClick={() => setActivePageId(row.page.id)}
+                        >
+                          <strong>{row.page.title}</strong>
+                          <span>{row.page.path}</span>
+                        </button>
+                      </td>
+                      <td>{row.statusLabel}</td>
+                      <td>{row.qa.wordsCount}</td>
+                      <td><strong className={row.qa.high > 0 || row.isEmpty ? "analytics-localization-report-score-danger" : ""}>{row.isEmpty ? "—" : row.qa.score}</strong></td>
+                      <td>{row.isEmpty ? "Missing copy" : `${row.qa.high} high / ${row.qa.medium} medium`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
