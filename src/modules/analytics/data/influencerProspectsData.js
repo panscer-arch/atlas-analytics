@@ -12,6 +12,51 @@ const platformNotes = {
   Facebook: "Facebook чаще работает через группы, страницы и локальных лидеров; проверять модерацию, активность обсуждений и правила рекламы.",
 };
 
+const knownAudienceInfo = {
+  "Lark Davis": "YouTube: около 635K подписчиков; публичный ориентир по vidIQ: около 380K просмотров за 30 дней. Среднее по последним 10 видео снять перед закупкой.",
+  "Telo News": "Telegram: около 219.7K подписчиков по публичному preview; средние просмотры постов снять перед оплатой.",
+  "CryptoSlate News": "Telegram: около 11K подписчиков по публичному preview; средние просмотры постов проверить.",
+  "Blockchain.com": "Telegram: около 20.9K подписчиков по публичному preview; рекламные возможности проверить отдельно.",
+  "CryptoJobsList": "Telegram: публичный preview показывает примерно 2.5K-3.1K просмотров на свежих постах; подписчиков и цену проверить.",
+  "LaborX": "Telegram: публичный preview показывает примерно 13K+ просмотров на отдельных постах; подписчиков и цену проверить.",
+};
+
+function getAudienceRange(platform, priceTier) {
+  const isHigher = priceTier.includes("Выше");
+  const isLow = priceTier.includes("Низкий");
+
+  if (platform === "YouTube") {
+    if (isHigher) return "Ориентир: крупный канал. Подписчики часто 100K-1M+; средние просмотры считать по последним 10 видео.";
+    if (isLow) return "Ориентир: micro/mid YouTube. Подписчики часто 5K-150K; средние просмотры считать по последним 10 видео.";
+    return "Ориентир: mid YouTube. Подписчики часто 20K-500K; средние просмотры считать по последним 10 видео.";
+  }
+
+  if (platform === "X") {
+    if (isHigher) return "Ориентир: крупный X-аккаунт. Followers часто 250K+; смотреть средние impressions/thread views и ER.";
+    if (isLow) return "Ориентир: micro/mid X. Followers часто 5K-80K; смотреть impressions последних 10 постов и ER.";
+    return "Ориентир: mid X. Followers часто 25K-250K; смотреть impressions последних 10 постов и ER.";
+  }
+
+  if (platform === "Telegram") {
+    if (isHigher) return "Ориентир: крупный Telegram. Подписчики часто 100K+; ключевой показатель - средние views последних 10 постов.";
+    if (isLow) return "Ориентир: micro/mid Telegram. Подписчики часто 3K-50K; ключевой показатель - views/post и ER.";
+    return "Ориентир: mid Telegram. Подписчики часто 20K-150K; ключевой показатель - средние views последних 10 постов.";
+  }
+
+  if (platform === "Facebook") {
+    if (isHigher) return "Ориентир: крупная page/group. Участники/читатели часто 100K+; проверять active posts, comments и reach у админа.";
+    if (isLow) return "Ориентир: локальная или micro/mid group. Участники часто 5K-80K; проверять active posts и comments.";
+    return "Ориентир: mid Facebook page/group. Участники/читатели часто 20K-250K; проверять reach у админа.";
+  }
+
+  return "Аудитория: проверить подписчиков/читателей, средние просмотры и ER перед оплатой.";
+}
+
+function getAudienceInfo(platform, name, priceTier) {
+  if (knownAudienceInfo[name]) return knownAudienceInfo[name];
+  return `${getAudienceRange(platform, priceTier)} Цифра не подтверждена: запросить media kit / скрин статистики перед оплатой.`;
+}
+
 const prospectRows = [
   ["youtube-001", "YouTube", "Whiteboard Crypto", "США", "https://www.youtube.com/@WhiteboardCrypto", "education / explainers", 88, "Средний", "Проверить", "business email / channel about page", "Сильный educational fit: можно просить нативный explainer про Smart Cycle и риски без обещаний дохода."],
   ["youtube-002", "YouTube", "Crypto Casey", "США", "https://www.youtube.com/@CryptoCasey", "crypto education", 82, "Средний", "Проверить", "business email / channel about page", "Подходит для аудитории новичков с Web3 кошельками; лучше формат review + risk disclosure."],
@@ -340,6 +385,7 @@ function toLead([id, platform, name, country, url, niche, fitScore, priceTier, s
     name,
     country,
     url,
+    audienceInfo: getAudienceInfo(platform, name, priceTier),
     category: `${platform} / ${niche} / цена: ${priceTier}`,
     trafficScore: Math.min(95, Math.max(50, fitScore + platformBoost)),
     aliveScore: Math.min(92, Math.max(50, fitScore + affordabilityBoost)),

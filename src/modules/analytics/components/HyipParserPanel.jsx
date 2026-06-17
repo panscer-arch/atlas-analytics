@@ -156,7 +156,7 @@ function getChannelLabel(record = {}) {
 }
 
 function makeCsv(leads) {
-  const header = ["name", "country", "url", "category", "trafficScore", "aliveScore", "fitScore", "contacts", "adminContact", "verificationStatus", "verificationNotes", "status", "notes"];
+  const header = ["name", "country", "url", "audienceInfo", "category", "trafficScore", "aliveScore", "fitScore", "contacts", "adminContact", "verificationStatus", "verificationNotes", "status", "notes"];
   const rows = leads.map((lead) => header.map((key) => `"${String(lead[key] ?? "").replaceAll('"', '""')}"`).join(","));
   return [header.join(","), ...rows].join("\n");
 }
@@ -250,7 +250,7 @@ export default function HyipParserPanel({
     const statusMatch = status === "Все статусы" || lead.status === status;
     const pipelineMatch = pipelineStatus === "Все этапы" || record.status === pipelineStatus;
     const search = query.trim().toLowerCase();
-    const queryMatch = !search || [lead.name, lead.country, lead.url, lead.category, lead.contacts, lead.adminContact, lead.verificationStatus, lead.verificationNotes, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
+    const queryMatch = !search || [lead.name, lead.country, lead.url, lead.audienceInfo, lead.category, lead.contacts, lead.adminContact, lead.verificationStatus, lead.verificationNotes, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
       .some((value) => String(value).toLowerCase().includes(search));
     return countryMatch && statusMatch && pipelineMatch && queryMatch;
   }), [country, leads, outreach, pipelineStatus, query, status]);
@@ -401,6 +401,7 @@ export default function HyipParserPanel({
       status: "Новый",
       lastSeen: "только что",
       notes: manualLeadDefaults.notes || "Добавлено вручную, нужно проверить контакты и активность.",
+      audienceInfo: manualLeadDefaults.audienceInfo || "Аудитория: указать подписчиков/читателей, средние просмотры и ER после проверки.",
       adminContact: manualLeadDefaults.adminContact || "",
       verificationStatus: manualLeadDefaults.verificationStatus || "Не проверен",
       verificationNotes: manualLeadDefaults.verificationNotes || "Нужно проверить TGStat/Telegram, просмотры, дату последних постов и контакт админа.",
@@ -491,9 +492,19 @@ export default function HyipParserPanel({
                 <div>
                   <a className="analytics-parser-site-link" href={lead.url} target="_blank" rel="noreferrer">Сайт</a>
                   {isTableEditing ? (
-                    <input value={lead.url} onChange={(event) => updateLead(lead.id, { url: event.target.value })} aria-label={`Сайт ${lead.name}`} />
+                    <>
+                      <input value={lead.url} onChange={(event) => updateLead(lead.id, { url: event.target.value })} aria-label={`Сайт ${lead.name}`} />
+                      <textarea
+                        value={lead.audienceInfo || ""}
+                        onChange={(event) => updateLead(lead.id, { audienceInfo: event.target.value })}
+                        rows="3"
+                        placeholder="Подписчики / читатели / средние просмотры"
+                        aria-label={`Аудитория ${lead.name}`}
+                      />
+                    </>
                   ) : null}
                   <small>{getHostLabel(lead.url)}</small>
+                  {lead.audienceInfo ? <p className="analytics-parser-static-text">{lead.audienceInfo}</p> : null}
                 </div>
                 <div>
                   <strong>{getChannelLabel(record)}</strong>
