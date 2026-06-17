@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import HyipParserPanel from "./HyipParserPanel";
+import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
 
 const PARSER_TABS = [
@@ -14,14 +15,21 @@ const PARSER_TABS = [
     label: "Telegram-каналы",
     hint: "100 лидов",
   },
+  {
+    id: "influencers",
+    label: "Инфлюенсеры",
+    hint: "100 лидов",
+  },
 ];
 
 export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab === "telegram") return "telegram";
+    if (initialTab === "influencers") return "influencers";
     if (typeof window !== "undefined") {
       const board = new URL(window.location.href).searchParams.get("board");
       if (board === "telegramParser") return "telegram";
+      if (board === "influencers") return "influencers";
     }
     return "monitors";
   });
@@ -31,7 +39,7 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
     if (typeof window === "undefined") return;
 
     const url = new URL(window.location.href);
-    url.searchParams.set("board", nextTab === "telegram" ? "telegramParser" : "parser");
+    url.searchParams.set("board", nextTab === "telegram" ? "telegramParser" : nextTab === "influencers" ? "influencers" : "parser");
     window.history.replaceState({}, "", url);
   }
 
@@ -53,7 +61,13 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
         ))}
       </div>
 
-      {activeTab === "telegram" ? <TelegramChannelsParserPanel /> : <HyipParserPanel />}
+      {activeTab === "telegram" ? (
+        <TelegramChannelsParserPanel />
+      ) : activeTab === "influencers" ? (
+        <InfluencerProspectsPanel />
+      ) : (
+        <HyipParserPanel />
+      )}
     </section>
   );
 }

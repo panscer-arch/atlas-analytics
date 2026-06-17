@@ -9,6 +9,7 @@ import AgentTerminologyTemplate from "./AgentTerminologyTemplate";
 import AgentTrainingDataset from "./AgentTrainingDataset";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ImageContentBoard from "./ImageContentBoard";
+import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
 import LocalizationBibleBoard from "./LocalizationBibleBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
@@ -134,6 +135,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "crmBoard",
   "parser",
   "telegramParser",
+  "influencers",
   "agentTasks",
   "agentDataset",
   "agentFaq",
@@ -159,7 +161,7 @@ export const TASK_BOARD_IDS = [
 export function getAnalyticsTabForBoard(boardId) {
   if (!boardId) return "dashboard";
   if (boardId === "expenses") return "analytics";
-  if (boardId === "parser" || boardId === "telegramParser") return "parser";
+  if (boardId === "parser" || boardId === "telegramParser" || boardId === "influencers") return "parser";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";
   if (CONTENT_BOARD_IDS.includes(boardId)) return "content";
@@ -219,6 +221,10 @@ export const STATIC_BOARD_META = {
   telegramParser: {
     title: "Парсер по Telegram-каналам",
     description: "Поиск и обработка Telegram-каналов по странам: крипта, DeFi, NFT, smart-contract, Web3 и похожие проекты.",
+  },
+  influencers: {
+    title: "Инфлюенсеры",
+    description: "Рабочий список потенциальных инфлюенсеров и сообществ из YouTube, Facebook, X и Telegram для Atlas outreach.",
   },
   agentTasks: {
     title: "Параметры",
@@ -285,6 +291,7 @@ const STATIC_BOARD_RENDERERS = {
   crmBoard: ({ analyticsBoardUrl }) => <AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" />,
   parser: () => <ParserWorkspacePanel />,
   telegramParser: () => <ParserWorkspacePanel initialTab="telegram" />,
+  influencers: () => <ParserWorkspacePanel initialTab="influencers" />,
   videoScripts: () => <VideoScriptsBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
   agentDataset: () => <AgentTrainingDataset />,
