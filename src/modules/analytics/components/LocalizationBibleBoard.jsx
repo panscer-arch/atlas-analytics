@@ -11,6 +11,7 @@ import {
   localizationPrompts,
   localizationQaChecks,
   localizationTermRows,
+  localizationUiPhrases,
   localizationWorkflow,
 } from "../data/localizationBibleData";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
@@ -224,6 +225,16 @@ function LocalizationBibleBoard() {
   const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
   const activeLocalePrompt = `${translationPrompt}\n\nPage: ${activePage?.title || ""}\nPath: ${activePage?.path || ""}\n\nRU source of meaning:\n${activePage?.ruSource || ""}\n\nEN master copy:\n${activePage?.enMaster || ""}\n\nPage notes:\n${activePage?.notes || ""}`;
+  const activeUiPhrasePack = useMemo(() => localizationUiPhrases.map((phrase) => ({
+    id: phrase.id,
+    context: phrase.context,
+    ruSource: phrase.ruSource,
+    enMaster: phrase.enMaster,
+    value: phrase.translations?.[activeLanguage.code] || phrase.enMaster,
+  })), [activeLanguage.code]);
+  const activeUiPhraseMarkdown = useMemo(() => activeUiPhrasePack
+    .map((phrase) => `- ${phrase.context}: ${phrase.value} (EN: ${phrase.enMaster})`)
+    .join("\n"), [activeUiPhrasePack]);
   const translationPackage = useMemo(() => buildTranslationPackage({
     page: activePage,
     language: activeLanguage,
@@ -651,6 +662,41 @@ function LocalizationBibleBoard() {
               <span>Note</span>
               <p>{activeLanguageGuide.note}</p>
             </article>
+          </div>
+
+          <div className="analytics-localization-phrase-bank">
+            <div className="analytics-localization-phrase-bank-head">
+              <div>
+                <span className="analytics-kicker">UI Phrase Bank</span>
+                <h3>Короткие фразы интерфейса</h3>
+              </div>
+              <button type="button" onClick={() => copyToClipboard(activeUiPhraseMarkdown)}>Copy phrases</button>
+            </div>
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-localization-phrase-table">
+                <thead>
+                  <tr>
+                    <th>Контекст</th>
+                    <th>RU source</th>
+                    <th>EN master</th>
+                    <th>{activeLanguage.nativeName}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeUiPhrasePack.map((phrase) => (
+                    <tr key={phrase.id}>
+                      <td>
+                        <strong>{phrase.context}</strong>
+                        <span>{phrase.id}</span>
+                      </td>
+                      <td>{phrase.ruSource}</td>
+                      <td>{phrase.enMaster}</td>
+                      <td className="analytics-localization-approved-term">{phrase.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="analytics-table-responsive">
