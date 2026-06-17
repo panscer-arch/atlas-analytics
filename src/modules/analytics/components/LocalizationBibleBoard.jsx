@@ -363,6 +363,52 @@ ${localizationPrompts.englishMaster}
   };
 }
 
+function getPageTerminology(page) {
+  const context = normalizeSearchText(`${page?.title || ""} ${page?.path || ""} ${page?.ruSource || ""} ${page?.enMaster || ""} ${page?.notes || ""}`);
+  return localizationTermRows.filter((row) => (
+    [row.id, row.sourceRu, row.masterEn, row.meaning]
+      .map(normalizeSearchText)
+      .some((hint) => hint && context.includes(hint))
+  ));
+}
+
+function buildPageTerminologyPackage({ page, language, terms }) {
+  const rows = terms.map((row) => [
+    `### ${row.id}`,
+    `Category: ${row.category}`,
+    `RU source: ${row.sourceRu}`,
+    `EN master: ${row.masterEn}`,
+    `${language.code}: ${row.locales?.[language.code] || row.masterEn}`,
+    `Keep English: ${row.keepEnglish ? "yes" : "no"}`,
+    `Meaning: ${row.meaning}`,
+    `Avoid: ${row.forbidden}`,
+  ].join("\n")).join("\n\n");
+
+  return `# Atlas Page Terminology Pack
+
+Page: ${page?.title || ""}
+Path: ${page?.path || ""}
+Target language: ${language.nativeName} (${language.englishName}, ${language.code})
+Terms found: ${terms.length}
+
+## Page Source
+RU source:
+${page?.ruSource || ""}
+
+EN master:
+${page?.enMaster || ""}
+
+Notes:
+${page?.notes || ""}
+
+## Terms To Preserve
+${rows || "- No glossary terms detected automatically. Review the page manually and add missing terms to the Atlas glossary if needed."}
+
+## Instruction
+Use these terms as the page-level glossary. If the page uses a product, Web3, economic, partner, governance or legal concept that is not listed here, add it to the glossary before translating the page.
+`;
+}
+
 function downloadTextFile(filename, content, type = "text/plain") {
   if (typeof window === "undefined") return;
   const blob = new Blob([content], { type });
@@ -443,6 +489,33 @@ function LocalizationBibleBoard() {
   const qaSourceText = qaText || activeLocaleCopy;
   const qaPageContext = `${activePage?.title || ""}\n${activePage?.path || ""}\n${activePage?.ruSource || ""}\n${activePage?.enMaster || ""}\n${activePage?.notes || ""}`;
   const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
+  const activePageTerms = useMemo(() => getPageTerminology(activePage), [activePage]);
+  const activePageTerminologyPackage = useMemo(() => buildPageTerminologyPackage({
+    page: activePage,
+    language: activeLanguage,
+    terms: activePageTerms,
+  }), [activePage, activeLanguage, activePageTerms]);
+  const activePageTerminologyJson = useMemo(() => JSON.stringify({
+    page: activePage ? {
+      id: activePage.id,
+      title: activePage.title,
+      path: activePage.path,
+      priority: activePage.priority,
+      owner: activePage.owner,
+    } : null,
+    language: activeLanguage,
+    terms: activePageTerms.map((row) => ({
+      id: row.id,
+      category: row.category,
+      sourceRu: row.sourceRu,
+      masterEn: row.masterEn,
+      locale: row.locales?.[activeLanguage.code] || row.masterEn,
+      keepEnglish: row.keepEnglish,
+      meaning: row.meaning,
+      forbidden: row.forbidden,
+    })),
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [activePage, activeLanguage, activePageTerms]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
   const activeLocalePrompt = `${translationPrompt}\n\nPage: ${activePage?.title || ""}\nPath: ${activePage?.path || ""}\n\nRU source of meaning:\n${activePage?.ruSource || ""}\n\nEN master copy:\n${activePage?.enMaster || ""}\n\nPage notes:\n${activePage?.notes || ""}`;
   const activeUiPhrasePack = useMemo(() => localizationUiPhrases.map((phrase) => ({
@@ -893,6 +966,33 @@ function LocalizationBibleBoard() {
                 <span>Заметки, термины и риски</span>
                 <textarea value={activePage.notes} onChange={(event) => updateActivePage("notes", event.target.value)} />
               </label>
+
+              <div className="analytics-localization-page-terms">
+                <div className="analytics-localization-page-terms-head">
+                  <div>
+                    <span className="analytics-kicker">Page Terminology</span>
+                    <h4>Термины этой страницы</h4>
+                  </div>
+                  <div className="analytics-localization-page-terms-actions">
+                    <button type="button" onClick={() => copyToClipboard(activePageTerminologyPackage)}>Copy terms</button>
+                    <button type="button" onClick={() => downloadTextFile(`atlas-${activePage.id}-${activeLanguage.code}-terms.md`, activePageTerminologyPackage, "text/markdown")}>Download MD</button>
+                    <button type="button" onClick={() => downloadTextFile(`atlas-${activePage.id}-${activeLanguage.code}-terms.json`, activePageTerminologyJson, "application/json")}>Download JSON</button>
+                  </div>
+                </div>
+                {activePageTerms.length ? (
+                  <div className="analytics-localization-page-term-list">
+                    {activePageTerms.map((term) => (
+                      <article key={term.id}>
+                        <strong>{term.masterEn}</strong>
+                        <span>{term.category} · {term.keepEnglish ? "keep EN" : "localized"}</span>
+                        <p>{term.locales?.[activeLanguage.code] || term.masterEn}</p>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="analytics-localization-page-terms-empty">Автоматически термины не найдены. Проверьте страницу вручную и добавьте новые понятия в glossary перед переводом.</p>
+                )}
+              </div>
 
               <div className="analytics-table-responsive">
                 <table className="analytics-table analytics-localization-status-table">
