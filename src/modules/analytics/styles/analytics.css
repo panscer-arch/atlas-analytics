@@ -17763,6 +17763,57 @@ input.analytics-smm-cell-input {
   gap: 16px;
 }
 
+.analytics-localization-overview {
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.5);
+  padding: 12px;
+}
+
+.analytics-localization-overview summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.analytics-localization-overview summary::-webkit-details-marker {
+  display: none;
+}
+
+.analytics-localization-overview summary::after {
+  content: "+";
+  margin-left: auto;
+  color: #5eead4;
+  font-weight: 900;
+}
+
+.analytics-localization-overview[open] summary::after {
+  content: "-";
+}
+
+.analytics-localization-overview summary strong {
+  color: #f8fafc;
+  font-size: 18px;
+}
+
+.analytics-localization-overview summary em {
+  color: rgba(226, 240, 255, 0.58);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.analytics-localization-overview .analytics-data-table-head {
+  margin-top: 12px;
+}
+
+.analytics-localization-overview .analytics-localization-hero {
+  margin-top: 12px;
+}
+
 .analytics-localization-workspace-actions {
   display: flex;
   flex-wrap: wrap;

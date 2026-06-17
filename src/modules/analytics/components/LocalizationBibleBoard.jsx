@@ -1306,44 +1306,49 @@ function LocalizationBibleBoard() {
 
   return (
     <section className="analytics-surface analytics-localization-board">
-      <div className="analytics-data-table-head">
-        <div>
+      <details className="analytics-localization-overview">
+        <summary>
           <span className="analytics-kicker">Localization Bible</span>
-          <h2 className="analytics-agent-template-title">Atlas: грамотные переводы сайта</h2>
-          <p className="analytics-page-subtitle">
-            Рабочий стандарт локализации: русский смысловой источник, английский master copy, утверждённый glossary и QA для всех языков сайта.
-            Цель — не допускать переводов вроде “срок заключения” вместо lockup period или “количество циклов” вместо cycle amount.
-          </p>
+          <strong>Atlas: грамотные переводы сайта</strong>
+          <em>{allTermRows.length} terms · {atlasLocalizationLanguages.length} languages</em>
+        </summary>
+        <div className="analytics-data-table-head">
+          <div>
+            <p className="analytics-page-subtitle">
+              Рабочий стандарт локализации: русский смысловой источник, английский master copy, утверждённый glossary и QA для всех языков сайта.
+              Цель — не допускать переводов вроде “срок заключения” вместо lockup period или “количество циклов” вместо cycle amount.
+            </p>
+          </div>
+          <div className="analytics-localization-workspace-actions">
+            <button type="button" onClick={() => copyToClipboard(workspaceExportPackage)}>Copy workspace</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-localization-workspace.md", workspaceExportPackage, "text/markdown")}>Download MD</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-localization-workspace.json", workspaceExportJson, "application/json")}>Download JSON</button>
+          </div>
         </div>
-        <div className="analytics-localization-workspace-actions">
-          <button type="button" onClick={() => copyToClipboard(workspaceExportPackage)}>Copy workspace</button>
-          <button type="button" onClick={() => downloadTextFile("atlas-localization-workspace.md", workspaceExportPackage, "text/markdown")}>Download MD</button>
-          <button type="button" onClick={() => downloadTextFile("atlas-localization-workspace.json", workspaceExportJson, "application/json")}>Download JSON</button>
-        </div>
-      </div>
 
-      <div className="analytics-localization-hero">
-        <div className="analytics-localization-hero-card">
-          <span>Source</span>
-          <strong>RU смысл</strong>
-          <p>Команда пишет продуктовые смыслы на русском, потому что так быстрее и точнее формулируется идея Atlas.</p>
+        <div className="analytics-localization-hero">
+          <div className="analytics-localization-hero-card">
+            <span>Source</span>
+            <strong>RU смысл</strong>
+            <p>Команда пишет продуктовые смыслы на русском, потому что так быстрее и точнее формулируется идея Atlas.</p>
+          </div>
+          <div className="analytics-localization-hero-card">
+            <span>Master</span>
+            <strong>EN canonical</strong>
+            <p>Английский становится международной версией, но только после редакторской вычитки, а не как машинный перевод.</p>
+          </div>
+          <div className="analytics-localization-hero-card">
+            <span>Glossary</span>
+            <strong>{allTermRows.length} terms</strong>
+            <p>{lockedTermsCount} терминов закреплены как English/Web3 terms и не должны переводиться произвольно.</p>
+          </div>
+          <div className="analytics-localization-hero-card">
+            <span>Locales</span>
+            <strong>{atlasLocalizationLanguages.length} languages</strong>
+            <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
+          </div>
         </div>
-        <div className="analytics-localization-hero-card">
-          <span>Master</span>
-          <strong>EN canonical</strong>
-          <p>Английский становится международной версией, но только после редакторской вычитки, а не как машинный перевод.</p>
-        </div>
-        <div className="analytics-localization-hero-card">
-          <span>Glossary</span>
-          <strong>{allTermRows.length} terms</strong>
-          <p>{lockedTermsCount} терминов закреплены как English/Web3 terms и не должны переводиться произвольно.</p>
-        </div>
-        <div className="analytics-localization-hero-card">
-          <span>Locales</span>
-          <strong>{atlasLocalizationLanguages.length} languages</strong>
-          <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
-        </div>
-      </div>
+      </details>
 
       <div className="analytics-localization-simple-table">
         <div className="analytics-localization-simple-table-head">
