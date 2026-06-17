@@ -584,6 +584,8 @@ function LocalizationBibleBoard() {
   const [customGlossaryRows, setCustomGlossaryRows] = useState(() => mergeGlossaryTerms());
   const [activePageId, setActivePageId] = useState(defaultLocalizationPages[0]?.id || "home");
   const [qaText, setQaText] = useState("");
+  const [workspaceImportText, setWorkspaceImportText] = useState("");
+  const [workspaceImportMessage, setWorkspaceImportMessage] = useState("");
   const [saveState, setSaveState] = useState("Сохранено");
   const saveRequestRef = useRef(0);
   const isHydratedRef = useRef(false);
@@ -945,6 +947,22 @@ function LocalizationBibleBoard() {
     setCustomGlossaryRows((terms) => terms.filter((term) => term.id !== termId));
   }
 
+  function applyWorkspaceImport() {
+    try {
+      const parsed = JSON.parse(workspaceImportText);
+      const pages = mergeLocalizationPages(parsed?.pages || parsed);
+      const customTerms = mergeGlossaryTerms(parsed?.customGlossary || parsed?.customTerms);
+      if (!pages.length) throw new Error("No pages found");
+      setTranslationPages(pages);
+      setCustomGlossaryRows(customTerms);
+      setActivePageId(pages[0]?.id || defaultLocalizationPages[0]?.id || "home");
+      setWorkspaceImportText("");
+      setWorkspaceImportMessage(`Imported ${pages.length} pages and ${customTerms.length} custom terms.`);
+    } catch {
+      setWorkspaceImportMessage("Import failed: paste a valid Atlas localization workspace JSON.");
+    }
+  }
+
   function applyQaResultToActiveLocale() {
     if (!activePage) return;
     const nextStatus = qaResult.high > 0 ? "needs-fix" : "ai-reviewed";
@@ -1006,6 +1024,26 @@ function LocalizationBibleBoard() {
           <strong>{atlasLocalizationLanguages.length} languages</strong>
           <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
         </div>
+      </div>
+
+      <div className="analytics-localization-import">
+        <div className="analytics-localization-import-head">
+          <div>
+            <span className="analytics-kicker">Workspace Import</span>
+            <h3>Восстановить локализацию из JSON</h3>
+            <p>Вставьте экспортированный `atlas-localization-workspace.json`, чтобы вернуть страницы, locale copies и custom glossary в рабочую базу.</p>
+          </div>
+          <div className="analytics-localization-import-actions">
+            <button type="button" onClick={applyWorkspaceImport} disabled={!workspaceImportText.trim()}>Apply import</button>
+            <button type="button" onClick={() => { setWorkspaceImportText(""); setWorkspaceImportMessage(""); }}>Clear</button>
+          </div>
+        </div>
+        <textarea
+          value={workspaceImportText}
+          onChange={(event) => setWorkspaceImportText(event.target.value)}
+          placeholder='Paste Atlas localization workspace JSON here...'
+        />
+        {workspaceImportMessage ? <p className="analytics-localization-import-message">{workspaceImportMessage}</p> : null}
       </div>
 
       <div className="analytics-localization-en-gate">

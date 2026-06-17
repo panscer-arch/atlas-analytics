@@ -17844,6 +17844,81 @@ input.analytics-smm-cell-input {
   line-height: 1.45;
 }
 
+.analytics-localization-import {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.48);
+  padding: 14px;
+}
+
+.analytics-localization-import-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.analytics-localization-import-head h3 {
+  margin: 6px 0 4px;
+  color: #f8fafc;
+}
+
+.analytics-localization-import-head p,
+.analytics-localization-import-message {
+  margin: 0;
+  color: rgba(226, 240, 255, 0.68);
+  line-height: 1.45;
+}
+
+.analytics-localization-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.analytics-localization-import-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  border-radius: 10px;
+  background: rgba(20, 184, 166, 0.1);
+  color: #99f6e4;
+  font-weight: 900;
+}
+
+.analytics-localization-import-actions button:last-child {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.36);
+  color: #dbeafe;
+}
+
+.analytics-localization-import-actions button:hover:not(:disabled) {
+  border-color: rgba(20, 184, 166, 0.62);
+  background: rgba(20, 184, 166, 0.17);
+}
+
+.analytics-localization-import-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.analytics-localization-import textarea {
+  width: 100%;
+  min-height: 116px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.38);
+  color: #f8fafc;
+  font: inherit;
+  letter-spacing: 0;
+  line-height: 1.45;
+  padding: 10px;
+  resize: vertical;
+}
+
 .analytics-localization-step h3,
 .analytics-localization-panel h3,
 .analytics-localization-rules h3,
@@ -19105,6 +19180,14 @@ input.analytics-smm-cell-input {
   }
 
   .analytics-localization-page-kit-actions {
+    justify-content: flex-start;
+  }
+
+  .analytics-localization-import-head {
+    display: grid;
+  }
+
+  .analytics-localization-import-actions {
     justify-content: flex-start;
   }
 
