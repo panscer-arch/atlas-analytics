@@ -8,6 +8,7 @@ import {
   localizationLanguageGuides,
   localizationMeaningMemory,
   localizationLocaleStatuses,
+  localizationNativeReviewChecks,
   localizationPagePipeline,
   localizationPrompts,
   localizationQaChecks,
@@ -332,6 +333,56 @@ ${rows.map((row) => {
   return {
     rows,
     summary: { pages: rows.length, reviewed, needsFix, empty, averageScore },
+    markdown,
+  };
+}
+
+function buildNativeReviewGate({ language, languageGuide, pages, localeStatusById }) {
+  const rows = pages.map((page) => {
+    const locale = page.locales?.[language.code] || makeLocaleProgress()[language.code];
+    const isReady = ["native-reviewed", "published"].includes(locale.status);
+    const hasCopy = Boolean(String(locale.copy || "").trim());
+    return {
+      page,
+      locale,
+      isReady,
+      hasCopy,
+      statusLabel: localeStatusById.get(locale.status)?.label || locale.status,
+    };
+  });
+  const ready = rows.filter((row) => row.isReady).length;
+  const missingCopy = rows.filter((row) => !row.hasCopy).length;
+  const waitingReview = rows.filter((row) => row.hasCopy && !row.isReady).length;
+
+  const markdown = `# Atlas Native Review Gate
+
+Language: ${language.nativeName} (${language.englishName}, ${language.code})
+Ready: ${ready}/${rows.length}
+Waiting review: ${waitingReview}
+Missing copy: ${missingCopy}
+
+## Language Guide
+Tone: ${languageGuide?.tone || ""}
+Keep: ${languageGuide?.keep || ""}
+Avoid: ${languageGuide?.avoid || ""}
+Note: ${languageGuide?.note || ""}
+
+## Native Review Checklist
+${localizationNativeReviewChecks.map((row) => `- [${row.severity}] ${row.check}: ${row.question}`).join("\n")}
+
+## Pages
+${rows.map((row) => `### ${row.page.title}
+Path: ${row.page.path}
+Status: ${row.statusLabel}
+Reviewer: ${row.locale.reviewer || "-"}
+Notes: ${row.locale.notes || "-"}
+
+${row.locale.copy || "_No locale copy saved._"}`).join("\n\n")}
+`;
+
+  return {
+    rows,
+    summary: { pages: rows.length, ready, waitingReview, missingCopy },
     markdown,
   };
 }
@@ -821,6 +872,31 @@ function LocalizationBibleBoard() {
     })),
     exportedAt: new Date().toISOString(),
   }, null, 2), [activeLanguage, languageQaReport]);
+  const nativeReviewGate = useMemo(() => buildNativeReviewGate({
+    language: activeLanguage,
+    languageGuide: activeLanguageGuide,
+    pages: translationPages,
+    localeStatusById,
+  }), [activeLanguage, activeLanguageGuide, translationPages, localeStatusById]);
+  const nativeReviewGateJson = useMemo(() => JSON.stringify({
+    language: activeLanguage,
+    languageGuide: activeLanguageGuide,
+    checklist: localizationNativeReviewChecks,
+    summary: nativeReviewGate.summary,
+    rows: nativeReviewGate.rows.map((row) => ({
+      pageId: row.page.id,
+      title: row.page.title,
+      path: row.page.path,
+      status: row.locale.status,
+      statusLabel: row.statusLabel,
+      reviewer: row.locale.reviewer,
+      notes: row.locale.notes,
+      hasCopy: row.hasCopy,
+      isReady: row.isReady,
+      copy: row.locale.copy,
+    })),
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [activeLanguage, activeLanguageGuide, nativeReviewGate]);
   const translationPackage = useMemo(() => buildTranslationPackage({
     page: activePage,
     language: activeLanguage,
@@ -1600,6 +1676,48 @@ function LocalizationBibleBoard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          <div className="analytics-localization-native-gate">
+            <div className="analytics-localization-native-gate-head">
+              <div>
+                <span className="analytics-kicker">Native Review Gate</span>
+                <h3>Проверка носителем языка</h3>
+                <p>Финальный gate для естественности, локального доверия, Web3-лексики и отсутствия опасных обещаний.</p>
+              </div>
+              <div className="analytics-localization-report-actions">
+                <button type="button" onClick={() => copyToClipboard(nativeReviewGate.markdown)}>Copy native pack</button>
+                <button type="button" onClick={() => downloadTextFile(`atlas-localization-${activeLanguage.code}-native-review.md`, nativeReviewGate.markdown, "text/markdown")}>Download MD</button>
+                <button type="button" onClick={() => downloadTextFile(`atlas-localization-${activeLanguage.code}-native-review.json`, nativeReviewGateJson, "application/json")}>Download JSON</button>
+              </div>
+            </div>
+            <div className="analytics-localization-report-stats">
+              <article>
+                <span>Ready</span>
+                <strong>{nativeReviewGate.summary.ready}/{nativeReviewGate.summary.pages}</strong>
+              </article>
+              <article>
+                <span>Waiting review</span>
+                <strong>{nativeReviewGate.summary.waitingReview}</strong>
+              </article>
+              <article>
+                <span>Missing copy</span>
+                <strong>{nativeReviewGate.summary.missingCopy}</strong>
+              </article>
+              <article>
+                <span>Checklist</span>
+                <strong>{localizationNativeReviewChecks.length}</strong>
+              </article>
+            </div>
+            <div className="analytics-localization-native-checks">
+              {localizationNativeReviewChecks.map((row) => (
+                <article key={row.check}>
+                  <strong>{row.check}</strong>
+                  <span>{row.severity}</span>
+                  <p>{row.question}</p>
+                </article>
+              ))}
             </div>
           </div>
 

@@ -443,6 +443,39 @@ export const localizationQaChecks = [
   { check: "Source traceability", question: "Понятно, из какого RU/EN source-of-truth взят перевод?", severity: "Medium" },
 ];
 
+export const localizationNativeReviewChecks = [
+  {
+    check: "Crypto-native wording",
+    question: "Носитель, который читает Web3/crypto сайты, сказал бы так естественно?",
+    severity: "High",
+  },
+  {
+    check: "Regulatory tone",
+    question: "Текст не звучит как обещание дохода, банковский продукт, брокерская услуга или финансовая гарантия?",
+    severity: "High",
+  },
+  {
+    check: "Term retention",
+    question: "Smart Cycle, Claim, DAO, Web3, USDT BEP20, BNB Smart Chain и другие keep-English термины не испорчены локальным переводом?",
+    severity: "High",
+  },
+  {
+    check: "Local trust",
+    question: "Фразы звучат спокойно и профессионально для локального рынка, без MLM-hype и рекламной агрессии?",
+    severity: "Medium",
+  },
+  {
+    check: "UI fit",
+    question: "Кнопки, меню, карточки и короткие подписи не стали слишком длинными для интерфейса?",
+    severity: "Medium",
+  },
+  {
+    check: "Meaning preservation",
+    question: "Перевод сохраняет смысл RU source и EN master, а не добавляет новые обещания или юридические смыслы?",
+    severity: "High",
+  },
+];
+
 export const localizationForbiddenPatterns = [
   {
     id: "guaranteed-profit",
