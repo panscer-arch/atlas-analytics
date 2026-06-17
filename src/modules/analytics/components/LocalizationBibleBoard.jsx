@@ -310,6 +310,59 @@ ${rows.map((row) => {
   };
 }
 
+function buildEnglishMasterGate({ pages }) {
+  const englishLanguage = atlasLocalizationLanguages.find((language) => language.code === "en") || atlasLocalizationLanguages[1];
+  const rows = pages.map((page) => {
+    const context = `${page.title}\n${page.path}\n${page.ruSource}\n${page.notes}`;
+    const qa = analyzeLocalizedText(page.enMaster || "", "en", context);
+    const ruWords = page.ruSource.trim() ? page.ruSource.trim().split(/\s+/).length : 0;
+    const enWords = page.enMaster.trim() ? page.enMaster.trim().split(/\s+/).length : 0;
+    const isMissing = !String(page.enMaster || "").trim();
+    const isTooShort = !isMissing && ruWords > 20 && enWords < Math.max(8, Math.round(ruWords * 0.25));
+    const hasRisk = qa.high > 0;
+    const status = isMissing ? "Missing" : hasRisk ? "Risk" : isTooShort ? "Too short" : "Ready";
+    return { page, qa, ruWords, enWords, isMissing, isTooShort, hasRisk, status };
+  });
+
+  const missing = rows.filter((row) => row.isMissing).length;
+  const risky = rows.filter((row) => row.hasRisk).length;
+  const tooShort = rows.filter((row) => row.isTooShort).length;
+  const ready = rows.filter((row) => row.status === "Ready").length;
+
+  const markdown = `# Atlas EN Master Gate
+
+Purpose: verify that Russian source meanings have a clear, safe English master before other locales are translated.
+Pages: ${rows.length}
+Ready: ${ready}
+Missing EN master: ${missing}
+Risky wording: ${risky}
+Too short: ${tooShort}
+
+| Page | Path | Status | RU words | EN words | QA score | High | Medium | Notes |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+${rows.map((row) => `| ${row.page.title} | ${row.page.path} | ${row.status} | ${row.ruWords} | ${row.enWords} | ${row.isMissing ? "-" : row.qa.score} | ${row.qa.high} | ${row.qa.medium} | ${(row.page.notes || "-").replace(/\|/g, "/")} |`).join("\n")}
+
+## Page Review
+${rows.map((row) => {
+    if (row.isMissing) return `### ${row.page.title}\n- [High] EN master is missing. Create canonical English copy from the RU source before translating other locales.`;
+    const warnings = [];
+    if (row.isTooShort) warnings.push("- [Medium] EN master may be too short compared with the RU source. Check that no meaning was lost.");
+    row.qa.issues.forEach((issue) => warnings.push(`- [${issue.severity}] ${issue.topic}: ${issue.message} (${issue.term})`));
+    return `### ${row.page.title}\n${warnings.length ? warnings.join("\n") : "- EN master looks ready for locale translation."}`;
+  }).join("\n\n")}
+
+## EN Master Prompt
+${localizationPrompts.englishMaster}
+`;
+
+  return {
+    language: englishLanguage,
+    rows,
+    summary: { pages: rows.length, ready, missing, risky, tooShort },
+    markdown,
+  };
+}
+
 function downloadTextFile(filename, content, type = "text/plain") {
   if (typeof window === "undefined") return;
   const blob = new Blob([content], { type });
@@ -367,6 +420,26 @@ function LocalizationBibleBoard() {
       };
     });
   }, [translationPages]);
+  const englishMasterGate = useMemo(() => buildEnglishMasterGate({ pages: translationPages }), [translationPages]);
+  const englishMasterGateJson = useMemo(() => JSON.stringify({
+    language: englishMasterGate.language,
+    summary: englishMasterGate.summary,
+    rows: englishMasterGate.rows.map((row) => ({
+      pageId: row.page.id,
+      title: row.page.title,
+      path: row.page.path,
+      priority: row.page.priority,
+      status: row.status,
+      ruWords: row.ruWords,
+      enWords: row.enWords,
+      qaScore: row.isMissing ? null : row.qa.score,
+      high: row.qa.high,
+      medium: row.qa.medium,
+      issues: row.qa.issues,
+      notes: row.page.notes,
+    })),
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [englishMasterGate]);
   const qaSourceText = qaText || activeLocaleCopy;
   const qaPageContext = `${activePage?.title || ""}\n${activePage?.path || ""}\n${activePage?.ruSource || ""}\n${activePage?.enMaster || ""}\n${activePage?.notes || ""}`;
   const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
@@ -614,6 +687,76 @@ function LocalizationBibleBoard() {
           <span>Locales</span>
           <strong>{atlasLocalizationLanguages.length} languages</strong>
           <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
+        </div>
+      </div>
+
+      <div className="analytics-localization-en-gate">
+        <div className="analytics-localization-en-gate-head">
+          <div>
+            <span className="analytics-kicker">EN Master Gate</span>
+            <h3>Русский смысл → английский master copy</h3>
+            <p>Перед переводом на остальные языки каждая страница должна иметь безопасный английский master: без буквальной кальки, инвестиционных обещаний и потери смысла.</p>
+          </div>
+          <div className="analytics-localization-report-actions">
+            <button type="button" onClick={() => copyToClipboard(englishMasterGate.markdown)}>Copy EN gate</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-en-master-gate.md", englishMasterGate.markdown, "text/markdown")}>Download MD</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-en-master-gate.json", englishMasterGateJson, "application/json")}>Download JSON</button>
+          </div>
+        </div>
+        <div className="analytics-localization-report-stats">
+          <article>
+            <span>Ready</span>
+            <strong>{englishMasterGate.summary.ready}/{englishMasterGate.summary.pages}</strong>
+          </article>
+          <article>
+            <span>Missing EN</span>
+            <strong>{englishMasterGate.summary.missing}</strong>
+          </article>
+          <article>
+            <span>Risky wording</span>
+            <strong>{englishMasterGate.summary.risky}</strong>
+          </article>
+          <article>
+            <span>Too short</span>
+            <strong>{englishMasterGate.summary.tooShort}</strong>
+          </article>
+        </div>
+        <div className="analytics-table-responsive">
+          <table className="analytics-table analytics-localization-en-gate-table">
+            <thead>
+              <tr>
+                <th>Страница</th>
+                <th>Status</th>
+                <th>RU words</th>
+                <th>EN words</th>
+                <th>QA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {englishMasterGate.rows.map((row) => (
+                <tr key={row.page.id}>
+                  <td>
+                    <button
+                      type="button"
+                      className="analytics-localization-report-page"
+                      onClick={() => setActivePageId(row.page.id)}
+                    >
+                      <strong>{row.page.title}</strong>
+                      <span>{row.page.path} · {row.page.priority}</span>
+                    </button>
+                  </td>
+                  <td>
+                    <span className={`analytics-localization-en-status analytics-localization-en-status-${row.status.toLowerCase().replace(/\s+/g, "-")}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>{row.ruWords}</td>
+                  <td>{row.enWords}</td>
+                  <td>{row.isMissing ? "Create EN master" : `${row.qa.score} · ${row.qa.high} high / ${row.qa.medium} medium`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
