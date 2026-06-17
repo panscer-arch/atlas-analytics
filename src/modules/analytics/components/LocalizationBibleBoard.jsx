@@ -409,6 +409,67 @@ Use these terms as the page-level glossary. If the page uses a product, Web3, ec
 `;
 }
 
+function buildPageAllLocalesPackage({ page, terms }) {
+  const glossaryMarkdown = terms.length
+    ? terms.map((row) => {
+      const locales = atlasLocalizationLanguages.map((language) => (
+        `- ${language.code}: ${row.locales?.[language.code] || row.masterEn}`
+      )).join("\n");
+      return `### ${row.id} / ${row.masterEn}
+Category: ${row.category}
+Keep English: ${row.keepEnglish ? "yes" : "no"}
+Meaning: ${row.meaning}
+Avoid: ${row.forbidden}
+
+${locales}`;
+    }).join("\n\n")
+    : "- No terms detected automatically. Review manually before translation.";
+
+  const localeInstructions = atlasLocalizationLanguages.map((language) => {
+    const guide = localizationLanguageGuides.find((item) => item.code === language.code);
+    const locale = page?.locales?.[language.code] || makeLocaleProgress()[language.code];
+    return `## ${language.nativeName} (${language.code})
+Role: ${language.role}
+Current status: ${locale.status}
+Tone: ${guide?.tone || ""}
+Keep: ${guide?.keep || ""}
+Avoid: ${guide?.avoid || ""}
+Note: ${guide?.note || ""}
+
+Current copy:
+${locale.copy || "_No locale copy saved._"}`;
+  }).join("\n\n");
+
+  return `# Atlas Page All-Locales Translation Kit
+
+Page: ${page?.title || ""}
+Path: ${page?.path || ""}
+Owner: ${page?.owner || ""}
+Priority: ${page?.priority || ""}
+
+## RU Source Of Meaning
+${page?.ruSource || ""}
+
+## EN Master Copy
+${page?.enMaster || ""}
+
+## Page Notes
+${page?.notes || ""}
+
+## Page Glossary
+${glossaryMarkdown}
+
+## Locale Instructions And Current Copies
+${localeInstructions}
+
+## Global Rules
+${localizationCoreRules.map((rule) => `- ${rule}`).join("\n")}
+
+## Translation Prompt
+${localizationPrompts.translate}
+`;
+}
+
 function buildWorkspaceExportPackage({ pages }) {
   const pageMarkdown = pages.map((page) => {
     const terminology = getPageTerminology(page);
@@ -601,6 +662,22 @@ function LocalizationBibleBoard() {
     })),
     exportedAt: new Date().toISOString(),
   }, null, 2), [activePage, activeLanguage, activePageTerms]);
+  const activePageAllLocalesPackage = useMemo(() => buildPageAllLocalesPackage({
+    page: activePage,
+    terms: activePageTerms,
+  }), [activePage, activePageTerms]);
+  const activePageAllLocalesJson = useMemo(() => JSON.stringify({
+    page: activePage,
+    terms: activePageTerms,
+    languages: atlasLocalizationLanguages.map((language) => ({
+      ...language,
+      guide: localizationLanguageGuides.find((guide) => guide.code === language.code),
+      locale: activePage?.locales?.[language.code] || makeLocaleProgress()[language.code],
+    })),
+    coreRules: localizationCoreRules,
+    prompt: localizationPrompts.translate,
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [activePage, activePageTerms]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
   const activeLocalePrompt = `${translationPrompt}\n\nPage: ${activePage?.title || ""}\nPath: ${activePage?.path || ""}\n\nRU source of meaning:\n${activePage?.ruSource || ""}\n\nEN master copy:\n${activePage?.enMaster || ""}\n\nPage notes:\n${activePage?.notes || ""}`;
   const activeUiPhrasePack = useMemo(() => localizationUiPhrases.map((phrase) => ({
@@ -1018,6 +1095,19 @@ function LocalizationBibleBoard() {
 
           {activePage ? (
             <div className="analytics-localization-page-editor">
+              <div className="analytics-localization-page-kit">
+                <div>
+                  <span className="analytics-kicker">Page Translation Kit</span>
+                  <h4>Одна страница → все языки</h4>
+                  <p>Пакет собирает RU смысл, EN master, page glossary, language guides и текущие locale copies для всех языков сразу.</p>
+                </div>
+                <div className="analytics-localization-page-kit-actions">
+                  <button type="button" onClick={() => copyToClipboard(activePageAllLocalesPackage)}>Copy page kit</button>
+                  <button type="button" onClick={() => downloadTextFile(`atlas-${activePage.id}-all-locales-kit.md`, activePageAllLocalesPackage, "text/markdown")}>Download MD</button>
+                  <button type="button" onClick={() => downloadTextFile(`atlas-${activePage.id}-all-locales-kit.json`, activePageAllLocalesJson, "application/json")}>Download JSON</button>
+                </div>
+              </div>
+
               <div className="analytics-localization-form-grid">
                 <label>
                   <span>Название страницы</span>
