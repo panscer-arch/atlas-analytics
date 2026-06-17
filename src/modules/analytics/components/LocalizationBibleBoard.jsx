@@ -191,6 +191,78 @@ ${prompt}
 `;
 }
 
+function buildLanguageHandoffPackage({ language, languageGuide, terms, meaningMemory, uiPhrases }) {
+  const glossaryMarkdown = terms.map((row) => [
+    `### ${row.id}`,
+    `Category: ${row.category}`,
+    `RU source: ${row.sourceRu}`,
+    `EN master: ${row.masterEn}`,
+    `${language.code}: ${row.locales?.[language.code] || row.masterEn}`,
+    `Meaning: ${row.meaning}`,
+    `Rule: ${row.keepEnglish ? "Keep English/Web3 term where specified." : "Translate by approved locale wording."}`,
+    `Avoid: ${row.forbidden}`,
+  ].join("\n")).join("\n\n");
+
+  const meaningMarkdown = meaningMemory.map((phrase) => [
+    `### ${phrase.topic} / ${phrase.id}`,
+    `RU: ${phrase.ruSource}`,
+    `EN: ${phrase.enMaster}`,
+    `${language.code}: ${phrase.value}`,
+  ].join("\n")).join("\n\n");
+
+  const uiMarkdown = uiPhrases.map((phrase) => (
+    `- ${phrase.context} / ${phrase.id}: ${phrase.value} (RU: ${phrase.ruSource}; EN: ${phrase.enMaster})`
+  )).join("\n");
+
+  const qaMarkdown = localizationQaChecks.map((row) => (
+    `- [${row.severity}] ${row.check}: ${row.question}`
+  )).join("\n");
+
+  const forbiddenMarkdown = localizationForbiddenPatterns.map((pattern) => {
+    const termsForLocale = [...(pattern.terms?.[language.code] || []), ...(language.code === "en" ? [] : pattern.terms?.en || [])];
+    return [
+      `### ${pattern.topic} / ${pattern.id}`,
+      `Severity: ${pattern.severity}`,
+      `Rule: ${pattern.message}`,
+      `Forbidden examples: ${termsForLocale.join(", ") || "Use the English/global forbidden examples."}`,
+    ].join("\n");
+  }).join("\n\n");
+
+  return `# Atlas Localization Handoff Pack
+
+Target language: ${language.nativeName} (${language.englishName}, ${language.code})
+Role: ${language.role}
+Status: ${language.status}
+
+## Language Guide
+Tone: ${languageGuide?.tone || ""}
+Keep: ${languageGuide?.keep || ""}
+Avoid: ${languageGuide?.avoid || ""}
+Note: ${languageGuide?.note || ""}
+
+## Core Rules
+${localizationCoreRules.map((rule) => `- ${rule}`).join("\n")}
+
+## Meaning Memory
+${meaningMarkdown}
+
+## UI Phrase Bank
+${uiMarkdown}
+
+## Full Glossary
+${glossaryMarkdown}
+
+## Forbidden Patterns
+${forbiddenMarkdown}
+
+## QA Checklist
+${qaMarkdown}
+
+## Working Instruction
+Translate from the EN master while preserving the RU source meaning. Keep Atlas brand terms, Web3 terms, numbers, token names, blockchain names, contract addresses and percentages unchanged unless the glossary explicitly defines a local form. Do not introduce investment, deposit, guaranteed-profit, salary or risk-free language.
+`;
+}
+
 function downloadTextFile(filename, content, type = "text/plain") {
   if (typeof window === "undefined") return;
   const blob = new Blob([content], { type });
@@ -273,6 +345,39 @@ function LocalizationBibleBoard() {
   const activeMeaningMemoryMarkdown = useMemo(() => activeMeaningMemoryPack
     .map((phrase) => `## ${phrase.topic} / ${phrase.id}\nRU: ${phrase.ruSource}\nEN: ${phrase.enMaster}\n${activeLanguage.code}: ${phrase.value}`)
     .join("\n\n"), [activeMeaningMemoryPack, activeLanguage.code]);
+  const languageHandoffPackage = useMemo(() => buildLanguageHandoffPackage({
+    language: activeLanguage,
+    languageGuide: activeLanguageGuide,
+    terms: localizationTermRows,
+    meaningMemory: activeMeaningMemoryPack,
+    uiPhrases: activeUiPhrasePack,
+  }), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack]);
+  const languageHandoffJson = useMemo(() => JSON.stringify({
+    language: activeLanguage,
+    languageGuide: activeLanguageGuide,
+    coreRules: localizationCoreRules,
+    qaChecks: localizationQaChecks,
+    forbiddenPatterns: localizationForbiddenPatterns.map((pattern) => ({
+      id: pattern.id,
+      severity: pattern.severity,
+      topic: pattern.topic,
+      message: pattern.message,
+      terms: [...(pattern.terms?.[activeLanguage.code] || []), ...(activeLanguage.code === "en" ? [] : pattern.terms?.en || [])],
+    })),
+    meaningMemory: activeMeaningMemoryPack,
+    uiPhrases: activeUiPhrasePack,
+    glossary: localizationTermRows.map((row) => ({
+      id: row.id,
+      category: row.category,
+      sourceRu: row.sourceRu,
+      masterEn: row.masterEn,
+      locale: row.locales?.[activeLanguage.code] || row.masterEn,
+      meaning: row.meaning,
+      keepEnglish: row.keepEnglish,
+      forbidden: row.forbidden,
+    })),
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack]);
   const translationPackage = useMemo(() => buildTranslationPackage({
     page: activePage,
     language: activeLanguage,
@@ -758,6 +863,11 @@ function LocalizationBibleBoard() {
               <span className="analytics-kicker">{activeLanguage.code}</span>
               <h3>{activeLanguage.flag} {activeLanguage.nativeName}</h3>
               <p>{activeLanguage.role}: {activeLanguage.englishName}</p>
+            </div>
+            <div className="analytics-localization-handoff-actions">
+              <button type="button" onClick={() => copyToClipboard(languageHandoffPackage)}>Copy handoff MD</button>
+              <button type="button" onClick={() => downloadTextFile(`atlas-localization-${activeLanguage.code}-handoff.md`, languageHandoffPackage, "text/markdown")}>Download MD</button>
+              <button type="button" onClick={() => downloadTextFile(`atlas-localization-${activeLanguage.code}-handoff.json`, languageHandoffJson, "application/json")}>Download JSON</button>
             </div>
             <div className="analytics-localization-category-filter" aria-label="Фильтр терминов по категории">
               {categories.map((category) => (
