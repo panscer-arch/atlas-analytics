@@ -16382,6 +16382,32 @@ input.analytics-smm-cell-input {
   margin-top: 1rem;
 }
 
+.analytics-parser-quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.analytics-parser-filter-chip {
+  width: auto;
+  min-height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  background: rgba(8, 18, 31, 0.72);
+  color: rgba(229, 239, 250, 0.78);
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.analytics-parser-filter-chip-active {
+  border-color: rgba(114, 239, 214, 0.58);
+  background: rgba(114, 239, 214, 0.16);
+  color: #ffffff;
+}
+
 .analytics-parser-controls label {
   display: grid;
   gap: 0.35rem;

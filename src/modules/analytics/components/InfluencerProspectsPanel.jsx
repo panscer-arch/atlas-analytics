@@ -18,6 +18,7 @@ export default function InfluencerProspectsPanel() {
       searchPlaceholder="YouTube, X, Facebook, Telegram, страна, DeFi, airdrop..."
       showVerification
       platformFilterOptions={["YouTube", "X", "Telegram", "Facebook"]}
+      keywordFilterOptions={["Bitnest"]}
       platformFilterLabel="Соцсеть"
       manualLeadDefaults={{
         name: "Новый инфлюенсер",

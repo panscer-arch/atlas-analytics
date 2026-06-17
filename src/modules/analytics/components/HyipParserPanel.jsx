@@ -191,6 +191,7 @@ export default function HyipParserPanel({
   searchPlaceholder = "название, страна, контакт...",
   showVerification = false,
   platformFilterOptions = [],
+  keywordFilterOptions = [],
   platformFilterLabel = "Соцсеть",
 } = {}) {
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, seedLeads));
@@ -251,13 +252,17 @@ export default function HyipParserPanel({
     const record = getOutreachRecord(lead, outreach);
     const countryMatch = country === "Все страны" || lead.country === country;
     const statusMatch = status === "Все статусы" || lead.status === status;
-    const platformMatch = !platformFilterOptions.length || platform === "Все соцсети" || String(lead.category || "").startsWith(`${platform} /`);
+    const hasPlatformFilter = platformFilterOptions.includes(platform);
+    const hasKeywordFilter = keywordFilterOptions.includes(platform);
+    const platformMatch = !platformFilterOptions.length || platform === "Все соцсети" || hasKeywordFilter || (hasPlatformFilter && String(lead.category || "").startsWith(`${platform} /`));
+    const keywordMatch = !hasKeywordFilter || [lead.name, lead.url, lead.audienceInfo, lead.category, lead.contacts, lead.verificationNotes, lead.notes]
+      .some((value) => String(value || "").toLowerCase().includes(platform.toLowerCase()));
     const pipelineMatch = pipelineStatus === "Все этапы" || record.status === pipelineStatus;
     const search = query.trim().toLowerCase();
     const queryMatch = !search || [lead.name, lead.country, lead.url, lead.audienceInfo, lead.category, lead.contacts, lead.adminContact, lead.verificationStatus, lead.verificationNotes, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
       .some((value) => String(value).toLowerCase().includes(search));
-    return countryMatch && statusMatch && platformMatch && pipelineMatch && queryMatch;
-  }), [country, leads, outreach, pipelineStatus, platform, platformFilterOptions.length, query, status]);
+    return countryMatch && statusMatch && platformMatch && keywordMatch && pipelineMatch && queryMatch;
+  }), [country, keywordFilterOptions, leads, outreach, pipelineStatus, platform, platformFilterOptions, query, status]);
 
   const summary = useMemo(() => ({
     total: leads.length,
@@ -434,6 +439,20 @@ export default function HyipParserPanel({
             <button type="button" onClick={() => downloadLeadsCsv(filteredLeads, csvFilename)}>Экспорт CSV</button>
           </div>
         </div>
+        {platformFilterOptions.length ? (
+          <div className="analytics-parser-quick-filters" aria-label="Быстрая выборка">
+            {["Все соцсети", ...platformFilterOptions, ...keywordFilterOptions].map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={`analytics-parser-filter-chip${platform === item ? " analytics-parser-filter-chip-active" : ""}`}
+                onClick={() => setPlatform(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="analytics-parser-controls analytics-parser-controls-compact">
           <label>
             Страна
@@ -457,7 +476,7 @@ export default function HyipParserPanel({
             <label>
               {platformFilterLabel}
               <select value={platform} onChange={(event) => setPlatform(event.target.value)}>
-                {["Все соцсети", ...platformFilterOptions].map((item) => <option key={item}>{item}</option>)}
+                {["Все соцсети", ...platformFilterOptions, ...keywordFilterOptions].map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
           ) : null}
