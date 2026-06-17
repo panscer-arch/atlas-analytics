@@ -17758,6 +17758,33 @@ input.analytics-smm-cell-input {
   gap: 18px;
 }
 
+.analytics-localization-board .analytics-data-table-head {
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.analytics-localization-workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.analytics-localization-workspace-actions button {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid rgba(20, 184, 166, 0.28);
+  border-radius: 10px;
+  background: rgba(20, 184, 166, 0.1);
+  color: #99f6e4;
+  font-weight: 900;
+}
+
+.analytics-localization-workspace-actions button:hover {
+  border-color: rgba(20, 184, 166, 0.58);
+  background: rgba(20, 184, 166, 0.18);
+}
+
 .analytics-localization-hero,
 .analytics-localization-workflow,
 .analytics-localization-bottom-grid,
@@ -18908,9 +18935,14 @@ input.analytics-smm-cell-input {
 }
 
 @media (max-width: 720px) {
+  .analytics-localization-board .analytics-data-table-head,
   .analytics-localization-hero,
   .analytics-localization-workflow {
     grid-template-columns: 1fr;
+  }
+
+  .analytics-localization-workspace-actions {
+    justify-content: flex-start;
   }
 
   .analytics-localization-language-head {

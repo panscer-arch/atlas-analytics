@@ -409,6 +409,74 @@ Use these terms as the page-level glossary. If the page uses a product, Web3, ec
 `;
 }
 
+function buildWorkspaceExportPackage({ pages }) {
+  const pageMarkdown = pages.map((page) => {
+    const terminology = getPageTerminology(page);
+    const locales = atlasLocalizationLanguages.map((language) => {
+      const locale = page.locales?.[language.code] || makeLocaleProgress()[language.code];
+      return [
+        `### ${language.nativeName} (${language.code})`,
+        `Status: ${locale.status}`,
+        `Reviewer: ${locale.reviewer || "-"}`,
+        `Notes: ${locale.notes || "-"}`,
+        "",
+        locale.copy || "_No locale copy saved._",
+      ].join("\n");
+    }).join("\n\n");
+
+    return `## ${page.title}
+
+Path: ${page.path}
+Owner: ${page.owner}
+Priority: ${page.priority}
+Detected terms: ${terminology.map((term) => term.masterEn).join(", ") || "none"}
+
+### RU Source
+${page.ruSource || "_No RU source saved._"}
+
+### EN Master
+${page.enMaster || "_No EN master saved._"}
+
+### Page Notes
+${page.notes || "_No notes saved._"}
+
+### Locale Copies
+${locales}
+`;
+  }).join("\n\n");
+
+  return `# Atlas Localization Workspace Export
+
+Generated from SuperSUS Localization Bible.
+Pages: ${pages.length}
+Languages: ${atlasLocalizationLanguages.map((language) => `${language.nativeName} (${language.code})`).join(", ")}
+Glossary terms: ${localizationTermRows.length}
+Meaning memory phrases: ${localizationMeaningMemory.length}
+UI phrases: ${localizationUiPhrases.length}
+
+## Workflow
+${localizationWorkflow.map((step, index) => `${index + 1}. ${step.title}: ${step.text}`).join("\n")}
+
+## Core Rules
+${localizationCoreRules.map((rule) => `- ${rule}`).join("\n")}
+
+## Language Guides
+${localizationLanguageGuides.map((guide) => `### ${guide.code}\nTone: ${guide.tone}\nKeep: ${guide.keep}\nAvoid: ${guide.avoid}\nNote: ${guide.note}`).join("\n\n")}
+
+## Glossary
+${localizationTermRows.map((row) => `- ${row.id} / ${row.masterEn}: ${row.meaning} | keepEnglish: ${row.keepEnglish ? "yes" : "no"} | avoid: ${row.forbidden}`).join("\n")}
+
+## Meaning Memory
+${localizationMeaningMemory.map((phrase) => `### ${phrase.id}\nRU: ${phrase.ruSource}\nEN: ${phrase.enMaster}`).join("\n\n")}
+
+## UI Phrase Bank
+${localizationUiPhrases.map((phrase) => `- ${phrase.id}: RU "${phrase.ruSource}" / EN "${phrase.enMaster}"`).join("\n")}
+
+## Pages
+${pageMarkdown}
+`;
+}
+
 function downloadTextFile(filename, content, type = "text/plain") {
   if (typeof window === "undefined") return;
   const blob = new Blob([content], { type });
@@ -439,6 +507,23 @@ function LocalizationBibleBoard() {
   const activePage = translationPages.find((page) => page.id === activePageId) || translationPages[0];
   const activeLocaleCopy = activePage?.locales?.[activeLanguage.code]?.copy || "";
   const localeStatusById = useMemo(() => new Map(localizationLocaleStatuses.map((status) => [status.id, status])), []);
+  const workspaceExportPackage = useMemo(() => buildWorkspaceExportPackage({ pages: translationPages }), [translationPages]);
+  const workspaceExportJson = useMemo(() => JSON.stringify({
+    storageKey: ATLAS_LOCALIZATION_STORAGE_KEY,
+    languages: atlasLocalizationLanguages,
+    localeStatuses: localizationLocaleStatuses,
+    workflow: localizationWorkflow,
+    coreRules: localizationCoreRules,
+    qaChecks: localizationQaChecks,
+    forbiddenPatterns: localizationForbiddenPatterns,
+    languageGuides: localizationLanguageGuides,
+    glossary: localizationTermRows,
+    meaningMemory: localizationMeaningMemory,
+    uiPhrases: localizationUiPhrases,
+    prompts: localizationPrompts,
+    pages: translationPages,
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [translationPages]);
   const localeProgress = useMemo(() => {
     const localeCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
     const total = translationPages.length * localeCodes.length;
@@ -737,6 +822,11 @@ function LocalizationBibleBoard() {
             Рабочий стандарт локализации: русский смысловой источник, английский master copy, утверждённый glossary и QA для всех языков сайта.
             Цель — не допускать переводов вроде “срок заключения” вместо lockup period или “количество циклов” вместо cycle amount.
           </p>
+        </div>
+        <div className="analytics-localization-workspace-actions">
+          <button type="button" onClick={() => copyToClipboard(workspaceExportPackage)}>Copy workspace</button>
+          <button type="button" onClick={() => downloadTextFile("atlas-localization-workspace.md", workspaceExportPackage, "text/markdown")}>Download MD</button>
+          <button type="button" onClick={() => downloadTextFile("atlas-localization-workspace.json", workspaceExportJson, "application/json")}>Download JSON</button>
         </div>
       </div>
 
