@@ -1299,37 +1299,120 @@ export const localizationNativeReviewerPrompts = [
 ];
 
 export const localizationSiteAuditRows = [
-  { id: "site-audit-01", severity: "High", lang: "de", pages: ["ALL_SITE_PAGES"], current: "Hilfsfahrräder", fix: "Hilfszyklen / Smart Cycle", reason: "Means assistance bicycles; wrong product term.", sampleUrl: "https://atlas-system.io/de/", sampleContext: "Atlas System Hilfsfahrräder Smart Cycle 1 Kernfinanzprodukt und Ökosystemquelle Smart Cycle 2 Der Zyklus, der Smart C" },
-  { id: "site-audit-02", severity: "Medium", lang: "de", pages: ["/"], current: "Mätzchen", fix: "ohne falsche Versprechen / ohne Spielchen", reason: "Awkward colloquial wording for brand copy.", sampleUrl: "https://atlas-system.io/de/", sampleContext: "s-Ökosystems. Mehr Informationen Atlas System – ein System, das keine Mätzchen macht Freiwillige gegenseitige Finanzierung im digitalen Format Teilnehmen Video ansehen" },
-  { id: "site-audit-03", severity: "High", lang: "de", pages: ["/"], current: "Straßenkarte", fix: "Roadmap / Produkt-Roadmap", reason: "Roadmap must not become a road map.", sampleUrl: "https://atlas-system.io/de/", sampleContext: "egenseitige Finanzierung im digitalen Format Teilnehmen Video ansehen Straßenkarte Verfügbar zum Start Das erste Pilot-Finanzprodukt und der Kern des Ökosystems des Atlas-S" },
-  { id: "site-audit-04", severity: "Medium", lang: "en", pages: ["/smartcycle-1/"], current: "0,3% for 1 days", fix: "0.3% for 1 day", reason: "English number/date grammar.", sampleUrl: "https://atlas-system.io/smartcycle-1/", sampleContext: "5, 10, 20 and 30 days provide additional assistance in the amount of: 0,3% for 1 days; 2% for 5 days; 5% for 10 days; 12% for 20 days; 22.5% in 30 days." },
-  { id: "site-audit-05", severity: "Medium", lang: "en", pages: ["/smartcycle-1/"], current: "for 1 days", fix: "for 1 day", reason: "Singular day grammar.", sampleUrl: "https://atlas-system.io/smartcycle-1/", sampleContext: "0,3% for 1 days; 2% for 5 days; 5% for 10 days; 12% for 20 days; 22.5% in 30 days." },
-  { id: "site-audit-06", severity: "High", lang: "en", pages: ["/smartcycle-1/"], current: "Outcoming assistance", fix: "Outgoing assistance", reason: "Wrong English word.", sampleUrl: "https://atlas-system.io/smartcycle-1/", sampleContext: "Incoming assistance $0 Pool balance $0 Paid delta $0 Outcoming assistance $0 Smart Contract Audit in Progress" },
-  { id: "site-audit-07", severity: "High", lang: "en", pages: ["/"], current: "Perfomance parters program", fix: "Performance Partners Program", reason: "English typo in protected partner-program name.", sampleUrl: "https://atlas-system.io/", sampleContext: "P2P exchange Cryptowallet Perfomance parters program Talk Messenger Governance Swap DAO Bank DAO" },
-  { id: "site-audit-08", severity: "High", lang: "es", pages: ["/", "/smartcycle-1/"], current: "sistema Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System. Spanish is live but not in the approved target-language list.", sampleUrl: "https://atlas-system.io/es/", sampleContext: "Ecosistema Atlas System Smart Cycle 1 Invite & Earn Knowledge Hub Academy" },
-  { id: "site-audit-09", severity: "High", lang: "fr", pages: ["ALL_SITE_PAGES"], current: "biscuit", fix: "cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "Nous utilisons biscuit, pour améliorer votre expérience sur le site" },
-  { id: "site-audit-10", severity: "Medium", lang: "fr", pages: ["/", "/risk-disclosure/", "/system-rules/"], current: "du Atlas System", fix: "d'Atlas System / de l'Atlas System depending sentence", reason: "Awkward French preposition/article.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "La base de connaissances de l'écosystème du Atlas System" },
-  { id: "site-audit-11", severity: "High", lang: "fr", pages: ["/", "/smartcycle-1/"], current: "système Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "Écosystème du système Atlas Smart Cycle 1" },
-  { id: "site-audit-12", severity: "Medium", lang: "fr", pages: ["/"], current: "Une portefeuille", fix: "Un portefeuille", reason: "French gender agreement.", sampleUrl: "https://atlas-system.io/fr/", sampleContext: "Une portefeuille crypto sécurisé non dépositaire de nouvelle génération" },
-  { id: "site-audit-13", severity: "Medium", lang: "id", pages: ["/"], current: "K2 2027", fix: "Q2 2027 / Kuartal 2 2027", reason: "Quarter label should not be K2.", sampleUrl: "https://atlas-system.io/id/", sampleContext: "K2 2027 Dompet kripto nir-penjaga" },
-  { id: "site-audit-14", severity: "High", lang: "id", pages: ["/", "/cookie/"], current: "lalu lintas", fix: "traffic digital / akuisisi audiens", reason: "Means road traffic; wrong for digital traffic.", sampleUrl: "https://atlas-system.io/id/", sampleContext: "para profesional periklanan dan lalu lintas" },
-  { id: "site-audit-15", severity: "High", lang: "id", pages: ["/", "/smartcycle-1/"], current: "sistem Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/id/", sampleContext: "Ekosistem Atlas System Smart Cycle 1" },
-  { id: "site-audit-16", severity: "High", lang: "ms", pages: ["/", "/smartcycle-1/"], current: "sistem Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System. Malay is live but not in the approved target-language list.", sampleUrl: "https://atlas-system.io/ms/", sampleContext: "Ekosistem Atlas System Smart Cycle 1" },
-  { id: "site-audit-17", severity: "High", lang: "pt-BR", pages: ["/", "/contacts/", "/dao-inspired-governance-framework/", "/documents/", "/interface-terms-of-use/", "/invite-and-earn/", "/partner-program-rules/", "/privacy_policy/", "/risk-disclosure/", "/smart-cycle-2/", "/smartcycle-1/", "/system-rules/"], current: "biscoito", fix: "cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/pt/", sampleContext: "Nós usamos biscoito, para melhorar sua experiência no site" },
-  { id: "site-audit-18", severity: "High", lang: "pt-BR", pages: ["/cookie/"], current: "Biscoito", fix: "cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/pt/cookie/", sampleContext: "Voltar Biscoito Política de Cookies" },
-  { id: "site-audit-19", severity: "High", lang: "pt-BR", pages: ["/smartcycle-1/"], current: "sistema Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/pt/smartcycle-1/", sampleContext: "o primeiro produto financeiro piloto do ecossistema Atlas System" },
-  { id: "site-audit-20", severity: "High", lang: "pt-BR", pages: ["/"], current: "Sistema Atlas", fix: "Atlas System", reason: "Brand name should stay Atlas System.", sampleUrl: "https://atlas-system.io/pt/", sampleContext: "Ecossistema do Sistema Atlas Smart Cycle 1" },
-  { id: "site-audit-21", severity: "Medium", lang: "ru", pages: ["/smartcycle-1/"], current: "добавночн", fix: "добавочн-", reason: "Typo: should be добавочная/добавочную.", sampleUrl: "https://atlas-system.io/ru/smartcycle-1/", sampleContext: "с дельтой (добавночная помощь)и участвовать в реферальной программе" },
-  { id: "site-audit-22", severity: "Medium", lang: "ru", pages: ["/"], current: "некостодиального хранение", fix: "некастодиального хранения", reason: "Russian grammar and standard crypto term.", sampleUrl: "https://atlas-system.io/ru/", sampleContext: "криптокошелек нового поколения для некостодиального хранение криптовалют" },
-  { id: "site-audit-23", severity: "High", lang: "tr", pages: ["ALL_SITE_PAGES"], current: "İstifadə edirik", fix: "Çerezleri kullanıyoruz...", reason: "Azerbaijani text mixed into Turkish.", sampleUrl: "https://atlas-system.io/tr/", sampleContext: "İstifadə edirik çerez, sitedeki deneyiminizi iyileştirmek için" },
-  { id: "site-audit-24", severity: "High", lang: "tr", pages: ["/", "/contacts/", "/invite-and-earn/", "/smart-cycle-2/", "/smartcycle-1/"], current: "Telgraf", fix: "Telegram", reason: "Telegram brand must stay unchanged.", sampleUrl: "https://atlas-system.io/tr/", sampleContext: "Youtube GitHub X Telgraf Instagram TikTok Facebook" },
-  { id: "site-audit-25", severity: "Medium", lang: "tr", pages: ["/"], current: "vesayetsiz", fix: "non-custodial / saklamasız", reason: "Awkward/wrong term for non-custodial wallet.", sampleUrl: "https://atlas-system.io/tr/", sampleContext: "Yeni nesil güvenli, vesayetsiz kripto cüzdanı" },
-  { id: "site-audit-26", severity: "High", lang: "vi", pages: ["ALL_SITE_PAGES"], current: "Hỗ trợ Xe đạp", fix: "chu kỳ hỗ trợ / Smart Cycle", reason: "Means assistance bicycle; wrong product term.", sampleUrl: "https://atlas-system.io/vi/", sampleContext: "Atlas System Hỗ trợ Xe đạp Smart Cycle 1" },
-  { id: "site-audit-27", severity: "High", lang: "vi", pages: ["/"], current: "tài chính vi mô", fix: "tài trợ tương hỗ / hỗ trợ lẫn nhau", reason: "Microfinance is wrong positioning for mutual financing.", sampleUrl: "https://atlas-system.io/vi/", sampleContext: "nắm vững các nguyên tắc tài chính vi mô" },
-  { id: "site-audit-28", severity: "Medium", lang: "zh-CN", pages: ["/", "/contacts/", "/cookie/", "/dao-inspired-governance-framework/", "/interface-terms-of-use/", "/invite-and-earn/", "/partner-program-rules/", "/privacy_policy/", "/risk-disclosure/", "/smart-cycle-2/", "/smartcycle-1/", "/system-rules/"], current: "。.", fix: "。", reason: "Double punctuation.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "Atlas System 生态系统的核心。. 它允许参与者加入互助周期" },
-  { id: "site-audit-29", severity: "High", lang: "zh-CN", pages: ["/"], current: "上市时可用", fix: "上线时可用 / 发布时可用", reason: "Sounds like exchange listing, not product launch availability.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "路线图 上市时可用 首个试点金融产品" },
-  { id: "site-audit-30", severity: "High", lang: "zh-CN", pages: ["/"], current: "广告和交通专业人士", fix: "广告和用户获取/数字流量专业人士", reason: "Traffic was translated as transport traffic.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "它允许广告和交通专业人士与Atlas生态系统合作" },
-  { id: "site-audit-31", severity: "High", lang: "zh-CN", pages: ["ALL_SITE_PAGES"], current: "饼干", fix: "Cookie / cookies", reason: "Browser cookies must not be translated as food.", sampleUrl: "https://atlas-system.io/zh/", sampleContext: "我们使用 饼干，以改善您在本网站上的体验" },
+  {
+    "id": "site-audit-01",
+    "severity": "High",
+    "lang": "es",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "sistema Atlas",
+    "fix": "Atlas System",
+    "reason": "Brand name should stay Atlas System.",
+    "sampleUrl": "https://atlas-system.io/es/smartcycle-1/",
+    "sampleContext": "Smart Cycle 1 es el principal producto financiero y el núcleo del ecosistema Atlas System Toda la infraestructura digital de Atlas System (cuenta personal, programa de reco"
+  },
+  {
+    "id": "site-audit-02",
+    "severity": "Medium",
+    "lang": "fr",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "du Atlas System",
+    "fix": "d'Atlas System / de l'Atlas System depending sentence",
+    "reason": "Awkward French preposition/article.",
+    "sampleUrl": "https://atlas-system.io/fr/smartcycle-1/",
+    "sampleContext": "Cycle 1 est le produit financier principal et le cœur de l'écosystème du Atlas System L'ensemble de l'infrastructure numérique du Atlas System (compte personnel, programme de"
+  },
+  {
+    "id": "site-audit-03",
+    "severity": "High",
+    "lang": "fr",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "système Atlas",
+    "fix": "Atlas System",
+    "reason": "Brand name should stay Atlas System.",
+    "sampleUrl": "https://atlas-system.io/fr/smartcycle-1/",
+    "sampleContext": "produit Smart Cycle 1 est le premier produit financier pilote de l'écosystème Atlas System Il s'agit d'un Contrat Intelligent avec un algorithme immuable qui redistribue les"
+  },
+  {
+    "id": "site-audit-04",
+    "severity": "High",
+    "lang": "id",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "sistem Atlas",
+    "fix": "Atlas System",
+    "reason": "Brand name should stay Atlas System.",
+    "sampleUrl": "https://atlas-system.io/id/smartcycle-1/",
+    "sampleContext": "Minggu Smart Cycle 1 merupakan produk keuangan utama dan inti dari Ekosistem Atlas System Seluruh infrastruktur digital Atlas System (akun pribadi, program rujukan, antarmu"
+  },
+  {
+    "id": "site-audit-05",
+    "severity": "High",
+    "lang": "ms",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "sistem Atlas",
+    "fix": "Atlas System",
+    "reason": "Brand name should stay Atlas System.",
+    "sampleUrl": "https://atlas-system.io/ms/smartcycle-1/",
+    "sampleContext": "ap 2–4 Minggu Smart Cycle 1 adalah produk kewangan utama dan teras Ekosistem Atlas System. Seluruh infrastruktur digital Atlas System (akaun peribadi, program rujukan, anta"
+  },
+  {
+    "id": "site-audit-06",
+    "severity": "High",
+    "lang": "pt-BR",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "sistema Atlas",
+    "fix": "Atlas System",
+    "reason": "Brand name should stay Atlas System.",
+    "sampleUrl": "https://atlas-system.io/pt/smartcycle-1/",
+    "sampleContext": "o produto Smart Cycle 1 é o primeiro produto financeiro piloto do ecossistema Atlas System É um Smart Contract com um algoritmo imutável que redistribui os fundos dos partic"
+  },
+  {
+    "id": "site-audit-07",
+    "severity": "Medium",
+    "lang": "ru",
+    "pages": [
+      "/smartcycle-1/"
+    ],
+    "current": "добавночн",
+    "fix": "добавочн-",
+    "reason": "Typo: should be добавочная/добавочную.",
+    "sampleUrl": "https://atlas-system.io/ru/smartcycle-1/",
+    "sampleContext": "системе и через определенное время запрашивать её обратно с дельтой (добавночная помощь)и участвовать в реферальной программе. Виды тарифов Lockup Flow Окажите помощь с"
+  },
+  {
+    "id": "site-audit-08",
+    "severity": "Medium",
+    "lang": "zh-CN",
+    "pages": [
+      "/contacts/",
+      "/cookie/",
+      "/dao-inspired-governance-framework/",
+      "/interface-terms-of-use/",
+      "/invite-and-earn/",
+      "/partner-program-rules/",
+      "/privacy_policy/",
+      "/risk-disclosure/",
+      "/smart-cycle-2/",
+      "/smartcycle-1/",
+      "/system-rules/"
+    ],
+    "current": "。.",
+    "fix": "。",
+    "reason": "Double punctuation.",
+    "sampleUrl": "https://atlas-system.io/zh/contacts/",
+    "sampleContext": "选择正确的联系渠道，以便您的请求更快地到达正确的团队 合作与网络发展（Telegram） 适用于高层领导、团队、区域代表和战略合作伙伴请求。. 玛丽安娜 丹尼尔 合作与网络发展 (WhatsApp) 适用于高层领导、团队、区域代表和战略合作伙伴请求。. 联系合作团队 营销与媒体 用于广告、博主合作、公关、媒体合作和推广建"
+  }
 ];
 
 export const localizationTermRows = [
