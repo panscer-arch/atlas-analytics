@@ -1,4 +1,6 @@
-import { useState } from "react";
+import lottie from "lottie-web";
+import { useEffect, useRef, useState } from "react";
+import matrixGateAnimation from "./assets/matrix-gate-lottie.json";
 import { AnalyticsPage, AnalyticsRestoredPage } from "./modules/analytics";
 
 const ACCESS_STORAGE_KEY = "supersus.access.v1";
@@ -20,6 +22,39 @@ function getStoredAccess() {
   } catch {
     return false;
   }
+}
+
+function MatrixGateAnimation() {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return undefined;
+    }
+
+    const animation = lottie.loadAnimation({
+      animationData: matrixGateAnimation,
+      autoplay: true,
+      container: containerRef.current,
+      loop: true,
+      renderer: "svg",
+      rendererSettings: {
+        preserveAspectRatio: "xMidYMid slice",
+      },
+    });
+
+    return () => animation.destroy();
+  }, []);
+
+  return (
+    <div className="supersus-access-lottie" aria-hidden="true">
+      <div ref={containerRef} className="supersus-access-lottie-stage" />
+      <div className="supersus-access-lottie-label">
+        <span>simulation layer</span>
+        <strong>access node</strong>
+      </div>
+    </div>
+  );
 }
 
 function AccessGate({ children }) {
@@ -58,6 +93,7 @@ function AccessGate({ children }) {
   return (
     <main className="supersus-access">
       <form className="supersus-access-card" onSubmit={handleSubmit}>
+        <MatrixGateAnimation />
         <div className="supersus-access-mark">S</div>
         <div>
           <p className="supersus-access-kicker">SuperSUS System</p>
