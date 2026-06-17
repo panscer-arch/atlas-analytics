@@ -1358,24 +1358,17 @@ function LocalizationBibleBoard() {
           </div>
         </div>
         <div className="analytics-localization-simple-table-scroll">
-          <table className="analytics-table analytics-localization-report-table">
-            <thead>
-              <tr>
-                <th>Язык</th>
-                <th>Роль</th>
-                <th>Prompt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {localizationNativeReviewerPrompts.map((row) => (
-                <tr key={row.code}>
-                  <td><strong>{row.code}</strong></td>
-                  <td>{row.reviewer}</td>
-                  <td>{row.prompt}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="analytics-localization-prompt-list">
+            {localizationNativeReviewerPrompts.map((row) => (
+              <details key={row.code} className="analytics-localization-prompt-item">
+                <summary>
+                  <strong>{row.code}</strong>
+                  <span>{row.reviewer}</span>
+                </summary>
+                <p>{row.prompt}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </div>
 
