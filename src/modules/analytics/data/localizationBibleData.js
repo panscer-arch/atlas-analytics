@@ -336,6 +336,19 @@ export const localizationMeaningMemory = [
   },
 ];
 
+function starterLocales(copies) {
+  return atlasLocalizationLanguages.reduce((acc, language) => {
+    const copy = copies?.[language.code] || "";
+    acc[language.code] = {
+      status: language.code === "ru" ? "ru-source" : language.code === "en" ? "en-master" : copy ? "translated" : "not-started",
+      reviewer: copy ? "Atlas seed copy" : "",
+      notes: copy ? "Starter localization draft. Requires AI QA and native review before publishing." : "",
+      copy,
+    };
+    return acc;
+  }, {});
+}
+
 export const defaultLocalizationPages = [
   {
     id: "home",
@@ -344,8 +357,20 @@ export const defaultLocalizationPages = [
     owner: "Content / Brand",
     priority: "High",
     ruSource: "Главная страница объясняет, что такое Atlas System, почему он построен на Web3-логике, какие принципы прозрачности использует проект и как участник может изучить систему до принятия решения.",
-    enMaster: "Atlas System is a Web3-based ecosystem built around transparent participation mechanics, published rules and self-custody interaction. The page must explain the product clearly without promising profit, fixed returns or risk-free participation.",
+    enMaster: "Atlas System is a Web3 ecosystem built around transparent participation mechanics, published rules and self-custody interaction. Participants can study the product logic, review key documents and make their own decision before joining any Smart Cycle.",
     notes: "Сначала вычитываем EN hero, CTA, risk copy и все короткие UI labels.",
+    locales: starterLocales({
+      ru: "Atlas System — Web3-экосистема с прозрачными правилами участия, опубликованной логикой и самостоятельным управлением кошельком. Участник может изучить механику продукта, документы и риски до того, как принимать собственное решение об участии.",
+      en: "Atlas System is a Web3 ecosystem built around transparent participation mechanics, published rules and self-custody interaction. Participants can study the product logic, review key documents and make their own decision before joining any Smart Cycle.",
+      de: "Atlas System ist ein Web3-Ökosystem mit transparenten Teilnahmemechaniken, veröffentlichten Regeln und Self-Custody-Interaktion. Teilnehmer können die Produktlogik, zentrale Dokumente und Risiken prüfen, bevor sie eine eigene Entscheidung treffen.",
+      fr: "Atlas System est un écosystème Web3 fondé sur des mécanismes de participation transparents, des règles publiées et une interaction en self-custody. Chaque participant peut étudier la logique du produit, consulter les documents clés et prendre sa propre décision.",
+      tr: "Atlas System, şeffaf katılım mekanikleri, yayımlanmış kurallar ve self-custody etkileşimi üzerine kurulu bir Web3 ekosistemidir. Katılımcılar ürün mantığını ve temel belgeleri inceleyerek kendi kararlarını verebilir.",
+      "pt-BR": "Atlas System é um ecossistema Web3 baseado em mecânicas de participação transparentes, regras publicadas e interação self-custody. Cada participante pode estudar a lógica do produto, revisar os documentos principais e tomar sua própria decisão.",
+      id: "Atlas System adalah ekosistem Web3 dengan mekanisme partisipasi yang transparan, aturan yang dipublikasikan, dan interaksi self-custody. Peserta dapat mempelajari logika produk, meninjau dokumen utama, lalu membuat keputusan sendiri.",
+      vi: "Atlas System là một hệ sinh thái Web3 dựa trên cơ chế tham gia minh bạch, quy tắc đã công bố và tương tác self-custody. Người tham gia có thể tìm hiểu logic sản phẩm, xem tài liệu chính và tự đưa ra quyết định.",
+      hi: "Atlas System एक Web3 इकोसिस्टम है, जो पारदर्शी participation mechanics, प्रकाशित नियमों और self-custody interaction पर आधारित है. प्रतिभागी product logic, मुख्य दस्तावेज़ और जोखिमों को समझकर अपना निर्णय स्वयं ले सकते हैं.",
+      "zh-CN": "Atlas System 是一个 Web3 生态系统，围绕透明的参与机制、公开规则和 self-custody 交互构建。参与者可以先了解产品逻辑、查看关键文件，再自行决定是否参与。",
+    }),
   },
   {
     id: "smart-cycle",
@@ -354,8 +379,20 @@ export const defaultLocalizationPages = [
     owner: "Product / Smart Contract",
     priority: "High",
     ruSource: "Страница объясняет назначение Smart Cycle, параметры участия, lockup-период, Claim, расчётную дельту, роль смарт-контракта и ограничения текущей версии.",
-    enMaster: "The Smart Cycle page explains the participation cycle, lockup period, Claim action, calculated delta, smart-contract logic and version limitations. It must distinguish calculated parameters from guaranteed profit.",
+    enMaster: "Smart Cycle explains how a participant creates a cycle, selects a cycle amount, passes the lockup period and may submit a Claim under the published rules. Calculated delta is a cycle parameter, not a promised result.",
     notes: "Критичные термины: cycle amount, lockup period, Claim, calculated delta, platform fee.",
+    locales: starterLocales({
+      ru: "Smart Cycle объясняет, как участник создаёт цикл, выбирает сумму цикла, проходит lockup-период и может отправить Claim по опубликованным правилам. Расчётная дельта является параметром цикла, а не обещанным результатом.",
+      en: "Smart Cycle explains how a participant creates a cycle, selects a cycle amount, passes the lockup period and may submit a Claim under the published rules. Calculated delta is a cycle parameter, not a promised result.",
+      de: "Smart Cycle erklärt, wie ein Teilnehmer einen Cycle erstellt, den Zyklusbetrag auswählt, den Lockup-Zeitraum durchläuft und nach den veröffentlichten Regeln einen Claim stellen kann. Die berechnete Delta ist ein Cycle-Parameter, kein versprochenes Ergebnis.",
+      fr: "Smart Cycle explique comment un participant crée un cycle, choisit le montant du cycle, passe la période de lockup et peut soumettre un Claim selon les règles publiées. Le delta calculé est un paramètre du cycle, pas un résultat promis.",
+      tr: "Smart Cycle, katılımcının nasıl cycle oluşturduğunu, cycle tutarını seçtiğini, lockup süresini tamamladığını ve yayımlanmış kurallara göre Claim gönderebildiğini açıklar. Hesaplanan delta bir cycle parametresidir, vaat edilen bir sonuç değildir.",
+      "pt-BR": "Smart Cycle explica como o participante cria um ciclo, escolhe o valor do ciclo, passa pelo período de lockup e pode enviar um Claim conforme as regras publicadas. O delta calculado é um parâmetro do ciclo, não um resultado prometido.",
+      id: "Smart Cycle menjelaskan cara peserta membuat cycle, memilih jumlah dana siklus, melewati periode lockup, dan dapat mengirim Claim sesuai aturan yang dipublikasikan. Delta terhitung adalah parameter cycle, bukan hasil yang dijanjikan.",
+      vi: "Smart Cycle giải thích cách người tham gia tạo cycle, chọn số tiền của chu kỳ, trải qua thời gian lockup và có thể gửi Claim theo các quy tắc đã công bố. Delta được tính toán là tham số của cycle, không phải kết quả được hứa trước.",
+      hi: "Smart Cycle बताता है कि प्रतिभागी cycle कैसे बनाता है, cycle amount कैसे चुनता है, lockup period कैसे पूरा करता है और प्रकाशित नियमों के तहत Claim कैसे कर सकता है. calculated delta एक cycle parameter है, कोई वादा किया गया परिणाम नहीं.",
+      "zh-CN": "Smart Cycle 说明参与者如何创建 cycle、选择周期金额、经过 lockup period，并在公开规则允许时提交 Claim。Calculated delta 是 cycle 参数，并不是被承诺的结果。",
+    }),
   },
   {
     id: "transparency-center",
@@ -366,6 +403,18 @@ export const defaultLocalizationPages = [
     ruSource: "Страница собирает архитектуру, риски, Security Review, адреса контрактов, документацию, блок-схемы и публичные материалы для самостоятельного изучения участником.",
     enMaster: "The Transparency Center collects architecture notes, risks, Security Review materials, contract addresses, documentation, diagrams and public evidence for independent participant review.",
     notes: "Не использовать certified audit, regulator approval, guaranteed security без фактического основания.",
+    locales: starterLocales({
+      ru: "Центр прозрачности собирает архитектуру Atlas, материалы Security Review, адреса контрактов, документацию, блок-схемы и публичные доказательства. Его задача — дать участнику основу для самостоятельного изучения системы.",
+      en: "The Transparency Center collects Atlas architecture notes, Security Review materials, contract addresses, documentation, diagrams and public evidence. Its purpose is to give participants a clear basis for independent review.",
+      de: "Das Transparenz-Center bündelt Hinweise zur Atlas-Architektur, Security-Review-Materialien, Contract-Adressen, Dokumentation, Diagramme und öffentliche Nachweise. Es soll Teilnehmern eine klare Grundlage für die eigenständige Prüfung geben.",
+      fr: "Le centre de transparence réunit les notes d'architecture d'Atlas, les éléments de Security Review, les adresses de contrats, la documentation, les schémas et les preuves publiques. Il donne aux participants une base claire pour leur propre analyse.",
+      tr: "Şeffaflık Merkezi; Atlas mimari notlarını, Security Review materyallerini, kontrat adreslerini, dokümantasyonu, şemaları ve herkese açık kanıtları bir araya getirir. Amaç, katılımcılara bağımsız inceleme için net bir temel sunmaktır.",
+      "pt-BR": "O centro de transparência reúne notas de arquitetura da Atlas, materiais de Security Review, endereços de contratos, documentação, diagramas e evidências públicas. O objetivo é oferecer aos participantes uma base clara para análise independente.",
+      id: "Pusat transparansi mengumpulkan catatan arsitektur Atlas, materi Security Review, alamat kontrak, dokumentasi, diagram, dan bukti publik. Tujuannya adalah memberi peserta dasar yang jelas untuk peninjauan mandiri.",
+      vi: "Trung tâm minh bạch tập hợp ghi chú kiến trúc Atlas, tài liệu Security Review, địa chỉ hợp đồng, tài liệu, sơ đồ và bằng chứng công khai. Mục đích là cung cấp nền tảng rõ ràng để người tham gia tự xem xét.",
+      hi: "Transparency Center में Atlas architecture notes, Security Review सामग्री, contract addresses, documentation, diagrams और public evidence एक जगह मिलते हैं. इसका उद्देश्य प्रतिभागियों को independent review के लिए स्पष्ट आधार देना है.",
+      "zh-CN": "透明度中心汇集 Atlas 架构说明、Security Review 材料、合约地址、文档、图表和公开证据。它的目的，是为参与者提供独立审阅系统的清晰基础。",
+    }),
   },
   {
     id: "white-paper-50",
@@ -376,6 +425,18 @@ export const defaultLocalizationPages = [
     ruSource: "White Paper раскрывает модель Atlas, Smart Cycle, экономику, риски, DAO governance, партнёрскую программу, техническую архитектуру и ограничения.",
     enMaster: "The White Paper describes the Atlas model, Smart Cycle mechanics, economics, risks, DAO governance, partner program, technical architecture and limitations in a transparent, non-promissory way.",
     notes: "Белая книга должна звучать как Web3-документ, а не как MLM-презентация доходности.",
+    locales: starterLocales({
+      ru: "White Paper 5.0 описывает модель Atlas, механику Smart Cycle, экономику, риски, DAO governance, партнёрскую программу, техническую архитектуру и ограничения. Документ должен читаться как прозрачное Web3-описание, а не как презентация обещаний.",
+      en: "White Paper 5.0 describes the Atlas model, Smart Cycle mechanics, economics, risks, DAO governance, partner program, technical architecture and limitations. It should read as a transparent Web3 document, not as a promise-driven presentation.",
+      de: "White Paper 5.0 beschreibt das Atlas-Modell, Smart-Cycle-Mechaniken, Ökonomie, Risiken, DAO-Governance, Partnerprogramm, technische Architektur und Grenzen. Es soll wie ein transparentes Web3-Dokument wirken, nicht wie eine versprechensorientierte Präsentation.",
+      fr: "White Paper 5.0 décrit le modèle Atlas, les mécanismes Smart Cycle, l'économie, les risques, la gouvernance DAO, le programme partenaire, l'architecture technique et les limites. Il doit se lire comme un document Web3 transparent, pas comme une présentation fondée sur des promesses.",
+      tr: "White Paper 5.0; Atlas modelini, Smart Cycle mekaniklerini, ekonomiyi, riskleri, DAO governance yapısını, partner programını, teknik mimariyi ve sınırlamaları açıklar. Metin, vaat odaklı bir sunum değil, şeffaf bir Web3 dokümanı gibi okunmalıdır.",
+      "pt-BR": "White Paper 5.0 descreve o modelo Atlas, as mecânicas do Smart Cycle, a economia, os riscos, a governança DAO, o programa de parceiros, a arquitetura técnica e as limitações. Deve soar como um documento Web3 transparente, não como uma apresentação baseada em promessas.",
+      id: "White Paper 5.0 menjelaskan model Atlas, mekanisme Smart Cycle, ekonomi, risiko, DAO governance, program partner, arsitektur teknis, dan batasannya. Dokumen ini harus terbaca sebagai dokumen Web3 yang transparan, bukan presentasi berbasis janji.",
+      vi: "White Paper 5.0 mô tả mô hình Atlas, cơ chế Smart Cycle, kinh tế hệ thống, rủi ro, DAO governance, chương trình đối tác, kiến trúc kỹ thuật và các giới hạn. Tài liệu cần được đọc như một tài liệu Web3 minh bạch, không phải bản trình bày dựa trên lời hứa.",
+      hi: "White Paper 5.0 Atlas model, Smart Cycle mechanics, economics, risks, DAO governance, partner program, technical architecture और limitations को समझाता है. यह एक transparent Web3 document की तरह पढ़ा जाना चाहिए, promise-driven presentation की तरह नहीं.",
+      "zh-CN": "White Paper 5.0 描述 Atlas 模型、Smart Cycle 机制、经济结构、风险、DAO governance、合作伙伴计划、技术架构和限制。它应当像透明的 Web3 文档，而不是以承诺为核心的展示材料。",
+    }),
   },
   {
     id: "partner-program",
@@ -384,8 +445,20 @@ export const defaultLocalizationPages = [
     owner: "Growth / Legal",
     priority: "Medium",
     ruSource: "Страница объясняет роль лидеров, партнёрские начисления, региональное развитие, правила коммуникации и ограничения статуса представителя.",
-    enMaster: "The Partner Program page explains leader roles, partner rewards, regional growth, communication standards and the limits of representative status.",
+    enMaster: "The Partner Program page explains leader roles, partner rewards, regional growth, communication standards and the limits of representative status. Leaders help develop the community, but their role must not be presented as employment, brokerage or legal representation unless separately approved.",
     notes: "Не называть лидеров legal representative, licensed broker, employee или shareholder.",
+    locales: starterLocales({
+      ru: "Партнёрская программа объясняет роль лидеров, партнёрские начисления, региональное развитие, стандарты коммуникации и ограничения статуса представителя. Лидеры помогают развивать сообщество, но их роль не должна описываться как трудоустройство, брокерская деятельность или юридическое представительство без отдельного подтверждения.",
+      en: "The Partner Program page explains leader roles, partner rewards, regional growth, communication standards and the limits of representative status. Leaders help develop the community, but their role must not be presented as employment, brokerage or legal representation unless separately approved.",
+      de: "Die Partnerprogramm-Seite erklärt Leader-Rollen, Partnervergütung, regionales Wachstum, Kommunikationsstandards und Grenzen des Vertreterstatus. Leader helfen beim Aufbau der Community, ihre Rolle darf jedoch ohne separate Freigabe nicht als Anstellung, Brokerage oder gesetzliche Vertretung dargestellt werden.",
+      fr: "La page du programme partenaire explique le rôle des leaders, les récompenses partenaires, le développement régional, les standards de communication et les limites du statut de représentant. Les leaders aident à développer la communauté, mais leur rôle ne doit pas être présenté comme un emploi, une activité de courtage ou une représentation légale sans validation séparée.",
+      tr: "Partner Program sayfası lider rollerini, partner ödüllerini, bölgesel büyümeyi, iletişim standartlarını ve temsilci statüsünün sınırlarını açıklar. Liderler topluluğun gelişmesine yardımcı olur; ancak rolleri ayrı onay olmadan istihdam, brokerlik veya yasal temsil olarak sunulmamalıdır.",
+      "pt-BR": "A página do Programa de Parceiros explica os papéis de líderes, recompensas de parceiro, crescimento regional, padrões de comunicação e limites do status de representante. Líderes ajudam a desenvolver a comunidade, mas sua função não deve ser apresentada como emprego, corretagem ou representação legal sem aprovação separada.",
+      id: "Halaman Partner Program menjelaskan peran leader, reward mitra, pertumbuhan regional, standar komunikasi, dan batas status perwakilan. Leader membantu mengembangkan komunitas, tetapi perannya tidak boleh disajikan sebagai pekerjaan, broker, atau perwakilan hukum tanpa persetujuan terpisah.",
+      vi: "Trang Partner Program giải thích vai trò lãnh đạo, phần thưởng đối tác, phát triển khu vực, tiêu chuẩn truyền thông và giới hạn của trạng thái đại diện. Lãnh đạo hỗ trợ phát triển cộng đồng, nhưng vai trò này không được trình bày như việc làm, môi giới hoặc đại diện pháp lý nếu chưa được phê duyệt riêng.",
+      hi: "Partner Program page leader roles, partner rewards, regional growth, communication standards और representative status की सीमाएँ समझाता है. Leaders community को विकसित करने में मदद करते हैं, लेकिन उनकी भूमिका को अलग approval के बिना employment, brokerage या legal representation की तरह प्रस्तुत नहीं किया जाना चाहिए.",
+      "zh-CN": "Partner Program 页面说明 leader 角色、合作伙伴奖励、区域发展、沟通标准以及代表身份的边界。Leader 帮助发展社区，但除非另行批准，其角色不应被表述为雇佣、经纪服务或法律代表。",
+    }),
   },
   {
     id: "dao-governance",
@@ -394,8 +467,20 @@ export const defaultLocalizationPages = [
     owner: "Governance",
     priority: "Medium",
     ruSource: "Страница объясняет voting power, предложения, голосования, роль участников и лидеров, а также ограничения governance-механики.",
-    enMaster: "The DAO Governance page explains voting power, proposals, voting, participant and leader roles, and the limits of the governance mechanism.",
+    enMaster: "The DAO Governance page explains voting power, proposals, voting, participant and leader roles, and the limits of the governance mechanism. Voting power reflects governance weight inside Atlas and does not create ownership rights.",
     notes: "Не смешивать voting power с ownership share или shareholder rights.",
+    locales: starterLocales({
+      ru: "Страница DAO Governance объясняет voting power, предложения, голосования, роли участников и лидеров, а также ограничения governance-механики. Voting power отражает governance-вес внутри Atlas и не создаёт прав собственности.",
+      en: "The DAO Governance page explains voting power, proposals, voting, participant and leader roles, and the limits of the governance mechanism. Voting power reflects governance weight inside Atlas and does not create ownership rights.",
+      de: "Die DAO-Governance-Seite erklärt Voting Power, Vorschläge, Abstimmungen, Rollen von Teilnehmern und Leadern sowie Grenzen der Governance-Mechanik. Voting Power beschreibt Governance-Gewicht innerhalb von Atlas und schafft keine Eigentumsrechte.",
+      fr: "La page DAO Governance explique le voting power, les propositions, les votes, les rôles des participants et des leaders, ainsi que les limites du mécanisme de gouvernance. Le voting power reflète le poids de gouvernance dans Atlas et ne crée pas de droits de propriété.",
+      tr: "DAO Governance sayfası voting power, öneriler, oylamalar, katılımcı ve lider rolleri ile governance mekanizmasının sınırlarını açıklar. Voting power, Atlas içindeki governance ağırlığını yansıtır ve mülkiyet hakkı oluşturmaz.",
+      "pt-BR": "A página DAO Governance explica voting power, propostas, votações, papéis de participantes e líderes, além dos limites do mecanismo de governança. Voting power reflete o peso de governança dentro da Atlas e não cria direitos de propriedade.",
+      id: "Halaman DAO Governance menjelaskan voting power, proposal, voting, peran peserta dan leader, serta batas mekanisme tata kelola. Voting power mencerminkan bobot tata kelola di Atlas dan tidak menciptakan hak kepemilikan.",
+      vi: "Trang DAO Governance giải thích voting power, đề xuất, biểu quyết, vai trò của người tham gia và lãnh đạo, cùng các giới hạn của cơ chế quản trị. Voting power phản ánh trọng số quản trị trong Atlas và không tạo ra quyền sở hữu.",
+      hi: "DAO Governance page voting power, proposals, voting, participant और leader roles, तथा governance mechanism की सीमाएँ समझाता है. Voting power Atlas के भीतर governance weight दिखाता है और ownership rights नहीं बनाता.",
+      "zh-CN": "DAO Governance 页面说明 voting power、提案、投票、参与者与 leader 角色，以及治理机制的限制。Voting power 反映 Atlas 内部的治理权重，并不产生所有权利。",
+    }),
   },
 ];
 

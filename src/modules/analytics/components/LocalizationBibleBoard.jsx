@@ -58,6 +58,22 @@ function makeLocaleProgress(overrides = {}) {
   }, {});
 }
 
+function mergeLocaleProgress(defaultLocales = {}, savedLocales = {}) {
+  return atlasLocalizationLanguages.reduce((acc, language) => {
+    const base = defaultLocales?.[language.code] || {};
+    const saved = savedLocales?.[language.code] || {};
+    const baseCopy = base.copy || "";
+    const savedCopy = saved.copy || "";
+    acc[language.code] = {
+      status: saved.status && saved.status !== "not-started" ? saved.status : base.status || saved.status || "",
+      reviewer: saved.reviewer || base.reviewer || "",
+      notes: saved.notes || base.notes || "",
+      copy: savedCopy || baseCopy,
+    };
+    return acc;
+  }, {});
+}
+
 function normalizePage(page, index = 0) {
   return {
     id: page?.id || `page-${Date.now()}-${index}`,
@@ -103,7 +119,7 @@ function mergeLocalizationPages(savedPages) {
   const savedById = new Map(saved.map((page) => [page.id, page]));
   const mergedDefaults = defaultLocalizationPages.map((page, index) => {
     const savedPage = savedById.get(page.id);
-    return normalizePage({ ...page, ...savedPage, locales: savedPage?.locales || page.locales }, index);
+    return normalizePage({ ...page, ...savedPage, locales: mergeLocaleProgress(page.locales, savedPage?.locales) }, index);
   });
   const extraPages = saved.filter((page) => !defaultLocalizationPages.some((defaultPage) => defaultPage.id === page.id));
   return [...mergedDefaults, ...extraPages];
