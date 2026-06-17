@@ -564,6 +564,37 @@ ${pageMarkdown}
 `;
 }
 
+function parseWorkspaceImport(text) {
+  if (!text.trim()) {
+    return { ok: false, message: "Paste a workspace JSON to preview import.", pages: [], customTerms: [], summary: null };
+  }
+  try {
+    const parsed = JSON.parse(text);
+    const pages = mergeLocalizationPages(parsed?.pages || parsed);
+    const customTerms = mergeGlossaryTerms(parsed?.customGlossary || parsed?.customTerms);
+    if (!pages.length) throw new Error("No pages found");
+    const localeCopies = pages.reduce((sum, page) => (
+      sum + atlasLocalizationLanguages.filter((language) => String(page.locales?.[language.code]?.copy || "").trim()).length
+    ), 0);
+    const customPages = pages.filter((page) => !defaultLocalizationPages.some((defaultPage) => defaultPage.id === page.id)).length;
+    return {
+      ok: true,
+      message: `Ready to import ${pages.length} pages, ${localeCopies} locale copies and ${customTerms.length} custom terms.`,
+      pages,
+      customTerms,
+      summary: {
+        pages: pages.length,
+        customPages,
+        customTerms: customTerms.length,
+        localeCopies,
+        languages: atlasLocalizationLanguages.length,
+      },
+    };
+  } catch {
+    return { ok: false, message: "Import preview failed: paste a valid Atlas localization workspace JSON.", pages: [], customTerms: [], summary: null };
+  }
+}
+
 function downloadTextFile(filename, content, type = "text/plain") {
   if (typeof window === "undefined") return;
   const blob = new Blob([content], { type });
@@ -616,6 +647,7 @@ function LocalizationBibleBoard() {
     pages: translationPages,
     exportedAt: new Date().toISOString(),
   }, null, 2), [translationPages, allTermRows, customGlossaryRows]);
+  const workspaceImportPreview = useMemo(() => parseWorkspaceImport(workspaceImportText), [workspaceImportText]);
   const localeProgress = useMemo(() => {
     const localeCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
     const total = translationPages.length * localeCodes.length;
@@ -948,19 +980,17 @@ function LocalizationBibleBoard() {
   }
 
   function applyWorkspaceImport() {
-    try {
-      const parsed = JSON.parse(workspaceImportText);
-      const pages = mergeLocalizationPages(parsed?.pages || parsed);
-      const customTerms = mergeGlossaryTerms(parsed?.customGlossary || parsed?.customTerms);
-      if (!pages.length) throw new Error("No pages found");
-      setTranslationPages(pages);
-      setCustomGlossaryRows(customTerms);
-      setActivePageId(pages[0]?.id || defaultLocalizationPages[0]?.id || "home");
-      setWorkspaceImportText("");
-      setWorkspaceImportMessage(`Imported ${pages.length} pages and ${customTerms.length} custom terms.`);
-    } catch {
-      setWorkspaceImportMessage("Import failed: paste a valid Atlas localization workspace JSON.");
+    if (!workspaceImportPreview.ok) {
+      setWorkspaceImportMessage(workspaceImportPreview.message);
+      return;
     }
+    const pages = workspaceImportPreview.pages;
+    const customTerms = workspaceImportPreview.customTerms;
+    setTranslationPages(pages);
+    setCustomGlossaryRows(customTerms);
+    setActivePageId(pages[0]?.id || defaultLocalizationPages[0]?.id || "home");
+    setWorkspaceImportText("");
+    setWorkspaceImportMessage(`Imported ${pages.length} pages and ${customTerms.length} custom terms.`);
   }
 
   function applyQaResultToActiveLocale() {
@@ -1034,7 +1064,7 @@ function LocalizationBibleBoard() {
             <p>Вставьте экспортированный `atlas-localization-workspace.json`, чтобы вернуть страницы, locale copies и custom glossary в рабочую базу.</p>
           </div>
           <div className="analytics-localization-import-actions">
-            <button type="button" onClick={applyWorkspaceImport} disabled={!workspaceImportText.trim()}>Apply import</button>
+            <button type="button" onClick={applyWorkspaceImport} disabled={!workspaceImportPreview.ok}>Apply import</button>
             <button type="button" onClick={() => { setWorkspaceImportText(""); setWorkspaceImportMessage(""); }}>Clear</button>
           </div>
         </div>
@@ -1043,6 +1073,20 @@ function LocalizationBibleBoard() {
           onChange={(event) => setWorkspaceImportText(event.target.value)}
           placeholder='Paste Atlas localization workspace JSON here...'
         />
+        {workspaceImportText.trim() ? (
+          <div className={`analytics-localization-import-preview ${workspaceImportPreview.ok ? "is-valid" : "is-invalid"}`}>
+            <strong>{workspaceImportPreview.ok ? "Import preview" : "Import warning"}</strong>
+            <span>{workspaceImportPreview.message}</span>
+            {workspaceImportPreview.summary ? (
+              <div>
+                <em>{workspaceImportPreview.summary.pages} pages</em>
+                <em>{workspaceImportPreview.summary.customPages} custom pages</em>
+                <em>{workspaceImportPreview.summary.localeCopies} locale copies</em>
+                <em>{workspaceImportPreview.summary.customTerms} custom terms</em>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {workspaceImportMessage ? <p className="analytics-localization-import-message">{workspaceImportMessage}</p> : null}
       </div>
 
