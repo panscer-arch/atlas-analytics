@@ -1,14 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ATLAS_LOCALIZATION_STORAGE_KEY,
   atlasLocalizationLanguages,
+  defaultLocalizationPages,
   localizationCoreRules,
   localizationLanguageGuides,
+  localizationLocaleStatuses,
   localizationPagePipeline,
   localizationPrompts,
   localizationQaChecks,
   localizationTermRows,
   localizationWorkflow,
 } from "../data/localizationBibleData";
+import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const categoryLabels = {
   all: "Все категории",
@@ -25,15 +29,161 @@ function copyToClipboard(text) {
   window.navigator.clipboard.writeText(text);
 }
 
+function makeLocaleProgress(overrides = {}) {
+  return atlasLocalizationLanguages.reduce((acc, language) => {
+    const saved = overrides?.[language.code] || {};
+    acc[language.code] = {
+      status: saved.status || (language.code === "ru" ? "ru-source" : language.code === "en" ? "en-master" : "not-started"),
+      reviewer: saved.reviewer || "",
+      notes: saved.notes || "",
+    };
+    return acc;
+  }, {});
+}
+
+function normalizePage(page, index = 0) {
+  return {
+    id: page?.id || `page-${Date.now()}-${index}`,
+    title: page?.title || "Новая страница",
+    path: page?.path || "/",
+    owner: page?.owner || "Content",
+    priority: page?.priority || "Medium",
+    ruSource: page?.ruSource || "",
+    enMaster: page?.enMaster || "",
+    notes: page?.notes || "",
+    locales: makeLocaleProgress(page?.locales),
+  };
+}
+
+function mergeLocalizationPages(savedPages) {
+  const saved = Array.isArray(savedPages) ? savedPages.map(normalizePage) : [];
+  const savedById = new Map(saved.map((page) => [page.id, page]));
+  const mergedDefaults = defaultLocalizationPages.map((page, index) => {
+    const savedPage = savedById.get(page.id);
+    return normalizePage({ ...page, ...savedPage, locales: savedPage?.locales || page.locales }, index);
+  });
+  const extraPages = saved.filter((page) => !defaultLocalizationPages.some((defaultPage) => defaultPage.id === page.id));
+  return [...mergedDefaults, ...extraPages];
+}
+
 function LocalizationBibleBoard() {
   const [activeLanguageCode, setActiveLanguageCode] = useState("en");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [translationPages, setTranslationPages] = useState(() => mergeLocalizationPages());
+  const [activePageId, setActivePageId] = useState(defaultLocalizationPages[0]?.id || "home");
+  const [saveState, setSaveState] = useState("Сохранено");
+  const saveRequestRef = useRef(0);
+  const isHydratedRef = useRef(false);
   const activeLanguage = atlasLocalizationLanguages.find((language) => language.code === activeLanguageCode) || atlasLocalizationLanguages[1];
   const activeLanguageGuide = localizationLanguageGuides.find((guide) => guide.code === activeLanguage.code) || localizationLanguageGuides[1];
   const categories = useMemo(() => ["all", ...Array.from(new Set(localizationTermRows.map((row) => row.category)))], []);
   const visibleTerms = localizationTermRows.filter((row) => activeCategory === "all" || row.category === activeCategory);
   const lockedTermsCount = localizationTermRows.filter((row) => row.keepEnglish).length;
+  const activePage = translationPages.find((page) => page.id === activePageId) || translationPages[0];
+  const localeStatusById = useMemo(() => new Map(localizationLocaleStatuses.map((status) => [status.id, status])), []);
+  const localeProgress = useMemo(() => {
+    const localeCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
+    const total = translationPages.length * localeCodes.length;
+    const completed = translationPages.reduce((sum, page) => (
+      sum + localeCodes.filter((code) => ["native-reviewed", "published"].includes(page.locales?.[code]?.status)).length
+    ), 0);
+    const needsFix = translationPages.reduce((sum, page) => (
+      sum + localeCodes.filter((code) => page.locales?.[code]?.status === "needs-fix").length
+    ), 0);
+    return { total, completed, needsFix, percent: total ? Math.round((completed / total) * 100) : 0 };
+  }, [translationPages]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
+
+  useEffect(() => {
+    let isMounted = true;
+    try {
+      const saved = window.localStorage.getItem(ATLAS_LOCALIZATION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const pages = mergeLocalizationPages(parsed?.pages || parsed);
+        setTranslationPages(pages);
+        setActivePageId((current) => pages.some((page) => page.id === current) ? current : pages[0]?.id);
+      }
+    } catch {
+      // Keep defaults if local cache is malformed.
+    }
+
+    loadServerContent(ATLAS_LOCALIZATION_STORAGE_KEY).then((saved) => {
+      if (!isMounted || !saved) return;
+      const pages = mergeLocalizationPages(saved?.pages || saved);
+      setTranslationPages(pages);
+      setActivePageId((current) => pages.some((page) => page.id === current) ? current : pages[0]?.id);
+      try {
+        window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify({ pages }));
+      } catch {
+        // Server content is still loaded even if local cache is unavailable.
+      }
+    }).finally(() => {
+      if (isMounted) isHydratedRef.current = true;
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydratedRef.current) return undefined;
+    const saveTimer = window.setTimeout(() => {
+      const requestId = saveRequestRef.current + 1;
+      saveRequestRef.current = requestId;
+      const payload = { pages: translationPages };
+      setSaveState("Сохраняю...");
+      try {
+        window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        // Server save still runs if local storage is unavailable.
+      }
+      saveServerContent(ATLAS_LOCALIZATION_STORAGE_KEY, payload).then((ok) => {
+        if (saveRequestRef.current !== requestId) return;
+        setSaveState(ok ? "Сохранено" : "Сохранено локально");
+      });
+    }, 500);
+
+    return () => window.clearTimeout(saveTimer);
+  }, [translationPages]);
+
+  function updateActivePage(field, value) {
+    if (!activePage) return;
+    setTranslationPages((pages) => pages.map((page) => page.id === activePage.id ? { ...page, [field]: value } : page));
+  }
+
+  function updateLocale(code, field, value) {
+    if (!activePage) return;
+    setTranslationPages((pages) => pages.map((page) => {
+      if (page.id !== activePage.id) return page;
+      return {
+        ...page,
+        locales: {
+          ...page.locales,
+          [code]: {
+            ...page.locales?.[code],
+            [field]: value,
+          },
+        },
+      };
+    }));
+  }
+
+  function addTranslationPage() {
+    const nextPage = normalizePage({
+      id: `custom-page-${Date.now()}`,
+      title: "Новая страница Atlas",
+      path: "/new-page",
+      owner: "Content",
+      priority: "Medium",
+      ruSource: "Кратко опишите русский смысл страницы.",
+      enMaster: "",
+      notes: "Добавьте термины и риски перевода.",
+    });
+    setTranslationPages((pages) => [nextPage, ...pages]);
+    setActivePageId(nextPage.id);
+  }
 
   return (
     <section className="analytics-surface analytics-localization-board">
@@ -68,6 +218,123 @@ function LocalizationBibleBoard() {
           <span>Locales</span>
           <strong>{atlasLocalizationLanguages.length} languages</strong>
           <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
+        </div>
+      </div>
+
+      <div className="analytics-localization-workbench">
+        <div className="analytics-localization-section-head">
+          <div>
+            <span className="analytics-kicker">Translation Workbench</span>
+            <h3>Рабочая доска страниц</h3>
+          </div>
+          <div className="analytics-localization-save-state">
+            <strong>{localeProgress.percent}%</strong>
+            <span>{localeProgress.completed}/{localeProgress.total} локалей закрыто · {localeProgress.needsFix} требуют правки · {saveState}</span>
+          </div>
+        </div>
+
+        <div className="analytics-localization-workbench-grid">
+          <aside className="analytics-localization-page-list">
+            <button type="button" className="analytics-localization-add-page" onClick={addTranslationPage}>+ Страница</button>
+            {translationPages.map((page) => (
+              <button
+                key={page.id}
+                type="button"
+                className={page.id === activePage?.id ? "is-active" : ""}
+                onClick={() => setActivePageId(page.id)}
+              >
+                <strong>{page.title}</strong>
+                <span>{page.path} · {page.priority}</span>
+              </button>
+            ))}
+          </aside>
+
+          {activePage ? (
+            <div className="analytics-localization-page-editor">
+              <div className="analytics-localization-form-grid">
+                <label>
+                  <span>Название страницы</span>
+                  <input value={activePage.title} onChange={(event) => updateActivePage("title", event.target.value)} />
+                </label>
+                <label>
+                  <span>URL / раздел</span>
+                  <input value={activePage.path} onChange={(event) => updateActivePage("path", event.target.value)} />
+                </label>
+                <label>
+                  <span>Ответственный</span>
+                  <input value={activePage.owner} onChange={(event) => updateActivePage("owner", event.target.value)} />
+                </label>
+                <label>
+                  <span>Приоритет</span>
+                  <select value={activePage.priority} onChange={(event) => updateActivePage("priority", event.target.value)}>
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="analytics-localization-copy-grid">
+                <label>
+                  <span>RU смысловой источник</span>
+                  <textarea value={activePage.ruSource} onChange={(event) => updateActivePage("ruSource", event.target.value)} />
+                </label>
+                <label>
+                  <span>EN master copy</span>
+                  <textarea value={activePage.enMaster} onChange={(event) => updateActivePage("enMaster", event.target.value)} />
+                </label>
+              </div>
+
+              <label className="analytics-localization-notes">
+                <span>Заметки, термины и риски</span>
+                <textarea value={activePage.notes} onChange={(event) => updateActivePage("notes", event.target.value)} />
+              </label>
+
+              <div className="analytics-table-responsive">
+                <table className="analytics-table analytics-localization-status-table">
+                  <thead>
+                    <tr>
+                      <th>Язык</th>
+                      <th>Статус</th>
+                      <th>Reviewer</th>
+                      <th>Комментарий</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {atlasLocalizationLanguages.map((language) => {
+                      const progress = activePage.locales?.[language.code] || makeLocaleProgress()[language.code];
+                      const statusTone = localeStatusById.get(progress.status)?.tone || "neutral";
+                      return (
+                        <tr key={language.code}>
+                          <td>
+                            <strong>{language.flag} {language.nativeName}</strong>
+                            <span>{language.code}</span>
+                          </td>
+                          <td>
+                            <select
+                              className={`analytics-localization-status-select analytics-localization-status-${statusTone}`}
+                              value={progress.status}
+                              onChange={(event) => updateLocale(language.code, "status", event.target.value)}
+                            >
+                              {localizationLocaleStatuses.map((status) => (
+                                <option key={status.id} value={status.id}>{status.label}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <input value={progress.reviewer} onChange={(event) => updateLocale(language.code, "reviewer", event.target.value)} placeholder="AI / native / editor" />
+                          </td>
+                          <td>
+                            <input value={progress.notes} onChange={(event) => updateLocale(language.code, "notes", event.target.value)} placeholder="Что проверить или исправить" />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 

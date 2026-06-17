@@ -13,6 +13,80 @@ export const atlasLocalizationLanguages = [
   { code: "zh-CN", flag: "🇨🇳", nativeName: "简体中文", englishName: "Simplified Chinese", role: "Locale", status: "Glossary draft" },
 ];
 
+export const localizationLocaleStatuses = [
+  { id: "not-started", label: "Не начато", tone: "neutral" },
+  { id: "ru-source", label: "RU смысл готов", tone: "info" },
+  { id: "en-master", label: "EN master готов", tone: "info" },
+  { id: "translated", label: "Переведено", tone: "warning" },
+  { id: "ai-reviewed", label: "AI QA", tone: "warning" },
+  { id: "native-reviewed", label: "Native review", tone: "success" },
+  { id: "published", label: "Опубликовано", tone: "success" },
+  { id: "needs-fix", label: "Нужны правки", tone: "danger" },
+];
+
+export const defaultLocalizationPages = [
+  {
+    id: "home",
+    title: "Главная страница Atlas",
+    path: "/",
+    owner: "Content / Brand",
+    priority: "High",
+    ruSource: "Главная страница объясняет, что такое Atlas System, почему он построен на Web3-логике, какие принципы прозрачности использует проект и как участник может изучить систему до принятия решения.",
+    enMaster: "Atlas System is a Web3-based ecosystem built around transparent participation mechanics, published rules and self-custody interaction. The page must explain the product clearly without promising profit, fixed returns or risk-free participation.",
+    notes: "Сначала вычитываем EN hero, CTA, risk copy и все короткие UI labels.",
+  },
+  {
+    id: "smart-cycle",
+    title: "Smart Cycle / ядро продукта",
+    path: "/smart-cycle",
+    owner: "Product / Smart Contract",
+    priority: "High",
+    ruSource: "Страница объясняет назначение Smart Cycle, параметры участия, lockup-период, Claim, расчётную дельту, роль смарт-контракта и ограничения текущей версии.",
+    enMaster: "The Smart Cycle page explains the participation cycle, lockup period, Claim action, calculated delta, smart-contract logic and version limitations. It must distinguish calculated parameters from guaranteed profit.",
+    notes: "Критичные термины: cycle amount, lockup period, Claim, calculated delta, platform fee.",
+  },
+  {
+    id: "transparency-center",
+    title: "Центр прозрачности",
+    path: "/transparency",
+    owner: "Security / Legal",
+    priority: "High",
+    ruSource: "Страница собирает архитектуру, риски, Security Review, адреса контрактов, документацию, блок-схемы и публичные материалы для самостоятельного изучения участником.",
+    enMaster: "The Transparency Center collects architecture notes, risks, Security Review materials, contract addresses, documentation, diagrams and public evidence for independent participant review.",
+    notes: "Не использовать certified audit, regulator approval, guaranteed security без фактического основания.",
+  },
+  {
+    id: "white-paper-50",
+    title: "White Paper 5.0",
+    path: "/white-paper",
+    owner: "Content / Product",
+    priority: "High",
+    ruSource: "White Paper раскрывает модель Atlas, Smart Cycle, экономику, риски, DAO governance, партнёрскую программу, техническую архитектуру и ограничения.",
+    enMaster: "The White Paper describes the Atlas model, Smart Cycle mechanics, economics, risks, DAO governance, partner program, technical architecture and limitations in a transparent, non-promissory way.",
+    notes: "Белая книга должна звучать как Web3-документ, а не как MLM-презентация доходности.",
+  },
+  {
+    id: "partner-program",
+    title: "Партнёрская программа",
+    path: "/partner-program",
+    owner: "Growth / Legal",
+    priority: "Medium",
+    ruSource: "Страница объясняет роль лидеров, партнёрские начисления, региональное развитие, правила коммуникации и ограничения статуса представителя.",
+    enMaster: "The Partner Program page explains leader roles, partner rewards, regional growth, communication standards and the limits of representative status.",
+    notes: "Не называть лидеров legal representative, licensed broker, employee или shareholder.",
+  },
+  {
+    id: "dao-governance",
+    title: "DAO Governance",
+    path: "/dao-governance",
+    owner: "Governance",
+    priority: "Medium",
+    ruSource: "Страница объясняет voting power, предложения, голосования, роль участников и лидеров, а также ограничения governance-механики.",
+    enMaster: "The DAO Governance page explains voting power, proposals, voting, participant and leader roles, and the limits of the governance mechanism.",
+    notes: "Не смешивать voting power с ownership share или shareholder rights.",
+  },
+];
+
 export const localizationWorkflow = [
   {
     title: "RU source of meaning",
