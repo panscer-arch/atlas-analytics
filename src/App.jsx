@@ -172,10 +172,12 @@ function AccessGate({ children }) {
         </section>
         <section className="supersus-access-panel">
           <div className="supersus-access-brand">
-            <div className="supersus-access-mark">S</div>
+            <div className="supersus-access-mark">
+              <img src="/generated/analytics-character-logo.png" alt="" />
+            </div>
             <div>
-              <p className="supersus-access-kicker">SuperSUS System</p>
-              <h1>Закрытый доступ</h1>
+              <p className="supersus-access-kicker">Private gateway</p>
+              <h1>SuperSUS System</h1>
             </div>
           </div>
           <p className="supersus-access-copy">Введите пароль, чтобы открыть систему на этом устройстве.</p>
