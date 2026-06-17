@@ -14,6 +14,9 @@ const platformNotes = {
   Medium: "Medium использовать как контентный/risk-intel источник; проверять автора, свежесть, репосты и источники утверждений.",
   Forum: "Форумы использовать как risk-intel и источник лидов; проверять дату, активность ветки и качество участников.",
   Community: "Community-площадки использовать как разведку репутации и каналов распространения; проверять источник и контекст.",
+  TikTok: "TikTok использовать для поиска коротких роликов, отзывов и локальных промо; проверять автора, просмотры, комментарии и дату публикации.",
+  Instagram: "Instagram использовать для поиска Reels, лидеров и локальных промо-страниц; проверять охваты через media kit.",
+  Google: "Google/News использовать как discovery route для поиска авторов, статей, видео и обсуждений; затем переносить конкретные каналы в работу.",
 };
 
 const knownAudienceInfo = {
@@ -406,6 +409,59 @@ const bitnestMentionRows = [
   ["bitnest-024", "Community", "Yahoo Finance BitNest regulatory article", "Глобально", "https://finance.yahoo.com/news/bitnest-received-regulatory-approval-register-180400866.html", "Bitnest mention / media article", 62, "Низкий", "Проверить", "publisher/source", "Старое PR/media упоминание о regulatory approval; проверять источник, дату и достоверность.", "Web search нашёл Yahoo Finance article про BitNest regulatory approval."],
 ];
 
+const bitnestDiscoveryMarkets = [
+  ["global", "Глобально", "Bitnest crypto"],
+  ["english", "Глобально", "BitNest DeFi"],
+  ["india", "Индия", "Bitnest India crypto"],
+  ["nigeria", "Нигерия", "Bitnest Nigeria crypto"],
+  ["pakistan", "Пакистан", "Bitnest Pakistan"],
+  ["ghana", "Нигерия", "Bitnest Ghana crypto"],
+  ["kenya", "Нигерия", "Bitnest Kenya crypto"],
+  ["tanzania", "Нигерия", "Bitnest Tanzania Swahili"],
+  ["brazil", "Бразилия", "Bitnest Brasil cripto"],
+  ["portugal", "Бразилия", "Bitnest Portugal cripto"],
+  ["spain", "Евросоюз", "Bitnest Spain crypto"],
+  ["latam", "Мексика", "Bitnest Latam crypto"],
+  ["turkey", "Турция", "Bitnest Turkey crypto"],
+  ["germany", "Германия", "Bitnest Germany crypto"],
+  ["france", "Евросоюз", "Bitnest France crypto"],
+  ["russia", "Россия", "Bitnest Russia crypto"],
+  ["ukraine", "Евросоюз", "Bitnest Ukraine crypto"],
+  ["indonesia", "Индонезия", "Bitnest Indonesia crypto"],
+  ["vietnam", "Вьетнам", "Bitnest Vietnam crypto"],
+  ["philippines", "Филиппины", "Bitnest Philippines crypto"],
+  ["malaysia", "Малайзия", "Bitnest Malaysia crypto"],
+  ["arabic", "Глобально", "Bitnest Arabic crypto"],
+];
+
+const bitnestDiscoveryRoutes = [
+  ["youtube", "YouTube", "YouTube search", (query) => `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, "Bitnest discovery / YouTube search", "YouTube search route: открыть выдачу, выбрать конкретные каналы, снять подписчиков и средние views по видео."],
+  ["x", "X", "X live search", (query) => `https://x.com/search?q=${encodeURIComponent(query)}&src=typed_query&f=live`, "Bitnest discovery / X search", "X live search route: найти аккаунты, threads, предупреждения и промо-посты по Bitnest."],
+  ["telegram", "Telegram", "TGStat search", (query) => `https://tgstat.com/channels/search?query=${encodeURIComponent(query)}`, "Bitnest discovery / Telegram search", "TGStat route: найти каналы/чаты, проверить subscribers, views/post, ER и админов."],
+  ["facebook", "Facebook", "Facebook posts search", (query) => `https://www.facebook.com/search/posts/?q=${encodeURIComponent(query)}`, "Bitnest discovery / Facebook search", "Facebook search route: найти группы, посты, страницы и локальных лидеров, которые упоминали Bitnest."],
+  ["reddit", "Reddit", "Reddit search", (query) => `https://www.reddit.com/search/?q=${encodeURIComponent(query)}`, "Bitnest discovery / Reddit search", "Reddit route: найти риск-обсуждения, жалобы, вопросы и community objections."],
+  ["google", "Google", "Google news/search", (query) => `https://www.google.com/search?q=${encodeURIComponent(`${query} Bitnest crypto`)}`, "Bitnest discovery / web search", "Google route: найти статьи, форумы, обзоры, recovery posts и новые домены Bitnest/Mera X."],
+  ["tiktok", "TikTok", "TikTok search", (query) => `https://www.tiktok.com/search?q=${encodeURIComponent(query)}`, "Bitnest discovery / TikTok search", "TikTok route: найти короткие ролики и локальных промо-авторов по Bitnest."],
+  ["instagram", "Instagram", "Instagram route", (query) => `https://www.google.com/search?q=${encodeURIComponent(`site:instagram.com ${query}`)}`, "Bitnest discovery / Instagram search", "Instagram route через Google: найти Reels, профили и посты с Bitnest mentions."],
+];
+
+const bitnestDiscoveryRows = bitnestDiscoveryMarkets.flatMap(([marketId, country, query]) => (
+  bitnestDiscoveryRoutes.map(([routeId, platform, routeName, makeUrl, niche, note], routeIndex) => [
+    `bitnest-discovery-${marketId}-${routeId}`,
+    platform,
+    `Bitnest ${routeName} · ${query}`,
+    country,
+    makeUrl(query),
+    niche,
+    Math.max(58, 70 - routeIndex),
+    "Низкий",
+    "Проверить",
+    "discovery route",
+    `${note} После нахождения конкретного автора перенести его в отдельную строку с контактами и статистикой.`,
+    `Discovery seed: ${query}. Маршрут создан для добора Bitnest mentions до 500 строк и требует ручного выбора конкретных каналов.`,
+  ])
+));
+
 function toLead([id, platform, name, country, url, niche, fitScore, priceTier, status, contactRoute, note, liveProof], index) {
   const platformBoost = platform === "YouTube" ? 4 : platform === "X" ? 2 : platform === "Telegram" ? 3 : 0;
   const affordabilityBoost = priceTier.includes("Низкий") ? 8 : priceTier.includes("Средний") ? 4 : -4;
@@ -433,4 +489,4 @@ function toLead([id, platform, name, country, url, niche, fitScore, priceTier, s
   };
 }
 
-export const defaultInfluencerProspects = [...prospectRows, ...liveProspectRows, ...thirdProspectRows, ...bitnestMentionRows].map(toLead);
+export const defaultInfluencerProspects = [...prospectRows, ...liveProspectRows, ...thirdProspectRows, ...bitnestMentionRows, ...bitnestDiscoveryRows].map(toLead);

@@ -18,7 +18,7 @@ const PARSER_TABS = [
   {
     id: "influencers",
     label: "Инфлюенсеры",
-    hint: "324 лида",
+    hint: "500 лидов",
   },
 ];
 

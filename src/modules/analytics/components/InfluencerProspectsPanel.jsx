@@ -17,7 +17,7 @@ export default function InfluencerProspectsPanel() {
       tableAriaLabel="Список инфлюенсеров и сообществ для outreach"
       searchPlaceholder="YouTube, X, Facebook, Telegram, страна, DeFi, airdrop..."
       showVerification
-      platformFilterOptions={["YouTube", "X", "Telegram", "Facebook"]}
+      platformFilterOptions={["YouTube", "X", "Telegram", "Facebook", "TikTok", "Instagram", "Reddit", "Google"]}
       keywordFilterOptions={["Bitnest"]}
       platformFilterLabel="Соцсеть"
       manualLeadDefaults={{
