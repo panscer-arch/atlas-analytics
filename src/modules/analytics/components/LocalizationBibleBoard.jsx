@@ -26,6 +26,17 @@ const categoryLabels = {
   Legal: "Legal",
 };
 
+const statusShortLabels = {
+  "not-started": "—",
+  "ru-source": "RU",
+  "en-master": "EN",
+  translated: "TR",
+  "ai-reviewed": "AI",
+  "native-reviewed": "N",
+  published: "PUB",
+  "needs-fix": "FIX",
+};
+
 function copyToClipboard(text) {
   if (typeof window === "undefined" || !window.navigator?.clipboard) return;
   window.navigator.clipboard.writeText(text);
@@ -220,6 +231,22 @@ function LocalizationBibleBoard() {
     ), 0);
     return { total, completed, needsFix, percent: total ? Math.round((completed / total) * 100) : 0 };
   }, [translationPages]);
+  const coverageRows = useMemo(() => {
+    const trackedCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
+    return translationPages.map((page) => {
+      const completed = trackedCodes.filter((code) => ["native-reviewed", "published"].includes(page.locales?.[code]?.status)).length;
+      const needsFix = trackedCodes.filter((code) => page.locales?.[code]?.status === "needs-fix").length;
+      const translated = trackedCodes.filter((code) => ["translated", "ai-reviewed", "native-reviewed", "published"].includes(page.locales?.[code]?.status)).length;
+      return {
+        ...page,
+        completed,
+        needsFix,
+        translated,
+        total: trackedCodes.length,
+        percent: trackedCodes.length ? Math.round((completed / trackedCodes.length) * 100) : 0,
+      };
+    });
+  }, [translationPages]);
   const qaSourceText = qaText || activeLocaleCopy;
   const qaPageContext = `${activePage?.title || ""}\n${activePage?.path || ""}\n${activePage?.ruSource || ""}\n${activePage?.enMaster || ""}\n${activePage?.notes || ""}`;
   const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
@@ -399,6 +426,71 @@ function LocalizationBibleBoard() {
           <span>Locales</span>
           <strong>{atlasLocalizationLanguages.length} languages</strong>
           <p>Русский, English, Deutsch, Français, Türkçe, Português BR, Bahasa Indonesia, Tiếng Việt, हिन्दी, 简体中文.</p>
+        </div>
+      </div>
+
+      <div className="analytics-localization-coverage">
+        <div className="analytics-localization-section-head">
+          <div>
+            <span className="analytics-kicker">Coverage Matrix</span>
+            <h3>Страницы и языки: что уже готово</h3>
+          </div>
+          <p>Клик по статусу открывает нужную страницу и язык в редакторе ниже. Матрица показывает, где перевод начат, где нужен native review, а где есть правки.</p>
+        </div>
+        <div className="analytics-table-responsive">
+          <table className="analytics-table analytics-localization-coverage-table">
+            <thead>
+              <tr>
+                <th>Страница</th>
+                <th>Готовность</th>
+                {atlasLocalizationLanguages.map((language) => (
+                  <th key={language.code}>{language.flag} {language.code.toUpperCase()}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {coverageRows.map((page) => (
+                <tr key={page.id}>
+                  <td>
+                    <button
+                      type="button"
+                      className="analytics-localization-coverage-page"
+                      onClick={() => setActivePageId(page.id)}
+                    >
+                      <strong>{page.title}</strong>
+                      <span>{page.path} · {page.priority}</span>
+                    </button>
+                  </td>
+                  <td>
+                    <div className="analytics-localization-coverage-progress">
+                      <strong>{page.percent}%</strong>
+                      <span>{page.completed}/{page.total} native/published · {page.translated} started · {page.needsFix} fix</span>
+                    </div>
+                  </td>
+                  {atlasLocalizationLanguages.map((language) => {
+                    const progress = page.locales?.[language.code] || makeLocaleProgress()[language.code];
+                    const status = localeStatusById.get(progress.status);
+                    const statusTone = status?.tone || "neutral";
+                    return (
+                      <td key={language.code}>
+                        <button
+                          type="button"
+                          title={`${language.nativeName}: ${status?.label || progress.status}`}
+                          className={`analytics-localization-coverage-pill analytics-localization-status-${statusTone}`}
+                          onClick={() => {
+                            setActivePageId(page.id);
+                            setActiveLanguageCode(language.code);
+                          }}
+                        >
+                          {statusShortLabels[progress.status] || progress.status}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

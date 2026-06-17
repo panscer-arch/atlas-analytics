@@ -17774,6 +17774,7 @@ input.analytics-smm-cell-input {
 .analytics-localization-panel,
 .analytics-localization-rules,
 .analytics-localization-pipeline,
+.analytics-localization-coverage,
 .analytics-localization-workbench,
 .analytics-localization-qa-checker,
 .analytics-localization-pipeline-card,
@@ -17908,6 +17909,92 @@ input.analytics-smm-cell-input {
 
 .analytics-localization-pipeline {
   padding: 16px;
+}
+
+.analytics-localization-coverage {
+  padding: 16px;
+}
+
+.analytics-localization-coverage-table {
+  min-width: 1120px;
+}
+
+.analytics-localization-coverage-table th,
+.analytics-localization-coverage-table td {
+  vertical-align: middle;
+}
+
+.analytics-localization-coverage-table th:not(:first-child),
+.analytics-localization-coverage-table td:not(:first-child) {
+  text-align: center;
+}
+
+.analytics-localization-coverage-page {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-width: 220px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.analytics-localization-coverage-page strong,
+.analytics-localization-coverage-page span {
+  display: block;
+}
+
+.analytics-localization-coverage-page strong {
+  color: #f8fafc;
+  font-size: 13px;
+}
+
+.analytics-localization-coverage-page span {
+  color: rgba(226, 240, 255, 0.55);
+  font-size: 12px;
+}
+
+.analytics-localization-coverage-page:hover strong {
+  color: #fed7aa;
+}
+
+.analytics-localization-coverage-progress {
+  display: grid;
+  gap: 4px;
+  min-width: 156px;
+}
+
+.analytics-localization-coverage-progress strong {
+  color: #99f6e4;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.analytics-localization-coverage-progress span {
+  color: rgba(226, 240, 255, 0.58);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.analytics-localization-coverage-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 30px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  color: #e5eefb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.analytics-localization-coverage-pill:hover {
+  border-color: rgba(255, 139, 26, 0.68);
+  color: #ffe2bd;
+  transform: translateY(-1px);
 }
 
 .analytics-localization-workbench {
@@ -18275,6 +18362,11 @@ input.analytics-smm-cell-input {
 .analytics-localization-status-danger {
   border-color: rgba(239, 68, 68, 0.42);
   background: rgba(239, 68, 68, 0.12);
+}
+
+.analytics-localization-status-neutral {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.1);
 }
 
 .analytics-localization-pipeline-grid {
