@@ -643,6 +643,8 @@ export const localizationCoreRules = [
   "Do not translate protected brand and product terms unless the glossary explicitly allows it: Atlas System, Smart Cycle, LockupFlow, DailyFlow, Transport, Performance Partners Program.",
   "Keep Smart Cycle as Smart Cycle in every language. A local explanation may be added once, but the product term itself stays unchanged.",
   "Keep ecosystem names and channel names unchanged: Telegram, Web3, DAO, BNB Smart Chain, USDT BEP20, P2P Exchange.",
+  "Do not confuse brand translation with ecosystem context: phrases like Atlas System ecosystem, ecosistema Atlas System, ecossistema Atlas System, écosystème Atlas System or Ekosistem Atlas System are allowed when they mean ownership/belonging of the ecosystem.",
+  "For zh-CN, fix machine punctuation globally: replace every double punctuation pattern like 。. with 。 before native review.",
   "Never translate browser cookies literally as food. Use cookies / Cookie according to local UI convention.",
   "Never translate traffic as road traffic when the context is marketing, audience acquisition or Web3 traffic.",
   "Never translate lockup period with words meaning prison, arrest, detention, imprisonment or punishment.",
@@ -817,7 +819,7 @@ export const localizationForbiddenPatterns = [
       de: ["hilfsfahrräder", "straßenkarte", "mätzchen"],
       fr: ["biscuit", "une portefeuille", "du atlas system"],
       tr: ["istifadə edirik", "telgraf", "vesayetsiz"],
-      "pt-BR": ["biscoito", "sistema atlas"],
+      "pt-BR": ["biscoito"],
       id: ["lalu lintas", "k2 2027"],
       vi: ["hỗ trợ xe đạp", "danh bạ", "tài chính vi mô"],
       hi: [],
@@ -858,6 +860,38 @@ export const localizationTerminologyFirewall = [
       "zh-CN": "literal brand translation / 饼干 for cookies",
     },
     exampleEn: "Open Smart Cycle details in the Atlas System interface and join the official Telegram channel.",
+  },
+  {
+    id: "atlas-ecosystem-context",
+    risk: "A scanner or translator may mistake ecosystem wording for a translated brand name.",
+    sourceRu: "экосистема Atlas System / экосистема Atlas",
+    enMaster: "Atlas System ecosystem / Atlas ecosystem",
+    rule: "If the local word means ecosystem and Atlas System remains unchanged, this is an ownership/belonging context, not a brand-translation error.",
+    approved: {
+      ru: "экосистема Atlas System / экосистема Atlas",
+      en: "Atlas System ecosystem / Atlas ecosystem",
+      de: "Atlas System Ökosystem / Atlas Ökosystem",
+      fr: "écosystème Atlas System / écosystème Atlas",
+      tr: "Atlas System ekosistemi / Atlas ekosistemi",
+      "pt-BR": "ecossistema Atlas System / ecossistema Atlas",
+      id: "ekosistem Atlas System / ekosistem Atlas",
+      vi: "hệ sinh thái Atlas System / hệ sinh thái Atlas",
+      hi: "Atlas System ecosystem / Atlas ecosystem",
+      "zh-CN": "Atlas System 生态系统 / Atlas 生态系统",
+    },
+    neverUse: {
+      ru: "Система Атлас as brand name",
+      en: "the system Atlas as brand name",
+      de: "Atlas-System as a translated brand unless approved",
+      fr: "système Atlas as brand name",
+      tr: "Atlas Sistemi as brand name",
+      "pt-BR": "Sistema Atlas as standalone brand name",
+      id: "Sistem Atlas as standalone brand name",
+      vi: "Hệ thống Atlas as standalone brand name",
+      hi: "स्थानीय brand translation",
+      "zh-CN": "阿特拉斯系统 as standalone brand name",
+    },
+    exampleEn: "Smart Cycle 1 is a core product inside the Atlas System ecosystem.",
   },
   {
     id: "cookies-browser-term",
@@ -1301,84 +1335,6 @@ export const localizationNativeReviewerPrompts = [
 export const localizationSiteAuditRows = [
   {
     "id": "site-audit-01",
-    "severity": "High",
-    "lang": "es",
-    "pages": [
-      "/smartcycle-1/"
-    ],
-    "current": "sistema Atlas",
-    "fix": "Atlas System",
-    "reason": "Brand name should stay Atlas System.",
-    "sampleUrl": "https://atlas-system.io/es/smartcycle-1/",
-    "sampleContext": "Smart Cycle 1 es el principal producto financiero y el núcleo del ecosistema Atlas System Toda la infraestructura digital de Atlas System (cuenta personal, programa de reco"
-  },
-  {
-    "id": "site-audit-02",
-    "severity": "Medium",
-    "lang": "fr",
-    "pages": [
-      "/smartcycle-1/"
-    ],
-    "current": "du Atlas System",
-    "fix": "d'Atlas System / de l'Atlas System depending sentence",
-    "reason": "Awkward French preposition/article.",
-    "sampleUrl": "https://atlas-system.io/fr/smartcycle-1/",
-    "sampleContext": "Cycle 1 est le produit financier principal et le cœur de l'écosystème du Atlas System L'ensemble de l'infrastructure numérique du Atlas System (compte personnel, programme de"
-  },
-  {
-    "id": "site-audit-03",
-    "severity": "High",
-    "lang": "fr",
-    "pages": [
-      "/smartcycle-1/"
-    ],
-    "current": "système Atlas",
-    "fix": "Atlas System",
-    "reason": "Brand name should stay Atlas System.",
-    "sampleUrl": "https://atlas-system.io/fr/smartcycle-1/",
-    "sampleContext": "produit Smart Cycle 1 est le premier produit financier pilote de l'écosystème Atlas System Il s'agit d'un Contrat Intelligent avec un algorithme immuable qui redistribue les"
-  },
-  {
-    "id": "site-audit-04",
-    "severity": "High",
-    "lang": "id",
-    "pages": [
-      "/smartcycle-1/"
-    ],
-    "current": "sistem Atlas",
-    "fix": "Atlas System",
-    "reason": "Brand name should stay Atlas System.",
-    "sampleUrl": "https://atlas-system.io/id/smartcycle-1/",
-    "sampleContext": "Minggu Smart Cycle 1 merupakan produk keuangan utama dan inti dari Ekosistem Atlas System Seluruh infrastruktur digital Atlas System (akun pribadi, program rujukan, antarmu"
-  },
-  {
-    "id": "site-audit-05",
-    "severity": "High",
-    "lang": "ms",
-    "pages": [
-      "/smartcycle-1/"
-    ],
-    "current": "sistem Atlas",
-    "fix": "Atlas System",
-    "reason": "Brand name should stay Atlas System.",
-    "sampleUrl": "https://atlas-system.io/ms/smartcycle-1/",
-    "sampleContext": "ap 2–4 Minggu Smart Cycle 1 adalah produk kewangan utama dan teras Ekosistem Atlas System. Seluruh infrastruktur digital Atlas System (akaun peribadi, program rujukan, anta"
-  },
-  {
-    "id": "site-audit-06",
-    "severity": "High",
-    "lang": "pt-BR",
-    "pages": [
-      "/smartcycle-1/"
-    ],
-    "current": "sistema Atlas",
-    "fix": "Atlas System",
-    "reason": "Brand name should stay Atlas System.",
-    "sampleUrl": "https://atlas-system.io/pt/smartcycle-1/",
-    "sampleContext": "o produto Smart Cycle 1 é o primeiro produto financeiro piloto do ecossistema Atlas System É um Smart Contract com um algoritmo imutável que redistribui os fundos dos partic"
-  },
-  {
-    "id": "site-audit-07",
     "severity": "Medium",
     "lang": "ru",
     "pages": [
@@ -1391,7 +1347,7 @@ export const localizationSiteAuditRows = [
     "sampleContext": "системе и через определенное время запрашивать её обратно с дельтой (добавночная помощь)и участвовать в реферальной программе. Виды тарифов Lockup Flow Окажите помощь с"
   },
   {
-    "id": "site-audit-08",
+    "id": "site-audit-02",
     "severity": "Medium",
     "lang": "zh-CN",
     "pages": [
@@ -1409,7 +1365,7 @@ export const localizationSiteAuditRows = [
     ],
     "current": "。.",
     "fix": "。",
-    "reason": "Double punctuation.",
+    "reason": "Bulk zh-CN punctuation cleanup: the machine translation added Chinese full stop and kept the original dot. Fix globally with search/replace, not manually page by page.",
     "sampleUrl": "https://atlas-system.io/zh/contacts/",
     "sampleContext": "选择正确的联系渠道，以便您的请求更快地到达正确的团队 合作与网络发展（Telegram） 适用于高层领导、团队、区域代表和战略合作伙伴请求。. 玛丽安娜 丹尼尔 合作与网络发展 (WhatsApp) 适用于高层领导、团队、区域代表和战略合作伙伴请求。. 联系合作团队 营销与媒体 用于广告、博主合作、公关、媒体合作和推广建"
   }
@@ -1876,6 +1832,27 @@ export const localizationTermRows = [
       vi: "Atlas System",
       hi: "Atlas System",
       "zh-CN": "Atlas System",
+    },
+  },
+  {
+    id: "atlas-ecosystem",
+    category: "Product",
+    sourceRu: "экосистема Atlas System / экосистема Atlas",
+    masterEn: "Atlas System ecosystem / Atlas ecosystem",
+    meaning: "Ownership/belonging context: the ecosystem belongs to Atlas System. The word ecosystem is translated, but Atlas System remains unchanged.",
+    keepEnglish: false,
+    forbidden: "Do not flag ecosistema/ecossistema/écosystème/Ekosistem + Atlas System as a brand-translation error.",
+    locales: {
+      ru: "экосистема Atlas System / экосистема Atlas",
+      en: "Atlas System ecosystem / Atlas ecosystem",
+      de: "Atlas System Ökosystem / Atlas Ökosystem",
+      fr: "écosystème Atlas System / écosystème Atlas",
+      tr: "Atlas System ekosistemi / Atlas ekosistemi",
+      "pt-BR": "ecossistema Atlas System / ecossistema Atlas",
+      id: "ekosistem Atlas System / ekosistem Atlas",
+      vi: "hệ sinh thái Atlas System / hệ sinh thái Atlas",
+      hi: "Atlas System ecosystem / Atlas ecosystem",
+      "zh-CN": "Atlas System 生态系统 / Atlas 生态系统",
     },
   },
   {
