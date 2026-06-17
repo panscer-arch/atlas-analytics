@@ -120,6 +120,77 @@ function analyzeLocalizedText(text, languageCode, pageContext = "") {
   return { issues, high, medium, wordsCount, score };
 }
 
+function buildTranslationPackage({ page, language, languageGuide, localeCopy, qaResult, prompt }) {
+  const glossaryRows = localizationTermRows
+    .filter((row) => {
+      const context = normalizeSearchText(`${page?.title || ""} ${page?.ruSource || ""} ${page?.enMaster || ""} ${page?.notes || ""}`);
+      return [row.id, row.sourceRu, row.masterEn, row.meaning].map(normalizeSearchText).some((hint) => hint && context.includes(hint));
+    })
+    .slice(0, 18);
+
+  const glossaryMarkdown = glossaryRows.length
+    ? glossaryRows.map((row) => `- ${row.masterEn}: ${row.locales?.[language.code] || row.masterEn} | avoid: ${row.forbidden}`).join("\n")
+    : "- Use the full Atlas glossary from SuperSUS. Keep brand/Web3 terms exactly as approved.";
+
+  const issuesMarkdown = qaResult.issues.length
+    ? qaResult.issues.map((issue) => `- [${issue.severity}] ${issue.topic}: ${issue.message} (${issue.term})`).join("\n")
+    : "- No automatic QA issues found.";
+
+  return `# Atlas Localization Package
+
+Page: ${page?.title || ""}
+Path: ${page?.path || ""}
+Target language: ${language.nativeName} (${language.englishName}, ${language.code})
+Owner: ${page?.owner || ""}
+Priority: ${page?.priority || ""}
+
+## Language Guide
+Tone: ${languageGuide?.tone || ""}
+Keep: ${languageGuide?.keep || ""}
+Avoid: ${languageGuide?.avoid || ""}
+Note: ${languageGuide?.note || ""}
+
+## RU Source Of Meaning
+${page?.ruSource || ""}
+
+## EN Master Copy
+${page?.enMaster || ""}
+
+## Page Notes
+${page?.notes || ""}
+
+## Relevant Glossary
+${glossaryMarkdown}
+
+## Current Locale Copy
+${localeCopy || ""}
+
+## Automatic QA
+Score: ${qaResult.score}
+High: ${qaResult.high}
+Medium: ${qaResult.medium}
+Words: ${qaResult.wordsCount}
+
+${issuesMarkdown}
+
+## Translation Prompt
+${prompt}
+`;
+}
+
+function downloadTextFile(filename, content, type = "text/plain") {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([content], { type });
+  const url = window.URL.createObjectURL(blob);
+  const link = window.document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  window.document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 function LocalizationBibleBoard() {
   const [activeLanguageCode, setActiveLanguageCode] = useState("en");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -153,6 +224,23 @@ function LocalizationBibleBoard() {
   const qaResult = useMemo(() => analyzeLocalizedText(qaSourceText, activeLanguage.code, qaPageContext), [qaSourceText, activeLanguage.code, qaPageContext]);
   const translationPrompt = `${localizationPrompts.translate}\n\nTarget language: ${activeLanguage.englishName} (${activeLanguage.nativeName}).\nLocale code: ${activeLanguage.code}.\nUse approved Atlas terms for this locale. If a term sounds unnatural, keep the English Web3 term and add a short explanation.`;
   const activeLocalePrompt = `${translationPrompt}\n\nPage: ${activePage?.title || ""}\nPath: ${activePage?.path || ""}\n\nRU source of meaning:\n${activePage?.ruSource || ""}\n\nEN master copy:\n${activePage?.enMaster || ""}\n\nPage notes:\n${activePage?.notes || ""}`;
+  const translationPackage = useMemo(() => buildTranslationPackage({
+    page: activePage,
+    language: activeLanguage,
+    languageGuide: activeLanguageGuide,
+    localeCopy: activeLocaleCopy,
+    qaResult,
+    prompt: activeLocalePrompt,
+  }), [activePage, activeLanguage, activeLanguageGuide, activeLocaleCopy, qaResult, activeLocalePrompt]);
+  const translationPackageJson = useMemo(() => JSON.stringify({
+    page: activePage,
+    language: activeLanguage,
+    languageGuide: activeLanguageGuide,
+    localeCopy: activeLocaleCopy,
+    qa: qaResult,
+    prompt: activeLocalePrompt,
+    exportedAt: new Date().toISOString(),
+  }, null, 2), [activePage, activeLanguage, activeLanguageGuide, activeLocaleCopy, qaResult, activeLocalePrompt]);
 
   useEffect(() => {
     let isMounted = true;
@@ -401,6 +489,11 @@ function LocalizationBibleBoard() {
                     <h4>{activeLanguage.flag} {activeLanguage.nativeName}</h4>
                   </div>
                   <button type="button" onClick={() => copyToClipboard(activeLocalePrompt)}>Copy prompt</button>
+                </div>
+                <div className="analytics-localization-export-actions">
+                  <button type="button" onClick={() => copyToClipboard(translationPackage)}>Copy package</button>
+                  <button type="button" onClick={() => downloadTextFile(`atlas-${activePage.id}-${activeLanguage.code}-localization.md`, translationPackage, "text/markdown")}>Download MD</button>
+                  <button type="button" onClick={() => downloadTextFile(`atlas-${activePage.id}-${activeLanguage.code}-localization.json`, translationPackageJson, "application/json")}>Download JSON</button>
                 </div>
                 <label>
                   <span>Текст перевода для выбранного языка</span>

@@ -18124,6 +18124,12 @@ input.analytics-smm-cell-input {
   gap: 12px;
 }
 
+.analytics-localization-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .analytics-localization-locale-editor h4 {
   margin: 4px 0 0;
   color: #f8fafc;
@@ -18136,7 +18142,8 @@ input.analytics-smm-cell-input {
 }
 
 .analytics-localization-locale-editor button,
-.analytics-localization-locale-meta button {
+.analytics-localization-locale-meta button,
+.analytics-localization-export-actions button {
   min-height: 34px;
   padding: 0 10px;
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -18146,7 +18153,8 @@ input.analytics-smm-cell-input {
 }
 
 .analytics-localization-locale-editor button:hover,
-.analytics-localization-locale-meta button:hover {
+.analytics-localization-locale-meta button:hover,
+.analytics-localization-export-actions button:hover {
   border-color: rgba(255, 139, 26, 0.58);
   background: rgba(255, 139, 26, 0.17);
   color: #ffe2bd;
