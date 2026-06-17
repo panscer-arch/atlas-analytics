@@ -19174,6 +19174,77 @@ input.analytics-smm-cell-input {
   line-height: 1.45;
 }
 
+.analytics-localization-term-firewall {
+  border: 1px solid rgba(251, 113, 133, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.24), rgba(15, 23, 42, 0.52));
+  padding: 14px;
+}
+
+.analytics-localization-term-firewall-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.analytics-localization-term-firewall-head h3 {
+  margin: 6px 0 4px;
+  color: #f8fafc;
+}
+
+.analytics-localization-term-firewall-head p {
+  margin: 0;
+  color: rgba(255, 228, 230, 0.74);
+  line-height: 1.45;
+}
+
+.analytics-localization-term-firewall-head button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(251, 113, 133, 0.32);
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.22);
+  color: #fecdd3;
+  font-weight: 900;
+}
+
+.analytics-localization-term-firewall-head button:hover {
+  border-color: rgba(251, 113, 133, 0.62);
+  background: rgba(127, 29, 29, 0.34);
+}
+
+.analytics-localization-firewall-table td {
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.analytics-localization-firewall-table td:first-child strong,
+.analytics-localization-firewall-table td:first-child span,
+.analytics-localization-firewall-table td:first-child small,
+.analytics-localization-firewall-table td:nth-child(3) strong,
+.analytics-localization-firewall-table td:nth-child(3) small {
+  display: block;
+}
+
+.analytics-localization-firewall-table td:first-child span,
+.analytics-localization-firewall-table td:first-child small,
+.analytics-localization-firewall-table td:nth-child(3) small {
+  margin-top: 6px;
+  color: rgba(226, 240, 255, 0.58);
+  font-size: 12px;
+}
+
+.analytics-localization-firewall-table td:first-child small {
+  color: rgba(255, 228, 230, 0.72);
+}
+
+.analytics-localization-firewall-never {
+  color: #fecaca;
+  font-weight: 800;
+}
+
 .analytics-localization-table td {
   vertical-align: top;
 }
@@ -19319,6 +19390,7 @@ input.analytics-smm-cell-input {
   .analytics-localization-memory-bank-head,
   .analytics-localization-custom-glossary-head,
   .analytics-localization-native-gate-head,
+  .analytics-localization-term-firewall-head,
   .analytics-localization-language-report-head,
   .analytics-localization-en-gate-head,
   .analytics-localization-phrase-bank-head {

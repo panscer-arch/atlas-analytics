@@ -13,6 +13,7 @@ import {
   localizationPrompts,
   localizationQaChecks,
   localizationTermRows,
+  localizationTerminologyFirewall,
   localizationUiPhrases,
   localizationWorkflow,
 } from "../data/localizationBibleData";
@@ -255,6 +256,17 @@ function buildLanguageHandoffPackage({ language, languageGuide, terms, meaningMe
     ].join("\n");
   }).join("\n\n");
 
+  const firewallMarkdown = localizationTerminologyFirewall.map((row) => [
+    `### ${row.id}`,
+    `Risk: ${row.risk}`,
+    `RU source: ${row.sourceRu}`,
+    `EN master: ${row.enMaster}`,
+    `Approved ${language.code}: ${row.approved?.[language.code] || row.enMaster}`,
+    `Never use ${language.code}: ${row.neverUse?.[language.code] || "Use global forbidden wording."}`,
+    `Rule: ${row.rule}`,
+    `Example EN: ${row.exampleEn}`,
+  ].join("\n")).join("\n\n");
+
   return `# Atlas Localization Handoff Pack
 
 Target language: ${language.nativeName} (${language.englishName}, ${language.code})
@@ -278,6 +290,9 @@ ${uiMarkdown}
 
 ## Full Glossary
 ${glossaryMarkdown}
+
+## Terminology Firewall
+${firewallMarkdown}
 
 ## Forbidden Patterns
 ${forbiddenMarkdown}
@@ -814,6 +829,21 @@ function LocalizationBibleBoard() {
   const activeMeaningMemoryMarkdown = useMemo(() => activeMeaningMemoryPack
     .map((phrase) => `## ${phrase.topic} / ${phrase.id}\nRU: ${phrase.ruSource}\nEN: ${phrase.enMaster}\n${activeLanguage.code}: ${phrase.value}`)
     .join("\n\n"), [activeMeaningMemoryPack, activeLanguage.code]);
+  const activeTerminologyFirewallRows = useMemo(() => localizationTerminologyFirewall.map((row) => ({
+    ...row,
+    approvedLocale: row.approved?.[activeLanguage.code] || row.enMaster,
+    neverUseLocale: row.neverUse?.[activeLanguage.code] || "",
+  })), [activeLanguage.code]);
+  const activeTerminologyFirewallMarkdown = useMemo(() => activeTerminologyFirewallRows.map((row) => [
+    `## ${row.id}`,
+    `Risk: ${row.risk}`,
+    `RU: ${row.sourceRu}`,
+    `EN: ${row.enMaster}`,
+    `${activeLanguage.code} approved: ${row.approvedLocale}`,
+    `${activeLanguage.code} never use: ${row.neverUseLocale || "-"}`,
+    `Rule: ${row.rule}`,
+    `Example EN: ${row.exampleEn}`,
+  ].join("\n")).join("\n\n"), [activeTerminologyFirewallRows, activeLanguage.code]);
   const languageHandoffPackage = useMemo(() => buildLanguageHandoffPackage({
     language: activeLanguage,
     languageGuide: activeLanguageGuide,
@@ -833,6 +863,7 @@ function LocalizationBibleBoard() {
       message: pattern.message,
       terms: [...(pattern.terms?.[activeLanguage.code] || []), ...(activeLanguage.code === "en" ? [] : pattern.terms?.en || [])],
     })),
+    terminologyFirewall: activeTerminologyFirewallRows,
     meaningMemory: activeMeaningMemoryPack,
     uiPhrases: activeUiPhrasePack,
     glossary: allTermRows.map((row) => ({
@@ -846,7 +877,7 @@ function LocalizationBibleBoard() {
       forbidden: row.forbidden,
     })),
     exportedAt: new Date().toISOString(),
-  }, null, 2), [activeLanguage, activeLanguageGuide, activeMeaningMemoryPack, activeUiPhrasePack, allTermRows]);
+  }, null, 2), [activeLanguage, activeLanguageGuide, activeTerminologyFirewallRows, activeMeaningMemoryPack, activeUiPhrasePack, allTermRows]);
   const languageQaReport = useMemo(() => buildLanguageQaReport({
     language: activeLanguage,
     pages: translationPages,
@@ -1738,6 +1769,48 @@ function LocalizationBibleBoard() {
               <span>Note</span>
               <p>{activeLanguageGuide.note}</p>
             </article>
+          </div>
+
+          <div className="analytics-localization-term-firewall">
+            <div className="analytics-localization-term-firewall-head">
+              <div>
+                <span className="analytics-kicker">Terminology Firewall</span>
+                <h3>Опасные термины: approved / never use</h3>
+                <p>Блок для случаев, где автоперевод ломает смысл: сумма цикла, lockup, Claim, дельта, contribution, partner reward и voting power.</p>
+              </div>
+              <button type="button" onClick={() => copyToClipboard(activeTerminologyFirewallMarkdown)}>Copy firewall</button>
+            </div>
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-localization-firewall-table">
+                <thead>
+                  <tr>
+                    <th>Термин / риск</th>
+                    <th>RU смысл</th>
+                    <th>EN master</th>
+                    <th>{activeLanguage.nativeName}: approved</th>
+                    <th>Never use</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeTerminologyFirewallRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <strong>{row.id}</strong>
+                        <span>{row.risk}</span>
+                        <small>{row.rule}</small>
+                      </td>
+                      <td>{row.sourceRu}</td>
+                      <td>
+                        <strong>{row.enMaster}</strong>
+                        <small>{row.exampleEn}</small>
+                      </td>
+                      <td className="analytics-localization-approved-term">{row.approvedLocale}</td>
+                      <td className="analytics-localization-firewall-never">{row.neverUseLocale || "Use global forbidden wording."}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="analytics-localization-memory-bank">
