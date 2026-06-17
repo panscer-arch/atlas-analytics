@@ -114,6 +114,31 @@ function mergeGlossaryTerms(savedTerms) {
   return Array.isArray(savedTerms) ? savedTerms.map(normalizeGlossaryTerm) : [];
 }
 
+function normalizeTermOverrides(savedOverrides) {
+  if (!savedOverrides || typeof savedOverrides !== "object" || Array.isArray(savedOverrides)) return {};
+  return Object.entries(savedOverrides).reduce((acc, [termId, override]) => {
+    if (!override || typeof override !== "object") return acc;
+    acc[termId] = {
+      locales: makeTermLocales("", override.locales),
+    };
+    return acc;
+  }, {});
+}
+
+function applyTermOverrides(terms, overrides) {
+  return terms.map((term) => {
+    const override = overrides?.[term.id];
+    if (!override) return term;
+    return {
+      ...term,
+      locales: {
+        ...term.locales,
+        ...override.locales,
+      },
+    };
+  });
+}
+
 function mergeLocalizationPages(savedPages) {
   const saved = Array.isArray(savedPages) ? savedPages.map(normalizePage) : [];
   const savedById = new Map(saved.map((page) => [page.id, page]));
@@ -688,6 +713,7 @@ function parseWorkspaceImport(text) {
     const parsed = JSON.parse(text);
     const pages = mergeLocalizationPages(parsed?.pages || parsed);
     const customTerms = mergeGlossaryTerms(parsed?.customGlossary || parsed?.customTerms);
+    const termOverrides = normalizeTermOverrides(parsed?.termOverrides);
     if (!pages.length) throw new Error("No pages found");
     const localeCopies = pages.reduce((sum, page) => (
       sum + atlasLocalizationLanguages.filter((language) => String(page.locales?.[language.code]?.copy || "").trim()).length
@@ -695,19 +721,21 @@ function parseWorkspaceImport(text) {
     const customPages = pages.filter((page) => !defaultLocalizationPages.some((defaultPage) => defaultPage.id === page.id)).length;
     return {
       ok: true,
-      message: `Ready to import ${pages.length} pages, ${localeCopies} locale copies and ${customTerms.length} custom terms.`,
+      message: `Ready to import ${pages.length} pages, ${localeCopies} locale copies, ${customTerms.length} custom terms and ${Object.keys(termOverrides).length} term overrides.`,
       pages,
       customTerms,
+      termOverrides,
       summary: {
         pages: pages.length,
         customPages,
         customTerms: customTerms.length,
+        termOverrides: Object.keys(termOverrides).length,
         localeCopies,
         languages: atlasLocalizationLanguages.length,
       },
     };
   } catch {
-    return { ok: false, message: "Import preview failed: paste a valid Atlas localization workspace JSON.", pages: [], customTerms: [], summary: null };
+    return { ok: false, message: "Import preview failed: paste a valid Atlas localization workspace JSON.", pages: [], customTerms: [], termOverrides: {}, summary: null };
   }
 }
 
@@ -729,6 +757,7 @@ function LocalizationBibleBoard() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [translationPages, setTranslationPages] = useState(() => mergeLocalizationPages());
   const [customGlossaryRows, setCustomGlossaryRows] = useState(() => mergeGlossaryTerms());
+  const [termOverrides, setTermOverrides] = useState(() => normalizeTermOverrides());
   const [activePageId, setActivePageId] = useState(defaultLocalizationPages[0]?.id || "home");
   const [qaText, setQaText] = useState("");
   const [workspaceImportText, setWorkspaceImportText] = useState("");
@@ -738,7 +767,7 @@ function LocalizationBibleBoard() {
   const isHydratedRef = useRef(false);
   const activeLanguage = atlasLocalizationLanguages.find((language) => language.code === activeLanguageCode) || atlasLocalizationLanguages[1];
   const activeLanguageGuide = localizationLanguageGuides.find((guide) => guide.code === activeLanguage.code) || localizationLanguageGuides[1];
-  const allTermRows = useMemo(() => [...localizationTermRows, ...customGlossaryRows], [customGlossaryRows]);
+  const allTermRows = useMemo(() => applyTermOverrides([...localizationTermRows, ...customGlossaryRows], termOverrides), [customGlossaryRows, termOverrides]);
   const categories = useMemo(() => ["all", ...Array.from(new Set(allTermRows.map((row) => row.category)))], [allTermRows]);
   const visibleTerms = allTermRows.filter((row) => activeCategory === "all" || row.category === activeCategory);
   const lockedTermsCount = allTermRows.filter((row) => row.keepEnglish).length;
@@ -757,12 +786,13 @@ function LocalizationBibleBoard() {
     languageGuides: localizationLanguageGuides,
     glossary: allTermRows,
     customGlossary: customGlossaryRows,
+    termOverrides,
     meaningMemory: localizationMeaningMemory,
     uiPhrases: localizationUiPhrases,
     prompts: localizationPrompts,
     pages: translationPages,
     exportedAt: new Date().toISOString(),
-  }, null, 2), [translationPages, allTermRows, customGlossaryRows]);
+  }, null, 2), [translationPages, allTermRows, customGlossaryRows, termOverrides]);
   const workspaceImportPreview = useMemo(() => parseWorkspaceImport(workspaceImportText), [workspaceImportText]);
   const localeProgress = useMemo(() => {
     const localeCodes = atlasLocalizationLanguages.filter((language) => !["ru", "en"].includes(language.code)).map((language) => language.code);
@@ -1009,6 +1039,17 @@ function LocalizationBibleBoard() {
     ]);
     return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
   }, [translationPages]);
+  const terminologyTranslationTableTsv = useMemo(() => {
+    const header = ["Термин", "Категория", "Смысл", "Запрещено", ...atlasLocalizationLanguages.map((language) => language.code.toUpperCase())];
+    const rows = allTermRows.map((term) => [
+      term.masterEn,
+      term.category,
+      term.meaning,
+      term.forbidden,
+      ...atlasLocalizationLanguages.map((language) => term.locales?.[language.code] || ""),
+    ]);
+    return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
+  }, [allTermRows]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1018,8 +1059,10 @@ function LocalizationBibleBoard() {
         const parsed = JSON.parse(saved);
         const pages = mergeLocalizationPages(parsed?.pages || parsed);
         const customTerms = mergeGlossaryTerms(parsed?.customTerms);
+        const savedTermOverrides = normalizeTermOverrides(parsed?.termOverrides);
         setTranslationPages(pages);
         setCustomGlossaryRows(customTerms);
+        setTermOverrides(savedTermOverrides);
         setActivePageId((current) => pages.some((page) => page.id === current) ? current : pages[0]?.id);
       }
     } catch {
@@ -1030,11 +1073,13 @@ function LocalizationBibleBoard() {
       if (!isMounted || !saved) return;
       const pages = mergeLocalizationPages(saved?.pages || saved);
       const customTerms = mergeGlossaryTerms(saved?.customTerms);
+      const savedTermOverrides = normalizeTermOverrides(saved?.termOverrides);
       setTranslationPages(pages);
       setCustomGlossaryRows(customTerms);
+      setTermOverrides(savedTermOverrides);
       setActivePageId((current) => pages.some((page) => page.id === current) ? current : pages[0]?.id);
       try {
-        window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify({ pages, customTerms }));
+        window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify({ pages, customTerms, termOverrides: savedTermOverrides }));
       } catch {
         // Server content is still loaded even if local cache is unavailable.
       }
@@ -1052,7 +1097,7 @@ function LocalizationBibleBoard() {
     const saveTimer = window.setTimeout(() => {
       const requestId = saveRequestRef.current + 1;
       saveRequestRef.current = requestId;
-      const payload = { pages: translationPages, customTerms: customGlossaryRows };
+      const payload = { pages: translationPages, customTerms: customGlossaryRows, termOverrides };
       setSaveState("Сохраняю...");
       try {
         window.localStorage.setItem(ATLAS_LOCALIZATION_STORAGE_KEY, JSON.stringify(payload));
@@ -1066,7 +1111,7 @@ function LocalizationBibleBoard() {
     }, 500);
 
     return () => window.clearTimeout(saveTimer);
-  }, [translationPages, customGlossaryRows]);
+  }, [translationPages, customGlossaryRows, termOverrides]);
 
   function updateActivePage(field, value) {
     if (!activePage) return;
@@ -1117,6 +1162,22 @@ function LocalizationBibleBoard() {
         },
       };
     }));
+  }
+
+  function updateTermTranslationCell(termId, languageCode, value) {
+    setTermOverrides((overrides) => {
+      const current = overrides?.[termId] || { locales: {} };
+      return {
+        ...overrides,
+        [termId]: {
+          ...current,
+          locales: {
+            ...current.locales,
+            [languageCode]: value,
+          },
+        },
+      };
+    });
   }
 
   function addTranslationPage() {
@@ -1185,11 +1246,13 @@ function LocalizationBibleBoard() {
     }
     const pages = workspaceImportPreview.pages;
     const customTerms = workspaceImportPreview.customTerms;
+    const importedTermOverrides = workspaceImportPreview.termOverrides || {};
     setTranslationPages(pages);
     setCustomGlossaryRows(customTerms);
+    setTermOverrides(importedTermOverrides);
     setActivePageId(pages[0]?.id || defaultLocalizationPages[0]?.id || "home");
     setWorkspaceImportText("");
-    setWorkspaceImportMessage(`Imported ${pages.length} pages and ${customTerms.length} custom terms.`);
+    setWorkspaceImportMessage(`Imported ${pages.length} pages, ${customTerms.length} custom terms and ${Object.keys(importedTermOverrides).length} term overrides.`);
   }
 
   function applyQaResultToActiveLocale() {
@@ -1258,7 +1321,59 @@ function LocalizationBibleBoard() {
       <div className="analytics-localization-simple-table">
         <div className="analytics-localization-simple-table-head">
           <div>
-            <span className="analytics-kicker">Translation Table</span>
+            <span className="analytics-kicker">Terminology Table</span>
+            <h3>Таблица переводов терминов</h3>
+            <p>Каждый термин Atlas переводится отдельно по языкам. Здесь фиксируются approved wording для кнопок, страниц, White Paper и юридических текстов.</p>
+          </div>
+          <div className="analytics-localization-simple-table-actions">
+            <button type="button" onClick={addCustomGlossaryTerm}>+ Термин</button>
+            <button type="button" onClick={() => copyToClipboard(terminologyTranslationTableTsv)}>Copy terms</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-terminology-table.tsv", terminologyTranslationTableTsv, "text/tab-separated-values")}>Download TSV</button>
+          </div>
+        </div>
+        <div className="analytics-localization-simple-table-scroll">
+          <table className="analytics-localization-grid-table analytics-localization-terms-grid-table">
+            <thead>
+              <tr>
+                <th className="analytics-localization-grid-sticky">Термин</th>
+                {atlasLocalizationLanguages.map((language) => (
+                  <th key={language.code}>
+                    <span>{language.flag}</span>
+                    <strong>{language.code.toUpperCase()}</strong>
+                    <small>{language.nativeName}</small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allTermRows.map((term) => (
+                <tr key={term.id}>
+                  <td className="analytics-localization-grid-sticky">
+                    <strong>{term.masterEn}</strong>
+                    <em>{term.category} · {term.keepEnglish ? "keep EN" : "translate"}</em>
+                    <p>{term.meaning}</p>
+                    <small>Avoid: {term.forbidden}</small>
+                  </td>
+                  {atlasLocalizationLanguages.map((language) => (
+                    <td key={language.code}>
+                      <textarea
+                        value={term.locales?.[language.code] || ""}
+                        onChange={(event) => updateTermTranslationCell(term.id, language.code, event.target.value)}
+                        placeholder={`${language.nativeName} термин`}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="analytics-localization-simple-table">
+        <div className="analytics-localization-simple-table-head">
+          <div>
+            <span className="analytics-kicker">Page Translation Table</span>
             <h3>Таблица переводов как контент-план</h3>
             <p>Одна строка — один блок сайта. Колонки — языки. Правьте тексты прямо здесь, изменения сохраняются автоматически.</p>
           </div>

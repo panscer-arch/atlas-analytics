@@ -18283,6 +18283,49 @@ input.analytics-smm-cell-input {
   background: rgba(255, 139, 26, 0.17);
 }
 
+.analytics-localization-terms-grid-table textarea {
+  min-height: 86px;
+}
+
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky strong,
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky em,
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky p,
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky small {
+  display: block;
+}
+
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky strong {
+  color: #fed7aa;
+  overflow-wrap: anywhere;
+}
+
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky em {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.14);
+  color: #99f6e4;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky p {
+  margin: 8px 0 0;
+  color: rgba(226, 240, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.analytics-localization-terms-grid-table td.analytics-localization-grid-sticky small {
+  margin-top: 8px;
+  color: #fecaca;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 .analytics-localization-coverage-table {
   min-width: 1120px;
 }
