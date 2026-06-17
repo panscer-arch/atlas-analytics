@@ -33,3 +33,116 @@ textarea {
 a {
   color: inherit;
 }
+
+.supersus-access {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(rgba(80, 255, 224, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80, 255, 224, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(39, 170, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, #06131c 0%, #02070c 100%);
+  background-size: 54px 54px, 54px 54px, auto, auto;
+}
+
+.supersus-access-card {
+  width: min(100%, 430px);
+  display: grid;
+  gap: 20px;
+  padding: 30px;
+  border: 1px solid rgba(111, 255, 232, 0.24);
+  border-radius: 8px;
+  background: rgba(4, 13, 21, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(111, 255, 232, 0.07),
+    0 28px 90px rgba(0, 0, 0, 0.46);
+}
+
+.supersus-access-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(111, 255, 232, 0.34);
+  border-radius: 8px;
+  color: #dffdf7;
+  background: linear-gradient(145deg, rgba(32, 152, 232, 0.34), rgba(20, 214, 177, 0.16));
+  font-weight: 950;
+  font-size: 22px;
+}
+
+.supersus-access-kicker {
+  margin: 0 0 8px;
+  color: #6fffe8;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.supersus-access h1 {
+  margin: 0;
+  color: #f7fbff;
+  font-size: clamp(30px, 7vw, 46px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.supersus-access-copy,
+.supersus-access-error {
+  margin: 10px 0 0;
+  color: rgba(226, 240, 255, 0.7);
+  line-height: 1.45;
+}
+
+.supersus-access-field {
+  display: grid;
+  gap: 8px;
+}
+
+.supersus-access-field span {
+  color: rgba(226, 240, 255, 0.7);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.supersus-access-field input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid rgba(111, 255, 232, 0.24);
+  border-radius: 8px;
+  outline: none;
+  color: #f7fbff;
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.supersus-access-field input:focus {
+  border-color: rgba(111, 255, 232, 0.68);
+  box-shadow: 0 0 0 3px rgba(111, 255, 232, 0.12);
+}
+
+.supersus-access-error {
+  margin: -4px 0 0;
+  color: #ff8a8a;
+  font-weight: 800;
+}
+
+.supersus-access-button {
+  min-height: 50px;
+  border: 0;
+  border-radius: 8px;
+  color: #021016;
+  background: #6fffe8;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.supersus-access-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
