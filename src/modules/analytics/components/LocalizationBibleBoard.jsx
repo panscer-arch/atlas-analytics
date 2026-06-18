@@ -13,6 +13,7 @@ import {
   localizationNativeReviewChecks,
   localizationNativeReviewerPrompts,
   localizationPagePipeline,
+  localizationPlaceholderDetailRows,
   localizationPrompts,
   localizationQaChecks,
   localizationSiteAuditRows,
@@ -1085,6 +1086,18 @@ function LocalizationBibleBoard() {
     ]);
     return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
   }, []);
+  const placeholderDetailTableTsv = useMemo(() => {
+    const header = ["Language", "URL", "Current", "Replace with", "Live context", "Comment"];
+    const rows = localizationPlaceholderDetailRows.map((row) => [
+      row.lang,
+      row.url,
+      row.current,
+      row.replacement,
+      row.context,
+      row.note,
+    ]);
+    return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
+  }, []);
   const nativeReviewerPromptsTsv = useMemo(() => {
     const header = ["Language", "Reviewer role", "Prompt"];
     const rows = localizationNativeReviewerPrompts.map((row) => [row.code, row.reviewer, row.prompt]);
@@ -1387,6 +1400,46 @@ function LocalizationBibleBoard() {
               </details>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="analytics-localization-simple-table">
+        <div className="analytics-localization-simple-table-head">
+          <div>
+            <span className="analytics-kicker">Placeholder Detail</span>
+            <h3>Детализация TP3T / TP7T / TP24T / एक टीपी</h3>
+            <p>Живые фрагменты с atlas-system.io по поврежденным placeholders: проценты, долларовые суммы, Smart Cycle и Atlas System. Эти строки править точечно в TranslatePress/source, затем прогнать повторный поиск.</p>
+          </div>
+          <div className="analytics-localization-simple-table-actions">
+            <button type="button" onClick={() => copyToClipboard(placeholderDetailTableTsv)}>Copy placeholder details</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-placeholder-detail-fixes.tsv", placeholderDetailTableTsv, "text/tab-separated-values")}>Download TSV</button>
+          </div>
+        </div>
+        <div className="analytics-localization-simple-table-scroll">
+          <table className="analytics-table analytics-localization-report-table">
+            <thead>
+              <tr>
+                <th>Язык</th>
+                <th>URL</th>
+                <th>Сейчас</th>
+                <th>Заменить на</th>
+                <th>Живой фрагмент</th>
+                <th>Комментарий</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localizationPlaceholderDetailRows.map((row) => (
+                <tr key={row.id}>
+                  <td><strong>{row.lang}</strong></td>
+                  <td><a href={row.url.replace("*", "")} target="_blank" rel="noreferrer">{row.url}</a></td>
+                  <td>{row.current}</td>
+                  <td>{row.replacement}</td>
+                  <td>{row.context}</td>
+                  <td>{row.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
