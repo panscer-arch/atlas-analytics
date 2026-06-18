@@ -88,6 +88,217 @@
   align-items: start;
 }
 
+.analytics-landings-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  border: 1px solid var(--landing-line);
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: var(--landing-surface);
+  box-shadow: 0 14px 34px rgba(93, 55, 24, 0.06);
+}
+
+.analytics-landings-mode-tabs button {
+  min-height: 40px;
+  border: 1px solid var(--landing-line);
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  background: #fffaf3;
+  color: var(--landing-muted);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.analytics-landings-mode-tabs button.is-active {
+  border-color: rgba(255, 122, 26, 0.5);
+  background: #fff0de;
+  color: var(--landing-ink);
+}
+
+.analytics-landings-briefs {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-landings-briefs-intro,
+.analytics-landings-brief-card {
+  border: 1px solid var(--landing-line);
+  border-radius: 8px;
+  background: var(--landing-surface);
+  box-shadow: 0 18px 44px rgba(93, 55, 24, 0.08);
+}
+
+.analytics-landings-briefs-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.34fr);
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem;
+}
+
+.analytics-landings-briefs-intro h3,
+.analytics-landings-brief-card h3 {
+  margin: 0.35rem 0 0;
+  color: var(--landing-ink);
+}
+
+.analytics-landings-briefs-intro p,
+.analytics-landings-brief-card p {
+  margin: 0.55rem 0 0;
+  color: var(--landing-muted);
+  line-height: 1.5;
+}
+
+.analytics-landings-briefs-warning {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid rgba(255, 122, 26, 0.26);
+  border-radius: 8px;
+  padding: 0.85rem;
+  background: #fff4e6;
+}
+
+.analytics-landings-briefs-warning strong,
+.analytics-landings-brief-card strong,
+.analytics-landings-brief-role b {
+  color: var(--landing-ink);
+}
+
+.analytics-landings-briefs-warning span {
+  color: #7d5b47;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.analytics-landings-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.analytics-landings-brief-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.analytics-landings-brief-card-head {
+  border-bottom: 1px solid var(--landing-line);
+  padding-bottom: 0.85rem;
+}
+
+.analytics-landings-brief-card-head > span,
+.analytics-landings-brief-cta span {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.24rem 0.52rem;
+  background: rgba(255, 122, 26, 0.12);
+  color: var(--landing-orange);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.analytics-landings-brief-role,
+.analytics-landings-brief-section,
+.analytics-landings-brief-hook,
+.analytics-landings-brief-direct,
+.analytics-landings-brief-blocks,
+.analytics-landings-brief-language,
+.analytics-landings-brief-review,
+.analytics-landings-brief-cta {
+  border: 1px solid rgba(234, 223, 206, 0.86);
+  border-radius: 8px;
+  padding: 0.85rem;
+  background: #fffaf3;
+}
+
+.analytics-landings-brief-hook {
+  background: linear-gradient(135deg, rgba(255, 122, 26, 0.14), rgba(255, 250, 243, 0.86));
+}
+
+.analytics-landings-brief-direct {
+  border-color: rgba(217, 67, 67, 0.18);
+  background: #fff8f4;
+}
+
+.analytics-landings-brief-blocks {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.analytics-landings-brief-blocks > strong {
+  display: block;
+  margin-bottom: 0.1rem;
+}
+
+.analytics-landings-brief-blocks div {
+  border-top: 1px solid var(--landing-line);
+  padding-top: 0.6rem;
+}
+
+.analytics-landings-brief-blocks span {
+  color: var(--landing-orange);
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.analytics-landings-brief-language {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-landings-brief-language ul {
+  display: grid;
+  gap: 0.38rem;
+  margin: 0.55rem 0 0;
+  padding-left: 1rem;
+}
+
+.analytics-landings-brief-language li {
+  color: var(--landing-muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.analytics-landings-brief-review {
+  background: #201a15;
+}
+
+.analytics-landings-brief-review strong,
+.analytics-landings-brief-review p,
+.analytics-landings-brief-review em {
+  color: #fffaf3;
+}
+
+.analytics-landings-brief-review em {
+  display: block;
+  margin-top: 0.55rem;
+  opacity: 0.76;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.analytics-landings-brief-cta {
+  display: grid;
+  gap: 0.45rem;
+  background: var(--landing-orange);
+}
+
+.analytics-landings-brief-cta span {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.analytics-landings-brief-cta strong {
+  color: #ffffff;
+}
+
 .analytics-landings-sidebar {
   position: sticky;
   top: 1rem;
@@ -509,7 +720,9 @@
   .analytics-landings-status,
   .analytics-landings-preview-hero,
   .analytics-landings-pillars,
-  .analytics-landings-partner {
+  .analytics-landings-partner,
+  .analytics-landings-briefs-intro,
+  .analytics-landings-brief-grid {
     grid-template-columns: 1fr;
   }
 
@@ -528,7 +741,8 @@
   }
 
   .analytics-landings-stat-grid,
-  .analytics-landings-mini-grid {
+  .analytics-landings-mini-grid,
+  .analytics-landings-brief-language {
     grid-template-columns: 1fr;
   }
 

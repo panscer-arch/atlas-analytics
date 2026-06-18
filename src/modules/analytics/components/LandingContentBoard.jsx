@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import "./LandingContentBoard.css";
 import {
   LANDING_SOURCE_URL,
+  landingBriefs,
   landingAuditNotes,
   landingCycleExamples,
   landingFaq,
@@ -18,7 +19,48 @@ const LANDINGS = [
   },
 ];
 
-function buildLandingCopy() {
+function buildLandingCopy(activeMode = "preview") {
+  if (activeMode === "briefs") {
+    return landingBriefs
+      .map((brief) => {
+        const blocks = brief.blocks.map(([title, text]) => `- ${title}: ${text}`).join("\n");
+        return `# ${brief.title}
+
+Аудитория: ${brief.audienceRole}
+Профиль: ${brief.audienceProfile}
+
+## Цель
+${brief.objective}
+
+## Главный hook
+${brief.coreHook}
+
+## Тон
+${brief.tone}
+
+## Можно говорить прямее
+${brief.directMeaning}
+
+## Блоки лендинга
+${blocks}
+
+## Разрешенные формулировки
+${brief.allowed.map((item) => `- ${item}`).join("\n")}
+
+## Запрещенные формулировки
+${brief.forbidden.map((item) => `- ${item}`).join("\n")}
+
+## Роль-рецензент
+${brief.reviewerRole}
+
+## Вердикт роли
+${brief.roleVerdict}
+
+CTA: ${brief.cta}`;
+      })
+      .join("\n\n---\n\n");
+  }
+
   const sections = landingSections.map((section) => `## ${section.title}\n${section.text}`).join("\n\n");
   const cycles = landingCycleExamples
     .map((cycle) => `- ${cycle.name}: ${cycle.term}, ${cycle.delta}, пример ${cycle.amount} -> ${cycle.claim}`)
@@ -38,9 +80,10 @@ ${faq}`;
 
 function LandingContentBoard() {
   const [activeLandingId, setActiveLandingId] = useState(LANDINGS[0].id);
+  const [activeMode, setActiveMode] = useState("preview");
   const [copyState, setCopyState] = useState("idle");
   const activeLanding = LANDINGS.find((landing) => landing.id === activeLandingId) || LANDINGS[0];
-  const landingCopy = useMemo(buildLandingCopy, []);
+  const landingCopy = useMemo(() => buildLandingCopy(activeMode), [activeMode]);
 
   async function copyLandingText() {
     try {
@@ -67,12 +110,123 @@ function LandingContentBoard() {
           <a href="/landings/landing-1/" target="_blank" rel="noreferrer">Открыть готовый лендинг</a>
           <a href={LANDING_SOURCE_URL} target="_blank" rel="noreferrer">Открыть Google Doc</a>
           <button type="button" onClick={copyLandingText}>
-            {copyState === "copied" ? "Скопировано" : "Скопировать текст"}
+            {copyState === "copied" ? "Скопировано" : activeMode === "briefs" ? "Скопировать ТЗ" : "Скопировать текст"}
           </button>
         </div>
       </div>
 
-      <div className="analytics-landings-layout">
+      <div className="analytics-landings-mode-tabs" role="tablist" aria-label="Режим вкладки лендингов">
+        <button
+          type="button"
+          className={activeMode === "preview" ? "is-active" : ""}
+          onClick={() => setActiveMode("preview")}
+        >
+          Витрина
+        </button>
+        <button
+          type="button"
+          className={activeMode === "briefs" ? "is-active" : ""}
+          onClick={() => setActiveMode("briefs")}
+        >
+          ТЗ
+        </button>
+      </div>
+
+      {activeMode === "briefs" ? (
+        <div className="analytics-landings-briefs">
+          <section className="analytics-landings-briefs-intro">
+            <div>
+              <span className="analytics-kicker">ТЗ / аудитории / роли</span>
+              <h3>Три лендинга под разные типы трафика</h3>
+              <p>
+                Контент-стратег, криптон, high-yield охотник и обычный участник смотрят на Atlas по-разному.
+                Поэтому у лендингов разные первые экраны, разные доказательства и разная глубина объяснения.
+              </p>
+            </div>
+            <div className="analytics-landings-briefs-warning">
+              <strong>Общее правило</strong>
+              <span>
+                Смыслы могут быть прямыми и продающими, но нельзя обещать гарантированную выплату, стабильную доходность
+                или отсутствие риска. Вместо этого используем: расчетная дельта, Claim, условия, ликвидность, жизненный цикл Smart Cycle.
+              </span>
+            </div>
+          </section>
+
+          <div className="analytics-landings-brief-grid">
+            {landingBriefs.map((brief) => (
+              <article className="analytics-landings-brief-card" key={brief.id}>
+                <div className="analytics-landings-brief-card-head">
+                  <span>{brief.status}</span>
+                  <h3>{brief.title}</h3>
+                  <p>{brief.subtitle}</p>
+                </div>
+
+                <div className="analytics-landings-brief-role">
+                  <b>Роль: {brief.audienceRole}</b>
+                  <p>{brief.audienceProfile}</p>
+                </div>
+
+                <div className="analytics-landings-brief-section">
+                  <strong>Цель лендинга</strong>
+                  <p>{brief.objective}</p>
+                </div>
+
+                <div className="analytics-landings-brief-hook">
+                  <strong>Главный hook</strong>
+                  <p>{brief.coreHook}</p>
+                </div>
+
+                <div className="analytics-landings-brief-section">
+                  <strong>Тон</strong>
+                  <p>{brief.tone}</p>
+                </div>
+
+                <div className="analytics-landings-brief-direct">
+                  <strong>Где можно говорить прямее</strong>
+                  <p>{brief.directMeaning}</p>
+                </div>
+
+                <div className="analytics-landings-brief-blocks">
+                  <strong>Структура ТЗ</strong>
+                  {brief.blocks.map(([title, text]) => (
+                    <div key={title}>
+                      <span>{title}</span>
+                      <p>{text}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="analytics-landings-brief-language">
+                  <div>
+                    <strong>Можно</strong>
+                    <ul>
+                      {brief.allowed.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <strong>Нельзя</strong>
+                    <ul>
+                      {brief.forbidden.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="analytics-landings-brief-review">
+                  <strong>Вычитка роли</strong>
+                  <p>{brief.reviewerRole}</p>
+                  <em>{brief.roleVerdict}</em>
+                </div>
+
+                <div className="analytics-landings-brief-cta">
+                  <span>CTA</span>
+                  <strong>{brief.cta}</strong>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="analytics-landings-layout">
         <aside className="analytics-landings-sidebar" aria-label="Список лендингов">
           {LANDINGS.map((landing) => (
             <button
@@ -288,6 +442,7 @@ function LandingContentBoard() {
           </article>
         </div>
       </div>
+      )}
     </section>
   );
 }
