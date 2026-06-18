@@ -4,6 +4,7 @@ import {
   atlasLocalizationLanguages,
   defaultLocalizationPages,
   localizationCoreRules,
+  localizationDirectReplacementLiveStatuses,
   localizationDirectReplacementRows,
   localizationForbiddenPatterns,
   localizationLanguageGuides,
@@ -1074,8 +1075,14 @@ function LocalizationBibleBoard() {
     return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
   }, []);
   const directReplacementTableTsv = useMemo(() => {
-    const header = ["Где", "Сейчас", "Заменить на", "Комментарий"];
-    const rows = localizationDirectReplacementRows.map((row) => [row.scope, row.current, row.replacement, row.note]);
+    const header = ["Где", "Live status", "Сейчас", "Заменить на", "Комментарий"];
+    const rows = localizationDirectReplacementRows.map((row) => [
+      row.scope,
+      localizationDirectReplacementLiveStatuses[row.id] || "",
+      row.current,
+      row.replacement,
+      row.note,
+    ]);
     return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
   }, []);
   const nativeReviewerPromptsTsv = useMemo(() => {
@@ -1400,6 +1407,7 @@ function LocalizationBibleBoard() {
             <thead>
               <tr>
                 <th>Где</th>
+                <th>Live status</th>
                 <th>Сейчас</th>
                 <th>Заменить на</th>
                 <th>Комментарий</th>
@@ -1409,6 +1417,7 @@ function LocalizationBibleBoard() {
               {localizationDirectReplacementRows.map((row) => (
                 <tr key={row.id}>
                   <td><strong>{row.scope}</strong></td>
+                  <td>{localizationDirectReplacementLiveStatuses[row.id] || "Не проверено"}</td>
                   <td>{row.current}</td>
                   <td>{row.replacement}</td>
                   <td>{row.note}</td>

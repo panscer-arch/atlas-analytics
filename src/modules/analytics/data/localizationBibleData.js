@@ -1552,6 +1552,39 @@ export const localizationDirectReplacementRows = [
   },
 ];
 
+export const localizationDirectReplacementLiveStatuses = {
+  "replace-footer-profitable": "АКТУАЛЬНО 18.06.2026: найдено на 52 проверенных URL. Footer still says Profitable / local profit wording.",
+  "replace-placeholder-artifacts": "АКТУАЛЬНО 18.06.2026: найдено на 21 URL. Есть TP3T/TP7T/TP24T и Hindi one-TP artifacts.",
+  "replace-brand-latin-lock": "АКТУАЛЬНО 18.06.2026: найдено на 26 URL. Есть Атлас/एटलस/阿特拉斯/Atlas Sistemi/Atlas Systems.",
+  "replace-pt-homepage-ecosystem": "АКТУАЛЬНО 18.06.2026: на /pt/ найдено Ecossistema do Atlas Systems.",
+  "replace-fr-cycle-bicycle": "АКТУАЛЬНО 18.06.2026: на FR страницах найдено Assistance Vélos.",
+  "replace-hi-cycle-bicycle": "АКТУАЛЬНО 18.06.2026: на HI страницах найдено सहायता साइकिल्स.",
+  "replace-de-cycle-bicycle": "АКТУАЛЬНО 18.06.2026: на /de/smartcycle-1/ найдено Fahrradtyp.",
+  "replace-tr-cycle-bicycle": "НЕ НАЙДЕНО ТОЧНЫМ ПОИСКОМ 18.06.2026: Akıllı Bisiklet не найден; Turkish cycle wording лучше проверить вручную в UI.",
+  "replace-smart-cycle-example": "АКТУАЛЬНО 18.06.2026: на /ru/smartcycle-1/ найдено $1 270 вместо $1,225.",
+  "replace-fr-yen": "АКТУАЛЬНО 18.06.2026: на /fr/smartcycle-1/ найдено 1 000 yens / 1 225 yens.",
+  "replace-depth-percentages": "АКТУАЛЬНО 18.06.2026: на PT/ID/VI Smart Cycle найдено 1.20% и 1.60%.",
+  "replace-cookie-ru": "АКТУАЛЬНО 18.06.2026: на /ru/cookie/ найдено Маркетинговое печенье.",
+  "replace-cookie-vi": "АКТУАЛЬНО 18.06.2026: на /vi/cookie/ найдено Bánh quy.",
+  "replace-cookie-id": "АКТУАЛЬНО 18.06.2026: на /id/cookie/ найдено Kue.",
+  "replace-cookie-ms": "АКТУАЛЬНО 18.06.2026: на /ms/cookie/ найдено Biskut.",
+  "replace-id-prompt-leak": "АКТУАЛЬНО 18.06.2026: на /id/cookie/ найдено Sure, here is the translation of \"Email\".",
+  "replace-zh-untranslated-privacy": "АКТУАЛЬНО ЧАСТИЧНО 18.06.2026: на /zh/privacy_policy/ найдено Data Atlas и 阿特拉斯; отдельную untranslated English sentence надо сверить вручную.",
+  "replace-ms-truncated-legal": "АКТУАЛЬНО 18.06.2026: на /ms/interface-terms-of-use/ найден обрезанный фрагмент Atlas tidak boleh mem.",
+  "replace-legal-reversal": "РУЧНАЯ СМЫСЛОВАЯ СВЕРКА: автоматом не доказывается, но страницы TR/MS/ZH/RU/ID/VI требуют сравнения с EN master.",
+  "replace-zh-dao-condition": "РУЧНАЯ СМЫСЛОВАЯ СВЕРКА: conditional clauses надо сравнить с EN master; regex-проверка недостаточна.",
+  "replace-cycle-amount": "АКТУАЛЬНО 18.06.2026: найдено 7 совпадений, включая RU/ID/VI system-rules/interface pages.",
+  "replace-hi-zh-punctuation": "АКТУАЛЬНО 18.06.2026: найдено 21 совпадение double punctuation на HI/ZH страницах.",
+  "replace-performance-program-typo": "ИСПРАВЛЕНО В НАЗВАНИИ 18.06.2026: visible title сейчас Performance Partners Program; URL typo остается отдельной строкой.",
+  "replace-performance-link-typo": "АКТУАЛЬНО 18.06.2026: найдено 48 URL/HTML occurrences perfomance.atlas-system.io.",
+  "replace-cookie-banner": "АКТУАЛЬНО 18.06.2026: banner still says We use cookie , to improve your experience on the site.",
+  "replace-privacy-data-atlas": "АКТУАЛЬНО 18.06.2026: найдено на 10 privacy pages: Data Atlas / Atlas Data / डेटा एटलस.",
+  "replace-zh-interface-ui": "АКТУАЛЬНО 18.06.2026: на ZH UI/legal pages найдено 接口 там, где речь об интерфейсе пользователя.",
+  "replace-zh-interface-api": "РУЧНАЯ СМЫСЛОВАЯ СВЕРКА: нужно различить реальные API contexts и UI contexts после правки ZH.",
+  "replace-hi-roadmap": "АКТУАЛЬНО 18.06.2026: на /hi/ найдено सड़क का नक्शा.",
+  "replace-ptbr-routing": "АКТУАЛЬНО 18.06.2026: /pt-br/ сейчас отдает 404; нужно вести на /pt/ или убрать из selector.",
+};
+
 export const localizationSiteAuditRows = [
   {
     "id": "site-audit-01",
