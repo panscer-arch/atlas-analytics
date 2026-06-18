@@ -10,6 +10,7 @@ import AgentTrainingDataset from "./AgentTrainingDataset";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ImageContentBoard from "./ImageContentBoard";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
+import LandingContentBoard from "./LandingContentBoard";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
 import LocalizationBibleBoard from "./LocalizationBibleBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
@@ -105,6 +106,7 @@ export const TASK_BOARD_TABS = [
 
 export const CONTENT_BOARD_TABS = [
   { id: "contentPlan", label: "Контент-план" },
+  { id: "landings", label: "Лендинги" },
   { id: "images", label: "Images" },
   { id: "materials", label: "Материалы" },
   { id: "presentation", label: "Презентация" },
@@ -125,6 +127,7 @@ export const CONTENT_BOARD_TABS = [
 export const STATIC_CONTENT_BOARD_IDS = [
   "dailyTasks",
   "contentPlan",
+  "landings",
   "images",
   "videoScripts",
   "materials",
@@ -189,6 +192,10 @@ export const STATIC_BOARD_META = {
   contentPlan: {
     title: "Контент-план",
     description: "SMM-план Atlas по соцсетям, датам, форматам, статусам, текстам и комментариям для правок.",
+  },
+  landings: {
+    title: "Лендинги",
+    description: "Вычитанные и сверстанные посадочные страницы Atlas: тексты, правки, risk-safe формулировки и preview будущего сайта.",
   },
   materials: {
     title: "Материалы",
@@ -283,6 +290,7 @@ export const STATIC_BOARD_META = {
 const STATIC_BOARD_RENDERERS = {
   materials: () => <MaterialsLinksBoard />,
   contentPlan: () => <ContentPlanBoard />,
+  landings: () => <LandingContentBoard />,
   images: () => <ImageContentBoard />,
   presentation: () => <PresentationContentTab />,
   productLibrary: () => <ProductLibraryBoard />,
