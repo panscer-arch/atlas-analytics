@@ -1468,10 +1468,10 @@ export const localizationDirectReplacementRows = [
   },
   {
     id: "replace-legal-reversal",
-    scope: "TR / MS System Rules",
-    current: "Запрещенные формулировки переведены наоборот",
-    replacement: "Перевести заново с сохранением forbidden / must not / may not",
-    note: "Юридические запреты нельзя смягчать или разворачивать.",
+    scope: "System Rules + DAO legal negations",
+    current: "Ранее было помечено как: запрещенные формулировки переведены наоборот",
+    replacement: "System Rules: запреты сохранены. DAO MS/ZH: поправить искаженные clauses по EN master.",
+    note: "Live check 18.06.2026: TR/MS/ZH/RU/ID/VI System Rules сохраняют запрет на deposit/investment/guaranteed yield. Подтвержденные проблемы: MS DAO переводит override Risk Disclosure как prioritize Risk Disclosure; ZH DAO awkward/inverted: 如果 Atlas 不能承诺 вместо Atlas must not promise.",
   },
   {
     id: "replace-zh-dao-condition",
@@ -1571,7 +1571,7 @@ export const localizationDirectReplacementLiveStatuses = {
   "replace-id-prompt-leak": "АКТУАЛЬНО 18.06.2026: на /id/cookie/ найдено Sure, here is the translation of \"Email\".",
   "replace-zh-untranslated-privacy": "АКТУАЛЬНО ЧАСТИЧНО 18.06.2026: на /zh/privacy_policy/ найдено Data Atlas и 阿特拉斯; отдельную untranslated English sentence надо сверить вручную.",
   "replace-ms-truncated-legal": "АКТУАЛЬНО 18.06.2026: на /ms/interface-terms-of-use/ найден обрезанный фрагмент Atlas tidak boleh mem.",
-  "replace-legal-reversal": "РУЧНАЯ СМЫСЛОВАЯ СВЕРКА: автоматом не доказывается, но страницы TR/MS/ZH/RU/ID/VI требуют сравнения с EN master.",
+  "replace-legal-reversal": "ПРОВЕРЕНО 18.06.2026: явного разворота запретов в TR/MS/ZH/RU/ID/VI System Rules не найдено. Запрет deposit/investment/guaranteed yield сохранен. Исправить точечно DAO: MS 'dahulukan Pendedahan Risiko' должно быть 'override Risk Disclosure' в списке запретов; ZH '如果 Atlas 不能承诺...' заменить на нормальное 'Atlas 不得承诺...如果...'.",
   "replace-zh-dao-condition": "РУЧНАЯ СМЫСЛОВАЯ СВЕРКА: conditional clauses надо сравнить с EN master; regex-проверка недостаточна.",
   "replace-cycle-amount": "АКТУАЛЬНО 18.06.2026: найдено 7 совпадений, включая RU/ID/VI system-rules/interface pages.",
   "replace-hi-zh-punctuation": "АКТУАЛЬНО 18.06.2026: найдено 21 совпадение double punctuation на HI/ZH страницах.",
