@@ -64,6 +64,7 @@ function LandingContentBoard() {
           </p>
         </div>
         <div className="analytics-landings-actions">
+          <a href="/landings/landing-1/" target="_blank" rel="noreferrer">Открыть готовый лендинг</a>
           <a href={LANDING_SOURCE_URL} target="_blank" rel="noreferrer">Открыть Google Doc</a>
           <button type="button" onClick={copyLandingText}>
             {copyState === "copied" ? "Скопировано" : "Скопировать текст"}
