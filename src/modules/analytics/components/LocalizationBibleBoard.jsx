@@ -4,6 +4,7 @@ import {
   atlasLocalizationLanguages,
   defaultLocalizationPages,
   localizationCoreRules,
+  localizationDirectReplacementRows,
   localizationForbiddenPatterns,
   localizationLanguageGuides,
   localizationMeaningMemory,
@@ -1072,6 +1073,11 @@ function LocalizationBibleBoard() {
     ]);
     return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
   }, []);
+  const directReplacementTableTsv = useMemo(() => {
+    const header = ["Где", "Сейчас", "Заменить на", "Комментарий"];
+    const rows = localizationDirectReplacementRows.map((row) => [row.scope, row.current, row.replacement, row.note]);
+    return [header, ...rows].map((row) => row.map((cell) => String(cell || "").replace(/\t/g, " ").replace(/\n/g, " ")).join("\t")).join("\n");
+  }, []);
   const nativeReviewerPromptsTsv = useMemo(() => {
     const header = ["Language", "Reviewer role", "Prompt"];
     const rows = localizationNativeReviewerPrompts.map((row) => [row.code, row.reviewer, row.prompt]);
@@ -1374,6 +1380,42 @@ function LocalizationBibleBoard() {
               </details>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="analytics-localization-simple-table">
+        <div className="analytics-localization-simple-table-head">
+          <div>
+            <span className="analytics-kicker">Direct Fix List</span>
+            <h3>Конкретные замены для правщика</h3>
+            <p>Рабочий список без лишней аналитики: где искать, что сейчас написано и что поставить вместо этого. Сначала чинить глобальные строки footer, cookie banner, brand lock и source typos.</p>
+          </div>
+          <div className="analytics-localization-simple-table-actions">
+            <button type="button" onClick={() => copyToClipboard(directReplacementTableTsv)}>Copy replacements</button>
+            <button type="button" onClick={() => downloadTextFile("atlas-localization-direct-replacements.tsv", directReplacementTableTsv, "text/tab-separated-values")}>Download TSV</button>
+          </div>
+        </div>
+        <div className="analytics-localization-simple-table-scroll">
+          <table className="analytics-table analytics-localization-report-table">
+            <thead>
+              <tr>
+                <th>Где</th>
+                <th>Сейчас</th>
+                <th>Заменить на</th>
+                <th>Комментарий</th>
+              </tr>
+            </thead>
+            <tbody>
+              {localizationDirectReplacementRows.map((row) => (
+                <tr key={row.id}>
+                  <td><strong>{row.scope}</strong></td>
+                  <td>{row.current}</td>
+                  <td>{row.replacement}</td>
+                  <td>{row.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
