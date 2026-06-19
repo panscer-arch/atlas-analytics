@@ -4,10 +4,7 @@ import { loadServerContent } from "../services/contentStore";
 import { AGENT_TERMINOLOGY_STORAGE_KEY, defaultTerminologyTemplate, hermesTerminologyV2Sections, TERMINOLOGY_SECTION_DESCRIPTIONS } from "../data/agentTerminologyData";
 import { createRow, hydrateTemplate, persistTerminology, readStoredTerminology } from "../utils/agentTerminologyUtils";
 
-const TERMINOLOGY_MODES = [
-  { id: "editable", label: "Редактируемая база" },
-  { id: "hermes-v2", label: "Hermes 2.0" },
-];
+const HERMES_TERMINOLOGY_SECTION_ID = "hermes-v2";
 
 function buildHermesTerminologyText() {
   return hermesTerminologyV2Sections
@@ -118,16 +115,11 @@ function HermesTerminologyV2View() {
 
 function AgentTerminologyTemplate() {
   const [template, setTemplate] = useState(readStoredTerminology);
-  const [activeMode, setActiveMode] = useState(() => {
-    if (typeof window === "undefined") return "editable";
-
-    const url = new URL(window.location.href);
-    return url.searchParams.get("termView") === "hermes-v2" ? "hermes-v2" : "editable";
-  });
   const [activeSectionId, setActiveSectionId] = useState(() => {
     if (typeof window === "undefined") return defaultTerminologyTemplate.sections[0]?.id || "core";
 
     const url = new URL(window.location.href);
+    if (url.searchParams.get("termView") === HERMES_TERMINOLOGY_SECTION_ID) return HERMES_TERMINOLOGY_SECTION_ID;
     return url.searchParams.get("term") || defaultTerminologyTemplate.sections[0]?.id || "core";
   });
   const [reviewFilter, setReviewFilter] = useState("all");
@@ -189,7 +181,8 @@ function AgentTerminologyTemplate() {
   }
 
   const totalTerms = template.sections.reduce((sum, section) => sum + section.rows.length, 0);
-  const activeSection = template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
+  const isHermesTerminologyActive = activeSectionId === HERMES_TERMINOLOGY_SECTION_ID;
+  const activeSection = isHermesTerminologyActive ? null : template.sections.find((section) => section.id === activeSectionId) || template.sections[0] || null;
   const activeSectionDescription = activeSection ? TERMINOLOGY_SECTION_DESCRIPTIONS[activeSection.id] : "";
   const activeRows = activeSection?.rows || [];
   const approvedRowsCount = activeRows.filter((row) => row.approved).length;
@@ -202,7 +195,7 @@ function AgentTerminologyTemplate() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const isKnownSection = template.sections.some((section) => section.id === activeSectionId);
+    const isKnownSection = activeSectionId === HERMES_TERMINOLOGY_SECTION_ID || template.sections.some((section) => section.id === activeSectionId);
     const nextSectionId = isKnownSection ? activeSectionId : defaultTerminologyTemplate.sections[0]?.id || "core";
 
     if (nextSectionId !== activeSectionId) {
@@ -213,13 +206,9 @@ function AgentTerminologyTemplate() {
     const url = new URL(window.location.href);
     url.searchParams.set("board", "terminology");
     url.searchParams.set("term", nextSectionId);
-    if (activeMode === "hermes-v2") {
-      url.searchParams.set("termView", "hermes-v2");
-    } else {
-      url.searchParams.delete("termView");
-    }
+    url.searchParams.delete("termView");
     window.history.replaceState({}, "", url.toString());
-  }, [activeMode, activeSectionId, template.sections]);
+  }, [activeSectionId, template.sections]);
 
   return (
     <section className="analytics-surface analytics-agent-template">
@@ -233,25 +222,6 @@ function AgentTerminologyTemplate() {
         </div>
       </div>
 
-      <div className="analytics-agent-template-tabs analytics-terminology-mode-tabs" role="tablist" aria-label="Версии терминологии">
-        {TERMINOLOGY_MODES.map((mode) => (
-          <button
-            key={mode.id}
-            type="button"
-            role="tab"
-            aria-selected={activeMode === mode.id}
-            className={`analytics-agent-template-tab${activeMode === mode.id ? " analytics-agent-template-tab-active" : ""}`}
-            onClick={() => setActiveMode(mode.id)}
-          >
-            {mode.label}
-          </button>
-        ))}
-      </div>
-
-      {activeMode === "hermes-v2" ? <HermesTerminologyV2View /> : null}
-
-      {activeMode === "editable" ? (
-        <>
       <div className="analytics-agent-template-tabs" role="tablist" aria-label="Категории терминологии">
         {template.sections.map((section) => (
           <button
@@ -265,7 +235,18 @@ function AgentTerminologyTemplate() {
             {section.title}
           </button>
         ))}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={isHermesTerminologyActive}
+          className={`analytics-agent-template-tab${isHermesTerminologyActive ? " analytics-agent-template-tab-active" : ""}`}
+          onClick={() => setActiveSectionId(HERMES_TERMINOLOGY_SECTION_ID)}
+        >
+          ТЕРМИНОЛОГИЯ 2.0
+        </button>
       </div>
+
+      {isHermesTerminologyActive ? <HermesTerminologyV2View /> : null}
 
       {activeSectionDescription ? <p className="analytics-page-subtitle">{activeSectionDescription}</p> : null}
 
@@ -364,8 +345,6 @@ function AgentTerminologyTemplate() {
             </div>
           </div>
         </div>
-      ) : null}
-        </>
       ) : null}
     </section>
   );
