@@ -9855,6 +9855,12 @@ input.analytics-smm-cell-input {
   background: rgba(255, 255, 255, 0.025);
 }
 
+.analytics-terminology-mode-tabs {
+  margin-bottom: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(7, 12, 22, 0.4);
+}
+
 .analytics-agent-template-tab {
   border: 1px solid transparent;
   border-radius: 1rem 1rem 0.85rem 0.85rem;
@@ -10692,6 +10698,185 @@ input.analytics-smm-cell-input {
   display: grid;
   gap: 1rem;
   margin-top: 1.2rem;
+}
+
+.analytics-terminology-v2 {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.analytics-terminology-v2-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: stretch;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid rgba(118, 214, 194, 0.18);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at top right, rgba(118, 214, 194, 0.16), transparent 32%),
+    linear-gradient(135deg, rgba(123, 180, 255, 0.08), rgba(255, 145, 0, 0.04)),
+    rgba(5, 12, 25, 0.68);
+}
+
+.analytics-terminology-v2-hero h3 {
+  margin: 0.25rem 0 0.45rem;
+  color: #f8fbff;
+  font-size: clamp(1.35rem, 2.4vw, 2.25rem);
+  font-weight: 950;
+  line-height: 1.12;
+}
+
+.analytics-terminology-v2-hero p {
+  max-width: 72rem;
+  margin: 0;
+  color: #bfd0e8;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.analytics-terminology-v2-stats {
+  display: grid;
+  gap: 0.25rem;
+  align-content: center;
+  justify-items: start;
+  min-width: 13rem;
+  padding: 1rem;
+  border: 1px solid rgba(157, 178, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(7, 12, 22, 0.56);
+}
+
+.analytics-terminology-v2-stats strong {
+  color: #9ff0df;
+  font-size: 2rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.analytics-terminology-v2-stats span {
+  margin-bottom: 0.45rem;
+  color: #9fb2cf;
+  font-size: 0.85rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-terminology-v2-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-terminology-v2-rules > div {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid rgba(157, 178, 255, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.analytics-terminology-v2-rules strong {
+  color: #f4fbff;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.analytics-terminology-v2-rules span {
+  color: #9fb2cf;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.analytics-terminology-v2-sections {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-terminology-v2-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  border: 1px solid rgba(118, 214, 194, 0.2);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(118, 214, 194, 0.08);
+  color: #9ff0df;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-terminology-v2-table {
+  min-width: 1180px;
+}
+
+.analytics-terminology-v2-table th {
+  color: #9fb2cf;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-terminology-v2-table td {
+  width: 20%;
+  color: #dbe7f8;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.45;
+  vertical-align: top;
+}
+
+.analytics-terminology-v2-table td:first-child {
+  width: 18%;
+}
+
+.analytics-terminology-v2-table td:first-child strong,
+.analytics-terminology-v2-table td:first-child span {
+  display: block;
+}
+
+.analytics-terminology-v2-table td:first-child strong {
+  margin-bottom: 0.45rem;
+  color: #f8fbff;
+  font-size: 0.98rem;
+  font-weight: 950;
+}
+
+.analytics-terminology-v2-table td:first-child span {
+  color: #8fa3c0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.analytics-terminology-v2-table td:nth-child(2) {
+  color: #9ff0df;
+  font-weight: 900;
+}
+
+.analytics-terminology-v2-table td:last-child {
+  color: #ffd8a3;
+}
+
+@media (max-width: 920px) {
+  .analytics-terminology-v2-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-terminology-v2-stats {
+    min-width: 0;
+  }
+
+  .analytics-terminology-v2-rules {
+    grid-template-columns: 1fr;
+  }
 }
 
 .analytics-agent-template-card,

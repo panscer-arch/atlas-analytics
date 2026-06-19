@@ -1,11 +1,129 @@
 import { useEffect, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
 import { loadServerContent } from "../services/contentStore";
-import { AGENT_TERMINOLOGY_STORAGE_KEY, defaultTerminologyTemplate, TERMINOLOGY_SECTION_DESCRIPTIONS } from "../data/agentTerminologyData";
+import { AGENT_TERMINOLOGY_STORAGE_KEY, defaultTerminologyTemplate, hermesTerminologyV2Sections, TERMINOLOGY_SECTION_DESCRIPTIONS } from "../data/agentTerminologyData";
 import { createRow, hydrateTemplate, persistTerminology, readStoredTerminology } from "../utils/agentTerminologyUtils";
+
+const TERMINOLOGY_MODES = [
+  { id: "editable", label: "Редактируемая база" },
+  { id: "hermes-v2", label: "Hermes 2.0" },
+];
+
+function buildHermesTerminologyText() {
+  return hermesTerminologyV2Sections
+    .map((section) => {
+      const rows = section.terms
+        .map(
+          (term) =>
+            `- ${term.term}\n  Писать: ${term.writeAs}\n  RU: ${term.ru}\n  EN: ${term.en}\n  Смысл: ${term.meaning}\n  Правило перевода: ${term.translationRule}\n  Нельзя: ${term.avoid}`,
+        )
+        .join("\n\n");
+
+      return `## ${section.title}\n${section.summary}\n\n${rows}`;
+    })
+    .join("\n\n");
+}
+
+function HermesTerminologyV2View() {
+  const [copied, setCopied] = useState(false);
+  const totalTerms = hermesTerminologyV2Sections.reduce((sum, section) => sum + section.terms.length, 0);
+
+  async function copyAll() {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+
+    await navigator.clipboard.writeText(buildHermesTerminologyText());
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <div className="analytics-terminology-v2">
+      <div className="analytics-terminology-v2-hero">
+        <div>
+          <span className="analytics-kicker">Hermes memory</span>
+          <h3>Терминология Atlas 2.0</h3>
+          <p>
+            Новый словарь для сайта, переводчиков, White Paper, лендингов и AI-агентов. Здесь зафиксированы защищённые термины, правила перевода и слова, которые нельзя использовать,
+            чтобы не превращать Atlas в инвестиционный продукт или ломать Web3-смысл.
+          </p>
+        </div>
+        <div className="analytics-terminology-v2-stats" aria-label="Статистика терминологии Hermes 2.0">
+          <strong>{totalTerms}</strong>
+          <span>терминов и правил</span>
+          <AnalyticsActionButton variant="secondary" size="sm" onClick={copyAll}>
+            {copied ? "Скопировано" : "Скопировать всё"}
+          </AnalyticsActionButton>
+        </div>
+      </div>
+
+      <div className="analytics-terminology-v2-rules" aria-label="Главные правила терминологии">
+        <div>
+          <strong>Не переводим продуктовые имена</strong>
+          <span>Atlas System, Smart Cycle, Claim, Web3, DAO-inspired mechanics, BNB Smart Chain, USDT BEP20.</span>
+        </div>
+        <div>
+          <strong>Не обещаем доход</strong>
+          <span>Calculated delta и Claim описываются как расчётная возможность по правилам, ликвидности и действиям участника.</span>
+        </div>
+        <div>
+          <strong>Проверяем юридические отрицания</strong>
+          <span>Not guaranteed, must not, may not, not an investment product нельзя смягчать или переводить наоборот.</span>
+        </div>
+      </div>
+
+      <div className="analytics-terminology-v2-sections">
+        {hermesTerminologyV2Sections.map((section) => (
+          <article key={section.id} className="analytics-agent-template-card analytics-terminology-v2-section">
+            <div className="analytics-agent-template-card-head">
+              <div>
+                <h3>{section.title}</h3>
+                <p className="analytics-agent-template-review-summary">{section.summary}</p>
+              </div>
+              <span className="analytics-terminology-v2-count">{section.terms.length} терминов</span>
+            </div>
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-terminology-v2-table">
+                <thead>
+                  <tr>
+                    <th>Термин</th>
+                    <th>Как писать</th>
+                    <th>Смысл</th>
+                    <th>Как переводить</th>
+                    <th>Нельзя</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.terms.map((term) => (
+                    <tr key={`${section.id}-${term.term}`}>
+                      <td>
+                        <strong>{term.term}</strong>
+                        <span>RU: {term.ru}</span>
+                        <span>EN: {term.en}</span>
+                      </td>
+                      <td>{term.writeAs}</td>
+                      <td>{term.meaning}</td>
+                      <td>{term.translationRule}</td>
+                      <td>{term.avoid}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AgentTerminologyTemplate() {
   const [template, setTemplate] = useState(readStoredTerminology);
+  const [activeMode, setActiveMode] = useState(() => {
+    if (typeof window === "undefined") return "editable";
+
+    const url = new URL(window.location.href);
+    return url.searchParams.get("termView") === "hermes-v2" ? "hermes-v2" : "editable";
+  });
   const [activeSectionId, setActiveSectionId] = useState(() => {
     if (typeof window === "undefined") return defaultTerminologyTemplate.sections[0]?.id || "core";
 
@@ -95,8 +213,13 @@ function AgentTerminologyTemplate() {
     const url = new URL(window.location.href);
     url.searchParams.set("board", "terminology");
     url.searchParams.set("term", nextSectionId);
+    if (activeMode === "hermes-v2") {
+      url.searchParams.set("termView", "hermes-v2");
+    } else {
+      url.searchParams.delete("termView");
+    }
     window.history.replaceState({}, "", url.toString());
-  }, [activeSectionId, template.sections]);
+  }, [activeMode, activeSectionId, template.sections]);
 
   return (
     <section className="analytics-surface analytics-agent-template">
@@ -110,6 +233,25 @@ function AgentTerminologyTemplate() {
         </div>
       </div>
 
+      <div className="analytics-agent-template-tabs analytics-terminology-mode-tabs" role="tablist" aria-label="Версии терминологии">
+        {TERMINOLOGY_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            role="tab"
+            aria-selected={activeMode === mode.id}
+            className={`analytics-agent-template-tab${activeMode === mode.id ? " analytics-agent-template-tab-active" : ""}`}
+            onClick={() => setActiveMode(mode.id)}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      {activeMode === "hermes-v2" ? <HermesTerminologyV2View /> : null}
+
+      {activeMode === "editable" ? (
+        <>
       <div className="analytics-agent-template-tabs" role="tablist" aria-label="Категории терминологии">
         {template.sections.map((section) => (
           <button
@@ -222,6 +364,8 @@ function AgentTerminologyTemplate() {
             </div>
           </div>
         </div>
+      ) : null}
+        </>
       ) : null}
     </section>
   );
