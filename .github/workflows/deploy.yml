@@ -301,6 +301,48 @@ jobs:
               open(path, "w", encoding="utf-8").write(text)
           PY
             fi
+
+            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/pools/' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          snippet = """
+
+              location /api/pools/ {
+                  proxy_pass http://127.0.0.1:8787/api/pools/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 10m;
+              }
+          """
+          if "location /api/pools/" not in text:
+              index = text.find("location /api/outreach/")
+              if index != -1:
+                  line_start = text.rfind("\n", 0, index) + 1
+                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+              else:
+                  index = text.find("location /api/telegram/")
+                  if index != -1:
+                      line_start = text.rfind("\n", 0, index) + 1
+                      text = text[:line_start] + snippet + "\n" + text[line_start:]
+                  else:
+                      index = text.find("location /api/content/")
+                      if index != -1:
+                          line_start = text.rfind("\n", 0, index) + 1
+                          text = text[:line_start] + snippet + "\n" + text[line_start:]
+                      else:
+                          index = text.find("location /")
+                          if index != -1:
+                              line_start = text.rfind("\n", 0, index) + 1
+                              text = text[:line_start] + snippet + "\n" + text[line_start:]
+                          else:
+                              index = text.rfind("}")
+                              text = text[:index] + snippet + "\n" + text[index:]
+              open(path, "w", encoding="utf-8").write(text)
+          PY
+            fi
           done
 
           sudo nginx -t
