@@ -53,3 +53,17 @@ export async function postServerJson(path, value) {
     return { ok: false, status: 0, payload: { error: error?.message || "network_error" } };
   }
 }
+
+export async function getServerJson(path) {
+  try {
+    const response = await fetch(apiUrl(path), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok && payload?.ok !== false, status: response.status, payload };
+  } catch (error) {
+    return { ok: false, status: 0, payload: { error: error?.message || "network_error" } };
+  }
+}

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/verify-parser-tabs.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "check:local": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-local-page.mjs",
