@@ -10,6 +10,7 @@ import PoolMonitorPanel from "./PoolMonitorPanel";
 import RegionalHiringPanel from "./RegionalHiringPanel";
 import SegmentOutreachPanel from "./SegmentOutreachPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
+import Web3SegmentsPanel from "./Web3SegmentsPanel";
 import YouTubeApiSearchPanel from "./YouTubeApiSearchPanel";
 
 const PARSER_TABS = [
@@ -64,6 +65,11 @@ const PARSER_TABS = [
     hint: "7 x соцсети",
   },
   {
+    id: "web3Segments",
+    label: "Web3 сегменты",
+    hint: "12 аудиторий",
+  },
+  {
     id: "poolMonitor",
     label: "Pool Monitor",
     hint: "USDT/USDC",
@@ -81,6 +87,7 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
     if (initialTab === "regionalHiring") return "regionalHiring";
     if (initialTab === "mlmLeaders") return "mlmLeaders";
     if (initialTab === "segmentOutreach") return "segmentOutreach";
+    if (initialTab === "web3Segments") return "web3Segments";
     if (initialTab === "poolMonitor") return "poolMonitor";
     if (typeof window !== "undefined") {
       const board = new URL(window.location.href).searchParams.get("board");
@@ -93,6 +100,7 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
       if (board === "regionalHiring") return "regionalHiring";
       if (board === "mlmLeaders") return "mlmLeaders";
       if (board === "segmentOutreach") return "segmentOutreach";
+      if (board === "web3Segments") return "web3Segments";
       if (board === "poolMonitor") return "poolMonitor";
     }
     return "monitors";
@@ -123,9 +131,11 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
                     ? "mlmLeaders"
                     : nextTab === "segmentOutreach"
                       ? "segmentOutreach"
-                      : nextTab === "poolMonitor"
-                        ? "poolMonitor"
-                        : "parser",
+                      : nextTab === "web3Segments"
+                        ? "web3Segments"
+                        : nextTab === "poolMonitor"
+                          ? "poolMonitor"
+                          : "parser",
     );
     window.history.replaceState({}, "", url);
   }
@@ -166,6 +176,8 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
         <MlmLeaderOutreachPanel />
       ) : activeTab === "segmentOutreach" ? (
         <SegmentOutreachPanel />
+      ) : activeTab === "web3Segments" ? (
+        <Web3SegmentsPanel />
       ) : activeTab === "poolMonitor" ? (
         <PoolMonitorPanel />
       ) : (

@@ -16,6 +16,7 @@ const requiredTabs = [
   ["regionalHiring", "Regional Partners"],
   ["mlmLeaders", "MLM лидеры"],
   ["segmentOutreach", "Сегментный парсер"],
+  ["web3Segments", "Web3 сегменты"],
   ["poolMonitor", "Pool Monitor"],
 ];
 
@@ -29,6 +30,7 @@ const requiredFiles = [
   "src/modules/analytics/components/RegionalHiringPanel.jsx",
   "src/modules/analytics/components/SegmentOutreachPanel.jsx",
   "src/modules/analytics/components/TelegramChannelsParserPanel.jsx",
+  "src/modules/analytics/components/Web3SegmentsPanel.jsx",
   "src/modules/analytics/components/YouTubeApiSearchPanel.jsx",
   "src/modules/analytics/data/articlePlacementData.js",
   "src/modules/analytics/data/bitnestYoutubeParserData.js",
@@ -37,6 +39,7 @@ const requiredFiles = [
   "src/modules/analytics/data/platformSourceSeeds.js",
   "src/modules/analytics/data/regionalHiringData.js",
   "src/modules/analytics/data/segmentOutreachData.js",
+  "src/modules/analytics/data/web3SegmentsData.js",
   "src/modules/analytics/data/youtubeChannelSeeds.js",
 ];
 
