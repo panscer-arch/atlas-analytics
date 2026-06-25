@@ -193,6 +193,8 @@ export default function HyipParserPanel({
   platformFilterOptions = [],
   keywordFilterOptions = [],
   platformFilterLabel = "Соцсеть",
+  platformAllLabel = "Все соцсети",
+  keywordAliases = {},
 } = {}) {
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, seedLeads));
   const [outreach, setOutreach] = useState(() => readStoredOutreach(outreachStorageKey));
@@ -203,9 +205,15 @@ export default function HyipParserPanel({
   const [pipelineStatus, setPipelineStatus] = useState("Все этапы");
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
-  const [platform, setPlatform] = useState("Все соцсети");
+  const [platform, setPlatform] = useState(() => {
+    if (typeof window === "undefined") return platformAllLabel;
+    const requestedTerm = new URL(window.location.href).searchParams.get("term");
+    if (!requestedTerm) return platformAllLabel;
+    return keywordAliases[requestedTerm] || keywordFilterOptions.find((item) => item.toLowerCase() === requestedTerm.toLowerCase()) || platformAllLabel;
+  });
   const [query, setQuery] = useState("");
   const [verificationRequests, setVerificationRequests] = useState({});
+  const hasQuickFilterOptions = platformFilterOptions.length || keywordFilterOptions.length;
 
   useEffect(() => {
     let isMounted = true;
@@ -254,7 +262,7 @@ export default function HyipParserPanel({
     const statusMatch = status === "Все статусы" || lead.status === status;
     const hasPlatformFilter = platformFilterOptions.includes(platform);
     const hasKeywordFilter = keywordFilterOptions.includes(platform);
-    const platformMatch = !platformFilterOptions.length || platform === "Все соцсети" || hasKeywordFilter || (hasPlatformFilter && String(lead.category || "").startsWith(`${platform} /`));
+    const platformMatch = !hasQuickFilterOptions || platform === platformAllLabel || hasKeywordFilter || (hasPlatformFilter && String(lead.category || "").startsWith(`${platform} /`));
     const keywordMatch = !hasKeywordFilter || [lead.name, lead.url, lead.audienceInfo, lead.category, lead.contacts, lead.verificationNotes, lead.notes]
       .some((value) => String(value || "").toLowerCase().includes(platform.toLowerCase()));
     const pipelineMatch = pipelineStatus === "Все этапы" || record.status === pipelineStatus;
@@ -262,7 +270,7 @@ export default function HyipParserPanel({
     const queryMatch = !search || [lead.name, lead.country, lead.url, lead.audienceInfo, lead.category, lead.contacts, lead.adminContact, lead.verificationStatus, lead.verificationNotes, lead.notes, record.draft, record.price, record.conditions, record.responseNotes]
       .some((value) => String(value).toLowerCase().includes(search));
     return countryMatch && statusMatch && platformMatch && keywordMatch && pipelineMatch && queryMatch;
-  }), [country, keywordFilterOptions, leads, outreach, pipelineStatus, platform, platformFilterOptions, query, status]);
+  }), [country, hasQuickFilterOptions, keywordFilterOptions, leads, outreach, pipelineStatus, platform, platformAllLabel, platformFilterOptions, query, status]);
 
   const summary = useMemo(() => ({
     total: leads.length,
@@ -439,9 +447,9 @@ export default function HyipParserPanel({
             <button type="button" onClick={() => downloadLeadsCsv(filteredLeads, csvFilename)}>Экспорт CSV</button>
           </div>
         </div>
-        {platformFilterOptions.length ? (
+        {hasQuickFilterOptions ? (
           <div className="analytics-parser-quick-filters" aria-label="Быстрая выборка">
-            {["Все соцсети", ...platformFilterOptions, ...keywordFilterOptions].map((item) => (
+            {[platformAllLabel, ...platformFilterOptions, ...keywordFilterOptions].map((item) => (
               <button
                 key={item}
                 type="button"
@@ -472,11 +480,11 @@ export default function HyipParserPanel({
               {["Все этапы", ...OUTREACH_STATUS_OPTIONS].map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
-          {platformFilterOptions.length ? (
+          {hasQuickFilterOptions ? (
             <label>
               {platformFilterLabel}
               <select value={platform} onChange={(event) => setPlatform(event.target.value)}>
-                {["Все соцсети", ...platformFilterOptions, ...keywordFilterOptions].map((item) => <option key={item}>{item}</option>)}
+                {[platformAllLabel, ...platformFilterOptions, ...keywordFilterOptions].map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
           ) : null}
