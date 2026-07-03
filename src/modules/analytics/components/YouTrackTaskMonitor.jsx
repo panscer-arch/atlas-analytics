@@ -101,7 +101,7 @@ function YouTrackTaskMonitor() {
   const attentionIssues = useMemo(() => issues.filter((issue) => issue.needsAttention && !issue.isResolved).slice(0, 4), [issues]);
 
   return (
-    <section className="analytics-youtrack">
+    <section className="analytics-youtrack" data-testid="youtrack-monitor">
       <section className="analytics-surface analytics-youtrack-hero">
         <div>
           <span className="analytics-kicker">ATL / task tracker</span>
@@ -189,7 +189,7 @@ function YouTrackTaskMonitor() {
           ))}
         </div>
 
-        <div className="analytics-youtrack-table-wrap">
+        <div className="analytics-youtrack-table-wrap" data-testid="youtrack-issue-table">
           <table className="analytics-youtrack-table">
             <thead>
               <tr>
@@ -210,12 +210,12 @@ function YouTrackTaskMonitor() {
                     <strong>{issue.title}</strong>
                     <span>{issue.priority}</span>
                   </td>
-                  <td><b>{issue.status}</b></td>
+                  <td><b className="analytics-youtrack-status-pill">{issue.status}</b></td>
                   <td>{issue.assignee}</td>
                   <td>{issue.statusAgeLabel}</td>
                   <td>{issue.ageLabel}</td>
                   <td>{formatDateTime(issue.updatedAt)} · {issue.inactiveLabel} назад</td>
-                  <td>{issue.latestComment?.text || "—"}</td>
+                  <td><span className="analytics-youtrack-comment">{issue.latestComment?.text || "—"}</span></td>
                 </tr>
               ))}
             </tbody>
