@@ -7,6 +7,8 @@
 .analytics-youtrack {
   display: grid;
   gap: 1.1rem;
+  min-width: 0;
+  max-width: 100%;
   color: #edf3ff;
 }
 
@@ -352,11 +354,25 @@
 }
 
 @media (max-width: 680px) {
+  .analytics-youtrack {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    overflow: hidden;
+  }
+
   .analytics-youtrack-hero,
   .analytics-youtrack-attention,
   .analytics-youtrack-board,
   .analytics-youtrack-changes {
     padding: 1rem;
+  }
+
+  .analytics-youtrack-hero h2 {
+    font-size: 2rem;
+  }
+
+  .analytics-youtrack-hero p {
+    font-size: 0.95rem;
   }
 
   .analytics-youtrack-kpis,

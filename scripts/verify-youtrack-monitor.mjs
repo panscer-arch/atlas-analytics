@@ -70,5 +70,7 @@ assertIncludes(rowBlock, "color: rgba(218, 231, 249", "readable table text");
 assertIncludes(searchBlock, "background: rgba(4, 13, 25", "dark search input");
 assertIncludes(css, ".analytics-youtrack-status-pill", "status pill style");
 assertIncludes(css, ".analytics-youtrack-comment", "comment clamp style");
+assertIncludes(css, "width: calc(100vw - 2rem)", "mobile monitor width guard");
+assertIncludes(css, "overflow: hidden", "mobile monitor overflow guard");
 
 console.log("YouTrack monitor verified: routes, tab wiring, API helpers and dark readable styles are present.");
