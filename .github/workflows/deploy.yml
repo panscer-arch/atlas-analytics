@@ -215,7 +215,7 @@ jobs:
 
           sudo tee /etc/systemd/system/atlas-youtrack-digest.service >/dev/null <<'SERVICE'
           [Unit]
-          Description=Send Atlas YouTrack 30-minute task digest to Telegram
+          Description=Send Atlas YouTrack daily task digest to Telegram
           After=atlas-content-api.service
 
           [Service]
@@ -227,11 +227,10 @@ jobs:
 
           sudo tee /etc/systemd/system/atlas-youtrack-digest.timer >/dev/null <<'TIMER'
           [Unit]
-          Description=Send Atlas YouTrack task digest every 30 minutes
+          Description=Send Atlas YouTrack task digest daily at 15:00 Moscow time
 
           [Timer]
-          OnBootSec=4m
-          OnUnitActiveSec=30m
+          OnCalendar=*-*-* 12:00:00 UTC
           Persistent=true
           Unit=atlas-youtrack-digest.service
 
@@ -268,7 +267,6 @@ jobs:
           sudo systemctl enable --now atlas-youtrack-monitor.timer
           timeout 70s sudo systemctl start atlas-youtrack-monitor.service || true
           sudo systemctl enable --now atlas-youtrack-digest.timer
-          timeout 70s sudo systemctl start atlas-youtrack-digest.service || true
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then

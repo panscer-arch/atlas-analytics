@@ -61,7 +61,7 @@ assertIncludes(server, "formatYouTrackDigestPush", "server digest formatter");
 assertIncludes(server, "sendYouTrackDigest", "server digest sender");
 assertIncludes(deploy, "atlas-youtrack-monitor.timer", "deploy minute monitor timer");
 assertIncludes(deploy, "atlas-youtrack-digest.timer", "deploy digest timer");
-assertIncludes(deploy, "OnUnitActiveSec=30m", "deploy digest interval");
+assertIncludes(deploy, "OnCalendar=*-*-* 12:00:00 UTC", "deploy digest daily Moscow schedule");
 assertIncludes(deploy, "/api/youtrack/digest", "deploy digest endpoint");
 
 const kpiBlock = extractCssBlock(css, ".analytics-youtrack-kpi {");
