@@ -72,34 +72,42 @@ jobs:
 
       - name: Deploy content API
         shell: bash
+        timeout-minutes: 6
         run: |
-          scp -i ~/.ssh/deploy_key \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            server/content-api.mjs \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-api.mjs"
+          run_with_retry() {
+            local label="$1"
+            shift
+            for attempt in 1 2 3 4 5; do
+              if "$@"; then
+                return 0
+              fi
+              local status=$?
+              echo "$label attempt $attempt failed with status $status"
+              if [ "$attempt" -eq 5 ]; then
+                return "$status"
+              fi
+              sleep 15
+            done
+          }
 
-          scp -i ~/.ssh/deploy_key \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            server/telegram-task-store.mjs \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-telegram-task-store.mjs"
+          scp_to_vps() {
+            run_with_retry "scp $1" scp -i ~/.ssh/deploy_key \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=25 \
+              "$1" \
+              "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$2"
+          }
 
-          scp -i ~/.ssh/deploy_key \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            server/telegram-bot.mjs \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-telegram-bot.mjs"
+          scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
+          scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
+          scp_to_vps server/backup-content.sh /tmp/atlas-content-backup.sh
 
-          scp -i ~/.ssh/deploy_key \
+          run_with_retry "content-api ssh" ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
-            server/backup-content.sh \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-backup.sh"
-
-          ssh -i ~/.ssh/deploy_key \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=25 \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             'bash -s' <<'REMOTE'
           set -euo pipefail
@@ -186,7 +194,7 @@ jobs:
 
           [Service]
           Type=oneshot
-          ExecStart=/bin/sh -c '/usr/bin/curl -fsS -X POST http://127.0.0.1:8787/api/youtrack/check -H "Content-Type: application/json" -d "{\"notify\":true}"'
+          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -fsS -X POST http://127.0.0.1:8787/api/youtrack/check -H "Content-Type: application/json" -d "{\"notify\":true}"'
           User=www-data
           Group=www-data
           SERVICE
@@ -212,7 +220,7 @@ jobs:
 
           [Service]
           Type=oneshot
-          ExecStart=/bin/sh -c '/usr/bin/curl -fsS -X POST http://127.0.0.1:8787/api/youtrack/digest -H "Content-Type: application/json" -d "{\"notify\":true}"'
+          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -fsS -X POST http://127.0.0.1:8787/api/youtrack/digest -H "Content-Type: application/json" -d "{\"notify\":true}"'
           User=www-data
           Group=www-data
           SERVICE
@@ -258,9 +266,9 @@ jobs:
           sudo systemctl enable --now atlas-content-backup.timer
           sudo systemctl start atlas-content-backup.service
           sudo systemctl enable --now atlas-youtrack-monitor.timer
-          sudo systemctl start atlas-youtrack-monitor.service || true
+          timeout 70s sudo systemctl start atlas-youtrack-monitor.service || true
           sudo systemctl enable --now atlas-youtrack-digest.timer
-          sudo systemctl start atlas-youtrack-digest.service || true
+          timeout 70s sudo systemctl start atlas-youtrack-digest.service || true
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then
