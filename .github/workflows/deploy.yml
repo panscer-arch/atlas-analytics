@@ -119,6 +119,11 @@ jobs:
           OUTREACH_REPLY_TO_EMAIL=${{ secrets.OUTREACH_REPLY_TO_EMAIL }}
           TGSTAT_TOKEN=${{ secrets.TGSTAT_TOKEN }}
           TELEMETR_API_KEY=${{ secrets.TELEMETR_API_KEY }}
+          ATLAS_YOUTRACK_URL=${{ secrets.ATLAS_YOUTRACK_URL }}
+          ATLAS_YOUTRACK_LOGIN=${{ secrets.ATLAS_YOUTRACK_LOGIN }}
+          ATLAS_YOUTRACK_PASSWORD=${{ secrets.ATLAS_YOUTRACK_PASSWORD }}
+          ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
+          ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ENV
           sudo chown root:root /etc/atlas-outreach.env
           sudo chmod 600 /etc/atlas-outreach.env
@@ -172,6 +177,32 @@ jobs:
           WantedBy=timers.target
           TIMER
 
+          sudo tee /etc/systemd/system/atlas-youtrack-monitor.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Check Atlas YouTrack task changes and push notifications
+          After=atlas-content-api.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/sh -c '/usr/bin/curl -fsS -X POST http://127.0.0.1:8787/api/youtrack/check -H "Content-Type: application/json" -d "{\"notify\":true}"'
+          User=www-data
+          Group=www-data
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-youtrack-monitor.timer >/dev/null <<'TIMER'
+          [Unit]
+          Description=Run Atlas YouTrack task monitor every minute
+
+          [Timer]
+          OnBootSec=2m
+          OnUnitActiveSec=1m
+          Persistent=true
+          Unit=atlas-youtrack-monitor.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
           sudo tee /etc/systemd/system/atlas-telegram-bot.service >/dev/null <<'SERVICE'
           [Unit]
           Description=Atlas Telegram Tasks Bot
@@ -198,6 +229,8 @@ jobs:
           sudo systemctl restart atlas-telegram-bot.service
           sudo systemctl enable --now atlas-content-backup.timer
           sudo systemctl start atlas-content-backup.service
+          sudo systemctl enable --now atlas-youtrack-monitor.timer
+          sudo systemctl start atlas-youtrack-monitor.service || true
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then
@@ -298,6 +331,53 @@ jobs:
                       else:
                           index = text.rfind("}")
                           text = text[:index] + snippet + "\n" + text[index:]
+              open(path, "w", encoding="utf-8").write(text)
+          PY
+            fi
+
+            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/youtrack/' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          snippet = """
+
+              location /api/youtrack/ {
+                  proxy_pass http://127.0.0.1:8787/api/youtrack/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 10m;
+              }
+          """
+          if "location /api/youtrack/" not in text:
+              index = text.find("location /api/pools/")
+              if index != -1:
+                  line_start = text.rfind("\n", 0, index) + 1
+                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+              else:
+                  index = text.find("location /api/outreach/")
+                  if index != -1:
+                      line_start = text.rfind("\n", 0, index) + 1
+                      text = text[:line_start] + snippet + "\n" + text[line_start:]
+                  else:
+                      index = text.find("location /api/telegram/")
+                      if index != -1:
+                          line_start = text.rfind("\n", 0, index) + 1
+                          text = text[:line_start] + snippet + "\n" + text[line_start:]
+                      else:
+                          index = text.find("location /api/content/")
+                          if index != -1:
+                              line_start = text.rfind("\n", 0, index) + 1
+                              text = text[:line_start] + snippet + "\n" + text[line_start:]
+                          else:
+                              index = text.find("location /")
+                              if index != -1:
+                                  line_start = text.rfind("\n", 0, index) + 1
+                                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+                              else:
+                                  index = text.rfind("}")
+                                  text = text[:index] + snippet + "\n" + text[index:]
               open(path, "w", encoding="utf-8").write(text)
           PY
             fi

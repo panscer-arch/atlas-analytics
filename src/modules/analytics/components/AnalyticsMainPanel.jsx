@@ -9,6 +9,7 @@ import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import Wrapper from "./Wrapper";
+import YouTrackTaskMonitor from "./YouTrackTaskMonitor";
 import formatCurrency from "../utils/formatCurrency";
 
 function formatPercent(value) {
@@ -32,6 +33,13 @@ export default function AnalyticsMainPanel({
   }
 
   if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" analyticsBoardUrl={analyticsBoardUrl} />;
+  if (activeTab === "taskMonitor") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <YouTrackTaskMonitor />
+      </Wrapper>
+    );
+  }
   if (activeTab === "expenses") {
     return (
       <Wrapper as="section" marginTop="lg">

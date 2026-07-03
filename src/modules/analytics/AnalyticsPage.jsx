@@ -565,6 +565,7 @@ function AnalyticsPage() {
     { id: "dashboard", label: "Дашборд" },
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
+    { id: "taskMonitor", label: "ATL-монитор", badge: "live", badgeTone: "success" },
     { id: "content", label: "Контент" },
   ];
 

@@ -9,6 +9,18 @@ const BACKUP_DIR = path.join(STORE_DIR, "_backups");
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
+const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
+const YOUTRACK_DEFAULT_FIELDS = [
+  "idReadable",
+  "summary",
+  "created",
+  "updated",
+  "resolved",
+  "project(shortName,name)",
+  "tags(name)",
+  "customFields(name,value(name,presentation,fullName,login,text))",
+  "comments(id,text,created,updated,author(login,fullName))",
+].join(",");
 const PANCAKE_USDT_USDC_POOL = {
   network: "bsc",
   address: "0x92b7807bF19b7DDdf89b706143896d05228f3121",
@@ -201,6 +213,266 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function getYouTrackConfig() {
+  const baseUrl = (process.env.ATLAS_YOUTRACK_URL || process.env.YOUTRACK_URL || "").trim().replace(/\/+$/, "");
+  const login = (process.env.ATLAS_YOUTRACK_LOGIN || process.env.YOUTRACK_LOGIN || "").trim();
+  const password = (process.env.ATLAS_YOUTRACK_PASSWORD || process.env.YOUTRACK_PASSWORD || "").trim();
+  const token = (process.env.ATLAS_YOUTRACK_TOKEN || process.env.YOUTRACK_TOKEN || "").trim();
+  const project = (process.env.ATLAS_YOUTRACK_PROJECT || "ATL").trim();
+  return { baseUrl, login, password, token, project };
+}
+
+function getYouTrackAuthHeaders(config) {
+  if (config.token) return { Authorization: `Bearer ${config.token}` };
+  if (config.login && config.password) {
+    return { Authorization: `Basic ${Buffer.from(`${config.login}:${config.password}`).toString("base64")}` };
+  }
+  return {};
+}
+
+function toMillis(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number) || number <= 0) return 0;
+  return number < 100000000000 ? number * 1000 : number;
+}
+
+function formatDurationRu(ms = 0) {
+  const safeMs = Math.max(0, Number(ms) || 0);
+  const minutes = Math.floor(safeMs / 60000);
+  if (minutes < 60) return `${minutes} мин`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} ч`;
+  const days = Math.floor(hours / 24);
+  if (days < 60) return `${days} д`;
+  return `${Math.floor(days / 30)} мес`;
+}
+
+function stringifyYouTrackValue(value) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value.map(stringifyYouTrackValue).filter(Boolean).join(", ");
+  if (typeof value === "object") {
+    return value.name || value.presentation || value.fullName || value.login || value.text || "";
+  }
+  return String(value);
+}
+
+function getYouTrackField(issue = {}, names = []) {
+  const wanted = names.map((name) => name.toLowerCase());
+  const field = (issue.customFields || []).find((item) => wanted.includes(String(item?.name || "").toLowerCase()));
+  return stringifyYouTrackValue(field?.value);
+}
+
+function normalizeYouTrackComment(comment = {}) {
+  const safeComment = comment || {};
+  const createdAtMs = toMillis(safeComment.created);
+  const updatedAtMs = toMillis(safeComment.updated || safeComment.created);
+  return {
+    id: safeComment.id || `${createdAtMs}-${safeComment.author?.login || "user"}`,
+    text: String(safeComment.text || "").trim(),
+    createdAt: createdAtMs ? new Date(createdAtMs).toISOString() : "",
+    updatedAt: updatedAtMs ? new Date(updatedAtMs).toISOString() : "",
+    createdAtMs,
+    updatedAtMs,
+    author: safeComment.author?.fullName || safeComment.author?.login || "Unknown",
+    authorLogin: safeComment.author?.login || "",
+  };
+}
+
+function commentLooksActionable(comment = {}, issue = {}) {
+  const safeComment = comment || {};
+  const status = String(issue.status || "").toLowerCase();
+  const text = String(safeComment.text || "").toLowerCase();
+  if (status.includes("уточ") || status.includes("question") || status.includes("clarification")) return true;
+  return /(\?|нужно|проверь|уточн|ответ|коммент|comment|question|clarify|please|надо)/i.test(text);
+}
+
+function normalizeYouTrackIssue(issue = {}, statusSinceMs = 0) {
+  const config = getYouTrackConfig();
+  const createdAtMs = toMillis(issue.created);
+  const updatedAtMs = toMillis(issue.updated);
+  const resolvedAtMs = toMillis(issue.resolved);
+  const comments = (issue.comments || []).map(normalizeYouTrackComment).sort((a, b) => b.createdAtMs - a.createdAtMs);
+  const latestComment = comments[0] || null;
+  const status = getYouTrackField(issue, ["State", "Состояние"]) || (resolvedAtMs ? "Done" : "Unknown");
+  const priority = getYouTrackField(issue, ["Priority", "Приоритет"]) || "Normal";
+  const assignee = getYouTrackField(issue, ["Assignee", "Исполнитель"]) || "Unassigned";
+  const dueDate = getYouTrackField(issue, ["Due Date", "Дата выполнения", "Срок"]) || "";
+  const now = Date.now();
+  const activeSinceMs = statusSinceMs || updatedAtMs || createdAtMs || now;
+  const needsAttention = commentLooksActionable(latestComment, { status }) || /show-stopper|critical|blocker/i.test(priority);
+
+  return {
+    id: issue.idReadable || issue.id || "",
+    title: String(issue.summary || "Без названия").trim(),
+    url: config.baseUrl ? `${config.baseUrl}/issue/${issue.idReadable || issue.id || ""}` : "",
+    project: issue.project?.shortName || config.project || "ATL",
+    status,
+    priority,
+    assignee,
+    dueDate,
+    tags: (issue.tags || []).map((tag) => tag.name).filter(Boolean),
+    createdAt: createdAtMs ? new Date(createdAtMs).toISOString() : "",
+    updatedAt: updatedAtMs ? new Date(updatedAtMs).toISOString() : "",
+    resolvedAt: resolvedAtMs ? new Date(resolvedAtMs).toISOString() : "",
+    createdAtMs,
+    updatedAtMs,
+    resolvedAtMs,
+    ageMs: now - (createdAtMs || now),
+    inactiveMs: now - (updatedAtMs || now),
+    statusSinceMs: activeSinceMs,
+    statusAgeMs: now - activeSinceMs,
+    ageLabel: formatDurationRu(now - (createdAtMs || now)),
+    inactiveLabel: formatDurationRu(now - (updatedAtMs || now)),
+    statusAgeLabel: formatDurationRu(now - activeSinceMs),
+    commentsCount: comments.length,
+    latestComment,
+    needsAttention,
+    isResolved: Boolean(resolvedAtMs) || /done|fixed|closed|resolved|готов|закрыт/i.test(status),
+  };
+}
+
+function getIssueSignature(issue = {}) {
+  return {
+    status: issue.status || "",
+    priority: issue.priority || "",
+    assignee: issue.assignee || "",
+    updatedAtMs: issue.updatedAtMs || 0,
+    commentsCount: issue.commentsCount || 0,
+    latestCommentId: issue.latestComment?.id || "",
+    latestCommentText: issue.latestComment?.text || "",
+  };
+}
+
+async function fetchYouTrackJson(pathname, params = {}) {
+  const config = getYouTrackConfig();
+  if (!config.baseUrl || (!config.token && (!config.login || !config.password))) {
+    return { ok: false, status: 503, error: "youtrack_not_configured" };
+  }
+
+  const url = new URL(`${config.baseUrl}${pathname}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, value);
+  });
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      ...getYouTrackAuthHeaders(config),
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { ok: false, status: response.status, error: payload?.error_description || payload?.error || "youtrack_request_failed" };
+  }
+  return { ok: true, status: response.status, payload };
+}
+
+async function getIssueStatusSinceMs(issueId) {
+  if (!issueId) return 0;
+  const result = await fetchYouTrackJson(`/api/issues/${encodeURIComponent(issueId)}/activities`, {
+    categories: "CustomFieldCategory",
+    fields: "id,timestamp,field(name),added(name,presentation),removed(name,presentation)",
+  });
+  if (!result.ok || !Array.isArray(result.payload)) return 0;
+  const stateChanges = result.payload
+    .filter((item) => /state|состояние/i.test(item?.field?.name || ""))
+    .sort((a, b) => toMillis(b.timestamp) - toMillis(a.timestamp));
+  return toMillis(stateChanges[0]?.timestamp);
+}
+
+async function getYouTrackIssues({ query = "", top = 50 } = {}) {
+  const config = getYouTrackConfig();
+  const searchQuery = query || `project: ${config.project}`;
+  const result = await fetchYouTrackJson("/api/issues", {
+    query: searchQuery,
+    fields: YOUTRACK_DEFAULT_FIELDS,
+    $top: String(Math.max(1, Math.min(Number(top) || 50, 100))),
+  });
+  if (!result.ok) return result;
+
+  const rawIssues = Array.isArray(result.payload) ? result.payload : [];
+  const statusTimes = await Promise.all(rawIssues.slice(0, 50).map((issue) => getIssueStatusSinceMs(issue.idReadable || issue.id || "")));
+  const issues = rawIssues.map((issue, index) => normalizeYouTrackIssue(issue, statusTimes[index] || 0));
+  const openIssues = issues.filter((issue) => !issue.isResolved);
+  const attentionIssues = issues.filter((issue) => issue.needsAttention && !issue.isResolved);
+  const staleIssues = openIssues.filter((issue) => issue.inactiveMs >= 24 * 60 * 60 * 1000);
+  const showStoppers = openIssues.filter((issue) => /show-stopper|critical|blocker/i.test(issue.priority));
+
+  return {
+    ok: true,
+    status: 200,
+    lastCheckedAt: new Date().toISOString(),
+    query: searchQuery,
+    issues,
+    summary: {
+      total: issues.length,
+      open: openIssues.length,
+      done: issues.length - openIssues.length,
+      attention: attentionIssues.length,
+      stale: staleIssues.length,
+      showStoppers: showStoppers.length,
+    },
+  };
+}
+
+function buildYouTrackChanges(previous = {}, issues = []) {
+  const previousIssues = previous?.issues || {};
+  const changes = [];
+  for (const issue of issues) {
+    const before = previousIssues[issue.id];
+    const current = getIssueSignature(issue);
+    if (!before) {
+      changes.push({ type: "new", issue, message: `Новая задача ${issue.id}: ${issue.title}` });
+      continue;
+    }
+    if (before.status !== current.status) {
+      changes.push({ type: "status", issue, before: before.status, after: current.status, message: `${issue.id}: статус ${before.status || "—"} → ${current.status || "—"}` });
+    }
+    if (before.assignee !== current.assignee) {
+      changes.push({ type: "assignee", issue, before: before.assignee, after: current.assignee, message: `${issue.id}: исполнитель ${before.assignee || "—"} → ${current.assignee || "—"}` });
+    }
+    if ((before.commentsCount || 0) < current.commentsCount || before.latestCommentId !== current.latestCommentId) {
+      changes.push({ type: "comment", issue, message: `${issue.id}: новый комментарий от ${issue.latestComment?.author || "участника"}` });
+    }
+  }
+  return changes;
+}
+
+function formatYouTrackChangePush(changes = []) {
+  const lines = ["🧭 <b>ATLAS TASK MONITOR</b>", "━━━━━━━━━━━━━━━━", ""];
+  changes.slice(0, 8).forEach((change) => {
+    const issue = change.issue || {};
+    lines.push(`📌 <b>${escapeTelegramHtml(issue.id || "Issue")}</b> — ${escapeTelegramHtml(issue.title || "")}`);
+    lines.push(`🔁 ${escapeTelegramHtml(change.message || "Изменение")}`);
+    lines.push(`📍 ${escapeTelegramHtml(issue.status || "—")} · 👤 ${escapeTelegramHtml(issue.assignee || "—")} · ⏱ ${escapeTelegramHtml(issue.statusAgeLabel || "—")}`);
+    if (issue.latestComment?.text) lines.push(`💬 ${escapeTelegramHtml(issue.latestComment.text).slice(0, 260)}`);
+    if (issue.url) lines.push(`🔗 ${escapeTelegramHtml(issue.url)}`);
+    lines.push("");
+  });
+  if (changes.length > 8) lines.push(`Ещё изменений: ${changes.length - 8}`);
+  return lines.join("\n").trim();
+}
+
+async function checkYouTrackChanges({ notify = true } = {}) {
+  const result = await getYouTrackIssues();
+  if (!result.ok) return result;
+  const previous = await readContent(YOUTRACK_SNAPSHOT_KEY, { issues: {} });
+  const isFirstSnapshot = !previous?.issues || !Object.keys(previous.issues).length;
+  const changes = isFirstSnapshot ? [] : buildYouTrackChanges(previous, result.issues);
+  const nextSnapshot = {
+    checkedAt: result.lastCheckedAt,
+    issues: Object.fromEntries(result.issues.map((issue) => [issue.id, getIssueSignature(issue)])),
+  };
+  await writeContent(YOUTRACK_SNAPSHOT_KEY, nextSnapshot);
+
+  let notification = { ok: true, skipped: true };
+  if (notify && changes.length) {
+    notification = await sendTelegramMessage(formatYouTrackChangePush(changes), { parse_mode: "HTML" });
+  }
+
+  return { ...result, changes, notification, bootstrapped: isFirstSnapshot };
 }
 
 function toNumber(value) {
@@ -870,6 +1142,23 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/pools/pancake-usdt-usdc" && request.method === "GET") {
       const result = await getPancakePoolSnapshot();
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/youtrack/issues" && request.method === "GET") {
+      const result = await getYouTrackIssues({
+        query: url.searchParams.get("query") || "",
+        top: url.searchParams.get("top") || 50,
+      });
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/youtrack/check" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = body ? JSON.parse(body) : {};
+      const result = await checkYouTrackChanges({ notify: parsed.notify !== false });
       sendJson(response, result.ok ? 200 : result.status || 502, result);
       return;
     }
