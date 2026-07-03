@@ -95,11 +95,12 @@ async function getTelegramConfig() {
 
 async function getYouTrackTelegramChatId() {
   const fileEnv = await readTelegramEnv();
-  return (process.env.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID
+  const value = process.env.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID
     || fileEnv.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID
     || process.env.TELEGRAM_PUSH_CHAT_ID
     || fileEnv.TELEGRAM_PUSH_CHAT_ID
-    || YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID).trim();
+    || YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID;
+  return value.split(",").map((item) => item.trim()).filter(Boolean)[0] || YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID;
 }
 
 function normalizeTelegramValue(value = "") {
