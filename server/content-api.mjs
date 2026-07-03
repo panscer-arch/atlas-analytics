@@ -10,6 +10,7 @@ const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
+const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
 const YOUTRACK_DEFAULT_FIELDS = [
   "idReadable",
   "summary",
@@ -455,6 +456,79 @@ function formatYouTrackChangePush(changes = []) {
   return lines.join("\n").trim();
 }
 
+function getYouTrackDigestSignature(summary = {}, issues = []) {
+  const attentionIds = issues.filter((issue) => issue.needsAttention && !issue.isResolved).map((issue) => issue.id).sort();
+  const showStopperIds = issues.filter((issue) => /show-stopper|critical|blocker/i.test(issue.priority) && !issue.isResolved).map((issue) => issue.id).sort();
+  const staleIds = issues.filter((issue) => issue.inactiveMs >= 24 * 60 * 60 * 1000 && !issue.isResolved).map((issue) => issue.id).sort();
+  return JSON.stringify({
+    total: summary.total || 0,
+    open: summary.open || 0,
+    done: summary.done || 0,
+    attention: attentionIds,
+    showStoppers: showStopperIds,
+    stale: staleIds,
+  });
+}
+
+function formatIssueDigestLine(issue = {}) {
+  const parts = [
+    `• <b>${escapeTelegramHtml(issue.id || "Issue")}</b>`,
+    escapeTelegramHtml(issue.title || "Без названия"),
+  ];
+  const meta = [
+    issue.status ? `статус: ${escapeTelegramHtml(issue.status)}` : "",
+    issue.assignee ? `исп.: ${escapeTelegramHtml(issue.assignee)}` : "",
+    issue.statusAgeLabel ? `в статусе ${escapeTelegramHtml(issue.statusAgeLabel)}` : "",
+  ].filter(Boolean).join(" · ");
+  return `${parts.join(" — ")}\n  ${meta}${issue.url ? `\n  ${escapeTelegramHtml(issue.url)}` : ""}`;
+}
+
+function formatYouTrackDigestPush({ summary = {}, issues = [], changes = [], unchanged = false } = {}) {
+  const attentionIssues = issues
+    .filter((issue) => issue.needsAttention && !issue.isResolved)
+    .sort((a, b) => Number(/show-stopper|critical|blocker/i.test(b.priority)) - Number(/show-stopper|critical|blocker/i.test(a.priority)) || b.statusAgeMs - a.statusAgeMs);
+  const showStoppers = issues.filter((issue) => /show-stopper|critical|blocker/i.test(issue.priority) && !issue.isResolved);
+  const staleIssues = issues
+    .filter((issue) => issue.inactiveMs >= 24 * 60 * 60 * 1000 && !issue.isResolved)
+    .sort((a, b) => b.inactiveMs - a.inactiveMs);
+
+  const lines = [
+    "🧭 <b>ATL TASK DIGEST / 30 мин</b>",
+    "━━━━━━━━━━━━━━━━",
+    `📊 Всего: <b>${summary.total || 0}</b> · открыто: <b>${summary.open || 0}</b> · готово: <b>${summary.done || 0}</b>`,
+    `🔥 Нужен ответ: <b>${summary.attention || 0}</b> · Show-stopper: <b>${summary.showStoppers || 0}</b> · зависли 24ч+: <b>${summary.stale || 0}</b>`,
+  ];
+
+  if (changes.length) {
+    lines.push("", "🔁 <b>Изменения с прошлого среза</b>");
+    changes.slice(0, 5).forEach((change) => lines.push(`• ${escapeTelegramHtml(change.message || "Изменение")}`));
+    if (changes.length > 5) lines.push(`• ещё изменений: ${changes.length - 5}`);
+  } else if (unchanged) {
+    lines.push("", "✅ Новых изменений с прошлого дайджеста нет.");
+  }
+
+  if (attentionIssues.length) {
+    lines.push("", "💬 <b>Ответить/проверить в первую очередь</b>");
+    attentionIssues.slice(0, 5).forEach((issue) => lines.push(formatIssueDigestLine(issue)));
+  }
+
+  const attentionIds = new Set(attentionIssues.map((issue) => issue.id));
+  const extraShowStoppers = showStoppers.filter((issue) => !attentionIds.has(issue.id));
+  if (extraShowStoppers.length) {
+    lines.push("", "🚨 <b>Show-stopper без отдельного блока ответа</b>");
+    extraShowStoppers.slice(0, 4).forEach((issue) => lines.push(formatIssueDigestLine(issue)));
+  }
+
+  const staleOutsideAttention = staleIssues.filter((issue) => !attentionIds.has(issue.id)).slice(0, 4);
+  if (staleOutsideAttention.length) {
+    lines.push("", "⏳ <b>Зависшие 24ч+</b>");
+    staleOutsideAttention.forEach((issue) => lines.push(formatIssueDigestLine(issue)));
+  }
+
+  lines.push("", "🔎 SuperSUS → ATL-монитор");
+  return lines.join("\n").trim();
+}
+
 async function checkYouTrackChanges({ notify = true } = {}) {
   const result = await getYouTrackIssues();
   if (!result.ok) return result;
@@ -473,6 +547,30 @@ async function checkYouTrackChanges({ notify = true } = {}) {
   }
 
   return { ...result, changes, notification, bootstrapped: isFirstSnapshot };
+}
+
+async function sendYouTrackDigest({ notify = true, force = false } = {}) {
+  const result = await getYouTrackIssues();
+  if (!result.ok) return result;
+
+  const previous = await readContent(YOUTRACK_DIGEST_SNAPSHOT_KEY, { issues: {}, signature: "" });
+  const isFirstSnapshot = !previous?.issues || !Object.keys(previous.issues).length;
+  const changes = isFirstSnapshot ? [] : buildYouTrackChanges(previous, result.issues);
+  const signature = getYouTrackDigestSignature(result.summary, result.issues);
+  const unchanged = previous?.signature === signature && changes.length === 0;
+  const nextSnapshot = {
+    checkedAt: result.lastCheckedAt,
+    signature,
+    issues: Object.fromEntries(result.issues.map((issue) => [issue.id, getIssueSignature(issue)])),
+  };
+  await writeContent(YOUTRACK_DIGEST_SNAPSHOT_KEY, nextSnapshot);
+
+  let notification = { ok: true, skipped: true };
+  if (notify && (force || !isFirstSnapshot || result.summary?.attention || result.summary?.showStoppers || changes.length)) {
+    notification = await sendTelegramMessage(formatYouTrackDigestPush({ ...result, changes, unchanged }), { parse_mode: "HTML" });
+  }
+
+  return { ...result, changes, notification, bootstrapped: isFirstSnapshot, digestUnchanged: unchanged };
 }
 
 function toNumber(value) {
@@ -1159,6 +1257,17 @@ const server = http.createServer(async (request, response) => {
       const body = await readBody(request);
       const parsed = body ? JSON.parse(body) : {};
       const result = await checkYouTrackChanges({ notify: parsed.notify !== false });
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/youtrack/digest" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = body ? JSON.parse(body) : {};
+      const result = await sendYouTrackDigest({
+        notify: parsed.notify !== false,
+        force: parsed.force === true,
+      });
       sendJson(response, result.ok ? 200 : result.status || 502, result);
       return;
     }

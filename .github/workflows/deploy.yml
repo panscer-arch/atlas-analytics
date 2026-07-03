@@ -203,6 +203,32 @@ jobs:
           WantedBy=timers.target
           TIMER
 
+          sudo tee /etc/systemd/system/atlas-youtrack-digest.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Send Atlas YouTrack 30-minute task digest to Telegram
+          After=atlas-content-api.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/sh -c '/usr/bin/curl -fsS -X POST http://127.0.0.1:8787/api/youtrack/digest -H "Content-Type: application/json" -d "{\"notify\":true}"'
+          User=www-data
+          Group=www-data
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-youtrack-digest.timer >/dev/null <<'TIMER'
+          [Unit]
+          Description=Send Atlas YouTrack task digest every 30 minutes
+
+          [Timer]
+          OnBootSec=4m
+          OnUnitActiveSec=30m
+          Persistent=true
+          Unit=atlas-youtrack-digest.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
           sudo tee /etc/systemd/system/atlas-telegram-bot.service >/dev/null <<'SERVICE'
           [Unit]
           Description=Atlas Telegram Tasks Bot
@@ -231,6 +257,8 @@ jobs:
           sudo systemctl start atlas-content-backup.service
           sudo systemctl enable --now atlas-youtrack-monitor.timer
           sudo systemctl start atlas-youtrack-monitor.service || true
+          sudo systemctl enable --now atlas-youtrack-digest.timer
+          sudo systemctl start atlas-youtrack-digest.service || true
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then

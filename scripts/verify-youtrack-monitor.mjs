@@ -7,6 +7,7 @@ const files = {
   css: "src/modules/analytics/styles/analytics.css",
   store: "src/modules/analytics/services/contentStore.js",
   server: "server/content-api.mjs",
+  deploy: ".github/workflows/deploy.yml",
 };
 
 async function read(path) {
@@ -33,13 +34,14 @@ function extractCssBlock(css, selector) {
   throw new Error(`CSS selector block is not closed: ${selector}`);
 }
 
-const [page, panel, component, css, store, server] = await Promise.all([
+const [page, panel, component, css, store, server, deploy] = await Promise.all([
   read(files.page),
   read(files.panel),
   read(files.component),
   read(files.css),
   read(files.store),
   read(files.server),
+  read(files.deploy),
 ]);
 
 assertIncludes(page, 'id: "taskMonitor"', "AnalyticsPage tab");
@@ -54,6 +56,13 @@ assertIncludes(store, "export async function getServerJson", "contentStore get h
 assertIncludes(store, "export async function postServerJson", "contentStore post helper");
 assertIncludes(server, 'url.pathname === "/api/youtrack/issues"', "server issues route");
 assertIncludes(server, 'url.pathname === "/api/youtrack/check"', "server check route");
+assertIncludes(server, 'url.pathname === "/api/youtrack/digest"', "server digest route");
+assertIncludes(server, "formatYouTrackDigestPush", "server digest formatter");
+assertIncludes(server, "sendYouTrackDigest", "server digest sender");
+assertIncludes(deploy, "atlas-youtrack-monitor.timer", "deploy minute monitor timer");
+assertIncludes(deploy, "atlas-youtrack-digest.timer", "deploy digest timer");
+assertIncludes(deploy, "OnUnitActiveSec=30m", "deploy digest interval");
+assertIncludes(deploy, "/api/youtrack/digest", "deploy digest endpoint");
 
 const kpiBlock = extractCssBlock(css, ".analytics-youtrack-kpi {");
 const rowBlock = extractCssBlock(css, ".analytics-youtrack-table td {");
