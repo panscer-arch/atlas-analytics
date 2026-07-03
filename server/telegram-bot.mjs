@@ -16,6 +16,7 @@ const MAX_AUDIO_BYTES = Number(process.env.TELEGRAM_TRANSCRIBE_MAX_BYTES || 25 *
 const HERMES_BRIDGE_URL = process.env.HERMES_BRIDGE_URL || "";
 const HERMES_BRIDGE_TOKEN = process.env.HERMES_BRIDGE_TOKEN || "";
 const HERMES_TIMEOUT_MS = Number(process.env.HERMES_BRIDGE_TIMEOUT_MS || 180_000);
+const CONTENT_API_URL = process.env.ATLAS_CONTENT_API_URL || `http://127.0.0.1:${process.env.ATLAS_CONTENT_API_PORT || 8787}`;
 const ALLOWED_CHAT_IDS = new Set(
   String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || "")
     .split(",")
@@ -141,6 +142,7 @@ async function handleUpdate(update) {
   if (text.startsWith("/status")) return handleTaskPatchCommand(message, text, "status");
   if (text.startsWith("/deadline")) return handleTaskPatchCommand(message, text, "deadline");
   if (text.startsWith("/today") || text.startsWith("/dayplan")) return handleTodayCommand(message);
+  if (text.startsWith("/atl")) return handleAtlCommand(message, text);
   if (text.startsWith("/tasks")) return handleTasksCommand(message, text);
   if (text.startsWith("/overdue")) return handleTasksCommand(message, "/tasks");
   if (text.startsWith("/chatid")) return handleChatIdCommand(message);
@@ -501,6 +503,43 @@ async function handleTasksCommand(message, text) {
   });
 }
 
+async function handleAtlCommand(message, text) {
+  const mode = parseArgs(text, "/atl").trim().toLowerCase();
+  try {
+    const result = await fetchAtlasIssues();
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatAtlSummary(result, mode),
+    });
+  } catch (error) {
+    log("atl command error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Не смог получить ATL-задачи. Проверь content-api и YouTrack-доступ.",
+    });
+  }
+}
+
+async function fetchAtlasIssues() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const response = await fetch(new URL("/api/youtrack/issues?top=50", CONTENT_API_URL), {
+      method: "GET",
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload?.error || `HTTP ${response.status}`);
+    }
+    return payload;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function handleChatIdCommand(message) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
@@ -652,6 +691,11 @@ async function sendHelp(chatId) {
       "Обычные фразы, голосовые, forwards и replies не создают задачи сами",
       "/today — план на день по подзадачам и ответственным",
       "/dayplan — то же самое, удобно отправлять в общий чат",
+      "/atl — сводка по ATL/YouTrack",
+      "/atl testing — задачи на тестировании",
+      "/atl showstoppers — show-stopper задачи",
+      "/atl attention — где нужен ответ",
+      "/atl stale — зависшие 24ч+",
       "/tasks marketing — активные задачи категории",
       "/my — мои активные задачи",
       "Reply + /assign @user — назначить ответственного",
@@ -777,6 +821,74 @@ function formatTaskList(tasks, title) {
     ...tasks.slice(0, 20).map((task, index) => `${index + 1}. [${task.boardTitle}] ${task.title || "Без названия"}${task.assignee || task.responsible ? ` — ${task.assignee || task.responsible}` : ""}`),
     tasks.length > 20 ? `\n...и ещё ${tasks.length - 20}` : "",
   ].filter(Boolean).join("\n");
+}
+
+function normalizeAtlMode(value = "") {
+  const mode = String(value || "").trim().toLowerCase();
+  if (["test", "testing", "тест", "тестирование"].includes(mode)) return "testing";
+  if (["show", "showstopper", "showstoppers", "blockers", "стоп", "шоу", "критичные"].includes(mode)) return "showstoppers";
+  if (["attention", "answer", "answers", "ответ", "ответить", "внимание"].includes(mode)) return "attention";
+  if (["stale", "old", "зависшие", "зависло", "старые"].includes(mode)) return "stale";
+  return "summary";
+}
+
+function isTestingStatus(value = "") {
+  return /тест|test/i.test(String(value || ""));
+}
+
+function isShowStopper(issue = {}) {
+  return /show/i.test(String(issue.priority || ""));
+}
+
+function formatIssueLine(issue = {}, index = 0) {
+  const meta = [
+    issue.status || "—",
+    issue.assignee ? `исп: ${issue.assignee}` : "",
+    issue.inactiveLabel ? `обновл: ${issue.inactiveLabel} назад` : "",
+  ].filter(Boolean).join(" · ");
+  return `${index + 1}. ${issue.id} — ${issue.title || "Без названия"}\n   ${meta}\n   ${issue.url || ""}`.trim();
+}
+
+function formatIssueSection(title, issues, emptyText = "Нет задач.") {
+  return [
+    title,
+    issues.length ? issues.slice(0, 10).map(formatIssueLine).join("\n\n") : emptyText,
+    issues.length > 10 ? `\n...и ещё ${issues.length - 10}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function formatAtlSummary(result = {}, rawMode = "") {
+  const mode = normalizeAtlMode(rawMode);
+  const issues = Array.isArray(result.issues) ? result.issues : [];
+  const openIssues = issues.filter((issue) => !issue.isResolved);
+  const testing = openIssues.filter((issue) => isTestingStatus(issue.status));
+  const attention = openIssues.filter((issue) => issue.needsAttention);
+  const showStoppers = openIssues.filter(isShowStopper);
+  const stale = openIssues.filter((issue) => Number(issue.inactiveMs || 0) >= 24 * 60 * 60 * 1000);
+  const summary = result.summary || {};
+
+  if (mode === "testing") return formatIssueSection(`ATL: на тестировании — ${testing.length}`, testing, "На тестировании сейчас пусто.");
+  if (mode === "showstoppers") return formatIssueSection(`ATL: show-stopper — ${showStoppers.length}`, showStoppers, "Открытых show-stopper нет.");
+  if (mode === "attention") return formatIssueSection(`ATL: нужен ответ — ${attention.length}`, attention, "Нет задач, где явно нужен ответ.");
+  if (mode === "stale") return formatIssueSection(`ATL: зависшие 24ч+ — ${stale.length}`, stale, "Зависших 24ч+ нет.");
+
+  return [
+    "ATL / YouTrack сейчас",
+    "",
+    `Всего: ${summary.total ?? issues.length}`,
+    `Открыто: ${summary.open ?? openIssues.length}`,
+    `Done: ${summary.done ?? issues.filter((issue) => issue.isResolved).length}`,
+    `На тестировании: ${testing.length}`,
+    `Нужен ответ: ${summary.attention ?? attention.length}`,
+    `Show-stopper: ${summary.showStoppers ?? showStoppers.length}`,
+    `Зависшие 24ч+: ${summary.stale ?? stale.length}`,
+    "",
+    "Команды:",
+    "/atl testing",
+    "/atl showstoppers",
+    "/atl attention",
+    "/atl stale",
+  ].join("\n");
 }
 
 function normalizeArray(value) {
