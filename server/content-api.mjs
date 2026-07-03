@@ -12,6 +12,7 @@ const OUTREACH_ENV_FILE = process.env.ATLAS_OUTREACH_ENV_FILE || "/etc/atlas-out
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
+const YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID = "-5158247269";
 const YOUTRACK_DEFAULT_FIELDS = [
   "idReadable",
   "summary",
@@ -90,6 +91,15 @@ async function getTelegramConfig() {
     .filter(Boolean);
 
   return { token, targetChatIds };
+}
+
+async function getYouTrackTelegramChatId() {
+  const fileEnv = await readTelegramEnv();
+  return (process.env.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID
+    || fileEnv.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID
+    || process.env.TELEGRAM_PUSH_CHAT_ID
+    || fileEnv.TELEGRAM_PUSH_CHAT_ID
+    || YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID).trim();
 }
 
 function normalizeTelegramValue(value = "") {
@@ -554,7 +564,11 @@ async function checkYouTrackChanges({ notify = true } = {}) {
 
   let notification = { ok: true, skipped: true };
   if (notify && changes.length) {
-    notification = await sendTelegramMessage(formatYouTrackChangePush(changes), { parse_mode: "HTML" });
+    notification = await sendTelegramMessage(
+      formatYouTrackChangePush(changes),
+      { parse_mode: "HTML" },
+      await getYouTrackTelegramChatId(),
+    );
   }
 
   return { ...result, changes, notification, bootstrapped: isFirstSnapshot };
@@ -578,7 +592,11 @@ async function sendYouTrackDigest({ notify = true, force = false } = {}) {
 
   let notification = { ok: true, skipped: true };
   if (notify && (force || !isFirstSnapshot || result.summary?.attention || result.summary?.showStoppers || changes.length)) {
-    notification = await sendTelegramMessage(formatYouTrackDigestPush({ ...result, changes, unchanged }), { parse_mode: "HTML" });
+    notification = await sendTelegramMessage(
+      formatYouTrackDigestPush({ ...result, changes, unchanged }),
+      { parse_mode: "HTML" },
+      await getYouTrackTelegramChatId(),
+    );
   }
 
   return { ...result, changes, notification, bootstrapped: isFirstSnapshot, digestUnchanged: unchanged };
