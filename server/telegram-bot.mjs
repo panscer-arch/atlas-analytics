@@ -162,19 +162,8 @@ async function handleUpdate(update) {
     return;
   }
 
-  if (hasAudioMessage(message)) {
-    await askCategoryForMessage(message, {
-      title: firstLine(text) || "Задача из голосового",
-      description: text,
-      assignee: "",
-      dueDate: "",
-    });
-    return;
-  }
-
-  if (message.forward_origin || message.forward_from || message.forward_sender_name || message.reply_to_message) {
-    await askCategoryForMessage(message);
-  }
+  // Ordinary voice messages, forwards and replies are just chat context.
+  // A task is created only by /task, 💋 in text, or a 💋 reaction.
 }
 
 function messageKey(chatId, messageId) {
@@ -659,6 +648,8 @@ async function sendHelp(chatId) {
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",
       "Reply на сообщение + /task marketing — взять текст из сообщения",
+      "💋 в тексте или реакция 💋 на сообщение — предложить добавить задачу",
+      "Обычные фразы, голосовые, forwards и replies не создают задачи сами",
       "/today — план на день по подзадачам и ответственным",
       "/dayplan — то же самое, удобно отправлять в общий чат",
       "/tasks marketing — активные задачи категории",
