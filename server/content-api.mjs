@@ -8,6 +8,7 @@ const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analyti
 const BACKUP_DIR = path.join(STORE_DIR, "_backups");
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
+const OUTREACH_ENV_FILE = process.env.ATLAS_OUTREACH_ENV_FILE || "/etc/atlas-outreach.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
@@ -43,12 +44,10 @@ function getContentKey(url) {
   return match?.[1] || "";
 }
 
-async function readTelegramEnv() {
-  if (telegramEnvCache) return telegramEnvCache;
-
+async function readEnvFile(filePath) {
   const env = {};
   try {
-    const raw = await readFile(TELEGRAM_ENV_FILE, "utf8");
+    const raw = await readFile(filePath, "utf8");
     raw.split(/\r?\n/).forEach((line) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) return;
@@ -57,8 +56,20 @@ async function readTelegramEnv() {
       env[match[1]] = match[2].replace(/^['"]|['"]$/g, "").trim();
     });
   } catch {
-    // Content API can still work without Telegram push configuration.
+    // Optional env files are allowed to be absent.
   }
+
+  return env;
+}
+
+async function readTelegramEnv() {
+  if (telegramEnvCache) return telegramEnvCache;
+
+  const [telegramEnv, outreachEnv] = await Promise.all([
+    readEnvFile(TELEGRAM_ENV_FILE),
+    readEnvFile(OUTREACH_ENV_FILE),
+  ]);
+  const env = { ...telegramEnv, ...outreachEnv };
 
   telegramEnvCache = env;
   return env;
