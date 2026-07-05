@@ -9,6 +9,40 @@ const BACKUP_DIR = path.join(STORE_DIR, "_backups");
 const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
+const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
+const YOUTRACK_DEFAULT_FIELDS = [
+  "idReadable",
+  "summary",
+  "created",
+  "updated",
+  "resolved",
+  "project(shortName,name)",
+  "tags(name)",
+  "customFields(name,value(name,presentation,fullName,login,text))",
+  "comments(id,text,created,updated,author(login,fullName))",
+].join(",");
+const YOUTRACK_STATUSES = {
+  TODO: "Нужно сделать",
+  IN_PROGRESS: "В обработке",
+  NEEDS_CLARIFICATION: "Нужно уточнение",
+  TESTING: "Тестирование",
+  RETURNED_TO_WORK: "Возвращено в работу",
+  DONE: "Готово",
+};
+const YOUTRACK_STATUS_ORDER = [
+  YOUTRACK_STATUSES.TODO,
+  YOUTRACK_STATUSES.IN_PROGRESS,
+  YOUTRACK_STATUSES.NEEDS_CLARIFICATION,
+  YOUTRACK_STATUSES.TESTING,
+  YOUTRACK_STATUSES.RETURNED_TO_WORK,
+  YOUTRACK_STATUSES.DONE,
+];
+const YOUTRACK_SHOW_STOPPER_PATTERN = /show-stopper|critical|blocker|критичес|блокер/i;
+const PANCAKE_USDT_USDC_POOL = {
+  network: "bsc",
+  address: "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+  label: "PancakeSwap V3 USDT/USDC 0.01%",
+};
 
 let telegramEnvCache = null;
 
@@ -196,6 +230,605 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function getYouTrackConfig() {
+  const baseUrl = (process.env.ATLAS_YOUTRACK_URL || process.env.YOUTRACK_URL || "").trim().replace(/\/+$/, "");
+  const login = (process.env.ATLAS_YOUTRACK_LOGIN || process.env.YOUTRACK_LOGIN || "").trim();
+  const password = (process.env.ATLAS_YOUTRACK_PASSWORD || process.env.YOUTRACK_PASSWORD || "").trim();
+  const token = (process.env.ATLAS_YOUTRACK_TOKEN || process.env.YOUTRACK_TOKEN || "").trim();
+  const project = (process.env.ATLAS_YOUTRACK_PROJECT || "ATL").trim();
+  return { baseUrl, login, password, token, project };
+}
+
+function getYouTrackAuthHeaders(config) {
+  if (config.token) return { Authorization: `Bearer ${config.token}` };
+  if (config.login && config.password) {
+    return { Authorization: `Basic ${Buffer.from(`${config.login}:${config.password}`).toString("base64")}` };
+  }
+  return {};
+}
+
+function toMillis(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number) || number <= 0) return 0;
+  return number < 100000000000 ? number * 1000 : number;
+}
+
+function formatDurationRu(ms = 0) {
+  const safeMs = Math.max(0, Number(ms) || 0);
+  const minutes = Math.floor(safeMs / 60000);
+  if (minutes < 60) return `${minutes} мин`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} ч`;
+  const days = Math.floor(hours / 24);
+  if (days < 60) return `${days} д`;
+  return `${Math.floor(days / 30)} мес`;
+}
+
+function stringifyYouTrackValue(value) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value.map(stringifyYouTrackValue).filter(Boolean).join(", ");
+  if (typeof value === "object") {
+    return value.name || value.presentation || value.fullName || value.login || value.text || "";
+  }
+  return String(value);
+}
+
+function getYouTrackField(issue = {}, names = []) {
+  const wanted = names.map((name) => name.toLowerCase());
+  const field = (issue.customFields || []).find((item) => wanted.includes(String(item?.name || "").toLowerCase()));
+  return stringifyYouTrackValue(field?.value);
+}
+
+function normalizeYouTrackComment(comment = {}) {
+  const safeComment = comment || {};
+  const createdAtMs = toMillis(safeComment.created);
+  const updatedAtMs = toMillis(safeComment.updated || safeComment.created);
+  return {
+    id: safeComment.id || `${createdAtMs}-${safeComment.author?.login || "user"}`,
+    text: String(safeComment.text || "").trim(),
+    createdAt: createdAtMs ? new Date(createdAtMs).toISOString() : "",
+    updatedAt: updatedAtMs ? new Date(updatedAtMs).toISOString() : "",
+    createdAtMs,
+    updatedAtMs,
+    author: safeComment.author?.fullName || safeComment.author?.login || "Unknown",
+    authorLogin: safeComment.author?.login || "",
+  };
+}
+
+function commentLooksActionable(comment = {}, issue = {}) {
+  const safeComment = comment || {};
+  const status = String(issue.status || "").toLowerCase();
+  const text = String(safeComment.text || "").toLowerCase();
+  if (status.includes("уточ") || status.includes("question") || status.includes("clarification")) return true;
+  return /(\?|нужно|проверь|уточн|ответ|коммент|comment|question|clarify|please|надо)/i.test(text);
+}
+
+function normalizeIssueStatus(status = "") {
+  return String(status || "").trim();
+}
+
+function issueNeedsAnswer(status = "") {
+  return normalizeIssueStatus(status) === YOUTRACK_STATUSES.NEEDS_CLARIFICATION;
+}
+
+function issueWaitsForDeveloper(status = "") {
+  const normalizedStatus = normalizeIssueStatus(status);
+  return normalizedStatus === YOUTRACK_STATUSES.NEEDS_CLARIFICATION || normalizedStatus === YOUTRACK_STATUSES.TESTING;
+}
+
+function buildYouTrackStatusCounts(issues = []) {
+  const counts = Object.fromEntries(YOUTRACK_STATUS_ORDER.map((status) => [status, 0]));
+  for (const issue of issues) {
+    const status = normalizeIssueStatus(issue.status);
+    if (!status) continue;
+    counts[status] = (counts[status] || 0) + 1;
+  }
+  return counts;
+}
+
+function normalizeYouTrackIssue(issue = {}, statusSinceMs = 0) {
+  const config = getYouTrackConfig();
+  const createdAtMs = toMillis(issue.created);
+  const updatedAtMs = toMillis(issue.updated);
+  const resolvedAtMs = toMillis(issue.resolved);
+  const comments = (issue.comments || []).map(normalizeYouTrackComment).sort((a, b) => b.createdAtMs - a.createdAtMs);
+  const latestComment = comments[0] || null;
+  const status = getYouTrackField(issue, ["State", "Состояние"]) || (resolvedAtMs ? "Done" : "Unknown");
+  const priority = getYouTrackField(issue, ["Priority", "Приоритет"]) || "Normal";
+  const assignee = getYouTrackField(issue, ["Assignee", "Исполнитель"]) || "Unassigned";
+  const dueDate = getYouTrackField(issue, ["Due Date", "Дата выполнения", "Срок"]) || "";
+  const now = Date.now();
+  const activeSinceMs = statusSinceMs || updatedAtMs || createdAtMs || now;
+  const needsAttention = issueNeedsAnswer(status);
+  const waitsForDeveloper = issueWaitsForDeveloper(status);
+  const commentLooksLikeQuestion = commentLooksActionable(latestComment, { status });
+
+  return {
+    id: issue.idReadable || issue.id || "",
+    title: String(issue.summary || "Без названия").trim(),
+    url: config.baseUrl ? `${config.baseUrl}/issue/${issue.idReadable || issue.id || ""}` : "",
+    project: issue.project?.shortName || config.project || "ATL",
+    status,
+    priority,
+    assignee,
+    dueDate,
+    tags: (issue.tags || []).map((tag) => tag.name).filter(Boolean),
+    createdAt: createdAtMs ? new Date(createdAtMs).toISOString() : "",
+    updatedAt: updatedAtMs ? new Date(updatedAtMs).toISOString() : "",
+    resolvedAt: resolvedAtMs ? new Date(resolvedAtMs).toISOString() : "",
+    createdAtMs,
+    updatedAtMs,
+    resolvedAtMs,
+    ageMs: now - (createdAtMs || now),
+    inactiveMs: now - (updatedAtMs || now),
+    statusSinceMs: activeSinceMs,
+    statusAgeMs: now - activeSinceMs,
+    ageLabel: formatDurationRu(now - (createdAtMs || now)),
+    inactiveLabel: formatDurationRu(now - (updatedAtMs || now)),
+    statusAgeLabel: formatDurationRu(now - activeSinceMs),
+    commentsCount: comments.length,
+    latestComment,
+    needsAttention,
+    waitsForDeveloper,
+    commentLooksLikeQuestion,
+    isResolved: Boolean(resolvedAtMs) || /done|fixed|closed|resolved|готов|закрыт/i.test(status),
+  };
+}
+
+function getIssueSignature(issue = {}) {
+  return {
+    status: issue.status || "",
+    priority: issue.priority || "",
+    assignee: issue.assignee || "",
+    updatedAtMs: issue.updatedAtMs || 0,
+    commentsCount: issue.commentsCount || 0,
+    latestCommentId: issue.latestComment?.id || "",
+    latestCommentText: issue.latestComment?.text || "",
+  };
+}
+
+async function fetchYouTrackJson(pathname, params = {}) {
+  const config = getYouTrackConfig();
+  if (!config.baseUrl || (!config.token && (!config.login || !config.password))) {
+    return { ok: false, status: 503, error: "youtrack_not_configured" };
+  }
+
+  const url = new URL(`${config.baseUrl}${pathname}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, value);
+  });
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      ...getYouTrackAuthHeaders(config),
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { ok: false, status: response.status, error: payload?.error_description || payload?.error || "youtrack_request_failed" };
+  }
+  return { ok: true, status: response.status, payload };
+}
+
+async function getIssueStatusSinceMs(issueId) {
+  if (!issueId) return 0;
+  const result = await fetchYouTrackJson(`/api/issues/${encodeURIComponent(issueId)}/activities`, {
+    categories: "CustomFieldCategory",
+    fields: "id,timestamp,field(name),added(name,presentation),removed(name,presentation)",
+  });
+  if (!result.ok || !Array.isArray(result.payload)) return 0;
+  const stateChanges = result.payload
+    .filter((item) => /state|состояние/i.test(item?.field?.name || ""))
+    .sort((a, b) => toMillis(b.timestamp) - toMillis(a.timestamp));
+  return toMillis(stateChanges[0]?.timestamp);
+}
+
+async function getYouTrackIssues({ query = "", top = 50 } = {}) {
+  const config = getYouTrackConfig();
+  const searchQuery = query || `project: ${config.project}`;
+  const result = await fetchYouTrackJson("/api/issues", {
+    query: searchQuery,
+    fields: YOUTRACK_DEFAULT_FIELDS,
+    $top: String(Math.max(1, Math.min(Number(top) || 50, 100))),
+  });
+  if (!result.ok) return result;
+
+  const rawIssues = Array.isArray(result.payload) ? result.payload : [];
+  const statusTimes = await Promise.all(rawIssues.slice(0, 50).map((issue) => getIssueStatusSinceMs(issue.idReadable || issue.id || "")));
+  const issues = rawIssues.map((issue, index) => normalizeYouTrackIssue(issue, statusTimes[index] || 0));
+  const openIssues = issues.filter((issue) => !issue.isResolved);
+  const attentionIssues = issues.filter((issue) => issue.needsAttention && !issue.isResolved);
+  const developerWaitingIssues = openIssues.filter((issue) => issue.waitsForDeveloper);
+  const staleIssues = openIssues.filter((issue) => issue.inactiveMs >= 24 * 60 * 60 * 1000);
+  const showStoppers = openIssues.filter((issue) => YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority));
+  const statusCounts = buildYouTrackStatusCounts(issues);
+
+  return {
+    ok: true,
+    status: 200,
+    lastCheckedAt: new Date().toISOString(),
+    query: searchQuery,
+    issues,
+    summary: {
+      total: issues.length,
+      open: openIssues.length,
+      done: issues.length - openIssues.length,
+      attention: attentionIssues.length,
+      needsAnswer: attentionIssues.length,
+      waitsForDeveloper: developerWaitingIssues.length,
+      stale: staleIssues.length,
+      showStoppers: showStoppers.length,
+      statuses: statusCounts,
+    },
+  };
+}
+
+function buildYouTrackChanges(previous = {}, issues = []) {
+  const previousIssues = previous?.issues || {};
+  const changes = [];
+  for (const issue of issues) {
+    const before = previousIssues[issue.id];
+    const current = getIssueSignature(issue);
+    if (!before) {
+      changes.push({ type: "new", issue, message: `Новая задача ${issue.id}: ${issue.title}` });
+      continue;
+    }
+    if (before.status !== current.status) {
+      changes.push({ type: "status", issue, before: before.status, after: current.status, message: `${issue.id}: статус ${before.status || "—"} → ${current.status || "—"}` });
+    }
+    if (before.assignee !== current.assignee) {
+      changes.push({ type: "assignee", issue, before: before.assignee, after: current.assignee, message: `${issue.id}: исполнитель ${before.assignee || "—"} → ${current.assignee || "—"}` });
+    }
+    if ((before.commentsCount || 0) < current.commentsCount || before.latestCommentId !== current.latestCommentId) {
+      changes.push({ type: "comment", issue, message: `${issue.id}: новый комментарий от ${issue.latestComment?.author || "участника"}` });
+    }
+  }
+  return changes;
+}
+
+function formatYouTrackChangePush(changes = []) {
+  const lines = ["🧭 <b>ATLAS TASK MONITOR</b>", "━━━━━━━━━━━━━━━━", ""];
+  changes.slice(0, 8).forEach((change) => {
+    const issue = change.issue || {};
+    lines.push(`📌 <b>${escapeTelegramHtml(issue.id || "Issue")}</b> — ${escapeTelegramHtml(issue.title || "")}`);
+    lines.push(`🔁 ${escapeTelegramHtml(change.message || "Изменение")}`);
+    lines.push(`📍 ${escapeTelegramHtml(issue.status || "—")} · 👤 ${escapeTelegramHtml(issue.assignee || "—")} · ⏱ ${escapeTelegramHtml(issue.statusAgeLabel || "—")}`);
+    if (issue.latestComment?.text) lines.push(`💬 ${escapeTelegramHtml(issue.latestComment.text).slice(0, 260)}`);
+    if (issue.url) lines.push(`🔗 ${escapeTelegramHtml(issue.url)}`);
+    lines.push("");
+  });
+  if (changes.length > 8) lines.push(`Ещё изменений: ${changes.length - 8}`);
+  return lines.join("\n").trim();
+}
+
+async function checkYouTrackChanges({ notify = true } = {}) {
+  const result = await getYouTrackIssues();
+  if (!result.ok) return result;
+  const previous = await readContent(YOUTRACK_SNAPSHOT_KEY, { issues: {} });
+  const isFirstSnapshot = !previous?.issues || !Object.keys(previous.issues).length;
+  const changes = isFirstSnapshot ? [] : buildYouTrackChanges(previous, result.issues);
+  const nextSnapshot = {
+    checkedAt: result.lastCheckedAt,
+    issues: Object.fromEntries(result.issues.map((issue) => [issue.id, getIssueSignature(issue)])),
+  };
+  await writeContent(YOUTRACK_SNAPSHOT_KEY, nextSnapshot);
+
+  let notification = { ok: true, skipped: true };
+  if (notify && changes.length) {
+    notification = await sendTelegramMessage(formatYouTrackChangePush(changes), { parse_mode: "HTML" });
+  }
+
+  return { ...result, changes, notification, bootstrapped: isFirstSnapshot };
+}
+
+function toNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function findIncluded(included = [], type = "", id = "") {
+  return included.find((item) => item?.type === type && (!id || item.id === id)) || null;
+}
+
+function normalizeGeckoPoolPayload(poolPayload = {}, infoPayload = {}) {
+  const pool = poolPayload.data || {};
+  const attrs = pool.attributes || {};
+  const included = Array.isArray(poolPayload.included) ? poolPayload.included : [];
+  const baseTokenRef = pool.relationships?.base_token?.data?.id || "";
+  const quoteTokenRef = pool.relationships?.quote_token?.data?.id || "";
+  const dexRef = pool.relationships?.dex?.data?.id || "";
+  const baseToken = findIncluded(included, "token", baseTokenRef)?.attributes || {};
+  const quoteToken = findIncluded(included, "token", quoteTokenRef)?.attributes || {};
+  const dex = findIncluded(included, "dex", dexRef)?.attributes || {};
+  const infoTokens = Array.isArray(infoPayload.data) ? infoPayload.data : [];
+  const gtScores = infoTokens.map((item) => toNumber(item.attributes?.gt_score)).filter(Boolean);
+  const holderCounts = infoTokens.map((item) => ({
+    symbol: item.attributes?.symbol || "",
+    holders: toNumber(item.attributes?.holders?.count),
+    verified: Boolean(item.attributes?.gt_verified),
+    honeypot: Boolean(item.attributes?.is_honeypot),
+  }));
+  const h24Transactions = attrs.transactions?.h24 || {};
+  const h24Buys = toNumber(h24Transactions.buys);
+  const h24Sells = toNumber(h24Transactions.sells);
+  const h24Txns = h24Buys + h24Sells;
+  const baseToQuote = toNumber(attrs.base_token_price_quote_token);
+  const quoteToBase = toNumber(attrs.quote_token_price_base_token);
+  const parityDeviationPct = baseToQuote ? Math.abs(1 - baseToQuote) * 100 : 0;
+
+  return {
+    id: pool.id || "",
+    label: PANCAKE_USDT_USDC_POOL.label,
+    network: PANCAKE_USDT_USDC_POOL.network,
+    address: attrs.address || PANCAKE_USDT_USDC_POOL.address,
+    name: attrs.name || "USDT / USDC 0.01%",
+    poolName: attrs.pool_name || "USDT / USDC",
+    dex: dex.name || "PancakeSwap V3 (BSC)",
+    feePercentage: toNumber(attrs.pool_fee_percentage),
+    createdAt: attrs.pool_created_at || "",
+    reserveUsd: toNumber(attrs.reserve_in_usd),
+    volumeUsd: {
+      m5: toNumber(attrs.volume_usd?.m5),
+      h1: toNumber(attrs.volume_usd?.h1),
+      h6: toNumber(attrs.volume_usd?.h6),
+      h24: toNumber(attrs.volume_usd?.h24),
+    },
+    transactions: {
+      h24: h24Txns,
+      h24Buys,
+      h24Sells,
+      h1: toNumber(attrs.transactions?.h1?.buys) + toNumber(attrs.transactions?.h1?.sells),
+    },
+    prices: {
+      baseUsd: toNumber(attrs.base_token_price_usd),
+      quoteUsd: toNumber(attrs.quote_token_price_usd),
+      baseToQuote,
+      quoteToBase,
+      parityDeviationPct: Number(parityDeviationPct.toFixed(4)),
+    },
+    priceChangePercentage: attrs.price_change_percentage || {},
+    tokens: {
+      base: {
+        symbol: baseToken.symbol || "USDT",
+        name: baseToken.name || "Tether USD",
+        address: baseToken.address || "",
+        imageUrl: baseToken.image_url || "",
+      },
+      quote: {
+        symbol: quoteToken.symbol || "USDC",
+        name: quoteToken.name || "USD Coin",
+        address: quoteToken.address || "",
+        imageUrl: quoteToken.image_url || "",
+      },
+    },
+    security: {
+      gtScore: gtScores.length ? Math.round(gtScores.reduce((sum, score) => sum + score, 0) / gtScores.length) : 0,
+      tokens: holderCounts,
+    },
+    links: {
+      geckoTerminal: `https://www.geckoterminal.com/bsc/pools/${PANCAKE_USDT_USDC_POOL.address}`,
+      pancakeSwap: `https://pancakeswap.finance/info/v3/pairs/${PANCAKE_USDT_USDC_POOL.address}`,
+      bscScan: `https://bscscan.com/address/${PANCAKE_USDT_USDC_POOL.address}`,
+      arkham: `https://arkm.com/explorer/address/${PANCAKE_USDT_USDC_POOL.address}`,
+    },
+    source: "GeckoTerminal public API",
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getPancakePoolSnapshot() {
+  const baseUrl = "https://api.geckoterminal.com/api/v2";
+  const poolPath = `/networks/${PANCAKE_USDT_USDC_POOL.network}/pools/${PANCAKE_USDT_USDC_POOL.address}`;
+  const headers = { Accept: "application/json" };
+  const [poolResult, infoResult] = await Promise.all([
+    fetchJsonWithTimeout(`${baseUrl}${poolPath}?include=base_token,quote_token,dex`, { headers }),
+    fetchJsonWithTimeout(`${baseUrl}${poolPath}/info`, { headers }),
+  ]);
+
+  if (!poolResult.ok) {
+    return {
+      ok: false,
+      status: poolResult.status || 502,
+      error: poolResult.payload?.errors?.[0]?.title || poolResult.payload?.message || "geckoterminal_pool_fetch_failed",
+    };
+  }
+
+  return {
+    ok: true,
+    pool: normalizeGeckoPoolPayload(poolResult.payload, infoResult.ok ? infoResult.payload : {}),
+    infoStatus: infoResult.ok ? "ok" : "unavailable",
+  };
+}
+
+function normalizeYoutubeNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function normalizeYoutubeText(value = "", maxLength = 900) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function getYoutubeApiKey() {
+  return normalizeYoutubeText(process.env.YOUTUBE_API_KEY || process.env.GOOGLE_YOUTUBE_API_KEY || "", 300);
+}
+
+function buildYoutubeApiUrl(pathname, params = {}) {
+  const apiUrl = new URL(pathname, "https://www.googleapis.com/youtube/v3/");
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      apiUrl.searchParams.set(key, String(value));
+    }
+  });
+  return apiUrl;
+}
+
+function toYoutubePeriodDate(period = "") {
+  const days = Number(period);
+  if (!Number.isFinite(days) || days <= 0) return "";
+  return new Date(Date.now() - days * 86400000).toISOString();
+}
+
+function getYoutubeChannelUrl(channelId = "", fallbackUrl = "") {
+  if (channelId) return `https://www.youtube.com/channel/${channelId}`;
+  return fallbackUrl || "";
+}
+
+function mapYoutubeLead({ channel = {}, video = {}, query = "", region = "", language = "" }) {
+  const channelId = normalizeYoutubeText(channel.id || video.snippet?.channelId || "", 120);
+  const statistics = channel.statistics || {};
+  const videoStats = video.statistics || {};
+  const subscriberCount = normalizeYoutubeNumber(statistics.subscriberCount);
+  const viewCount = normalizeYoutubeNumber(videoStats.viewCount);
+  const publishedAt = normalizeYoutubeText(video.snippet?.publishedAt || channel.snippet?.publishedAt || "", 80);
+  const channelTitle = normalizeYoutubeText(channel.snippet?.title || video.snippet?.channelTitle || "YouTube channel", 180);
+  const videoTitle = normalizeYoutubeText(video.snippet?.title || channel.snippet?.title || "", 260);
+  const description = normalizeYoutubeText(video.snippet?.description || channel.snippet?.description || "", 700);
+  const tags = Array.isArray(video.snippet?.tags) ? video.snippet.tags.slice(0, 12) : [];
+
+  return {
+    id: `yt-api-${channelId || Date.now()}-${Buffer.from(`${query}-${video.id || ""}`).toString("base64url").slice(0, 10)}`,
+    source: "youtube-api",
+    query,
+    channelId,
+    channelTitle,
+    channelUrl: getYoutubeChannelUrl(channelId),
+    videoId: normalizeYoutubeText(video.id || "", 120),
+    videoTitle,
+    videoUrl: video.id ? `https://www.youtube.com/watch?v=${video.id}` : "",
+    publishedAt,
+    subscriberCount,
+    viewCount,
+    totalChannelViews: normalizeYoutubeNumber(statistics.viewCount),
+    channelVideoCount: normalizeYoutubeNumber(statistics.videoCount),
+    hiddenSubscriberCount: Boolean(statistics.hiddenSubscriberCount),
+    thumbnail: normalizeYoutubeText(
+      video.snippet?.thumbnails?.medium?.url
+        || video.snippet?.thumbnails?.default?.url
+        || channel.snippet?.thumbnails?.medium?.url
+        || channel.snippet?.thumbnails?.default?.url
+        || "",
+      400,
+    ),
+    region: normalizeYoutubeText(region || language || "Global", 120),
+    language: normalizeYoutubeText(language || "", 80),
+    tags,
+    description,
+    contactRoute: "YouTube About / business email / links in channel description",
+    fit: query
+      ? `Найден по запросу "${query}". Проверить аудиторию, последние ролики, рекламные интеграции и тональность.`
+      : "Проверить аудиторию, последние ролики, рекламные интеграции и тональность.",
+    outreachRoute: "Открыть канал → About → business email / соцсети / форма сотрудничества.",
+    priceFormat: "Запросить / review / sponsored video / integration",
+    status: "Найти контакты",
+    notes: "Импортировано через YouTube Data API. Email не выдумывать: брать только публичный business email или контакты из описания.",
+  };
+}
+
+async function searchYoutubeApi(url) {
+  const apiKey = getYoutubeApiKey();
+  if (!apiKey) {
+    return {
+      ok: false,
+      needsApiKey: true,
+      items: [],
+      message: "На сервере не задан YOUTUBE_API_KEY или GOOGLE_YOUTUBE_API_KEY.",
+    };
+  }
+
+  const query = normalizeYoutubeText(url.searchParams.get("q") || "", 240);
+  if (!query) return { ok: false, items: [], error: "empty_query" };
+
+  const maxResults = Math.max(1, Math.min(50, Number(url.searchParams.get("maxResults") || 25)));
+  const searchType = ["video", "channel"].includes(url.searchParams.get("type")) ? url.searchParams.get("type") : "video";
+  const regionCode = normalizeYoutubeText(url.searchParams.get("regionCode") || "", 8).toUpperCase();
+  const relevanceLanguage = normalizeYoutubeText(url.searchParams.get("relevanceLanguage") || "", 12).toLowerCase();
+  const publishedAfter = toYoutubePeriodDate(url.searchParams.get("period") || "");
+  const minSubscribers = Math.max(0, Number(url.searchParams.get("minSubscribers") || 0));
+
+  const searchUrl = buildYoutubeApiUrl("search", {
+    part: "snippet",
+    q: query,
+    type: searchType,
+    maxResults,
+    order: url.searchParams.get("order") || "relevance",
+    regionCode,
+    relevanceLanguage,
+    publishedAfter: searchType === "video" ? publishedAfter : "",
+    key: apiKey,
+  });
+  const search = await fetchJsonWithTimeout(searchUrl);
+  if (!search.ok) {
+    return {
+      ok: false,
+      status: search.status,
+      items: [],
+      error: search.payload?.error?.message || "youtube_search_failed",
+      details: search.payload?.error || null,
+    };
+  }
+
+  const searchItems = Array.isArray(search.payload?.items) ? search.payload.items : [];
+  const videoIds = [...new Set(searchItems.map((item) => item.id?.videoId).filter(Boolean))];
+  const channelIds = [...new Set(searchItems
+    .map((item) => item.id?.channelId || item.snippet?.channelId)
+    .filter(Boolean))];
+
+  let videos = [];
+  if (videoIds.length) {
+    const videosUrl = buildYoutubeApiUrl("videos", {
+      part: "snippet,statistics,contentDetails",
+      id: videoIds.join(","),
+      key: apiKey,
+    });
+    const videosResult = await fetchJsonWithTimeout(videosUrl);
+    videos = videosResult.ok && Array.isArray(videosResult.payload?.items) ? videosResult.payload.items : [];
+  }
+
+  let channels = [];
+  if (channelIds.length) {
+    const channelsUrl = buildYoutubeApiUrl("channels", {
+      part: "snippet,statistics",
+      id: channelIds.join(","),
+      key: apiKey,
+    });
+    const channelsResult = await fetchJsonWithTimeout(channelsUrl);
+    channels = channelsResult.ok && Array.isArray(channelsResult.payload?.items) ? channelsResult.payload.items : [];
+  }
+
+  const channelById = new Map(channels.map((channel) => [channel.id, channel]));
+  const videoById = new Map(videos.map((video) => [video.id, video]));
+  const leadsByChannel = new Map();
+
+  searchItems.forEach((item) => {
+    const video = item.id?.videoId ? videoById.get(item.id.videoId) || { id: item.id.videoId, snippet: item.snippet } : {};
+    const channelId = item.id?.channelId || item.snippet?.channelId || video.snippet?.channelId || "";
+    const channel = channelById.get(channelId) || (item.id?.channelId ? { id: channelId, snippet: item.snippet } : {});
+    const lead = mapYoutubeLead({ channel, video, query, region: regionCode, language: relevanceLanguage });
+    const existing = leadsByChannel.get(lead.channelId);
+    if (!existing || lead.viewCount > existing.viewCount) leadsByChannel.set(lead.channelId || lead.id, lead);
+  });
+
+  const items = [...leadsByChannel.values()]
+    .filter((item) => !minSubscribers || item.subscriberCount >= minSubscribers || item.hiddenSubscriberCount)
+    .sort((a, b) => (b.subscriberCount || 0) - (a.subscriberCount || 0));
+
+  return {
+    ok: true,
+    items,
+    meta: {
+      query,
+      searchType,
+      maxResults,
+      returned: items.length,
+      fetchedVideos: videos.length,
+      fetchedChannels: channels.length,
+      quotaNote: "search.list расходует заметную квоту YouTube Data API; точный расход проверяйте в Google Cloud quota dashboard.",
+    },
+  };
 }
 
 async function verifyWithTelemetr({ handle = "", name = "", url = "" }) {
@@ -547,6 +1180,35 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/content/health") {
       sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/content/youtube-search" && request.method === "GET") {
+      const result = await searchYoutubeApi(url);
+      sendJson(response, result.ok ? 200 : result.status || 400, result);
+      return;
+    }
+
+    if (url.pathname === "/api/pools/pancake-usdt-usdc" && request.method === "GET") {
+      const result = await getPancakePoolSnapshot();
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/youtrack/issues" && request.method === "GET") {
+      const result = await getYouTrackIssues({
+        query: url.searchParams.get("query") || "",
+        top: url.searchParams.get("top") || 50,
+      });
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/youtrack/check" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = body ? JSON.parse(body) : {};
+      const result = await checkYouTrackChanges({ notify: parsed.notify !== false });
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
       return;
     }
 
