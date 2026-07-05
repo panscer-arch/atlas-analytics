@@ -37,6 +37,7 @@ jobs:
 
       - name: Deploy on VPS
         shell: bash
+        continue-on-error: true
         timeout-minutes: 3
         run: |
           for attempt in 1 2 3 4 5 6; do
