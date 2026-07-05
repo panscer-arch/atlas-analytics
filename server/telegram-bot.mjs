@@ -16,6 +16,8 @@ const MAX_AUDIO_BYTES = Number(process.env.TELEGRAM_TRANSCRIBE_MAX_BYTES || 25 *
 const HERMES_BRIDGE_URL = process.env.HERMES_BRIDGE_URL || "";
 const HERMES_BRIDGE_TOKEN = process.env.HERMES_BRIDGE_TOKEN || "";
 const HERMES_TIMEOUT_MS = Number(process.env.HERMES_BRIDGE_TIMEOUT_MS || 180_000);
+const CONTENT_API_URL = (process.env.ATLAS_CONTENT_API_URL || process.env.CONTENT_API_URL || `http://127.0.0.1:${process.env.ATLAS_CONTENT_API_PORT || 8787}`).replace(/\/+$/, "");
+const ATL_MONITOR_TIMEOUT_MS = Number(process.env.ATL_MONITOR_TIMEOUT_MS || 30_000);
 const ALLOWED_CHAT_IDS = new Set(
   String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || "")
     .split(",")
@@ -148,6 +150,7 @@ async function handleUpdate(update) {
   if (text.startsWith("/question")) return handleOperationCommand(message, text, "questions", "Вопрос сохранён");
   if (text.startsWith("/report")) return handleOperationCommand(message, text, "reports", "Отчёт сохранён");
   if (text.startsWith("/remind")) return handleOperationCommand(message, text, "reminders", "Напоминание сохранено");
+  if (isAtlCommand(text)) return handleAtlCommand(message);
   if (isHermesCommand(text)) return handleHermesCommand(message, text);
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
 
@@ -512,6 +515,111 @@ async function handleTasksCommand(message, text) {
   });
 }
 
+function isAtlCommand(text = "") {
+  const value = stripBotMention(String(text || "").trim());
+  return /^\/atl(?:\s|$)/i.test(value);
+}
+
+async function handleAtlCommand(message) {
+  try {
+    const result = await fetchAtlasMonitorSummary();
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatAtlasMonitorSummary(result),
+    });
+  } catch (error) {
+    log("atl monitor error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: `Не смог получить сводку Atlas: ${error?.message || "ошибка монитора"}`,
+    });
+  }
+}
+
+async function fetchAtlasMonitorSummary() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ATL_MONITOR_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${CONTENT_API_URL}/api/youtrack/check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notify: false }),
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.ok) {
+      throw new Error(payload?.error || `HTTP ${response.status}`);
+    }
+    return payload;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function formatAtlasMonitorSummary(payload = {}) {
+  const summary = payload.summary || {};
+  const issues = Array.isArray(payload.issues) ? payload.issues : [];
+  const changes = Array.isArray(payload.changes) ? payload.changes : [];
+  const statuses = summary.statuses || {};
+  const needsAnswerIssues = issues.filter((issue) => issue.needsAttention && !issue.isResolved);
+  const waitsForDeveloperIssues = issues.filter((issue) => issue.waitsForDeveloper && !issue.isResolved);
+  const staleIssues = issues.filter((issue) => !issue.isResolved && Number(issue.inactiveMs || 0) >= 24 * 60 * 60 * 1000);
+  const showStoppers = issues.filter((issue) => !issue.isResolved && /show-stopper|critical|blocker|критичес|блокер/i.test(issue.priority || ""));
+
+  const lines = [
+    "ATLAS TASK MONITOR",
+    `Проверено: ${formatDateTimeRu(payload.lastCheckedAt)}`,
+    "",
+    `Открыто: ${summary.open ?? 0} / Готово: ${summary.done ?? 0}`,
+    `Нужен ответ: ${summary.needsAnswer ?? summary.attention ?? 0}`,
+    `Ждёт прогера: ${summary.waitsForDeveloper ?? 0}`,
+    `Зависло 24ч+: ${summary.stale ?? staleIssues.length}`,
+    `Show-stopper: ${summary.showStoppers ?? showStoppers.length}`,
+    "",
+    "Статусы:",
+    ...Object.entries(statuses).map(([status, count]) => `${status}: ${count}`),
+  ];
+
+  appendIssueBlock(lines, "Нужен ответ = Нужно уточнение:", needsAnswerIssues, 5);
+  appendIssueBlock(lines, "Ждёт прогера = Нужно уточнение + Тестирование:", waitsForDeveloperIssues, 6);
+  appendIssueBlock(lines, "Зависшие 24ч+:", staleIssues, 5);
+  appendIssueBlock(lines, "Show-stopper:", showStoppers, 5);
+
+  if (changes.length) {
+    lines.push("", "Новые изменения:");
+    for (const change of changes.slice(0, 5)) {
+      lines.push(`- ${change.message || `${change.issue?.id || "Issue"}: изменение`}`);
+    }
+    if (changes.length > 5) lines.push(`...ещё ${changes.length - 5}`);
+  }
+
+  return lines.join("\n").trim();
+}
+
+function appendIssueBlock(lines, title, issues, limit) {
+  if (!issues.length) return;
+  lines.push("", title);
+  for (const issue of issues.slice(0, limit)) {
+    lines.push(`- ${issue.id}: ${issue.title || "Без названия"} (${issue.status || "—"}, ${issue.assignee || "—"}, ${issue.statusAgeLabel || issue.inactiveLabel || "—"})`);
+  }
+  if (issues.length > limit) lines.push(`...ещё ${issues.length - limit}`);
+}
+
+function formatDateTimeRu(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "сейчас";
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 async function handleChatIdCommand(message) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
@@ -655,6 +763,7 @@ async function sendHelp(chatId) {
     chat_id: chatId,
     text: [
       "Команды Atlas Tasks:",
+      "/atl — живая сводка по задачам Atlas/YouTrack",
       "/hermes текст — спросить Гермеса / второй мозг",
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",
