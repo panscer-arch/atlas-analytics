@@ -37,6 +37,15 @@ const YOUTRACK_STATUS_ORDER = [
   YOUTRACK_STATUSES.RETURNED_TO_WORK,
   YOUTRACK_STATUSES.DONE,
 ];
+const YOUTRACK_STATUS_ALIASES = {
+  "to do": YOUTRACK_STATUSES.TODO,
+  todo: YOUTRACK_STATUSES.TODO,
+  open: YOUTRACK_STATUSES.TODO,
+  "in progress": YOUTRACK_STATUSES.IN_PROGRESS,
+  done: YOUTRACK_STATUSES.DONE,
+  fixed: YOUTRACK_STATUSES.DONE,
+  resolved: YOUTRACK_STATUSES.DONE,
+};
 const YOUTRACK_SHOW_STOPPER_PATTERN = /show-stopper|critical|blocker|критичес|блокер/i;
 const PANCAKE_USDT_USDC_POOL = {
   network: "bsc",
@@ -306,7 +315,8 @@ function commentLooksActionable(comment = {}, issue = {}) {
 }
 
 function normalizeIssueStatus(status = "") {
-  return String(status || "").trim();
+  const normalizedStatus = String(status || "").trim();
+  return YOUTRACK_STATUS_ALIASES[normalizedStatus.toLowerCase()] || normalizedStatus;
 }
 
 function issueNeedsAnswer(status = "") {
@@ -335,7 +345,7 @@ function normalizeYouTrackIssue(issue = {}, statusSinceMs = 0) {
   const resolvedAtMs = toMillis(issue.resolved);
   const comments = (issue.comments || []).map(normalizeYouTrackComment).sort((a, b) => b.createdAtMs - a.createdAtMs);
   const latestComment = comments[0] || null;
-  const status = getYouTrackField(issue, ["State", "Состояние"]) || (resolvedAtMs ? "Done" : "Unknown");
+  const status = normalizeIssueStatus(getYouTrackField(issue, ["State", "Состояние"]) || (resolvedAtMs ? "Done" : "Unknown"));
   const priority = getYouTrackField(issue, ["Priority", "Приоритет"]) || "Normal";
   const assignee = getYouTrackField(issue, ["Assignee", "Исполнитель"]) || "Unassigned";
   const dueDate = getYouTrackField(issue, ["Due Date", "Дата выполнения", "Срок"]) || "";
