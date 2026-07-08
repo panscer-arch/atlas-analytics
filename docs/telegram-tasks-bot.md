@@ -141,11 +141,15 @@ OPENAI_API_KEY=sk-...
 ```bash
 TELEGRAM_ALLOWED_CHAT_IDS=-1001111111111,-1002222222222
 TELEGRAM_PUSH_CHAT_ID=-1001111111111
+ATLAS_YOUTRACK_TELEGRAM_CHAT_ID=-1001111111111
 OPENAI_TRANSCRIPTION_MODEL=whisper-1
 TELEGRAM_TRANSCRIBE_MAX_BYTES=26214400
 ```
 
 `TELEGRAM_PUSH_CHAT_ID` — чат, куда кнопка `Push` из подзадачи отправляет задачу команде. Если не задан, используется первый чат из `TELEGRAM_ALLOWED_CHAT_IDS`.
+`ATLAS_YOUTRACK_TELEGRAM_CHAT_ID` — чат для автоматических уведомлений ATL task monitor по новым задачам, комментариям, смене статуса и исполнителя. Если не задан, используется `TELEGRAM_PUSH_CHAT_ID` или первый доступный чат.
+
+Команда `/atl` показывает текущую сводку задач без записи snapshot, чтобы ручная проверка не съедала автоматические уведомления. Минутный монитор на сервере вызывает `/api/youtrack/check` с `notify: true` и сохраняет snapshot только после успешной отправки уведомления или если изменений нет.
 
 Перезапустить:
 

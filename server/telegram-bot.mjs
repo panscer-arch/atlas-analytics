@@ -545,7 +545,7 @@ async function fetchAtlasMonitorSummary() {
     const response = await fetch(`${CONTENT_API_URL}/api/youtrack/check`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notify: false }),
+      body: JSON.stringify({ notify: false, persist: false }),
       signal: controller.signal,
     });
     const payload = await response.json().catch(() => ({}));

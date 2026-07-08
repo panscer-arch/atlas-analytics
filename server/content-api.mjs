@@ -92,18 +92,24 @@ async function readTelegramEnv() {
 async function getTelegramConfig() {
   const fileEnv = await readTelegramEnv();
   const token = process.env.TELEGRAM_BOT_TOKEN || fileEnv.TELEGRAM_BOT_TOKEN || "";
-  const targetChatIds = (process.env.TELEGRAM_PUSH_CHAT_ID
-    || fileEnv.TELEGRAM_PUSH_CHAT_ID
-    || process.env.TELEGRAM_PUSH_CHAT_IDS
-    || fileEnv.TELEGRAM_PUSH_CHAT_IDS
-    || process.env.TELEGRAM_ALLOWED_CHAT_IDS
-    || fileEnv.TELEGRAM_ALLOWED_CHAT_IDS
-    || "")
+  const parseChatIds = (...values) => [...new Set(values
+    .join(",")
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean))];
+  const preferredChatId = parseChatIds(
+    process.env.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID
+    || fileEnv.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID,
+    process.env.TELEGRAM_PUSH_CHAT_ID || fileEnv.TELEGRAM_PUSH_CHAT_ID,
+  )[0] || "";
+  const targetChatIds = parseChatIds(
+    process.env.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID || fileEnv.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID,
+    process.env.TELEGRAM_PUSH_CHAT_ID || fileEnv.TELEGRAM_PUSH_CHAT_ID,
+    process.env.TELEGRAM_PUSH_CHAT_IDS || fileEnv.TELEGRAM_PUSH_CHAT_IDS,
+    process.env.TELEGRAM_ALLOWED_CHAT_IDS || fileEnv.TELEGRAM_ALLOWED_CHAT_IDS,
+  );
 
-  return { token, targetChatIds };
+  return { token, targetChatIds, preferredChatId };
 }
 
 function normalizeTelegramValue(value = "") {
@@ -514,7 +520,7 @@ function formatYouTrackChangePush(changes = []) {
   return lines.join("\n").trim();
 }
 
-async function checkYouTrackChanges({ notify = true } = {}) {
+async function checkYouTrackChanges({ notify = true, persist = true } = {}) {
   const result = await getYouTrackIssues();
   if (!result.ok) return result;
   const previous = await readContent(YOUTRACK_SNAPSHOT_KEY, { issues: {} });
@@ -524,14 +530,17 @@ async function checkYouTrackChanges({ notify = true } = {}) {
     checkedAt: result.lastCheckedAt,
     issues: Object.fromEntries(result.issues.map((issue) => [issue.id, getIssueSignature(issue)])),
   };
-  await writeContent(YOUTRACK_SNAPSHOT_KEY, nextSnapshot);
 
   let notification = { ok: true, skipped: true };
   if (notify && changes.length) {
     notification = await sendTelegramMessage(formatYouTrackChangePush(changes), { parse_mode: "HTML" });
   }
+  const shouldPersist = persist && (!notify || !changes.length || notification.ok);
+  if (shouldPersist) {
+    await writeContent(YOUTRACK_SNAPSHOT_KEY, nextSnapshot);
+  }
 
-  return { ...result, changes, notification, bootstrapped: isFirstSnapshot };
+  return { ...result, changes, notification, bootstrapped: isFirstSnapshot, persisted: shouldPersist };
 }
 
 function toNumber(value) {
@@ -1117,35 +1126,30 @@ async function sendOutreachEmail({ lead = {}, to = "", subject = "", body = "" }
 }
 
 async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
-  const { token, targetChatIds } = await getTelegramConfig();
+  const { token, targetChatIds, preferredChatId } = await getTelegramConfig();
   if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
   if (!targetChatIds.length) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
-  if (requestedChatId && !targetChatIds.includes(requestedChatId)) {
-    return { ok: false, status: 403, error: "telegram_push_chat_not_allowed", chatId: requestedChatId };
+  const chatId = requestedChatId || preferredChatId || targetChatIds[0] || "";
+  if (!chatId) return { ok: false, status: 400, error: "telegram_push_chat_required" };
+  if (!targetChatIds.includes(chatId)) {
+    return { ok: false, status: 403, error: "telegram_push_chat_not_allowed", chatId };
   }
-  if (!requestedChatId && targetChatIds.length > 1) {
-    return { ok: false, status: 400, error: "telegram_push_chat_required" };
-  }
-
-  const chatIdsToSend = requestedChatId ? [requestedChatId] : targetChatIds;
   const sent = [];
-  for (const chatId of chatIdsToSend) {
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        ...options,
-        disable_web_page_preview: true,
-      }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload?.ok === false) {
-      return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed", chatId };
-    }
-    sent.push({ chatId, messageId: payload?.result?.message_id });
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      ...options,
+      disable_web_page_preview: true,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload?.ok === false) {
+    return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed", chatId };
   }
+  sent.push({ chatId, messageId: payload?.result?.message_id });
 
   return { ok: true, status: 200, sent };
 }
@@ -1217,7 +1221,9 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/youtrack/check" && request.method === "POST") {
       const body = await readBody(request);
       const parsed = body ? JSON.parse(body) : {};
-      const result = await checkYouTrackChanges({ notify: parsed.notify !== false });
+      const notify = parsed.notify !== false;
+      const persist = parsed.persist ?? notify;
+      const result = await checkYouTrackChanges({ notify, persist });
       sendJson(response, result.ok ? 200 : result.status || 502, result);
       return;
     }

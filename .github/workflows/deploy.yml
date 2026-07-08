@@ -125,6 +125,7 @@ jobs:
           ATLAS_YOUTRACK_PASSWORD=${{ secrets.ATLAS_YOUTRACK_PASSWORD }}
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
+          ATLAS_YOUTRACK_TELEGRAM_CHAT_ID=${{ secrets.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID }}
           ENV
           sudo chown root:root /etc/atlas-outreach.env
           sudo chmod 600 /etc/atlas-outreach.env
