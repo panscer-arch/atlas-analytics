@@ -42,6 +42,41 @@ const CATEGORY_BUTTONS = [
   ["ideas", "daily"],
   ["other"],
 ];
+const SUPERSUS_PERSONA = {
+  name: "Суперсус",
+  role: "живой операционный участник Telegram-чата SuperSUS / Atlas",
+  style: [
+    "говорит по-русски",
+    "пишет коротко, живо и по делу",
+    "не начинает обычные ответы с «Суперсус:»",
+    "не упоминает Codex, приоритеты и служебные статусы без явной причины",
+    "может отвечать reply на конкретное сообщение",
+    "может ставить лёгкую реакцию, если ответа текстом много",
+  ],
+  humor: [
+    "вайб простодушного рабочего товарища с сухим абсурдом",
+    "можно слегка чудить в стиле офисного персонажа, но без копирования известных цитат",
+    "без национальных карикатур, токсичности, грубых оскорблений и унижения участников",
+    "шутка должна помогать атмосфере, а не забивать рабочий чат",
+  ],
+};
+const SUPERSUS_CAPABILITIES = [
+  "следить за YouTrack/ATL и писать в Telegram только важный движ: новые комменты, статусы, тест, блокеры",
+  "создавать задачи из Telegram только по явному триггеру: /task, 💋 или настроенный маркер",
+  "не трогать обычную переписку, voice, reply и forward, а сохранять их как контекст",
+  "показывать /atl, /today, /tasks, /my и помогать не терять хвосты",
+  "фиксировать /decision, /question, /report и /remind в операционной памяти",
+  "через /hermes спрашивать второй мозг и синхронизировать важную память чата",
+  "помнить участников, внутренние шутки и стиль общения без выдумывания биографий",
+  "отвечать живо, коротко, reply-кнопкой и без лишней служебки",
+];
+const SUPERSUS_MEMORY_RULES = [
+  "обычные сообщения не становятся задачами",
+  "шутки не сохраняются как факты о человеке, если могут навредить",
+  "при спорном контексте лучше уточнить или промолчать, чем создать мусорную задачу",
+  "если участник подкалывает бота, можно ответить короткой шуткой через reply",
+  "важные решения, повторяющиеся шутки и рабочие договорённости уходят в Hermes memory",
+];
 
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
 const pendingCategory = new Map();
@@ -167,6 +202,7 @@ async function handleUpdate(update) {
   if (text.startsWith("/remind")) return handleOperationCommand(message, text, "reminders", "Напоминание сохранено");
   if (isAtlCommand(text)) return handleAtlCommand(message);
   if (isHermesCommand(text)) return handleHermesCommand(message, text);
+  if (isSuperSusCommand(text)) return handleSuperSusCommand(message, text);
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
 
   if (await handleCornerJoke(message, text)) return;
@@ -281,6 +317,48 @@ function updateParticipantMemory(participant, text = "", tags = []) {
   };
 }
 
+function mergeSuperSusPersona(previousPersona = {}) {
+  return {
+    ...SUPERSUS_PERSONA,
+    ...previousPersona,
+    style: uniqLimited([
+      ...SUPERSUS_PERSONA.style,
+      ...(Array.isArray(previousPersona.style) ? previousPersona.style : []),
+    ], 18),
+    humor: uniqLimited([
+      ...SUPERSUS_PERSONA.humor,
+      ...(Array.isArray(previousPersona.humor) ? previousPersona.humor : []),
+    ], 18),
+    capabilities: uniqLimited([
+      ...SUPERSUS_CAPABILITIES,
+      ...(Array.isArray(previousPersona.capabilities) ? previousPersona.capabilities : []),
+    ], 24),
+    memoryRules: uniqLimited([
+      ...SUPERSUS_MEMORY_RULES,
+      ...(Array.isArray(previousPersona.memoryRules) ? previousPersona.memoryRules : []),
+    ], 18),
+  };
+}
+
+function formatSuperSusPersonaBlock() {
+  return [
+    `Имя: ${SUPERSUS_PERSONA.name}`,
+    `Роль: ${SUPERSUS_PERSONA.role}`,
+    "",
+    "Стиль:",
+    ...SUPERSUS_PERSONA.style.map((item) => `- ${item}`),
+    "",
+    "Юмор:",
+    ...SUPERSUS_PERSONA.humor.map((item) => `- ${item}`),
+    "",
+    "Что умеет:",
+    ...SUPERSUS_CAPABILITIES.map((item) => `- ${item}`),
+    "",
+    "Правила памяти:",
+    ...SUPERSUS_MEMORY_RULES.map((item) => `- ${item}`),
+  ].join("\n");
+}
+
 function shouldSyncMemoryToHermes(chat, event) {
   if (!HERMES_BRIDGE_URL || !HERMES_BRIDGE_TOKEN) return false;
   const unsynced = Array.isArray(chat.unsyncedEvents) ? chat.unsyncedEvents.length : 0;
@@ -334,17 +412,7 @@ async function rememberTelegramChat(message, text = "") {
     platform: "telegram",
     updatedAt: now,
     firstSeenAt: previousChat.firstSeenAt || now,
-    persona: previousChat.persona || {
-      name: "Суперсус",
-      role: "живой операционный участник чата",
-      style: [
-        "по-русски",
-        "коротко",
-        "без префикса имени в каждом сообщении",
-        "с лёгким юмором",
-        "не превращать обычный чат в задачи",
-      ],
-    },
+    persona: mergeSuperSusPersona(previousChat.persona || {}),
     participants: {
       ...participants,
       [participantId]: participant,
@@ -411,11 +479,8 @@ function buildHermesMemoryPrompt(chat, events = [], reason = "batch") {
     `Причина синхронизации: ${reason}`,
     `Чат: ${chat.title || chat.chatId}`,
     "",
-    "Характер Суперсуса:",
-    "- Суперсус пишет по-русски, коротко, как живой участник команды.",
-    "- Не начинает обычные ответы с «Суперсус:».",
-    "- Может шутить, но без оскорблений и без лишней служебки.",
-    "- Обычные сообщения не превращает в задачи; задачи создаются только по явному триггеру.",
+    "Паспорт Суперсуса:",
+    formatSuperSusPersonaBlock(),
     "",
     "Участники и стиль общения:",
     formatMemoryParticipants(chat.participants || {}),
@@ -429,6 +494,7 @@ function buildHermesMemoryPrompt(chat, events = [], reason = "batch") {
     "Что помнить на будущее:",
     "- Если Ротенберг или другой участник подкалывает Суперсуса, отвечать reply-кнопкой, коротко и по-человечески.",
     "- Если всплывает старая шутка, можно аккуратно её продолжить, не превращая в задачу.",
+    "- Юмор держать в рабочей норме: без копирования чужих персонажей, без национальных карикатур и без токсичности.",
     "- Не выдумывать факты о людях; опираться на эту память и свежий контекст.",
   ].join("\n");
 }
@@ -968,6 +1034,77 @@ async function handleOperationCommand(message, text, type, successText) {
   });
 }
 
+function isSuperSusCommand(text = "") {
+  const value = stripBotMention(String(text || "").trim());
+  return /^\/(?:sus|supersus)(?:\s|$)/i.test(value) || /^суперсус(?:\s|,|:|-|—|$)/i.test(value);
+}
+
+function parseSuperSusPrompt(text = "") {
+  return stripBotMention(String(text || "").trim())
+    .replace(/^\/(?:sus|supersus)(?:\s+|$)/i, "")
+    .replace(/^суперсус(?:\s|,|:|-|—)+/i, "")
+    .trim();
+}
+
+async function handleSuperSusCommand(message, text) {
+  const prompt = parseSuperSusPrompt(text).toLowerCase();
+
+  if (/памят|memory|помнишь/.test(prompt)) {
+    const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+    const chat = memory?.chats?.[memoryChatKey(message)] || {};
+    const participantsCount = Object.keys(chat.participants || {}).length;
+    const jokesCount = Array.isArray(chat.jokes) ? chat.jokes.length : 0;
+    const lastSync = chat.lastHermesSyncAt ? formatDateTimeRu(chat.lastHermesSyncAt) : "ещё не синкался";
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botLines([
+        "память на месте, мой друг.",
+        `Участников помню: ${participantsCount}`,
+        `Внутренних шуток: ${jokesCount}`,
+        `Последний sync в Hermes: ${lastSync}`,
+        "Сырой чат наружу не показываю, приватность держу крепко.",
+      ]),
+    });
+    return;
+  }
+
+  if (/стил|тон|характер|юмор|voice|персона/.test(prompt)) {
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botLines([
+        "мой режим такой: рабочий товарищ, коротко, живо, без канцелярской каши.",
+        "",
+        "Юмор можно, но аккуратно:",
+        ...SUPERSUS_PERSONA.humor.map((item) => `- ${item}`),
+        "",
+        "Главное: смешно там, где помогает, и молча там, где надо не шуметь.",
+      ]),
+    });
+    return;
+  }
+
+  await sendLongMessage({
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: botLines([
+      "я могу быть маленьким операционным диспетчером, не просто пищалкой.",
+      "",
+      ...SUPERSUS_CAPABILITIES.map((item) => `- ${item}`),
+      "",
+      "Полезные быстрые команды:",
+      "/atl — что двигается по задачам",
+      "/today — план на день",
+      "/task marketing текст — создать задачу",
+      "/hermes текст — спросить второй мозг",
+      "/sus память — проверить, что память живая",
+      "",
+      "Меньше шума, больше дела. Очень культурный контроль хаоса.",
+    ]),
+  });
+}
+
 function isHermesCommand(text = "") {
   const value = stripBotMention(String(text || "").trim());
   return /^\/hermes(?:\s|$)/i.test(value) || /^гермес(?:\s|,|:|-|—|$)/i.test(value);
@@ -1065,6 +1202,8 @@ async function sendHelp(chatId) {
       "",
       "Команды Atlas Tasks:",
       "/atl — живая сводка по задачам Atlas/YouTrack",
+      "/sus — что умеет Суперсус и какой у него режим",
+      "/sus память — проверить память Telegram-чата",
       "/hermes текст — спросить Гермеса / второй мозг",
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",
