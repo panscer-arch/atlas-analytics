@@ -28,7 +28,6 @@ const POLL_TIMEOUT_SECONDS = 25;
 const TASK_TRIGGER_EMOJI = "💋";
 const TASK_DONE_EMOJI = "✅";
 const RECENT_MESSAGES_LIMIT = 800;
-const BOT_PERSONA_NAME = process.env.TELEGRAM_BOT_PERSONA_NAME || "SuperSUS";
 const CORNER_JOKE_REACTION = "😁";
 const CATEGORY_BUTTONS = [
   ["inbox", "launch"],
@@ -45,11 +44,11 @@ const pendingCategory = new Map();
 const recentMessages = new Map();
 
 function botSay(text) {
-  return `${BOT_PERSONA_NAME}: ${text}`;
+  return text;
 }
 
 function botLines(lines = []) {
-  return [`${BOT_PERSONA_NAME}:`, ...lines].join("\n");
+  return lines.join("\n");
 }
 
 function log(message, payload = "") {
@@ -182,7 +181,7 @@ function isReplyToSuperSusPrompt(message) {
   const replied = message?.reply_to_message;
   if (!replied?.from?.is_bot) return false;
   const text = getPlainMessageText(replied);
-  return /super\s*sus|supersus|задача поймана|куда клад[её]м|куда поставить задачу/i.test(text);
+  return /super\s*sus|supersus|суперсус|задача поймана|куда клад[её]м|куда поставить задачу/i.test(text);
 }
 
 async function handleCornerJoke(message, text = "") {
@@ -192,7 +191,7 @@ async function handleCornerJoke(message, text = "") {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: botSay("угол принял, но это не доска задач, это VIP-место наблюдателя. Посидел, улыбнулся — и обратно в строй, тут фронт двигается."),
+    text: botSay("ахах, угол не прокатил. Ставлю отметку и возвращаю в строй. Фронт сам себя не проверит."),
   });
   return true;
 }
@@ -403,7 +402,7 @@ async function handleCallback(callback) {
   const key = `${chatId}:${messageId}`;
   const pending = pendingCategory.get(key);
   if (!pending) {
-    await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: `${BOT_PERSONA_NAME}: задача потерялась` });
+    await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: "задача потерялась" });
     return;
   }
 
@@ -414,7 +413,7 @@ async function handleCallback(callback) {
   });
   pendingCategory.delete(key);
 
-  await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: `${BOT_PERSONA_NAME}: добавлено` });
+  await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: "готово" });
   await telegram("sendMessage", {
     chat_id: pending.message.chat.id,
     reply_to_message_id: pending.message.message_id,

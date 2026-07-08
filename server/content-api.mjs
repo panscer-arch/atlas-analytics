@@ -629,7 +629,7 @@ function buildHumanOpsTakeaway(changes = []) {
 function formatYouTrackChangePush(changes = []) {
   const visibleChanges = changes.slice(0, 8);
   const lines = [
-    "🟠 <b>SuperSUS на связи</b>",
+    "🟠 <b>Суперсус на связи</b>",
     "━━━━━━━━━━━━━━━━",
     "",
     `Чуваки, по задачам движ: ${escapeTelegramHtml(summarizeHumanBuckets(changes))}.`,
@@ -1280,6 +1280,39 @@ async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
   return { ok: true, status: 200, sent };
 }
 
+async function sendTelegramReaction(messageId, emoji = "😁", requestedChatId = "") {
+  const { token, targetChatIds, preferredChatId } = await getTelegramConfig();
+  if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
+  if (!targetChatIds.length) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
+  const chatId = requestedChatId || preferredChatId || targetChatIds[0] || "";
+  if (!chatId) return { ok: false, status: 400, error: "telegram_push_chat_required" };
+  if (!targetChatIds.includes(chatId)) {
+    return { ok: false, status: 403, error: "telegram_push_chat_not_allowed", chatId };
+  }
+
+  const safeMessageId = Number(messageId || 0);
+  if (!Number.isFinite(safeMessageId) || safeMessageId <= 0) {
+    return { ok: false, status: 400, error: "telegram_message_id_required", chatId };
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/setMessageReaction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: safeMessageId,
+      reaction: [{ type: "emoji", emoji: normalizeTelegramValue(emoji || "😁") }],
+      is_big: false,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload?.ok === false) {
+    return { ok: false, status: response.status || 502, error: payload?.description || "telegram_reaction_failed", chatId };
+  }
+
+  return { ok: true, status: 200, chatId, messageId: safeMessageId };
+}
+
 async function readBody(request) {
   const chunks = [];
   let size = 0;
@@ -1406,8 +1439,26 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 400, { ok: false, error: "empty_telegram_message" });
         return;
       }
-      const result = await sendTelegramMessage(text, {}, String(parsed.chatId || "").trim());
-      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
+      const chatId = String(parsed.chatId || "").trim();
+      const replyToMessageId = Number(parsed.replyToMessageId || parsed.reply_to_message_id || 0);
+      const reactionToMessageId = Number(parsed.reactionToMessageId || parsed.reactToMessageId || parsed.reaction_to_message_id || 0);
+      const options = {};
+      if (Number.isFinite(replyToMessageId) && replyToMessageId > 0) options.reply_to_message_id = replyToMessageId;
+      if (parsed.parseMode === "HTML" || parsed.parse_mode === "HTML") options.parse_mode = "HTML";
+
+      const reaction = Number.isFinite(reactionToMessageId) && reactionToMessageId > 0
+        ? await sendTelegramReaction(reactionToMessageId, parsed.reactionEmoji || parsed.emoji || "😁", chatId)
+        : { ok: true, skipped: true };
+      const result = await sendTelegramMessage(text, options, chatId);
+      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result, reaction } : { ok: false, error: result.error, reaction });
+      return;
+    }
+
+    if (url.pathname === "/api/telegram/react-message" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const result = await sendTelegramReaction(parsed.messageId || parsed.message_id, parsed.emoji || "😁", String(parsed.chatId || "").trim());
+      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, reaction: result } : { ok: false, error: result.error });
       return;
     }
 
