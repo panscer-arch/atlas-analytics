@@ -12,6 +12,7 @@ import ImageContentBoard from "./ImageContentBoard";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
 import LocalizationBibleBoard from "./LocalizationBibleBoard";
+import MarketingBriefBoard from "./MarketingBriefBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import PresentationContentTab from "./PresentationContentTab";
@@ -105,6 +106,7 @@ export const TASK_BOARD_TABS = [
 
 export const CONTENT_BOARD_TABS = [
   { id: "contentPlan", label: "Контент-план" },
+  { id: "marketingBrief", label: "Маркетинг бриф" },
   { id: "images", label: "Images" },
   { id: "materials", label: "Материалы" },
   { id: "presentation", label: "Презентация" },
@@ -125,6 +127,7 @@ export const CONTENT_BOARD_TABS = [
 export const STATIC_CONTENT_BOARD_IDS = [
   "dailyTasks",
   "contentPlan",
+  "marketingBrief",
   "images",
   "videoScripts",
   "materials",
@@ -136,6 +139,14 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "parser",
   "telegramParser",
   "influencers",
+  "youtubeApiSearch",
+  "bitnestYoutube",
+  "articlePlacement",
+  "marketSegments",
+  "regionalHiring",
+  "mlmLeaders",
+  "segmentOutreach",
+  "poolMonitor",
   "agentTasks",
   "agentDataset",
   "agentFaq",
@@ -161,7 +172,7 @@ export const TASK_BOARD_IDS = [
 export function getAnalyticsTabForBoard(boardId) {
   if (!boardId) return "dashboard";
   if (boardId === "expenses") return "analytics";
-  if (boardId === "parser" || boardId === "telegramParser" || boardId === "influencers") return "parser";
+  if (boardId === "parser" || boardId === "telegramParser" || boardId === "influencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "segmentOutreach" || boardId === "poolMonitor") return "parser";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";
   if (CONTENT_BOARD_IDS.includes(boardId)) return "content";
@@ -189,6 +200,10 @@ export const STATIC_BOARD_META = {
   contentPlan: {
     title: "Контент-план",
     description: "SMM-план Atlas по соцсетям, датам, форматам, статусам, текстам и комментариям для правок.",
+  },
+  marketingBrief: {
+    title: "Маркетинг бриф",
+    description: "Основной маркетинговый бриф Atlas: путь клиента, каналы, коммуникация, аудитории, KPI, контент и правила безопасных формулировок.",
   },
   materials: {
     title: "Материалы",
@@ -225,6 +240,38 @@ export const STATIC_BOARD_META = {
   influencers: {
     title: "Инфлюенсеры",
     description: "Рабочий список потенциальных инфлюенсеров и сообществ из YouTube, Facebook, X и Telegram для Atlas outreach.",
+  },
+  youtubeApiSearch: {
+    title: "YouTube API Search",
+    description: "Поиск YouTube-каналов и роликов через YouTube Data API: хэштеги, ключевые слова, фильтры, выбор и сохранение лидов.",
+  },
+  bitnestYoutube: {
+    title: "Битнест YouTube",
+    description: "Проверенные YouTube-каналы и ролики, где упоминался BitNest: тип, язык, охват, пример видео и ссылка на канал.",
+  },
+  articlePlacement: {
+    title: "SuperSource: размещение статей",
+    description: "Список из 100 Web3, crypto, DAO и blockchain-площадок по регионам для статей, PR, sponsored posts и outreach.",
+  },
+  marketSegments: {
+    title: "Сегменты рынка для Atlas",
+    description: "Карта близких к Atlas направлений: HYIP, MLM, токены, копитрейдинг, DeFi, P2P, DAO, airdrops, GameFi и другие аудитории.",
+  },
+  regionalHiring: {
+    title: "Regional Partners",
+    description: "Площадки и гипотеза поиска региональных Web3/community партнёров через job boards Африки, Индонезии и глобального crypto-рынка.",
+  },
+  mlmLeaders: {
+    title: "MLM лидеры",
+    description: "Список MLM, network marketing и direct selling источников для поиска региональных лидеров Atlas по странам и рынкам.",
+  },
+  segmentOutreach: {
+    title: "Сегментный парсер",
+    description: "Выборка YouTube, Telegram, Instagram, X, Facebook и новостных агрегаторов для размещения статей по 7 близким к Atlas направлениям.",
+  },
+  poolMonitor: {
+    title: "Pool Monitor",
+    description: "Read-only мониторинг PancakeSwap V3 USDT/USDC пула через GeckoTerminal API.",
   },
   agentTasks: {
     title: "Параметры",
@@ -283,6 +330,7 @@ export const STATIC_BOARD_META = {
 const STATIC_BOARD_RENDERERS = {
   materials: () => <MaterialsLinksBoard />,
   contentPlan: () => <ContentPlanBoard />,
+  marketingBrief: () => <MarketingBriefBoard />,
   images: () => <ImageContentBoard />,
   presentation: () => <PresentationContentTab />,
   productLibrary: () => <ProductLibraryBoard />,
@@ -292,6 +340,14 @@ const STATIC_BOARD_RENDERERS = {
   parser: () => <ParserWorkspacePanel />,
   telegramParser: () => <ParserWorkspacePanel initialTab="telegram" />,
   influencers: () => <ParserWorkspacePanel initialTab="influencers" />,
+  youtubeApiSearch: () => <ParserWorkspacePanel initialTab="youtubeApi" />,
+  bitnestYoutube: () => <ParserWorkspacePanel initialTab="bitnestYoutube" />,
+  articlePlacement: () => <ParserWorkspacePanel initialTab="articlePlacement" />,
+  marketSegments: () => <ParserWorkspacePanel initialTab="marketSegments" />,
+  regionalHiring: () => <ParserWorkspacePanel initialTab="regionalHiring" />,
+  mlmLeaders: () => <ParserWorkspacePanel initialTab="mlmLeaders" />,
+  segmentOutreach: () => <ParserWorkspacePanel initialTab="segmentOutreach" />,
+  poolMonitor: () => <ParserWorkspacePanel initialTab="poolMonitor" />,
   videoScripts: () => <VideoScriptsBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
   agentDataset: () => <AgentTrainingDataset />,

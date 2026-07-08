@@ -9,10 +9,46 @@ import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import Wrapper from "./Wrapper";
+import YouTrackTaskMonitor from "./YouTrackTaskMonitor";
 import formatCurrency from "../utils/formatCurrency";
+import { useState } from "react";
 
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function TasksWorkspacePanel({ analyticsBoardUrl, initialView = "tasks" }) {
+  const [activeView, setActiveView] = useState(initialView);
+  const tabs = [
+    { id: "tasks", label: "Задачи", hint: "чек-листы" },
+    { id: "monitor", label: "ATL-монитор", hint: "live" },
+  ];
+
+  return (
+    <Wrapper as="section" marginTop="lg" gap="lg">
+      <div className="analytics-parser-subtabs analytics-surface" role="tablist" aria-label="Задачи и ATL-монитор">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`analytics-parser-subtab${activeView === tab.id ? " analytics-parser-subtab-active" : ""}`}
+            onClick={() => setActiveView(tab.id)}
+            role="tab"
+            aria-selected={activeView === tab.id}
+          >
+            <span>{tab.label}</span>
+            <small>{tab.hint}</small>
+          </button>
+        ))}
+      </div>
+
+      {activeView === "monitor" ? (
+        <YouTrackTaskMonitor />
+      ) : (
+        <LaunchChecklistSection mode="tasks" analyticsBoardUrl={analyticsBoardUrl} />
+      )}
+    </Wrapper>
+  );
 }
 
 export default function AnalyticsMainPanel({
@@ -31,7 +67,10 @@ export default function AnalyticsMainPanel({
     );
   }
 
-  if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" analyticsBoardUrl={analyticsBoardUrl} />;
+  if (activeTab === "tasks") return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} />;
+  if (activeTab === "taskMonitor") {
+    return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} initialView="monitor" />;
+  }
   if (activeTab === "expenses") {
     return (
       <Wrapper as="section" marginTop="lg">

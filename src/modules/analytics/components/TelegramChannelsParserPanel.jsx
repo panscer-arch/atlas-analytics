@@ -5,6 +5,45 @@ import {
   defaultTelegramLeads,
 } from "../data/telegramParserData";
 
+const TELEGRAM_SEGMENT_FILTERS = [
+  "Web3",
+  "DeFi",
+  "BNB",
+  "Airdrop",
+  "IDO",
+  "NFT",
+  "smart-contract",
+  "Blockchain",
+  "Trading",
+  "News",
+  "Education",
+  "Metaverse",
+  "TON",
+  "HYIP",
+];
+
+const TELEGRAM_TERM_ALIASES = {
+  core: "Web3",
+  web3: "Web3",
+  defi: "DeFi",
+  bnb: "BNB",
+  bsc: "BNB",
+  airdrop: "Airdrop",
+  ido: "IDO",
+  launchpad: "IDO",
+  nft: "NFT",
+  smart: "smart-contract",
+  smartcontract: "smart-contract",
+  contracts: "smart-contract",
+  blockchain: "Blockchain",
+  trading: "Trading",
+  news: "News",
+  education: "Education",
+  metaverse: "Metaverse",
+  ton: "TON",
+  hyip: "HYIP",
+};
+
 export default function TelegramChannelsParserPanel() {
   return (
     <HyipParserPanel
@@ -17,6 +56,10 @@ export default function TelegramChannelsParserPanel() {
       tableAriaLabel="Список Telegram-каналов для outreach"
       searchPlaceholder="канал, страна, DeFi, NFT, Web3..."
       showVerification
+      platformFilterLabel="Сегмент"
+      platformAllLabel="Все сегменты"
+      keywordFilterOptions={TELEGRAM_SEGMENT_FILTERS}
+      keywordAliases={TELEGRAM_TERM_ALIASES}
       manualLeadDefaults={{
         name: "Новый Telegram-канал",
         category: "Telegram / crypto / Web3",

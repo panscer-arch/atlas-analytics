@@ -563,6 +563,7 @@ function AnalyticsPage() {
 
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
+    { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
