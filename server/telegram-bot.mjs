@@ -65,6 +65,10 @@ const SUPERSUS_CAPABILITIES = [
   "создавать задачи из Telegram только по явному триггеру: /task, 💋 или настроенный маркер",
   "не трогать обычную переписку, voice, reply и forward, а сохранять их как контекст",
   "показывать /atl, /today, /tasks, /my и помогать не терять хвосты",
+  "показывать /sus что горит, /sus зависло, /sus тест, /sus кто тормозит и /sus пни",
+  "собирать /sus дайджест по текущему состоянию задач и последним решениям",
+  "по /sus разложи превращать длинную мысль или reply в аккуратный список задач без автосоздания",
+  "по /sus релиз быстро проверять живость API и монитор задач после выкладки",
   "фиксировать /decision, /question, /report и /remind в операционной памяти",
   "через /hermes спрашивать второй мозг и синхронизировать важную память чата",
   "помнить участников, внутренние шутки и стиль общения без выдумывания биографий",
@@ -963,6 +967,257 @@ function formatAtlasMonitorSummary(payload = {}) {
   return lines.join("\n").trim();
 }
 
+function getOpenMonitorIssues(payload = {}) {
+  return (Array.isArray(payload.issues) ? payload.issues : []).filter((issue) => !issue.isResolved);
+}
+
+function isShowStopperIssue(issue = {}) {
+  return /show-stopper|critical|blocker|критичес|блокер/i.test(issue.priority || "");
+}
+
+function isTestingIssue(issue = {}) {
+  return /тест|test|testing|qa/i.test(issue.status || "");
+}
+
+function isStaleIssue(issue = {}) {
+  return !issue.isResolved && Number(issue.inactiveMs || 0) >= 24 * 60 * 60 * 1000;
+}
+
+function isNeedsHumanIssue(issue = {}) {
+  return Boolean(issue.needsAttention || issue.commentLooksLikeQuestion || /уточн|clarification|question/i.test(issue.status || ""));
+}
+
+function issueUrgencyScore(issue = {}) {
+  let score = 0;
+  if (isShowStopperIssue(issue)) score += 100;
+  if (isNeedsHumanIssue(issue)) score += 40;
+  if (isStaleIssue(issue)) score += Math.min(30, Math.floor(Number(issue.inactiveMs || 0) / (24 * 60 * 60 * 1000)) * 8);
+  if (isTestingIssue(issue)) score += 12;
+  if (/unassigned|не назнач/i.test(issue.assignee || "")) score += 10;
+  return score;
+}
+
+function sortIssuesByUrgency(issues = []) {
+  return [...issues].sort((a, b) => {
+    const scoreDiff = issueUrgencyScore(b) - issueUrgencyScore(a);
+    if (scoreDiff) return scoreDiff;
+    return Number(b.updatedAtMs || 0) - Number(a.updatedAtMs || 0);
+  });
+}
+
+function formatMonitorIssueLine(issue = {}, index = 0) {
+  const prefix = index ? `${index}. ` : "- ";
+  const tags = [];
+  if (isShowStopperIssue(issue)) tags.push("горячее");
+  if (isNeedsHumanIssue(issue)) tags.push("нужен ответ");
+  if (isTestingIssue(issue)) tags.push("тест");
+  if (isStaleIssue(issue)) tags.push(`зависло ${issue.inactiveLabel || issue.statusAgeLabel || "24ч+"}`);
+  const assignee = issue.assignee && !/unassigned|не назнач/i.test(issue.assignee) ? ` | ${issue.assignee}` : " | без исполнителя";
+  const status = issue.status ? ` | ${issue.status}` : "";
+  const tagText = tags.length ? ` [${tags.join(", ")}]` : "";
+  return `${prefix}${issue.id || "Issue"}: ${issue.title || "Без названия"}${status}${assignee}${tagText}${issue.url ? `\n   ${issue.url}` : ""}`;
+}
+
+function formatIssueBlock(title, issues = [], emptyText, limit = 8) {
+  const lines = [title];
+  if (!issues.length) {
+    lines.push(emptyText);
+    return lines.join("\n");
+  }
+  issues.slice(0, limit).forEach((issue, index) => {
+    lines.push(formatMonitorIssueLine(issue, index + 1));
+  });
+  if (issues.length > limit) lines.push(`...и ещё ${issues.length - limit}`);
+  return lines.join("\n");
+}
+
+function getSuperSusIssueGroups(payload = {}) {
+  const openIssues = getOpenMonitorIssues(payload);
+  const showStoppers = openIssues.filter(isShowStopperIssue);
+  const needsAnswer = openIssues.filter(isNeedsHumanIssue);
+  const stale = openIssues.filter(isStaleIssue);
+  const testing = openIssues.filter(isTestingIssue);
+  const bottlenecks = openIssues.filter((issue) => isNeedsHumanIssue(issue) || isTestingIssue(issue) || /unassigned|не назнач/i.test(issue.assignee || ""));
+  const hot = sortIssuesByUrgency([...new Map([...showStoppers, ...needsAnswer, ...stale].map((issue) => [issue.id, issue])).values()]);
+  return {
+    openIssues,
+    showStoppers: sortIssuesByUrgency(showStoppers),
+    needsAnswer: sortIssuesByUrgency(needsAnswer),
+    stale: sortIssuesByUrgency(stale),
+    testing: sortIssuesByUrgency(testing),
+    bottlenecks: sortIssuesByUrgency(bottlenecks),
+    hot,
+  };
+}
+
+function formatSuperSusHot(payload = {}) {
+  const groups = getSuperSusIssueGroups(payload);
+  return formatIssueBlock(
+    "что горит",
+    groups.hot,
+    "сейчас прямого пожара не вижу. Можно спокойно добивать хвосты.",
+    8,
+  );
+}
+
+function formatSuperSusStale(payload = {}) {
+  const groups = getSuperSusIssueGroups(payload);
+  return formatIssueBlock(
+    "что зависло 24ч+",
+    groups.stale,
+    "зависших больше суток не вижу. Редкий красивый момент.",
+    10,
+  );
+}
+
+function formatSuperSusTesting(payload = {}) {
+  const groups = getSuperSusIssueGroups(payload);
+  return formatIssueBlock(
+    "что на тестике",
+    groups.testing,
+    "на тесте сейчас пусто. Значит или всё чисто, или ещё не донесли.",
+    10,
+  );
+}
+
+function formatSuperSusBottlenecks(payload = {}) {
+  const groups = getSuperSusIssueGroups(payload);
+  return formatIssueBlock(
+    "где ждём человека",
+    groups.bottlenecks,
+    "явных мест, где кто-то держит очередь, не вижу.",
+    10,
+  );
+}
+
+function formatSuperSusPing(payload = {}) {
+  const groups = getSuperSusIssueGroups(payload);
+  const candidates = sortIssuesByUrgency([...new Map([...groups.needsAnswer, ...groups.stale, ...groups.testing].map((issue) => [issue.id, issue])).values()]);
+  const lines = ["кого/что подпнуть"];
+  if (!candidates.length) {
+    lines.push("подпинывать пока некого. Можно выдохнуть и сделать вид, что так и планировали.");
+    return lines.join("\n");
+  }
+  candidates.slice(0, 8).forEach((issue, index) => {
+    const person = issue.assignee && !/unassigned|не назнач/i.test(issue.assignee) ? issue.assignee : "назначить человека";
+    const reason = isNeedsHumanIssue(issue)
+      ? "нужен ответ"
+      : isTestingIssue(issue)
+        ? "ждёт тест"
+        : "долго без движения";
+    lines.push(`${index + 1}. ${person}: ${issue.id} — ${reason}`);
+    lines.push(`   ${issue.title || "Без названия"}`);
+  });
+  lines.push("");
+  lines.push("Формат мягкий: без охоты на виноватых, просто вернуть задачу в движение.");
+  return lines.join("\n");
+}
+
+function formatTelegramOperationEntry(entry = {}, index = 0) {
+  const author = entry.source?.authorName ? ` · ${entry.source.authorName}` : "";
+  const date = entry.createdAt ? formatDateTimeRu(entry.createdAt) : "";
+  return `${index + 1}. ${String(entry.text || entry.title || "Без текста").trim()}${date ? `\n   ${date}${author}` : author}`;
+}
+
+function formatSuperSusDecisions(ops = {}) {
+  const decisions = Array.isArray(ops.decisions) ? ops.decisions : [];
+  const lines = ["последние решения"];
+  if (!decisions.length) {
+    lines.push("решений пока не записывали. Значит мозг команды ещё в дикой природе.");
+    return lines.join("\n");
+  }
+  decisions.slice(0, 10).forEach((entry, index) => lines.push(formatTelegramOperationEntry(entry, index)));
+  return lines.join("\n");
+}
+
+function formatSuperSusDigest(payload = {}, ops = {}) {
+  const summary = payload.summary || {};
+  const groups = getSuperSusIssueGroups(payload);
+  const decisions = Array.isArray(ops.decisions) ? ops.decisions : [];
+  const questions = Array.isArray(ops.questions) ? ops.questions : [];
+  const lines = [
+    "короткий дайджест",
+    `Проверено: ${formatDateTimeRu(payload.lastCheckedAt)}`,
+    "",
+    `Открыто: ${summary.open ?? groups.openIssues.length}`,
+    `Горит: ${groups.hot.length}`,
+    `На тесте: ${groups.testing.length}`,
+    `Зависло 24ч+: ${groups.stale.length}`,
+    `Нужен ответ: ${groups.needsAnswer.length}`,
+  ];
+
+  if (groups.hot.length) {
+    lines.push("", "первым делом:");
+    groups.hot.slice(0, 5).forEach((issue, index) => lines.push(formatMonitorIssueLine(issue, index + 1)));
+  }
+
+  if (decisions.length) {
+    lines.push("", "последние решения:");
+    decisions.slice(0, 3).forEach((entry, index) => lines.push(formatTelegramOperationEntry(entry, index)));
+  }
+
+  if (questions.length) {
+    lines.push("", "вопросы, которые не надо терять:");
+    questions.slice(0, 3).forEach((entry, index) => lines.push(formatTelegramOperationEntry(entry, index)));
+  }
+
+  lines.push("", groups.hot.length ? "что делать: закрыть горящее, потом тестик, потом хвосты." : "что делать: спокойно добивать текущие задачи, пожара не вижу.");
+  return lines.join("\n");
+}
+
+async function fetchContentHealth() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ATL_MONITOR_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${CONTENT_API_URL}/api/content/health`, { signal: controller.signal });
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok && payload?.ok === true, status: response.status, payload };
+  } catch (error) {
+    return { ok: false, error: error?.message || String(error) };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function formatSuperSusReleaseCheck(health = {}, monitorPayload = {}) {
+  const groups = getSuperSusIssueGroups(monitorPayload);
+  return [
+    "релизный чек",
+    `API: ${health.ok ? "живой" : `не отвечает (${health.error || health.status || "unknown"})`}`,
+    `YouTrack monitor: ${monitorPayload.ok ? "живой" : "не достал"}`,
+    `Открыто задач: ${monitorPayload.summary?.open ?? groups.openIssues.length}`,
+    `Горит: ${groups.hot.length}`,
+    `Тест: ${groups.testing.length}`,
+    "",
+    health.ok && monitorPayload.ok
+      ? "можно тыкать. Если что-то визуально криво — это уже глазами ловим."
+      : "тут лучше не делать вид, что всё прекрасно. Сначала починить чек выше.",
+  ].join("\n");
+}
+
+function fallbackBreakdownText(text = "") {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  const parts = cleaned
+    .split(/(?<=[.!?])\s+|;\s+|\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+  const lines = [
+    "разложил без автосоздания задач",
+    "",
+  ];
+  if (!parts.length) {
+    lines.push("текста мало, раскладывать нечего. Дай простыню или reply на сообщение.");
+    return lines.join("\n");
+  }
+  parts.forEach((part, index) => {
+    lines.push(`${index + 1}. ${part}`);
+  });
+  lines.push("");
+  lines.push("если ок — ответь на нужный пункт командой /task category или поставь 💋 на исходное сообщение.");
+  return lines.join("\n");
+}
+
 function appendIssueBlock(lines, title, issues, limit) {
   if (!issues.length) return;
   lines.push("", title);
@@ -1047,7 +1302,193 @@ function parseSuperSusPrompt(text = "") {
 }
 
 async function handleSuperSusCommand(message, text) {
-  const prompt = parseSuperSusPrompt(text).toLowerCase();
+  const promptRaw = parseSuperSusPrompt(text);
+  const prompt = promptRaw.toLowerCase();
+
+  if (/что\s+горит|горит|срочн|пожар|важн/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusHot(result),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`горящее не достал: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/завис|стоит|24|хвост/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusStale(result),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`зависшее не достал: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/тест|testing|qa/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusTesting(result),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`тестик не достал: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/кто\s+тормозит|тормозит|держит|жд[её]м|бутыл|bottleneck/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusBottlenecks(result),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`узкие места не достал: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/пни|подпн|пинок|толкн|напомни\s+им/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusPing(result),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`кого пнуть не понял: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/решени|decision|решил|решили/.test(prompt)) {
+    const ops = await readContent(CONTENT_KEYS.telegramOps, { decisions: [], questions: [], reports: [], reminders: [] });
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatSuperSusDecisions(ops),
+    });
+    return;
+  }
+
+  if (/дайджест|сводк|итог|резюм|что\s+сейчас/.test(prompt)) {
+    try {
+      const [result, ops] = await Promise.all([
+        fetchAtlasMonitorSummary(),
+        readContent(CONTENT_KEYS.telegramOps, { decisions: [], questions: [], reports: [], reminders: [] }),
+      ]);
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusDigest(result, ops),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`дайджест не собрал: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/релиз|deploy|деплой|health|живой|провер[ьи]/.test(prompt)) {
+    const [health, monitor] = await Promise.all([
+      fetchContentHealth(),
+      fetchAtlasMonitorSummary().catch((error) => ({ ok: false, error: error?.message || String(error), issues: [], summary: {} })),
+    ]);
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatSuperSusReleaseCheck(health, monitor),
+    });
+    return;
+  }
+
+  if (/разлож|раскид|разбей|структур|в\s+задач/.test(prompt)) {
+    let sourceText = promptRaw.replace(/^(разложи|раскидай|разбей|структурируй|в задачи)\s*/i, "").trim();
+    if (!sourceText && message.reply_to_message) {
+      try {
+        sourceText = await getMessageText(message.reply_to_message);
+      } catch (error) {
+        log("supersus breakdown transcription error:", error?.message || String(error));
+      }
+    }
+
+    if (!sourceText.trim()) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay("дай текст после /sus разложи или ответь этой командой на сообщение. Из воздуха задачи делать не буду, я культурный."),
+      });
+      return;
+    }
+
+    if (HERMES_BRIDGE_URL && HERMES_BRIDGE_TOKEN) {
+      try {
+        const result = await askHermesBridge({
+          prompt: [
+            "Разложи сообщение на 3-7 коротких рабочих задач для команды SuperSUS/Atlas.",
+            "Не создавай задачи автоматически. Верни список с понятными формулировками, возможной категорией и следующим действием.",
+            "Стиль: русский, коротко, без канцелярита.",
+            "",
+            "Сообщение:",
+            sourceText,
+          ].join("\n"),
+          source: buildSource(message, sourceText),
+        });
+        await sendLongMessage({
+          chat_id: message.chat.id,
+          reply_to_message_id: message.message_id,
+          text: result || fallbackBreakdownText(sourceText),
+        });
+        return;
+      } catch (error) {
+        log("supersus breakdown hermes error:", error?.message || String(error));
+      }
+    }
+
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: fallbackBreakdownText(sourceText),
+    });
+    return;
+  }
 
   if (/памят|memory|помнишь/.test(prompt)) {
     const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
@@ -1095,6 +1536,15 @@ async function handleSuperSusCommand(message, text) {
       "",
       "Полезные быстрые команды:",
       "/atl — что двигается по задачам",
+      "/sus что горит — самые срочные места",
+      "/sus зависло — хвосты 24ч+",
+      "/sus тест — что ждёт проверки",
+      "/sus кто тормозит — где ждём человека или действие",
+      "/sus пни — мягкий список кого/что вернуть в движение",
+      "/sus решения — последние зафиксированные решения",
+      "/sus дайджест — короткая операционная сводка",
+      "/sus релиз — проверить API и монитор после выкладки",
+      "/sus разложи — превратить reply/текст в список задач без автосоздания",
       "/today — план на день",
       "/task marketing текст — создать задачу",
       "/hermes текст — спросить второй мозг",
@@ -1204,6 +1654,15 @@ async function sendHelp(chatId) {
       "/atl — живая сводка по задачам Atlas/YouTrack",
       "/sus — что умеет Суперсус и какой у него режим",
       "/sus память — проверить память Telegram-чата",
+      "/sus что горит — срочные задачи, блокеры и вопросы",
+      "/sus зависло — хвосты без движения 24ч+",
+      "/sus тест — задачи на проверке",
+      "/sus кто тормозит — где ждём действие",
+      "/sus пни — мягкий список кого/что подпнуть",
+      "/sus решения — последние решения",
+      "/sus дайджест — короткая операционная сводка",
+      "/sus релиз — health-check после выкладки",
+      "/sus разложи — разложить reply/текст на задачи без автосоздания",
       "/hermes текст — спросить Гермеса / второй мозг",
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",

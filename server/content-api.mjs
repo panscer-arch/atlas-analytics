@@ -647,7 +647,7 @@ function buildHumanOpsTakeaway(changes = []) {
 function formatYouTrackChangePush(changes = []) {
   const visibleChanges = changes.slice(0, 8);
   const lines = [
-    "🟠 <b>Суперсус на связи</b>",
+    "🟠 <b>По задачам движ</b>",
     "━━━━━━━━━━━━━━━━",
     "",
     `Чуваки, по задачам движ: ${escapeTelegramHtml(summarizeHumanBuckets(changes))}.`,
