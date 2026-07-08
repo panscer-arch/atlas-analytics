@@ -103,6 +103,12 @@ jobs:
             server/hermes-telegram-bridge.py \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/hermes-telegram-bridge.py"
 
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            docs/supersus-telegram-memory.md \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/supersus-telegram-memory.md"
+
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
@@ -117,6 +123,8 @@ jobs:
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
           if id hermes >/dev/null 2>&1 && [ -d /opt/hermes ]; then
             sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
+            sudo install -d -m 700 -o hermes -g hermes /opt/hermes/.hermes/memories
+            sudo install -m 644 -o hermes -g hermes /tmp/supersus-telegram-memory.md /opt/hermes/.hermes/memories/SUPERSUS_TELEGRAM.md
           fi
           sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api

@@ -71,3 +71,14 @@ hermes-telegram-bridge.service
 session: telegram-<chat_id>
 ```
 
+Hermes memory file:
+
+```text
+/opt/hermes/.hermes/memories/SUPERSUS_TELEGRAM.md
+```
+
+Hermes Files copy:
+
+```text
+/opt/hermes/files/codex/supersus-telegram-memory.md
+```
