@@ -7,6 +7,7 @@ import {
   readContent,
   STORE_DIR,
   updateTelegramTaskBySource,
+  writeContent,
 } from "./telegram-task-store.mjs";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
@@ -71,6 +72,8 @@ const SUPERSUS_CAPABILITIES = [
   "по /sus релиз быстро проверять живость API и монитор задач после выкладки",
   "по /sus биография, /sus день и /sus история поддерживать разговор персонажным lore",
   "по /sus настроение, /sus дневник и /sus кто есть кто создавать ощущение присутствия без автоспама",
+  "по /sus тихо включать паузу на автоответы и автоматический шум",
+  "по /sus ответь готовить черновик ответа на reply, не отправляя его за человека",
   "фиксировать /decision, /question, /report и /remind в операционной памяти",
   "через /hermes спрашивать второй мозг и синхронизировать важную память чата",
   "помнить участников, внутренние шутки и стиль общения без выдумывания биографий",
@@ -337,6 +340,10 @@ async function handleSuperSusMention(message, text = "") {
   const chatId = memoryChatKey(message);
   const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
   const chat = memory?.chats?.[chatId] || {};
+  if (isSuperSusQuiet(chat)) {
+    log("direct mention skipped by quiet mode", { chatId, until: chat.superSusQuietUntil || "" });
+    return;
+  }
   const directText = stripSuperSusAddress(text) || text;
   const recentContext = formatRecentChatContext(chat, 10);
   const replyText = message.reply_to_message ? await getMessageText(message.reply_to_message).catch(() => "") : "";
@@ -395,6 +402,80 @@ async function handleSuperSusMention(message, text = "") {
   }
 }
 
+async function draftSuperSusReply(message, promptRaw = "") {
+  if (!message.reply_to_message) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botSay("ответь командой /sus ответь на конкретное сообщение. Без reply я не понимаю, кому готовить черновик."),
+    });
+    return;
+  }
+
+  const repliedText = await getMessageText(message.reply_to_message).catch(() => "");
+  if (!repliedText.trim()) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botSay("текст исходного сообщения не достал. Перешли его текстом или ответь на сообщение с текстом."),
+    });
+    return;
+  }
+
+  const chatId = memoryChatKey(message);
+  const { chat } = await getTelegramChatMemory(chatId);
+  const recentContext = formatRecentChatContext(chat, 8);
+  const extraInstruction = promptRaw.replace(/^(ответь|ответ|reply|черновик)\s*/i, "").trim();
+
+  if (!HERMES_BRIDGE_URL || !HERMES_BRIDGE_TOKEN) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botSay("черновик не собрал: Гермес сейчас не подключён."),
+    });
+    return;
+  }
+
+  try {
+    const result = await askHermesBridge({
+      prompt: [
+        "Сделай черновик ответа от лица Суперсуса на Telegram-сообщение.",
+        "Важно: это только черновик. Не пиши так, будто сообщение уже отправлено.",
+        "Стиль: русский, коротко, живо, как нормальный участник рабочего чата.",
+        "Без префикса имени, без служебки, без упоминания Codex, без токсичности.",
+        "Если нужна шутка, пусть она будет лёгкая и рабочая. Если вопрос рабочий, дай конкретный ответ.",
+        extraInstruction ? `Дополнительная просьба: ${extraInstruction}` : "",
+        "",
+        "Контекст чата:",
+        recentContext,
+        "",
+        "Сообщение, на которое нужен ответ:",
+        repliedText,
+      ].filter(Boolean).join("\n"),
+      source: buildSource(message, repliedText),
+    });
+
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botLines([
+        "черновик ответа:",
+        "",
+        result || "пустой черновик. Гермес сегодня задумался слишком глубоко.",
+        "",
+        "я это сам не отправлял.",
+      ]),
+    });
+  } catch (error) {
+    log("supersus draft reply error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botSay(`черновик не собрал: ${error?.message || "ошибка Гермеса"}`),
+    });
+  }
+}
+
 async function tryReactToMessage(message, emoji) {
   try {
     await telegram("setMessageReaction", {
@@ -420,6 +501,63 @@ function uniqLimited(values = [], limit = 12) {
 
 function memoryChatKey(message) {
   return String(message?.chat?.id || "unknown");
+}
+
+function parseQuietDurationMs(prompt = "") {
+  const value = String(prompt || "").toLowerCase();
+  if (/выкл|off|stop|сними|отмена|верни|говори|включи/.test(value)) return 0;
+  const match = value.match(/(\d+(?:[.,]\d+)?)\s*(мин|м\b|час|часа|часов|ч\b|h\b|hour|hours|дн|день|дня|дней|day|days)?/i);
+  if (!match) return 2 * 60 * 60 * 1000;
+  const amount = Math.max(0, Number(String(match[1]).replace(",", ".")) || 0);
+  const unit = match[2] || "ч";
+  if (/мин|м\b/.test(unit)) return amount * 60 * 1000;
+  if (/дн|день|дня|дней|day/.test(unit)) return amount * 24 * 60 * 60 * 1000;
+  return amount * 60 * 60 * 1000;
+}
+
+function isSuperSusQuiet(chat = {}) {
+  const untilMs = Date.parse(chat.superSusQuietUntil || "");
+  return Number.isFinite(untilMs) && untilMs > Date.now();
+}
+
+async function getTelegramChatMemory(chatId) {
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chats = memory?.chats && typeof memory.chats === "object" ? memory.chats : {};
+  return { memory, chats, chat: chats[chatId] || {} };
+}
+
+async function setSuperSusQuietMode(message, promptRaw = "") {
+  const chatId = memoryChatKey(message);
+  const durationMs = parseQuietDurationMs(promptRaw);
+  const { memory, chats, chat } = await getTelegramChatMemory(chatId);
+  const now = new Date();
+  const quietUntil = durationMs > 0 ? new Date(now.getTime() + durationMs).toISOString() : "";
+  const nextChat = {
+    ...chat,
+    chatId: chat.chatId || chatId,
+    platform: chat.platform || "telegram",
+    updatedAt: now.toISOString(),
+    superSusQuietUntil: quietUntil,
+    superSusQuietSetBy: getAuthorName(message),
+    superSusQuietSetAt: now.toISOString(),
+  };
+
+  await writeContent(CONTENT_KEYS.telegramMemory, {
+    ...memory,
+    version: memory.version || 1,
+    updatedAt: now.toISOString(),
+    chats: {
+      ...chats,
+      [chatId]: nextChat,
+    },
+  });
+
+  return { quietUntil, durationMs };
+}
+
+function formatQuietStatus(chat = {}) {
+  if (!isSuperSusQuiet(chat)) return "тихий режим сейчас выключен.";
+  return `тихий режим включён до ${formatDateTimeRu(chat.superSusQuietUntil)}. Автоответы и автопуши молчат, ручные команды работают.`;
 }
 
 function detectMemoryTags(message, text = "") {
@@ -1712,6 +1850,33 @@ async function handleSuperSusCommand(message, text) {
   const promptRaw = parseSuperSusPrompt(text);
   const prompt = promptRaw.toLowerCase();
 
+  if (/^(ответь|ответ|reply|черновик)(\s|$)/.test(prompt)) {
+    await draftSuperSusReply(message, promptRaw);
+    return;
+  }
+
+  if (/^(тихо|молчи|тишина|quiet|silent)(\s|$)/.test(prompt)) {
+    if (/статус|status|как/.test(prompt)) {
+      const { chat } = await getTelegramChatMemory(memoryChatKey(message));
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(formatQuietStatus(chat)),
+      });
+      return;
+    }
+
+    const result = await setSuperSusQuietMode(message, promptRaw);
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: result.durationMs > 0
+        ? botSay(`тихий режим включил до ${formatDateTimeRu(result.quietUntil)}. Автоответы и автопуши молчат, ручные команды работают.`)
+        : botSay("тихий режим выключил. Буду отвечать только там, где это уместно."),
+    });
+    return;
+  }
+
   if (/что\s+горит|горит|срочн|пожар|важн/.test(prompt)) {
     try {
       const result = await fetchAtlasMonitorSummary();
@@ -2025,6 +2190,8 @@ async function handleSuperSusCommand(message, text) {
       "/sus дайджест — короткая операционная сводка",
       "/sus релиз — проверить API и монитор после выкладки",
       "/sus разложи — превратить reply/текст в список задач без автосоздания",
+      "/sus ответь — черновик ответа на reply без автоотправки",
+      "/sus тихо 2ч — временно заглушить автоответы и автопуши",
       "/sus настроение — живое состояние по задачам",
       "/sus дневник — записать и показать дневник",
       "/sus кто есть кто — операционная память по участникам",
@@ -2149,6 +2316,8 @@ async function sendHelp(chatId) {
       "/sus дайджест — короткая операционная сводка",
       "/sus релиз — health-check после выкладки",
       "/sus разложи — разложить reply/текст на задачи без автосоздания",
+      "/sus ответь — черновик ответа на reply без автоотправки",
+      "/sus тихо 2ч — временно заглушить автоответы и автопуши",
       "/sus настроение — живое состояние по задачам",
       "/sus дневник — записать и показать дневник",
       "/sus кто есть кто — операционная память по участникам",

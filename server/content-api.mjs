@@ -942,6 +942,7 @@ async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest
   const changes = isFirstSnapshot ? [] : buildYouTrackChanges(previous, result.issues);
   const urgentChanges = changes.filter(isUrgentYouTrackChange);
   const deferredChanges = changes.filter((change) => !isUrgentYouTrackChange(change));
+  const quietState = notify ? await getYouTrackQuietState() : { quiet: false };
   const urgentPlan = notify && urgentChanges.length
     ? await filterFreshYouTrackNotifications(urgentChanges)
     : { fresh: urgentChanges, suppressed: [], state: null };
@@ -953,7 +954,9 @@ async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest
   };
 
   let notification = { ok: true, skipped: true };
-  if (notify && freshUrgentChanges.length) {
+  if (notify && quietState.quiet) {
+    notification = { ok: true, skipped: true, reason: "quiet_mode", quietUntil: quietState.quietUntil };
+  } else if (notify && freshUrgentChanges.length) {
     notification = await sendTelegramMessage(formatYouTrackChangePush(freshUrgentChanges), { parse_mode: "HTML" });
     if (notification.ok) {
       await recordFreshYouTrackNotifications(freshUrgentChanges, urgentPlan.state || {});
@@ -966,11 +969,13 @@ async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest
   const shouldPersist = persist && (!notify || !freshUrgentChanges.length || notification.ok);
   let digestState = null;
   let digestNotification = { ok: true, skipped: true };
-  if (shouldPersist && deferredChanges.length) {
-    digestState = await appendYouTrackDigestChanges(deferredChanges);
+  if (shouldPersist && (quietState.quiet ? changes.length : deferredChanges.length)) {
+    digestState = await appendYouTrackDigestChanges(quietState.quiet ? changes : deferredChanges);
   }
-  if (notify && shouldPersist) {
+  if (notify && shouldPersist && !quietState.quiet) {
     digestNotification = await maybeSendDailyYouTrackDigest(result, { enabled: dailyDigest, force: forceDigest });
+  } else if (notify && shouldPersist && quietState.quiet) {
+    digestNotification = { ok: true, skipped: true, reason: "quiet_mode", quietUntil: quietState.quietUntil };
   }
   if (shouldPersist) {
     await writeContent(YOUTRACK_SNAPSHOT_KEY, nextSnapshot);
@@ -986,6 +991,7 @@ async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest
     notification,
     digestNotification,
     digestPendingCount: digestState?.pendingChanges?.length,
+    quiet: quietState,
     bootstrapped: isFirstSnapshot,
     persisted: shouldPersist,
   };
@@ -1600,6 +1606,21 @@ async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
   sent.push({ chatId, messageId: payload?.result?.message_id });
 
   return { ok: true, status: 200, sent };
+}
+
+async function getYouTrackQuietState() {
+  const { preferredChatId, targetChatIds } = await getTelegramConfig();
+  const chatId = preferredChatId || targetChatIds[0] || "";
+  if (!chatId) return { quiet: false, chatId: "" };
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chat = memory?.chats?.[chatId] || {};
+  const quietUntilMs = Date.parse(chat.superSusQuietUntil || "");
+  const quiet = Number.isFinite(quietUntilMs) && quietUntilMs > Date.now();
+  return {
+    quiet,
+    chatId,
+    quietUntil: quiet ? chat.superSusQuietUntil : "",
+  };
 }
 
 async function sendTelegramReaction(messageId, emoji = "😁", requestedChatId = "") {
