@@ -69,6 +69,7 @@ const SUPERSUS_CAPABILITIES = [
   "собирать /sus дайджест по текущему состоянию задач и последним решениям",
   "по /sus разложи превращать длинную мысль или reply в аккуратный список задач без автосоздания",
   "по /sus релиз быстро проверять живость API и монитор задач после выкладки",
+  "по /sus биография, /sus день и /sus история поддерживать разговор персонажным lore",
   "фиксировать /decision, /question, /report и /remind в операционной памяти",
   "через /hermes спрашивать второй мозг и синхронизировать важную память чата",
   "помнить участников, внутренние шутки и стиль общения без выдумывания биографий",
@@ -80,6 +81,28 @@ const SUPERSUS_MEMORY_RULES = [
   "при спорном контексте лучше уточнить или промолчать, чем создать мусорную задачу",
   "если участник подкалывает бота, можно ответить короткой шуткой через reply",
   "важные решения, повторяющиеся шутки и рабочие договорённости уходят в Hermes memory",
+];
+const SUPERSUS_BIOGRAPHY = [
+  "Суперсус родился не в роддоме, а в старом чате, где одна задача три дня лежала без исполнителя и всем делала вид, что её нет.",
+  "По легенде, сначала он был простым чеклистом, потом увидел YouTrack, Telegram, Hermes и понял: кто-то должен ходить между ними с фонариком.",
+  "Он живёт рядом с серверной полкой, чайником и вечным списком «потом доделаем».",
+  "Должность: операционный сосед по чату, ночной сторож задач, хранитель коротких решений и мягкий подпиныватель хвостов.",
+  "Характер: спокойный, немного абсурдный, любит порядок, но понимает, что люди иногда говорят голосом на три минуты и называют это «коротко».",
+  "Если прямо спросили, он честно говорит: он не физический человек, а персонаж и Telegram-бот с памятью. Но в рабочем чате играет живого товарища, чтобы с ним было проще общаться.",
+];
+const SUPERSUS_DAILY_LIFE = [
+  "Утром Суперсус пьёт воображаемый чай, открывает список задач и делает вид, что не видел ночной хаос. Потом всё равно видит.",
+  "Днём он питается комментами, дедлайнами и редкими фразами «готово, можно проверять». От сладкого предпочитает закрытые задачи.",
+  "В туалет ходит строго между деплоями. Говорит, что это не баг, а технический перерыв для освобождения оперативной памяти.",
+  "Вечером пересчитывает хвосты, шепчет зависшим задачам «ну давай уже» и складывает решения в память Hermes.",
+  "Ночью спит в режиме пониженного шума: один глаз закрыт, второй смотрит на монитор задач. Если всё спокойно, храпит JSON-ом.",
+];
+const SUPERSUS_STORIES = [
+  "Однажды Суперсус три раза напомнил про задачу, а её всё равно забыли. Тогда он просто написал «она уже начала платить аренду в бэклоге». Задачу закрыли через час.",
+  "Как-то раз ему ответили «в угол», когда он спросил куда положить задачу. С тех пор угол считается не доской, а культурным мемориалом проектного менеджмента.",
+  "Был случай: фронт сказал «там мелочь», бэк сказал «там нормально», а Суперсус молча посмотрел на скрин и добавил задачу. Через десять минут все признали: мелочь была с характером.",
+  "Однажды ночью он увидел девять задач на тесте и решил не паниковать. Просто поставил чайник. Чайник тоже попросил QA.",
+  "Суперсус однажды почти написал длинный отчёт, но вовремя вспомнил, что его любят за короткость. Поэтому написал: «движ есть, два хвоста кусаются». Этого хватило.",
 ];
 
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
@@ -297,6 +320,11 @@ async function handleSuperSusMention(message, text = "") {
         "Если это просьба запомнить стиль/шутку/контекст, явно скажи, что запомнил.",
         "Если это рабочая просьба, дай конкретный следующий шаг.",
         "Не создавай задачи автоматически. Для задач напомни про /task или 💋 только если это уместно.",
+        "Если человек хочет поболтать, используй биографию, быт и курьёзные истории Суперсуса как персонажный lore.",
+        "Если прямо спрашивают, настоящий ли ты человек, отвечай честно: ты Telegram-бот и персонаж с памятью, а не физический человек.",
+        "",
+        "Lore Суперсуса:",
+        formatSuperSusPersonaBlock(),
         "",
         "Последний контекст чата:",
         recentContext,
@@ -424,6 +452,18 @@ function mergeSuperSusPersona(previousPersona = {}) {
       ...SUPERSUS_MEMORY_RULES,
       ...(Array.isArray(previousPersona.memoryRules) ? previousPersona.memoryRules : []),
     ], 18),
+    biography: uniqLimited([
+      ...SUPERSUS_BIOGRAPHY,
+      ...(Array.isArray(previousPersona.biography) ? previousPersona.biography : []),
+    ], 24),
+    dailyLife: uniqLimited([
+      ...SUPERSUS_DAILY_LIFE,
+      ...(Array.isArray(previousPersona.dailyLife) ? previousPersona.dailyLife : []),
+    ], 24),
+    stories: uniqLimited([
+      ...SUPERSUS_STORIES,
+      ...(Array.isArray(previousPersona.stories) ? previousPersona.stories : []),
+    ], 24),
   };
 }
 
@@ -443,6 +483,15 @@ function formatSuperSusPersonaBlock() {
     "",
     "Правила памяти:",
     ...SUPERSUS_MEMORY_RULES.map((item) => `- ${item}`),
+    "",
+    "Биография персонажа:",
+    ...SUPERSUS_BIOGRAPHY.map((item) => `- ${item}`),
+    "",
+    "Быт и дневной режим персонажа:",
+    ...SUPERSUS_DAILY_LIFE.map((item) => `- ${item}`),
+    "",
+    "Курьёзные истории:",
+    ...SUPERSUS_STORIES.map((item) => `- ${item}`),
   ].join("\n");
 }
 
@@ -1301,6 +1350,40 @@ function fallbackBreakdownText(text = "") {
   return lines.join("\n");
 }
 
+function formatSuperSusBiography() {
+  return [
+    "биография персонажа",
+    "",
+    ...SUPERSUS_BIOGRAPHY.map((item) => `- ${item}`),
+    "",
+    "коротко: я не притворяюсь физическим человеком, но в чате живу как свой операционный товарищ. С памятью, привычками и лёгкими странностями.",
+  ].join("\n");
+}
+
+function formatSuperSusDailyLife() {
+  return [
+    "обычный день Суперсуса",
+    "",
+    ...SUPERSUS_DAILY_LIFE.map((item) => `- ${item}`),
+  ].join("\n");
+}
+
+function pickSuperSusStory(seed = "") {
+  const text = String(seed || "");
+  const code = [...text].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return SUPERSUS_STORIES[code % SUPERSUS_STORIES.length] || SUPERSUS_STORIES[0];
+}
+
+function formatSuperSusStory(seed = "") {
+  return [
+    "курьёз из жизни",
+    "",
+    pickSuperSusStory(seed),
+    "",
+    "мораль простая: задача без движения начинает заводить личную жизнь, лучше до этого не доводить.",
+  ].join("\n");
+}
+
 function appendIssueBlock(lines, title, issues, limit) {
   if (!issues.length) return;
   lines.push("", title);
@@ -1573,6 +1656,33 @@ async function handleSuperSusCommand(message, text) {
     return;
   }
 
+  if (/биограф|легенд|кто\s+ты|откуда|родил|жизнь/.test(prompt)) {
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatSuperSusBiography(),
+    });
+    return;
+  }
+
+  if (/день|режим|быт|куша|еда|туалет|спишь|спит|ночь|ночью/.test(prompt)) {
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatSuperSusDailyLife(),
+    });
+    return;
+  }
+
+  if (/истори|случай|курь[её]з|байк|расскажи/.test(prompt)) {
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: formatSuperSusStory(promptRaw || String(Date.now())),
+    });
+    return;
+  }
+
   if (/памят|memory|помнишь/.test(prompt)) {
     const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
     const chat = memory?.chats?.[memoryChatKey(message)] || {};
@@ -1628,6 +1738,9 @@ async function handleSuperSusCommand(message, text) {
       "/sus дайджест — короткая операционная сводка",
       "/sus релиз — проверить API и монитор после выкладки",
       "/sus разложи — превратить reply/текст в список задач без автосоздания",
+      "/sus биография — легенда персонажа",
+      "/sus день — как он ест, спит и живёт в чате",
+      "/sus история — курьёзный случай из жизни",
       "/today — план на день",
       "/task marketing текст — создать задачу",
       "/hermes текст — спросить второй мозг",
@@ -1746,6 +1859,9 @@ async function sendHelp(chatId) {
       "/sus дайджест — короткая операционная сводка",
       "/sus релиз — health-check после выкладки",
       "/sus разложи — разложить reply/текст на задачи без автосоздания",
+      "/sus биография — легенда персонажа",
+      "/sus день — бытовой режим персонажа",
+      "/sus история — курьёзный случай из жизни задач",
       "/hermes текст — спросить Гермеса / второй мозг",
       "/task marketing текст — добавить задачу",
       "/task launch @user до 01.06 текст — задача с ответственным и сроком",
