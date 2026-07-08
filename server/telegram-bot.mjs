@@ -29,6 +29,7 @@ const TASK_TRIGGER_EMOJI = "💋";
 const TASK_DONE_EMOJI = "✅";
 const RECENT_MESSAGES_LIMIT = 800;
 const BOT_PERSONA_NAME = process.env.TELEGRAM_BOT_PERSONA_NAME || "SuperSUS";
+const CORNER_JOKE_REACTION = "😁";
 const CATEGORY_BUTTONS = [
   ["inbox", "launch"],
   ["marketing", "smm"],
@@ -163,6 +164,8 @@ async function handleUpdate(update) {
   if (isHermesCommand(text)) return handleHermesCommand(message, text);
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
 
+  if (await handleCornerJoke(message, text)) return;
+
   if (text.includes(TASK_TRIGGER_EMOJI)) {
     const cleanText = text.replaceAll(TASK_TRIGGER_EMOJI, "").trim() || text;
     await askCategoryForMessage(message, {
@@ -172,6 +175,38 @@ async function handleUpdate(update) {
       dueDate: "",
     });
     return;
+  }
+}
+
+function isReplyToSuperSusPrompt(message) {
+  const replied = message?.reply_to_message;
+  if (!replied?.from?.is_bot) return false;
+  const text = getPlainMessageText(replied);
+  return /super\s*sus|supersus|задача поймана|куда клад[её]м|куда поставить задачу/i.test(text);
+}
+
+async function handleCornerJoke(message, text = "") {
+  if (!/\bв\s+угол\b/i.test(text) || !isReplyToSuperSusPrompt(message)) return false;
+
+  await tryReactToMessage(message, CORNER_JOKE_REACTION);
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: botSay("угол принял, но это не доска задач, это VIP-место наблюдателя. Посидел, улыбнулся — и обратно в строй, тут фронт двигается."),
+  });
+  return true;
+}
+
+async function tryReactToMessage(message, emoji) {
+  try {
+    await telegram("setMessageReaction", {
+      chat_id: message.chat.id,
+      message_id: message.message_id,
+      reaction: [{ type: "emoji", emoji }],
+      is_big: false,
+    });
+  } catch (error) {
+    log("reaction skipped:", error?.message || String(error));
   }
 }
 
