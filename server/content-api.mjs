@@ -287,8 +287,11 @@ function getYouTrackAuthHeaders(config) {
 
 function toMillis(value) {
   const number = Number(value || 0);
-  if (!Number.isFinite(number) || number <= 0) return 0;
-  return number < 100000000000 ? number * 1000 : number;
+  if (Number.isFinite(number) && number > 0) {
+    return number < 100000000000 ? number * 1000 : number;
+  }
+  const parsed = Date.parse(String(value || ""));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function formatDurationRu(ms = 0) {
