@@ -1272,6 +1272,19 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/telegram/send-message" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const text = normalizeTelegramValue(parsed.text || parsed.message || "");
+      if (!text) {
+        sendJson(response, 400, { ok: false, error: "empty_telegram_message" });
+        return;
+      }
+      const result = await sendTelegramMessage(text, {}, String(parsed.chatId || "").trim());
+      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result } : { ok: false, error: result.error });
+      return;
+    }
+
     if (url.pathname === "/api/telegram/verify-channel" && request.method === "POST") {
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
