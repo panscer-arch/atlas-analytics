@@ -221,6 +221,8 @@ async function handleUpdate(update) {
     });
     return;
   }
+
+  if (isAddressedToSuperSus(message, text)) return handleSuperSusMention(message, text);
 }
 
 function isReplyToSuperSusPrompt(message) {
@@ -240,6 +242,85 @@ async function handleCornerJoke(message, text = "") {
     text: botSay("ахах, угол не прокатил. Ставлю отметку и возвращаю в строй. Фронт сам себя не проверит."),
   });
   return true;
+}
+
+function isAddressedToSuperSus(message, text = "") {
+  const value = String(text || "");
+  if (message?.reply_to_message?.from?.is_bot) return true;
+  return /(^|\s|[,.!?:;()\[\]{}"'«»])(@?[a-z0-9_]*supersus[a-z0-9_]*|super\s*sus|суперсус|кодекс|codex)(\s|$|[,.!?:;()\[\]{}"'«»])/i.test(value);
+}
+
+function stripSuperSusAddress(text = "") {
+  return String(text || "")
+    .replace(/(^|\s)(@?[a-z0-9_]*supersus[a-z0-9_]*|super\s*sus|суперсус|кодекс|codex)([,!?:;\s-]+|$)/ig, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatRecentChatContext(chat = {}, limit = 8) {
+  const timeline = Array.isArray(chat.timeline) ? chat.timeline : [];
+  const lines = timeline
+    .slice(0, limit)
+    .reverse()
+    .map((event) => `- ${event.authorName || "unknown"}: ${event.text || ""}`);
+  return lines.length ? lines.join("\n") : "- Контекста пока мало.";
+}
+
+async function handleSuperSusMention(message, text = "") {
+  const chatId = memoryChatKey(message);
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chat = memory?.chats?.[chatId] || {};
+  const directText = stripSuperSusAddress(text) || text;
+  const recentContext = formatRecentChatContext(chat, 10);
+  const replyText = message.reply_to_message ? await getMessageText(message.reply_to_message).catch(() => "") : "";
+
+  if (!HERMES_BRIDGE_URL || !HERMES_BRIDGE_TOKEN) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botSay("вижу, что позвали. Чат запомнил, но Гермес сейчас не подключён, поэтому умный ответ не достану."),
+    });
+    return;
+  }
+
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: botSay("вижу, читаю чат. Сейчас отвечу."),
+  });
+
+  try {
+    const result = await askHermesBridge({
+      prompt: [
+        "Тебя прямо позвали в Telegram-чате как Суперсуса/Кодекса.",
+        "Ответь в чат по-русски, коротко, живо и по делу.",
+        "Если это просьба запомнить стиль/шутку/контекст, явно скажи, что запомнил.",
+        "Если это рабочая просьба, дай конкретный следующий шаг.",
+        "Не создавай задачи автоматически. Для задач напомни про /task или 💋 только если это уместно.",
+        "",
+        "Последний контекст чата:",
+        recentContext,
+        "",
+        replyText ? `Сообщение, на которое ответили:\n${replyText}\n` : "",
+        "Обращение:",
+        directText,
+      ].join("\n"),
+      source: buildSource(message, text),
+    });
+
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: result || botSay("я тут, но Гермес вернул пусто. Чат всё равно запомнил."),
+    });
+  } catch (error) {
+    log("supersus mention hermes error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: botSay(`вижу обращение, но Гермес не ответил: ${error?.message || "ошибка моста"}`),
+    });
+  }
 }
 
 async function tryReactToMessage(message, emoji) {
@@ -275,6 +356,8 @@ function detectMemoryTags(message, text = "") {
   const tags = [];
   if (message.reply_to_message) tags.push("reply");
   if (message.reply_to_message?.from?.is_bot) tags.push("reply_to_bot");
+  if (isAddressedToSuperSus(message, text)) tags.push("direct_mention:supersus");
+  if (/\b(?:codex|кодекс)\b/i.test(text)) tags.push("direct_mention:codex");
   if (/\bв\s+угол\b/i.test(text)) tags.push("inside_joke:corner");
   if (/ротенберг/i.test(haystack)) tags.push("participant:rotenberg");
   if (/каллисто|callisto/i.test(haystack)) tags.push("context:callisto");
