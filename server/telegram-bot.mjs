@@ -28,6 +28,7 @@ const POLL_TIMEOUT_SECONDS = 25;
 const TASK_TRIGGER_EMOJI = "💋";
 const TASK_DONE_EMOJI = "✅";
 const RECENT_MESSAGES_LIMIT = 800;
+const BOT_PERSONA_NAME = process.env.TELEGRAM_BOT_PERSONA_NAME || "SuperSUS";
 const CATEGORY_BUTTONS = [
   ["inbox", "launch"],
   ["marketing", "smm"],
@@ -41,6 +42,14 @@ const CATEGORY_BUTTONS = [
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
 const pendingCategory = new Map();
 const recentMessages = new Map();
+
+function botSay(text) {
+  return `${BOT_PERSONA_NAME}: ${text}`;
+}
+
+function botLines(lines = []) {
+  return [`${BOT_PERSONA_NAME}:`, ...lines].join("\n");
+}
 
 function log(message, payload = "") {
   const suffix = payload ? ` ${typeof payload === "string" ? payload : JSON.stringify(payload)}` : "";
@@ -118,7 +127,7 @@ async function handleUpdate(update) {
       await telegram("sendMessage", {
         chat_id: message.chat.id,
         reply_to_message_id: message.message_id,
-        text: "Не смог распознать голосовое. Проверь OPENAI_API_KEY или отправь текстом.",
+        text: botSay("голосовое не разобрал, мой друг. Проверь OPENAI_API_KEY или кинь текстом."),
       });
     }
     return;
@@ -128,7 +137,7 @@ async function handleUpdate(update) {
       await telegram("sendMessage", {
         chat_id: message.chat.id,
         reply_to_message_id: message.message_id,
-        text: "Не смог распознать голосовое. Проверь, что на сервере задан OPENAI_API_KEY.",
+        text: botSay("голосовое пришло, но уши не поднялись. Нужен OPENAI_API_KEY или текстом."),
       });
     }
     return;
@@ -219,7 +228,7 @@ async function handleMessageReaction(reaction) {
     await telegram("sendMessage", {
       chat_id: chatId,
       reply_to_message_id: messageId,
-      text: "Вижу 💋, но не вижу текст этого сообщения в памяти бота. Перешли сообщение заново или ответь на него командой /task.",
+      text: botSay("вижу 💋, но текста этого сообщения в памяти нет. Перешли заново или ответь на него командой /task."),
     });
     return;
   }
@@ -303,7 +312,7 @@ async function handleTaskCommand(message, text) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: "Не смог распознать голосовое в reply. Проверь OPENAI_API_KEY или отправь текстом.",
+      text: botSay("reply-голосовое не разобрал. Проверь OPENAI_API_KEY или кинь текстом."),
     });
     return;
   }
@@ -320,7 +329,7 @@ async function handleTaskCommand(message, text) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: `Задача добавлена: ${result.boardTitle}\n${result.task.title}`,
+    text: botSay(`очень хорошо, задача поймана.\nДоска: ${result.boardTitle}\n${result.task.title}`),
   });
 }
 
@@ -341,7 +350,7 @@ async function askCategoryForMessage(message, parsed = null) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: "Куда поставить задачу?",
+    text: botSay("задача поймана. Куда кладём, мой друг?"),
     reply_markup: {
       inline_keyboard: CATEGORY_BUTTONS.map((row) => row.map((category) => ({
         text: category,
@@ -359,7 +368,7 @@ async function handleCallback(callback) {
   const key = `${chatId}:${messageId}`;
   const pending = pendingCategory.get(key);
   if (!pending) {
-    await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: "Задача не найдена, отправь заново." });
+    await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: `${BOT_PERSONA_NAME}: задача потерялась` });
     return;
   }
 
@@ -370,11 +379,11 @@ async function handleCallback(callback) {
   });
   pendingCategory.delete(key);
 
-  await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: `Добавлено: ${result.boardTitle}` });
+  await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: `${BOT_PERSONA_NAME}: добавлено` });
   await telegram("sendMessage", {
     chat_id: pending.message.chat.id,
     reply_to_message_id: pending.message.message_id,
-    text: `Задача добавлена: ${result.boardTitle}\n${result.task.title}`,
+    text: botSay(`очень хорошо, задача добавлена.\nДоска: ${result.boardTitle}\n${result.task.title}`),
   });
 }
 
@@ -393,7 +402,7 @@ async function handleDoneCommand(message, text) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: "Зафиксировал выполнение. Для точного закрытия в аналитике нужен ID задачи или ручная отметка.",
+    text: botSay("выполнение зафиксировал. Для точного закрытия в аналитике нужен ID задачи или ручная отметка."),
   });
 }
 
@@ -420,7 +429,7 @@ async function closeTaskFromTelegramSource(source, chatId, replyToMessageId) {
     await telegram("sendMessage", {
       chat_id: chatId,
       reply_to_message_id: replyToMessageId,
-      text: "Ответь командой на исходное сообщение задачи или поставь ✅ на сообщение, из которого задача была создана.",
+      text: botSay("закрывать надо по исходному сообщению задачи: reply командой или ✅ на сообщение, из которого задача создана."),
     });
     return;
   }
@@ -430,8 +439,8 @@ async function closeTaskFromTelegramSource(source, chatId, replyToMessageId) {
     chat_id: chatId,
     reply_to_message_id: replyToMessageId,
     text: result
-      ? `Готово: закрыта задача в ${result.boardTitle}\n${result.task.title || "Без названия"}`
-      : "Не нашёл задачу по этому сообщению. Закрыть можно задачу, которая была создана из этого Telegram-сообщения.",
+      ? botSay(`готово, закрыта задача.\nДоска: ${result.boardTitle}\n${result.task.title || "Без названия"}`)
+      : botSay("задачу по этому сообщению не нашёл. Закрыть можно только задачу, созданную из этого Telegram-сообщения."),
   });
 }
 
@@ -440,7 +449,7 @@ async function handleTaskPatchCommand(message, text, kind) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: "Эту команду нужно отправить reply на исходное сообщение задачи.",
+      text: botSay("эту команду надо отправить reply на исходное сообщение задачи."),
     });
     return;
   }
@@ -452,10 +461,10 @@ async function handleTaskPatchCommand(message, text, kind) {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
       text: kind === "assign"
-        ? "Напиши ответственного: /assign @username"
+        ? botSay("напиши ответственного: /assign @username")
         : kind === "status"
-          ? "Напиши статус: /status В работе"
-          : "Напиши дедлайн: /deadline 05.06",
+          ? botSay("напиши статус: /status В работе")
+          : botSay("напиши дедлайн: /deadline 05.06"),
     });
     return;
   }
@@ -476,8 +485,8 @@ async function handleTaskPatchCommand(message, text, kind) {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
     text: result
-      ? `Обновлено: ${result.boardTitle}\n${result.task.title || "Без названия"}`
-      : "Не нашёл задачу по этому сообщению. Попробуй reply на исходное сообщение, из которого создавали задачу.",
+      ? botSay(`готово, обновил.\nДоска: ${result.boardTitle}\n${result.task.title || "Без названия"}`)
+      : botSay("задачу по этому сообщению не нашёл. Попробуй reply на исходное сообщение, из которого создавали задачу."),
   });
 }
 
@@ -519,7 +528,7 @@ async function handleAtlCommand(message) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: `Не смог получить сводку Atlas: ${error?.message || "ошибка монитора"}`,
+      text: botSay(`сводку Atlas не достал: ${error?.message || "ошибка монитора"}`),
     });
   }
 }
@@ -610,11 +619,11 @@ async function handleChatIdCommand(message) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: [
+    text: botLines([
       `Chat ID: ${message.chat.id}`,
       message.chat.title ? `Chat title: ${message.chat.title}` : "",
       "Этот ID можно поставить в TELEGRAM_PUSH_CHAT_ID для кнопки Push.",
-    ].filter(Boolean).join("\n"),
+    ].filter(Boolean)),
   });
 }
 
@@ -629,7 +638,7 @@ async function handleOperationCommand(message, text, type, successText) {
       await telegram("sendMessage", {
         chat_id: message.chat.id,
         reply_to_message_id: message.message_id,
-        text: "Не смог распознать голосовое в reply. Проверь OPENAI_API_KEY или отправь текстом.",
+        text: botSay("reply-голосовое не разобрал. Проверь OPENAI_API_KEY или кинь текстом."),
       });
       return;
     }
@@ -638,7 +647,7 @@ async function handleOperationCommand(message, text, type, successText) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: "Нужен текст после команды или reply на сообщение.",
+      text: botSay("нужен текст после команды или reply на сообщение."),
     });
     return;
   }
@@ -651,7 +660,7 @@ async function handleOperationCommand(message, text, type, successText) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: successText,
+    text: botSay(`${successText}. Очень хорошо.`),
   });
 }
 
@@ -672,7 +681,7 @@ async function handleHermesCommand(message, text) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: "Гермес ещё не подключён к этому боту на сервере. Нужны HERMES_BRIDGE_URL и HERMES_BRIDGE_TOKEN.",
+      text: botSay("Гермес ещё не подключён к этому боту на сервере. Нужны HERMES_BRIDGE_URL и HERMES_BRIDGE_TOKEN."),
     });
     return;
   }
@@ -690,7 +699,7 @@ async function handleHermesCommand(message, text) {
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: "Напиши так: /hermes что нужно разобрать, запомнить или сделать",
+      text: botSay("напиши так: /hermes что нужно разобрать, запомнить или сделать"),
     });
     return;
   }
@@ -698,7 +707,7 @@ async function handleHermesCommand(message, text) {
   await telegram("sendMessage", {
     chat_id: message.chat.id,
     reply_to_message_id: message.message_id,
-    text: "Передал Гермесу, думаю...",
+    text: botSay("передал Гермесу. Думаем красиво..."),
   });
 
   try {
@@ -709,14 +718,14 @@ async function handleHermesCommand(message, text) {
     await sendLongMessage({
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: result || "Гермес ответил пусто. Проверь логи hermes-telegram-bridge.service.",
+      text: result || botSay("Гермес ответил пусто. Проверь логи hermes-telegram-bridge.service."),
     });
   } catch (error) {
     log("hermes bridge error:", error?.message || String(error));
     await telegram("sendMessage", {
       chat_id: message.chat.id,
       reply_to_message_id: message.message_id,
-      text: `Гермес не ответил: ${error?.message || "ошибка моста"}`,
+      text: botSay(`Гермес не ответил: ${error?.message || "ошибка моста"}`),
     });
   }
 }
@@ -747,7 +756,9 @@ async function askHermesBridge(payload) {
 async function sendHelp(chatId) {
   await telegram("sendMessage", {
     chat_id: chatId,
-    text: [
+    text: botLines([
+      "большое здравствуйте. Я держу задачи в порядке, без лишней суеты.",
+      "",
       "Команды Atlas Tasks:",
       "/atl — живая сводка по задачам Atlas/YouTrack",
       "/hermes текст — спросить Гермеса / второй мозг",
@@ -768,7 +779,7 @@ async function sendHelp(chatId) {
       "/question текст — зафиксировать вопрос",
       "/report текст — зафиксировать отчёт",
       "/remind текст — сохранить напоминание",
-    ].join("\n"),
+    ]),
   });
 }
 
