@@ -16796,6 +16796,144 @@ input.analytics-smm-cell-input {
   color: #ffffff;
 }
 
+.analytics-marketing-hub {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-marketing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.32fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1.2rem;
+}
+
+.analytics-marketing-hero h1,
+.analytics-marketing-history h2 {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.analytics-marketing-hero h1 {
+  font-size: clamp(1.9rem, 3vw, 3rem);
+}
+
+.analytics-marketing-hero p,
+.analytics-marketing-card p,
+.analytics-marketing-history p {
+  color: rgba(185, 204, 225, 0.74);
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.analytics-marketing-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.analytics-marketing-hero-stats article {
+  display: grid;
+  align-content: center;
+  gap: 0.4rem;
+  min-height: 7.5rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(114, 239, 214, 0.18);
+  border-radius: 14px;
+  background: rgba(114, 239, 214, 0.07);
+}
+
+.analytics-marketing-hero-stats span,
+.analytics-marketing-card-metric {
+  color: rgba(161, 178, 203, 0.78);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.analytics-marketing-hero-stats strong {
+  color: #ffffff;
+  font-size: 1.9rem;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.analytics-marketing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.analytics-marketing-card {
+  display: grid;
+  gap: 0.7rem;
+  min-height: 15rem;
+  padding: 1rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.analytics-marketing-card:hover,
+.analytics-marketing-card:focus-visible {
+  border-color: rgba(79, 134, 255, 0.62);
+  background: rgba(79, 134, 255, 0.12);
+}
+
+.analytics-marketing-card strong {
+  color: #ffffff;
+  font-size: 1.22rem;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.analytics-marketing-card p {
+  margin: 0;
+}
+
+.analytics-marketing-card small {
+  color: rgba(114, 239, 214, 0.76);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.analytics-marketing-card em {
+  align-self: end;
+  width: fit-content;
+  border: 1px solid rgba(114, 239, 214, 0.28);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  background: rgba(114, 239, 214, 0.1);
+  color: #dffdf8;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.analytics-marketing-history {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.analytics-marketing-history article {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.analytics-marketing-history strong {
+  color: #ffffff;
+  font-weight: 950;
+}
+
 .analytics-parser-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
@@ -18625,6 +18763,14 @@ input.analytics-smm-cell-input {
 }
 
 @media (max-width: 1199.98px) {
+  .analytics-marketing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-marketing-history {
+    grid-template-columns: 1fr;
+  }
+
   .analytics-life-diary-hero,
   .analytics-life-diary-grid,
   .analytics-life-diary-meals,
@@ -18782,6 +18928,10 @@ input.analytics-smm-cell-input {
   .analytics-expenses-category-list,
   .analytics-expenses-rules,
   .analytics-parser-hero,
+  .analytics-marketing-hero,
+  .analytics-marketing-hero-stats,
+  .analytics-marketing-grid,
+  .analytics-marketing-history,
   .analytics-parser-stats,
   .analytics-parser-grid,
   .analytics-parser-controls,

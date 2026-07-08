@@ -11,6 +11,7 @@ import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import Wrapper from "./Wrapper";
 import YouTrackTaskMonitor from "./YouTrackTaskMonitor";
 import formatCurrency from "../utils/formatCurrency";
+import { useState } from "react";
 
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
@@ -32,14 +33,8 @@ export default function AnalyticsMainPanel({
     );
   }
 
-  if (activeTab === "tasks") return <LaunchChecklistSection mode="tasks" analyticsBoardUrl={analyticsBoardUrl} />;
-  if (activeTab === "taskMonitor") {
-    return (
-      <Wrapper as="section" marginTop="lg">
-        <YouTrackTaskMonitor />
-      </Wrapper>
-    );
-  }
+  if (activeTab === "tasks") return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} />;
+  if (activeTab === "taskMonitor") return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} initialTab="monitor" />;
   if (activeTab === "expenses") {
     return (
       <Wrapper as="section" marginTop="lg">
@@ -98,4 +93,37 @@ export default function AnalyticsMainPanel({
   }
 
   return <AnalyticsSectionPanel {...analyticsSection} />;
+}
+
+function TasksWorkspacePanel({ analyticsBoardUrl, initialTab = "checklists" }) {
+  const [activeTaskTab, setActiveTaskTab] = useState(initialTab);
+  const tabs = [
+    { id: "checklists", label: "Задачи чек-листы", hint: "запуск / контент" },
+    { id: "monitor", label: "ATL-монитор live", hint: "YouTrack" },
+  ];
+
+  return (
+    <Wrapper as="section" marginTop="lg">
+      <div className="analytics-parser-subtabs analytics-surface" role="tablist" aria-label="Раздел задач">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`analytics-parser-subtab${activeTaskTab === tab.id ? " analytics-parser-subtab-active" : ""}`}
+            onClick={() => setActiveTaskTab(tab.id)}
+            role="tab"
+            aria-selected={activeTaskTab === tab.id}
+          >
+            <span>{tab.label}</span>
+            <small>{tab.hint}</small>
+          </button>
+        ))}
+      </div>
+      {activeTaskTab === "monitor" ? (
+        <YouTrackTaskMonitor />
+      ) : (
+        <LaunchChecklistSection mode="tasks" analyticsBoardUrl={analyticsBoardUrl} />
+      )}
+    </Wrapper>
+  );
 }

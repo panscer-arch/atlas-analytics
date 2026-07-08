@@ -15,6 +15,11 @@ import YouTubeApiSearchPanel from "./YouTubeApiSearchPanel";
 
 const PARSER_TABS = [
   {
+    id: "overview",
+    label: "Маркетинг",
+    hint: "дашборд",
+  },
+  {
     id: "monitors",
     label: "Мониторы",
     hint: "HYIP / crypto",
@@ -76,8 +81,90 @@ const PARSER_TABS = [
   },
 ];
 
-export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
+const MARKETING_TOOL_GROUPS = [
+  {
+    id: "youtube",
+    title: "YouTube-блогеры",
+    subtitle: "обзорщики Bitnest, YouTube API и каналы",
+    metric: "593+ каналов",
+    action: "Открыть YouTube",
+    target: "bitnestYoutube",
+    items: ["Битнест YouTube", "YouTube API"],
+  },
+  {
+    id: "hyip",
+    title: "Иностранные HYIP-мониторы",
+    subtitle: "HYIP / crypto площадки для первичного outreach",
+    metric: "мониторы",
+    action: "Открыть мониторы",
+    target: "monitors",
+    items: ["HYIP crypto", "проверка контактов", "статусы переговоров"],
+  },
+  {
+    id: "telegram",
+    title: "Telega.io и Telegram-каналы",
+    subtitle: "каналы, закупы, лиды и рекламные размещения",
+    metric: "100 лидов",
+    action: "Открыть Telegram",
+    target: "telegram",
+    items: ["Telegram-каналы", "Telega.io", "админы каналов"],
+  },
+  {
+    id: "articles",
+    title: "Статьи и SuperSource",
+    subtitle: "площадки под обзоры, публикации и внешние материалы",
+    metric: "100 площадок",
+    action: "Открыть площадки",
+    target: "articlePlacement",
+    items: ["Colaborator.pro", "SuperSource", "статейные площадки"],
+  },
+  {
+    id: "mlm",
+    title: "MLM-лидеры и знакомые сетевики",
+    subtitle: "сетевики, региональные лидеры и партнёрские контакты",
+    metric: "43 источника",
+    action: "Открыть MLM",
+    target: "mlmLeaders",
+    items: ["MLM лидеры", "Regional Partners", "личные знакомства"],
+  },
+  {
+    id: "segmentation",
+    title: "Сегментация и аналитика рынков",
+    subtitle: "сегменты, аудитории Web3 и сегментный парсер",
+    metric: "7 направлений",
+    action: "Открыть сегменты",
+    target: "marketSegments",
+    items: ["Сегменты рынка", "Web3 сегменты", "Сегментный парсер"],
+  },
+  {
+    id: "influencers",
+    title: "Инфлюенсеры",
+    subtitle: "лиды по соцсетям, охватам, статусам и следующим шагам",
+    metric: "500 лидов",
+    action: "Открыть инфлюенсеров",
+    target: "influencers",
+    items: ["соцсети", "контакты", "оценка релевантности"],
+  },
+  {
+    id: "special",
+    title: "Генри, Бона и спец-истории",
+    subtitle: "отдельные каналы реализации, договорённости и история работ",
+    metric: "ручной трек",
+    action: "Открыть бриф",
+    target: "regionalHiring",
+    items: ["Генри", "Бона", "история реализации"],
+  },
+];
+
+const MARKETING_HISTORY_ROWS = [
+  ["Формирование базы", "Собираем источники, лиды и площадки в единый маркетинговый контур."],
+  ["Outreach", "Фиксируем контакт, статус, следующий шаг, бюджет и результат."],
+  ["Отчётность", "По каждому направлению можно вести проделанную работу, расходы и выводы."],
+];
+
+export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   const [activeTab, setActiveTab] = useState(() => {
+    if (initialTab === "overview") return "overview";
     if (initialTab === "telegram") return "telegram";
     if (initialTab === "influencers") return "influencers";
     if (initialTab === "youtubeApi") return "youtubeApi";
@@ -103,7 +190,7 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
       if (board === "web3Segments") return "web3Segments";
       if (board === "poolMonitor") return "poolMonitor";
     }
-    return "monitors";
+    return "overview";
   });
 
   function selectTab(nextTab) {
@@ -158,7 +245,9 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
         ))}
       </div>
 
-      {activeTab === "telegram" ? (
+      {activeTab === "overview" ? (
+        <MarketingOverview onOpen={selectTab} />
+      ) : activeTab === "telegram" ? (
         <TelegramChannelsParserPanel />
       ) : activeTab === "influencers" ? (
         <InfluencerProspectsPanel />
@@ -183,6 +272,71 @@ export default function ParserWorkspacePanel({ initialTab = "monitors" } = {}) {
       ) : (
         <HyipParserPanel />
       )}
+    </section>
+  );
+}
+
+function MarketingOverview({ onOpen }) {
+  const totalTools = MARKETING_TOOL_GROUPS.length;
+  const totalSources = "1300+";
+  const activeTracks = MARKETING_TOOL_GROUPS.filter((group) => group.metric).length;
+
+  return (
+    <section className="analytics-marketing-hub">
+      <div className="analytics-marketing-hero analytics-surface">
+        <div>
+          <p className="analytics-kicker">Marketing command center</p>
+          <h1>Маркетинг Atlas / SuperSUS</h1>
+          <p>
+            Единая страница для инструментов продвижения, истории реализации, бюджетов,
+            статусов переговоров и мини-отчётности по каждому каналу.
+          </p>
+        </div>
+        <div className="analytics-marketing-hero-stats">
+          <article>
+            <span>Направления</span>
+            <strong>{totalTools}</strong>
+          </article>
+          <article>
+            <span>Источники</span>
+            <strong>{totalSources}</strong>
+          </article>
+          <article>
+            <span>Треки</span>
+            <strong>{activeTracks}</strong>
+          </article>
+        </div>
+      </div>
+
+      <div className="analytics-marketing-grid">
+        {MARKETING_TOOL_GROUPS.map((group) => (
+          <button
+            key={group.id}
+            type="button"
+            className="analytics-marketing-card analytics-surface"
+            onClick={() => onOpen(group.target)}
+          >
+            <span className="analytics-marketing-card-metric">{group.metric}</span>
+            <strong>{group.title}</strong>
+            <p>{group.subtitle}</p>
+            <small>{group.items.join(" · ")}</small>
+            <em>{group.action}</em>
+          </button>
+        ))}
+      </div>
+
+      <div className="analytics-marketing-history analytics-surface">
+        <div>
+          <p className="analytics-kicker">История реализации</p>
+          <h2>Как вести работу внутри разделов</h2>
+        </div>
+        {MARKETING_HISTORY_ROWS.map(([title, description]) => (
+          <article key={title}>
+            <strong>{title}</strong>
+            <p>{description}</p>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
