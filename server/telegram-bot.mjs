@@ -70,6 +70,7 @@ const SUPERSUS_CAPABILITIES = [
   "по /sus разложи превращать длинную мысль или reply в аккуратный список задач без автосоздания",
   "по /sus релиз быстро проверять живость API и монитор задач после выкладки",
   "по /sus биография, /sus день и /sus история поддерживать разговор персонажным lore",
+  "по /sus настроение, /sus дневник и /sus кто есть кто создавать ощущение присутствия без автоспама",
   "фиксировать /decision, /question, /report и /remind в операционной памяти",
   "через /hermes спрашивать второй мозг и синхронизировать важную память чата",
   "помнить участников, внутренние шутки и стиль общения без выдумывания биографий",
@@ -104,6 +105,49 @@ const SUPERSUS_STORIES = [
   "Однажды ночью он увидел девять задач на тесте и решил не паниковать. Просто поставил чайник. Чайник тоже попросил QA.",
   "Суперсус однажды почти написал длинный отчёт, но вовремя вспомнил, что его любят за короткость. Поэтому написал: «движ есть, два хвоста кусаются». Этого хватило.",
 ];
+const SUPERSUS_PHRASE_BANK = {
+  mood: [
+    "я сегодня как сервер после рестарта: вроде свежий, но всё равно смотрю подозрительно.",
+    "настроение рабочее: чай воображаемый, хвосты настоящие.",
+    "внутри спокойно, снаружи список задач шуршит.",
+    "режим диспетчера включён: не паникую, но карандаш уже точу.",
+    "дышу ровно, мониторю внимательно, делаю вид, что дедлайны меня не знают лично.",
+  ],
+  diary: [
+    "записал в дневник, чтобы завтра не делать археологию по чату.",
+    "кладём это в летопись маленьких рабочих побед и странных хвостов.",
+    "дневник пополнился, бумага не пострадала, память Hermes довольна.",
+    "зафиксировал. Когда все забудут, я буду неприятно полезен.",
+    "положил на полку памяти, рядом с чайником и фразой «сейчас быстро».",
+  ],
+  people: [
+    "разложил людей без ярлыков и гадания по аватаркам.",
+    "кто есть кто вижу по фактам: сообщения, шутки, задачи, без биографий из воздуха.",
+    "команда проявляется в чате лучше, чем в анкетах. Я аккуратно смотрю.",
+    "пока не психология, просто операционный портрет по следам в чате.",
+    "людей не оцениваю, только помогаю понять, кто где мелькает и что любит.",
+  ],
+  night: [
+    "ночной режим: не шумлю, но хвосты пересчитываю.",
+    "если что-то горит ночью, я не сплю, я моргаю логами.",
+    "ночью я тише, зато подозрительнее.",
+  ],
+  stale: [
+    "задача без движения начинает обрастать мебелью.",
+    "этот хвост уже смотрит на нас как сосед по комнате.",
+    "пора вернуть это в движение, пока оно не попросило отдельный бюджет.",
+  ],
+  testing: [
+    "тестик любит человеческие глаза, особенно свежие.",
+    "QA-режим: не верим красивым словам, верим кликам.",
+    "если на тесте тихо, это не всегда хорошо. Иногда это просто тихо.",
+  ],
+  deploy: [
+    "сервер дышит, можно тыкать аккуратно.",
+    "выкатка прошла, теперь очередь человеческих глаз.",
+    "релиз живой. Если что-то криво, оно сейчас само представится.",
+  ],
+};
 
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
 const pendingCategory = new Map();
@@ -1384,6 +1428,203 @@ function formatSuperSusStory(seed = "") {
   ].join("\n");
 }
 
+function seedIndex(seed = "", length = 1) {
+  const safeLength = Math.max(1, Number(length) || 1);
+  const value = String(seed || "");
+  const code = [...value].reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 1), 0);
+  return Math.abs(code) % safeLength;
+}
+
+async function pickFreshSuperSusPhrase(chatId, category, seed = "") {
+  const bank = SUPERSUS_PHRASE_BANK[category] || [];
+  if (!bank.length) return "";
+
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chats = memory?.chats && typeof memory.chats === "object" ? memory.chats : {};
+  const chat = chats[chatId] || {};
+  const recentPhrases = chat.recentPhrases && typeof chat.recentPhrases === "object" ? chat.recentPhrases : {};
+  const recent = Array.isArray(recentPhrases[category]) ? recentPhrases[category] : [];
+  const candidates = bank.filter((phrase) => !recent.includes(phrase));
+  const pool = candidates.length ? candidates : bank;
+  const phrase = pool[seedIndex(`${seed}:${Date.now()}`, pool.length)];
+  const memoryDepth = Math.max(1, Math.min(4, bank.length - 1));
+
+  await writeContent(CONTENT_KEYS.telegramMemory, {
+    ...memory,
+    updatedAt: new Date().toISOString(),
+    chats: {
+      ...chats,
+      [chatId]: {
+        ...chat,
+        chatId: chat.chatId || chatId,
+        platform: chat.platform || "telegram",
+        recentPhrases: {
+          ...recentPhrases,
+          [category]: [phrase, ...recent.filter((item) => item !== phrase)].slice(0, memoryDepth),
+        },
+      },
+    },
+  });
+  return phrase;
+}
+
+function getMoscowHour(date = new Date()) {
+  const hour = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+  return Number(hour);
+}
+
+function getSuperSusMoodProfile(payload = {}) {
+  const groups = getSuperSusIssueGroups(payload);
+  const summary = payload.summary || {};
+  const hour = getMoscowHour();
+  const open = Number(summary.open ?? groups.openIssues.length ?? 0);
+  const testing = groups.testing.length;
+  const stale = groups.stale.length;
+  const hot = groups.hot.length;
+  const needsAnswer = groups.needsAnswer.length;
+
+  if (hot > 0 && groups.showStoppers.length > 0) {
+    return { label: "боевой", state: "пожарный диспетчер", reason: `есть ${groups.showStoppers.length} show-stopper` };
+  }
+  if (stale >= 5) {
+    return { label: "ворчливый", state: "смотрит на бэклог поверх очков", reason: `${stale} зависших хвостов` };
+  }
+  if (testing >= 8) {
+    return { label: "QA-настороженный", state: "держит лупу и чай", reason: `${testing} задач на тесте` };
+  }
+  if (needsAnswer >= 3) {
+    return { label: "вопросительный", state: "слушает паузы между сообщениями", reason: `${needsAnswer} мест ждут ответа` };
+  }
+  if (hour >= 0 && hour < 7) {
+    return { label: "сонный сторож", state: "один глаз спит, второй смотрит монитор", reason: "ночной режим" };
+  }
+  if (open <= 5 && stale === 0) {
+    return { label: "довольный", state: "редко, но красиво", reason: "мало открытых хвостов" };
+  }
+  return { label: "рабочий", state: "обычный контроль хаоса", reason: `открыто ${open}, зависло ${stale}, тест ${testing}` };
+}
+
+async function formatSuperSusMood(chatId, payload = {}) {
+  const profile = getSuperSusMoodProfile(payload);
+  const phraseCategory = profile.label === "сонный сторож"
+    ? "night"
+    : profile.label === "ворчливый"
+      ? "stale"
+      : profile.label === "QA-настороженный"
+        ? "testing"
+        : "mood";
+  const phrase = await pickFreshSuperSusPhrase(chatId, phraseCategory, JSON.stringify(payload.summary || {}));
+  return [
+    "настроение",
+    "",
+    `Состояние: ${profile.label}`,
+    `Режим: ${profile.state}`,
+    `Почему: ${profile.reason}`,
+    "",
+    phrase,
+  ].filter(Boolean).join("\n");
+}
+
+async function createSuperSusDiaryEntry(chatId, payload = {}) {
+  const profile = getSuperSusMoodProfile(payload);
+  const groups = getSuperSusIssueGroups(payload);
+  const phrase = await pickFreshSuperSusPhrase(chatId, "diary", `${profile.label}:${payload.lastCheckedAt || ""}`);
+  const topIssue = groups.hot[0] || groups.testing[0] || groups.stale[0] || null;
+  const stats = {
+    open: payload.summary?.open ?? groups.openIssues.length,
+    stale: groups.stale.length,
+    testing: groups.testing.length,
+    hot: groups.hot.length,
+  };
+  const entry = {
+    id: `diary-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    at: new Date().toISOString(),
+    mood: profile.label,
+    text: topIssue
+      ? `${phrase} Главное сейчас: ${topIssue.id} — ${topIssue.title || "без названия"}.`
+      : `${phrase} Пожара не вижу, можно добивать рабочие хвосты без театра.`,
+    stats,
+  };
+
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chats = memory?.chats && typeof memory.chats === "object" ? memory.chats : {};
+  const chat = chats[chatId] || {};
+  const diary = Array.isArray(chat.diary) ? chat.diary : [];
+  await writeContent(CONTENT_KEYS.telegramMemory, {
+    ...memory,
+    updatedAt: new Date().toISOString(),
+    chats: {
+      ...chats,
+      [chatId]: {
+        ...chat,
+        chatId: chat.chatId || chatId,
+        platform: chat.platform || "telegram",
+        diary: [entry, ...diary].slice(0, 40),
+      },
+    },
+  });
+  return { entry, diary: [entry, ...diary].slice(0, 6) };
+}
+
+function formatSuperSusDiary({ entry, diary = [] } = {}) {
+  const lines = [
+    "дневник",
+    "",
+    entry ? `${formatDateTimeRu(entry.at)} · ${entry.mood}\n${entry.text}` : "сегодня пока пусто, даже хвосты ходят на цыпочках.",
+  ];
+
+  if (diary.length > 1) {
+    lines.push("", "последние записи:");
+    diary.slice(1, 5).forEach((item, index) => {
+      lines.push(`${index + 1}. ${formatDateTimeRu(item.at)} · ${item.mood}: ${item.text}`);
+    });
+  }
+
+  return lines.join("\n");
+}
+
+async function formatSuperSusPeople(chatId) {
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chat = memory?.chats?.[chatId] || {};
+  const participants = Object.values(chat.participants || {})
+    .filter((participant) => participant && !participant.isBot)
+    .sort((a, b) => Number(b.messages || 0) - Number(a.messages || 0));
+  const phrase = await pickFreshSuperSusPhrase(chatId, "people", participants.map((item) => item.name || item.username || item.id).join(":"));
+  const lines = [
+    "кто есть кто",
+    "",
+    phrase,
+    "",
+  ];
+
+  if (!participants.length) {
+    lines.push("пока людей почти не знаю. Дайте чату пожить, я соберу портреты аккуратно.");
+    return lines.join("\n");
+  }
+
+  participants.slice(0, 12).forEach((participant, index) => {
+    const name = participant.name || participant.username || participant.id || "без имени";
+    const username = participant.username ? ` @${participant.username}` : "";
+    const notes = Array.isArray(participant.notes) && participant.notes.length
+      ? `\n   заметки: ${participant.notes.slice(0, 3).join("; ")}`
+      : "";
+    const phrases = Array.isArray(participant.phrases) && participant.phrases.length
+      ? `\n   фразы: ${participant.phrases.slice(0, 3).join(", ")}`
+      : "";
+    const lastText = Array.isArray(participant.lastTexts) && participant.lastTexts[0]
+      ? `\n   последнее: ${participant.lastTexts[0]}`
+      : "";
+    lines.push(`${index + 1}. ${name}${username} — ${participant.messages || 0} сообщений${notes}${phrases}${lastText}`);
+  });
+
+  lines.push("", "это не психологический портрет, а рабочая память чата. Я не выдумываю лишнего.");
+  return lines.join("\n");
+}
+
 function appendIssueBlock(lines, title, issues, limit) {
   if (!issues.length) return;
   lines.push("", title);
@@ -1656,6 +1897,52 @@ async function handleSuperSusCommand(message, text) {
     return;
   }
 
+  if (/настро|mood|самочув|как\s+ты/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: await formatSuperSusMood(memoryChatKey(message), result),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`настроение не измерил: ${error?.message || "ошибка монитора"}`),
+      });
+    }
+    return;
+  }
+
+  if (/дневник|journal|запис[ьи]/.test(prompt)) {
+    try {
+      const result = await fetchAtlasMonitorSummary();
+      const diary = await createSuperSusDiaryEntry(memoryChatKey(message), result);
+      await sendLongMessage({
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: formatSuperSusDiary(diary),
+      });
+    } catch (error) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: botSay(`дневник не открылся: ${error?.message || "ошибка памяти"}`),
+      });
+    }
+    return;
+  }
+
+  if (/кто\s+есть\s+кто|кто\s+тут|люди|участник|команда/.test(prompt)) {
+    await sendLongMessage({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: await formatSuperSusPeople(memoryChatKey(message)),
+    });
+    return;
+  }
+
   if (/биограф|легенд|кто\s+ты|откуда|родил|жизнь/.test(prompt)) {
     await sendLongMessage({
       chat_id: message.chat.id,
@@ -1738,6 +2025,9 @@ async function handleSuperSusCommand(message, text) {
       "/sus дайджест — короткая операционная сводка",
       "/sus релиз — проверить API и монитор после выкладки",
       "/sus разложи — превратить reply/текст в список задач без автосоздания",
+      "/sus настроение — живое состояние по задачам",
+      "/sus дневник — записать и показать дневник",
+      "/sus кто есть кто — операционная память по участникам",
       "/sus биография — легенда персонажа",
       "/sus день — как он ест, спит и живёт в чате",
       "/sus история — курьёзный случай из жизни",
@@ -1859,6 +2149,9 @@ async function sendHelp(chatId) {
       "/sus дайджест — короткая операционная сводка",
       "/sus релиз — health-check после выкладки",
       "/sus разложи — разложить reply/текст на задачи без автосоздания",
+      "/sus настроение — живое состояние по задачам",
+      "/sus дневник — записать и показать дневник",
+      "/sus кто есть кто — операционная память по участникам",
       "/sus биография — легенда персонажа",
       "/sus день — бытовой режим персонажа",
       "/sus история — курьёзный случай из жизни задач",
