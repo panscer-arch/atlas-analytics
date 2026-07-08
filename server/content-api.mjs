@@ -505,18 +505,144 @@ function buildYouTrackChanges(previous = {}, issues = []) {
   return changes;
 }
 
+function compactTelegramText(value = "", maxLength = 220) {
+  const text = normalizeTelegramValue(value).replace(/\s+/g, " ");
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trim()}…`;
+}
+
+function pluralRu(count, one, few, many) {
+  const value = Math.abs(Number(count) || 0);
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+function getAssigneeRoleLabel(assignee = "") {
+  const value = normalizeTelegramValue(assignee);
+  if (!value || /unassigned|не назнач/i.test(value)) return "пока без исполнителя";
+  if (/front|фронт/i.test(value)) return `фронт (${value})`;
+  if (/admin|админ|back|backend|бек/i.test(value)) return `админ-прогер (${value})`;
+  return value;
+}
+
+function isIssueStale(issue = {}) {
+  return Number(issue.inactiveMs || 0) >= 24 * 60 * 60 * 1000;
+}
+
+function getHumanChangeBucket(change = {}) {
+  const issue = change.issue || {};
+  const after = normalizeIssueStatus(change.after || issue.status || "");
+  if (change.type === "new") return "new";
+  if (change.type === "comment") return issue.commentLooksLikeQuestion ? "question" : "comment";
+  if (change.type === "assignee") return "assignee";
+  if (change.type === "status") {
+    if (after === YOUTRACK_STATUSES.TESTING) return "testing";
+    if (after === YOUTRACK_STATUSES.DONE) return "done";
+    if (after === YOUTRACK_STATUSES.NEEDS_CLARIFICATION) return "question";
+    if (after === YOUTRACK_STATUSES.IN_PROGRESS || after === YOUTRACK_STATUSES.RETURNED_TO_WORK) return "moving";
+    if (after === YOUTRACK_STATUSES.TODO) return "todo";
+  }
+  if (YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority || "") || isIssueStale(issue)) return "attention";
+  return "other";
+}
+
+function describeHumanChange(change = {}) {
+  const issue = change.issue || {};
+  const title = escapeTelegramHtml(compactTelegramText(issue.title || "Без названия", 110));
+  const id = escapeTelegramHtml(issue.id || "Issue");
+  const assignee = escapeTelegramHtml(getAssigneeRoleLabel(issue.assignee || ""));
+  const url = issue.url ? `\n  🔗 ${escapeTelegramHtml(issue.url)}` : "";
+  const bucket = getHumanChangeBucket(change);
+
+  if (change.type === "new") {
+    return `• <b>${id}</b> — ${title}\n  Новая задача влетела в очередь, держу на радаре.${url}`;
+  }
+
+  if (change.type === "assignee") {
+    const before = escapeTelegramHtml(getAssigneeRoleLabel(change.before || ""));
+    const after = escapeTelegramHtml(getAssigneeRoleLabel(change.after || issue.assignee || ""));
+    return `• <b>${id}</b> — ${title}\n  Передали из рук в руки: ${before} → ${after}.${url}`;
+  }
+
+  if (change.type === "comment") {
+    const author = escapeTelegramHtml(issue.latestComment?.author || "кто-то из команды");
+    const comment = escapeTelegramHtml(compactTelegramText(issue.latestComment?.text || "", 180));
+    const prefix = bucket === "question"
+      ? `Новый коммент от ${author}, похоже там нужен ответ`
+      : `Новый коммент от ${author}`;
+    return `• <b>${id}</b> — ${title}\n  ${prefix}${comment ? `: “${comment}”` : "."}${url}`;
+  }
+
+  if (change.type === "status") {
+    const before = escapeTelegramHtml(change.before || "—");
+    const after = escapeTelegramHtml(change.after || "—");
+    const statusText = {
+      testing: `Улетело на тестик. Проверяем глазами, чтобы не вернулось обратно. Держит: ${assignee}.`,
+      done: `Закрыли. Хороший знак, но если задача важная — можно быстро контрольнуть.`,
+      question: `Поставили на уточнение. Тут лучше ответить, иначе будет висеть.`,
+      moving: `Пошло в работу, движ есть. Сейчас держит: ${assignee}.`,
+      todo: `Вернулось в очередь. Надо понять, кто подхватывает дальше.`,
+      attention: `Есть движение, но задача всё ещё выглядит чувствительной. Лучше глянуть.`,
+      other: `Статус поменялся: ${before} → ${after}. Держит: ${assignee}.`,
+    }[bucket] || `Статус поменялся: ${before} → ${after}.`;
+    return `• <b>${id}</b> — ${title}\n  ${statusText}${url}`;
+  }
+
+  return `• <b>${id}</b> — ${title}\n  Есть изменение. Держит: ${assignee}.${url}`;
+}
+
+function summarizeHumanBuckets(changes = []) {
+  const counts = changes.reduce((acc, change) => {
+    const bucket = getHumanChangeBucket(change);
+    acc[bucket] = (acc[bucket] || 0) + 1;
+    return acc;
+  }, {});
+  const parts = [];
+  if (counts.testing) parts.push(`${counts.testing} ${pluralRu(counts.testing, "задача улетела", "задачи улетели", "задач улетели")} на тест`);
+  if (counts.moving) parts.push(`${counts.moving} ${pluralRu(counts.moving, "задача пошла", "задачи пошли", "задач пошли")} в работу`);
+  if (counts.done) parts.push(`${counts.done} ${pluralRu(counts.done, "закрылась", "закрылись", "закрылось")}`);
+  if (counts.question) parts.push(`${counts.question} ${pluralRu(counts.question, "место требует", "места требуют", "мест требуют")} ответа`);
+  if (counts.comment) parts.push(`${counts.comment} ${pluralRu(counts.comment, "новый коммент", "новых коммента", "новых комментов")}`);
+  if (counts.new) parts.push(`${counts.new} ${pluralRu(counts.new, "новая задача", "новые задачи", "новых задач")}`);
+  if (counts.assignee) parts.push(`${counts.assignee} ${pluralRu(counts.assignee, "переназначение", "переназначения", "переназначений")}`);
+  if (!parts.length) parts.push(`${changes.length} ${pluralRu(changes.length, "изменение", "изменения", "изменений")}`);
+  return parts.join(", ");
+}
+
+function buildHumanOpsTakeaway(changes = []) {
+  const changedIssues = changes.map((change) => change.issue || {}).filter(Boolean);
+  const needsAnswer = changedIssues.filter((issue) => issue.needsAttention || issue.commentLooksLikeQuestion);
+  const stale = changedIssues.filter(isIssueStale);
+  const blockers = changedIssues.filter((issue) => YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority || ""));
+  const testing = changes.filter((change) => getHumanChangeBucket(change) === "testing");
+
+  if (blockers.length) return `Главное: есть ${blockers.length} show-stopper, это лучше смотреть первым.`;
+  if (needsAnswer.length) return `Главное: есть вопрос/уточнение, без ответа оно может встать колом.`;
+  if (stale.length) return `Главное: ${stale.length} ${pluralRu(stale.length, "задача зависла", "задачи зависли", "задач зависло")} больше суток, надо подпнуть.`;
+  if (testing.length) return `Главное: тестик пошёл, можно прогнать и закрывать хвосты.`;
+  return "Главное: движ есть, команда не стоит. Я смотрю дальше.";
+}
+
 function formatYouTrackChangePush(changes = []) {
-  const lines = ["🧭 <b>ATLAS TASK MONITOR</b>", "━━━━━━━━━━━━━━━━", ""];
-  changes.slice(0, 8).forEach((change) => {
-    const issue = change.issue || {};
-    lines.push(`📌 <b>${escapeTelegramHtml(issue.id || "Issue")}</b> — ${escapeTelegramHtml(issue.title || "")}`);
-    lines.push(`🔁 ${escapeTelegramHtml(change.message || "Изменение")}`);
-    lines.push(`📍 ${escapeTelegramHtml(issue.status || "—")} · 👤 ${escapeTelegramHtml(issue.assignee || "—")} · ⏱ ${escapeTelegramHtml(issue.statusAgeLabel || "—")}`);
-    if (issue.latestComment?.text) lines.push(`💬 ${escapeTelegramHtml(issue.latestComment.text).slice(0, 260)}`);
-    if (issue.url) lines.push(`🔗 ${escapeTelegramHtml(issue.url)}`);
-    lines.push("");
+  const visibleChanges = changes.slice(0, 8);
+  const lines = [
+    "🟠 <b>SuperSUS на связи</b>",
+    "━━━━━━━━━━━━━━━━",
+    "",
+    `Чуваки, по задачам движ: ${escapeTelegramHtml(summarizeHumanBuckets(changes))}.`,
+    escapeTelegramHtml(buildHumanOpsTakeaway(changes)),
+    "",
+  ];
+
+  visibleChanges.forEach((change) => {
+    lines.push(describeHumanChange(change), "");
   });
-  if (changes.length > 8) lines.push(`Ещё изменений: ${changes.length - 8}`);
+  if (changes.length > visibleChanges.length) {
+    lines.push(`Ещё ${changes.length - visibleChanges.length} ${pluralRu(changes.length - visibleChanges.length, "изменение", "изменения", "изменений")} оставил в панели, чтобы чат не раздувать.`);
+  }
   return lines.join("\n").trim();
 }
 
