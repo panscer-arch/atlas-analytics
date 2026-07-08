@@ -10,6 +10,9 @@ const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
+const YOUTRACK_DIGEST_KEY = "atlas.analytics.youtrackDigestState.v1";
+const YOUTRACK_STALE_MS = 24 * 60 * 60 * 1000;
+const YOUTRACK_DAILY_DIGEST_HOUR_MSK = Number(process.env.ATLAS_YOUTRACK_DAILY_DIGEST_HOUR_MSK || 15);
 const YOUTRACK_DEFAULT_FIELDS = [
   "idReadable",
   "summary",
@@ -476,7 +479,7 @@ async function getYouTrackIssues({ query = "", top = 50 } = {}) {
   const openIssues = issues.filter((issue) => !issue.isResolved);
   const attentionIssues = issues.filter((issue) => issue.needsAttention && !issue.isResolved);
   const developerWaitingIssues = openIssues.filter((issue) => issue.waitsForDeveloper);
-  const staleIssues = openIssues.filter((issue) => issue.inactiveMs >= 24 * 60 * 60 * 1000);
+  const staleIssues = openIssues.filter((issue) => issue.inactiveMs >= YOUTRACK_STALE_MS);
   const showStoppers = openIssues.filter((issue) => YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority));
   const statusCounts = buildYouTrackStatusCounts(issues);
 
@@ -502,6 +505,7 @@ async function getYouTrackIssues({ query = "", top = 50 } = {}) {
 
 function buildYouTrackChanges(previous = {}, issues = []) {
   const previousIssues = previous?.issues || {};
+  const previousCheckedAtMs = toMillis(previous?.checkedAt);
   const changes = [];
   for (const issue of issues) {
     const before = previousIssues[issue.id];
@@ -516,8 +520,20 @@ function buildYouTrackChanges(previous = {}, issues = []) {
     if (before.assignee !== current.assignee) {
       changes.push({ type: "assignee", issue, before: before.assignee, after: current.assignee, message: `${issue.id}: исполнитель ${before.assignee || "—"} → ${current.assignee || "—"}` });
     }
+    if (
+      before.priority !== current.priority
+      && !YOUTRACK_SHOW_STOPPER_PATTERN.test(before.priority || "")
+      && YOUTRACK_SHOW_STOPPER_PATTERN.test(current.priority || "")
+    ) {
+      changes.push({ type: "blocker", issue, before: before.priority, after: current.priority, message: `${issue.id}: стало критичным` });
+    }
     if ((before.commentsCount || 0) < current.commentsCount || before.latestCommentId !== current.latestCommentId) {
       changes.push({ type: "comment", issue, message: `${issue.id}: новый комментарий от ${issue.latestComment?.author || "участника"}` });
+    }
+    const wasStale = previousCheckedAtMs > 0 && before.updatedAtMs > 0 && previousCheckedAtMs - before.updatedAtMs >= YOUTRACK_STALE_MS;
+    const isStaleNow = !issue.isResolved && issue.inactiveMs >= YOUTRACK_STALE_MS;
+    if (!wasStale && isStaleNow) {
+      changes.push({ type: "stale", issue, message: `${issue.id}: без движения больше суток` });
     }
   }
   return changes;
@@ -547,13 +563,15 @@ function getAssigneeRoleLabel(assignee = "") {
 }
 
 function isIssueStale(issue = {}) {
-  return Number(issue.inactiveMs || 0) >= 24 * 60 * 60 * 1000;
+  return Number(issue.inactiveMs || 0) >= YOUTRACK_STALE_MS;
 }
 
 function getHumanChangeBucket(change = {}) {
   const issue = change.issue || {};
   const after = normalizeIssueStatus(change.after || issue.status || "");
   if (change.type === "new") return "new";
+  if (change.type === "blocker") return "blocker";
+  if (change.type === "stale") return "stale";
   if (change.type === "comment") return issue.commentLooksLikeQuestion ? "question" : "comment";
   if (change.type === "assignee") return "assignee";
   if (change.type === "status") {
@@ -583,6 +601,14 @@ function describeHumanChange(change = {}) {
     const before = escapeTelegramHtml(getAssigneeRoleLabel(change.before || ""));
     const after = escapeTelegramHtml(getAssigneeRoleLabel(change.after || issue.assignee || ""));
     return `• <b>${id}</b> — ${title}\n  Передали из рук в руки: ${before} → ${after}.${url}`;
+  }
+
+  if (change.type === "blocker") {
+    return `• <b>${id}</b> — ${title}\n  Стало критичным. Это лучше смотреть первым, чтобы не разъехался релиз.${url}`;
+  }
+
+  if (change.type === "stale") {
+    return `• <b>${id}</b> — ${title}\n  Без движения больше суток. Пора вернуть в поток или честно снять с очереди.${url}`;
   }
 
   if (change.type === "comment") {
@@ -620,6 +646,8 @@ function summarizeHumanBuckets(changes = []) {
   }, {});
   const parts = [];
   if (counts.testing) parts.push(`${counts.testing} ${pluralRu(counts.testing, "задача улетела", "задачи улетели", "задач улетели")} на тест`);
+  if (counts.blocker) parts.push(`${counts.blocker} ${pluralRu(counts.blocker, "задача стала", "задачи стали", "задач стали")} критичной`);
+  if (counts.stale) parts.push(`${counts.stale} ${pluralRu(counts.stale, "хвост завис", "хвоста зависли", "хвостов зависло")} 24ч+`);
   if (counts.moving) parts.push(`${counts.moving} ${pluralRu(counts.moving, "задача пошла", "задачи пошли", "задач пошли")} в работу`);
   if (counts.done) parts.push(`${counts.done} ${pluralRu(counts.done, "закрылась", "закрылись", "закрылось")}`);
   if (counts.question) parts.push(`${counts.question} ${pluralRu(counts.question, "место требует", "места требуют", "мест требуют")} ответа`);
@@ -644,13 +672,197 @@ function buildHumanOpsTakeaway(changes = []) {
   return "Главное: движ есть, команда не стоит. Я смотрю дальше.";
 }
 
+function isUrgentYouTrackChange(change = {}) {
+  const bucket = getHumanChangeBucket(change);
+  if (["blocker", "stale", "question", "comment", "testing"].includes(bucket)) return true;
+  if (change.type === "new") {
+    const issue = change.issue || {};
+    return YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority || "") || issue.needsAttention || issue.commentLooksLikeQuestion;
+  }
+  return false;
+}
+
+function getMoscowDigestParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    hour: Number(parts.hour || 0),
+  };
+}
+
+function getYouTrackChangeKey(change = {}) {
+  const issue = change.issue || {};
+  return [
+    change.type || "change",
+    issue.id || "",
+    change.before || "",
+    change.after || "",
+    issue.latestComment?.id || "",
+    issue.updatedAtMs || "",
+    compactTelegramText(change.message || "", 80),
+  ].join("|");
+}
+
+function compactYouTrackChange(change = {}) {
+  const issue = change.issue || {};
+  const latestComment = issue.latestComment
+    ? {
+        id: issue.latestComment.id || "",
+        text: compactTelegramText(issue.latestComment.text || "", 260),
+        author: issue.latestComment.author || "",
+        authorLogin: issue.latestComment.authorLogin || "",
+        createdAt: issue.latestComment.createdAt || "",
+        updatedAt: issue.latestComment.updatedAt || "",
+      }
+    : null;
+  return {
+    key: getYouTrackChangeKey(change),
+    type: change.type || "change",
+    before: change.before || "",
+    after: change.after || "",
+    message: change.message || "",
+    seenAt: new Date().toISOString(),
+    issue: {
+      id: issue.id || "",
+      title: issue.title || "",
+      url: issue.url || "",
+      status: issue.status || "",
+      priority: issue.priority || "",
+      assignee: issue.assignee || "",
+      dueDate: issue.dueDate || "",
+      updatedAt: issue.updatedAt || "",
+      updatedAtMs: issue.updatedAtMs || 0,
+      inactiveMs: issue.inactiveMs || 0,
+      inactiveLabel: issue.inactiveLabel || "",
+      statusAgeLabel: issue.statusAgeLabel || "",
+      latestComment,
+      needsAttention: Boolean(issue.needsAttention),
+      commentLooksLikeQuestion: Boolean(issue.commentLooksLikeQuestion),
+      isResolved: Boolean(issue.isResolved),
+    },
+  };
+}
+
+async function appendYouTrackDigestChanges(changes = []) {
+  const safeChanges = changes.filter(Boolean);
+  const state = await readContent(YOUTRACK_DIGEST_KEY, { version: 1, pendingChanges: [] });
+  if (!safeChanges.length) return state;
+
+  const pending = Array.isArray(state.pendingChanges) ? state.pendingChanges : [];
+  const byKey = new Map(pending.map((change) => [change.key || getYouTrackChangeKey(change), change]));
+  safeChanges.forEach((change) => {
+    const compact = compactYouTrackChange(change);
+    byKey.set(compact.key, compact);
+  });
+
+  const nextPending = [...byKey.values()]
+    .sort((a, b) => toMillis(b.seenAt) - toMillis(a.seenAt))
+    .slice(0, 200);
+  const nextState = {
+    ...state,
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    pendingChanges: nextPending,
+  };
+  await writeContent(YOUTRACK_DIGEST_KEY, nextState);
+  return nextState;
+}
+
+function buildCurrentIssueActionLines(result = {}) {
+  const issues = Array.isArray(result.issues) ? result.issues : [];
+  const blockers = issues.filter((issue) => !issue.isResolved && YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority || ""));
+  const needsAnswer = issues.filter((issue) => !issue.isResolved && (issue.needsAttention || issue.commentLooksLikeQuestion));
+  const stale = issues.filter((issue) => !issue.isResolved && isIssueStale(issue));
+  const testing = issues.filter((issue) => !issue.isResolved && normalizeIssueStatus(issue.status) === YOUTRACK_STATUSES.TESTING);
+  const lines = [];
+  if (blockers.length) lines.push(`сначала глянуть ${blockers.length} ${pluralRu(blockers.length, "критичную задачу", "критичные задачи", "критичных задач")}`);
+  if (needsAnswer.length) lines.push(`ответить там, где ждут уточнение: ${needsAnswer.length}`);
+  if (stale.length) lines.push(`подпнуть хвосты 24ч+: ${stale.length}`);
+  if (testing.length) lines.push(`прогнать тестик: ${testing.length}`);
+  if (!lines.length) lines.push("без паники: добивать текущие задачи и закрывать проверенное");
+  return lines;
+}
+
+function formatYouTrackDailyDigest(result = {}, pendingChanges = []) {
+  const summary = result.summary || {};
+  const testing = summary.statuses?.[YOUTRACK_STATUSES.TESTING] || 0;
+  const visibleChanges = pendingChanges
+    .slice()
+    .sort((a, b) => toMillis(a.seenAt) - toMillis(b.seenAt))
+    .slice(-10);
+  const lines = [
+    "🟠 <b>Дневной дайджест по задачам</b>",
+    "15:00 МСК",
+    "━━━━━━━━━━━━━━━━",
+    "",
+    `Сейчас: открыто ${escapeTelegramHtml(summary.open ?? 0)}, на тесте ${escapeTelegramHtml(testing)}, зависло 24ч+ ${escapeTelegramHtml(summary.stale ?? 0)}, ждут ответа ${escapeTelegramHtml(summary.needsAnswer ?? 0)}, критичных ${escapeTelegramHtml(summary.showStoppers ?? 0)}.`,
+    "",
+    pendingChanges.length
+      ? `За период: ${escapeTelegramHtml(summarizeHumanBuckets(pendingChanges))}.`
+      : "За период без громких изменений. Всё равно держу радар включённым.",
+    "",
+    "Что сделать сейчас:",
+    ...buildCurrentIssueActionLines(result).map((line) => `• ${escapeTelegramHtml(line)}`),
+  ];
+
+  if (visibleChanges.length) {
+    lines.push("", "Движ за период:");
+    visibleChanges.forEach((change) => {
+      lines.push(describeHumanChange(change), "");
+    });
+    if (pendingChanges.length > visibleChanges.length) {
+      lines.push(`Ещё ${pendingChanges.length - visibleChanges.length} ${pluralRu(pendingChanges.length - visibleChanges.length, "изменение", "изменения", "изменений")} оставил за кадром, чтобы чат не раздувать.`);
+    }
+  }
+
+  return lines.join("\n").trim();
+}
+
+async function maybeSendDailyYouTrackDigest(result = {}, { force = false, enabled = true } = {}) {
+  if (!enabled) return { ok: true, skipped: true, reason: "daily_digest_disabled" };
+  const nowParts = getMoscowDigestParts();
+  if (!force && nowParts.hour !== YOUTRACK_DAILY_DIGEST_HOUR_MSK) {
+    return { ok: true, skipped: true, reason: "outside_digest_hour", digestDate: nowParts.date };
+  }
+
+  const state = await readContent(YOUTRACK_DIGEST_KEY, { version: 1, pendingChanges: [] });
+  if (!force && state.lastDailyDigestDate === nowParts.date) {
+    return { ok: true, skipped: true, reason: "already_sent", digestDate: nowParts.date };
+  }
+
+  const pendingChanges = Array.isArray(state.pendingChanges) ? state.pendingChanges : [];
+  const notification = await sendTelegramMessage(formatYouTrackDailyDigest(result, pendingChanges), { parse_mode: "HTML" });
+  if (!notification.ok) return notification;
+
+  await writeContent(YOUTRACK_DIGEST_KEY, {
+    ...state,
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    lastDailyDigestDate: nowParts.date,
+    lastDailyDigestAt: new Date().toISOString(),
+    lastDailyDigestMessage: notification.sent?.[0] || null,
+    pendingChanges: [],
+  });
+  return { ...notification, digestDate: nowParts.date, pendingCount: pendingChanges.length };
+}
+
 function formatYouTrackChangePush(changes = []) {
   const visibleChanges = changes.slice(0, 8);
   const lines = [
-    "🟠 <b>По задачам движ</b>",
+    "🟠 <b>Нужно глянуть по задачам</b>",
     "━━━━━━━━━━━━━━━━",
     "",
-    `Чуваки, по задачам движ: ${escapeTelegramHtml(summarizeHumanBuckets(changes))}.`,
+    `Чуваки, тут важное: ${escapeTelegramHtml(summarizeHumanBuckets(changes))}.`,
     escapeTelegramHtml(buildHumanOpsTakeaway(changes)),
     "",
   ];
@@ -664,27 +876,49 @@ function formatYouTrackChangePush(changes = []) {
   return lines.join("\n").trim();
 }
 
-async function checkYouTrackChanges({ notify = true, persist = true } = {}) {
+async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest = true, forceDigest = false } = {}) {
   const result = await getYouTrackIssues();
   if (!result.ok) return result;
   const previous = await readContent(YOUTRACK_SNAPSHOT_KEY, { issues: {} });
   const isFirstSnapshot = !previous?.issues || !Object.keys(previous.issues).length;
   const changes = isFirstSnapshot ? [] : buildYouTrackChanges(previous, result.issues);
+  const urgentChanges = changes.filter(isUrgentYouTrackChange);
+  const deferredChanges = changes.filter((change) => !isUrgentYouTrackChange(change));
   const nextSnapshot = {
     checkedAt: result.lastCheckedAt,
     issues: Object.fromEntries(result.issues.map((issue) => [issue.id, getIssueSignature(issue)])),
   };
 
   let notification = { ok: true, skipped: true };
-  if (notify && changes.length) {
-    notification = await sendTelegramMessage(formatYouTrackChangePush(changes), { parse_mode: "HTML" });
+  if (notify && urgentChanges.length) {
+    notification = await sendTelegramMessage(formatYouTrackChangePush(urgentChanges), { parse_mode: "HTML" });
+  } else if (notify && changes.length) {
+    notification = { ok: true, skipped: true, reason: "no_urgent_changes" };
   }
-  const shouldPersist = persist && (!notify || !changes.length || notification.ok);
+  const shouldPersist = persist && (!notify || !urgentChanges.length || notification.ok);
+  let digestState = null;
+  let digestNotification = { ok: true, skipped: true };
+  if (shouldPersist && deferredChanges.length) {
+    digestState = await appendYouTrackDigestChanges(deferredChanges);
+  }
+  if (notify && shouldPersist) {
+    digestNotification = await maybeSendDailyYouTrackDigest(result, { enabled: dailyDigest, force: forceDigest });
+  }
   if (shouldPersist) {
     await writeContent(YOUTRACK_SNAPSHOT_KEY, nextSnapshot);
   }
 
-  return { ...result, changes, notification, bootstrapped: isFirstSnapshot, persisted: shouldPersist };
+  return {
+    ...result,
+    changes,
+    urgentChanges,
+    deferredChanges,
+    notification,
+    digestNotification,
+    digestPendingCount: digestState?.pendingChanges?.length,
+    bootstrapped: isFirstSnapshot,
+    persisted: shouldPersist,
+  };
 }
 
 function toNumber(value) {
@@ -1430,7 +1664,9 @@ const server = http.createServer(async (request, response) => {
       const parsed = body ? JSON.parse(body) : {};
       const notify = parsed.notify !== false;
       const persist = parsed.persist ?? notify;
-      const result = await checkYouTrackChanges({ notify, persist });
+      const dailyDigest = parsed.dailyDigest !== false;
+      const forceDigest = parsed.forceDigest === true;
+      const result = await checkYouTrackChanges({ notify, persist, dailyDigest, forceDigest });
       sendJson(response, result.ok ? 200 : result.status || 502, result);
       return;
     }
