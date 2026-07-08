@@ -11,8 +11,10 @@ const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-tel
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_KEY = "atlas.analytics.youtrackDigestState.v1";
+const YOUTRACK_NOTIFICATION_LOG_KEY = "atlas.analytics.youtrackNotificationLog.v1";
 const YOUTRACK_STALE_MS = 24 * 60 * 60 * 1000;
 const YOUTRACK_DAILY_DIGEST_HOUR_MSK = Number(process.env.ATLAS_YOUTRACK_DAILY_DIGEST_HOUR_MSK || 15);
+const YOUTRACK_NOTIFICATION_COOLDOWN_MS = Number(process.env.ATLAS_YOUTRACK_NOTIFICATION_COOLDOWN_MS || 12 * 60 * 60 * 1000);
 const YOUTRACK_DEFAULT_FIELDS = [
   "idReadable",
   "summary",
@@ -677,12 +679,65 @@ function buildHumanOpsTakeaway(changes = []) {
 
 function isUrgentYouTrackChange(change = {}) {
   const bucket = getHumanChangeBucket(change);
-  if (["blocker", "stale", "question", "comment", "testing"].includes(bucket)) return true;
+  if (["blocker", "question", "comment", "testing"].includes(bucket)) return true;
   if (change.type === "new") {
     const issue = change.issue || {};
     return YOUTRACK_SHOW_STOPPER_PATTERN.test(issue.priority || "") || issue.needsAttention || issue.commentLooksLikeQuestion;
   }
   return false;
+}
+
+async function filterFreshYouTrackNotifications(changes = []) {
+  const safeChanges = changes.filter(Boolean);
+  if (!safeChanges.length) return { fresh: [], suppressed: [], state: { version: 1, sent: [] } };
+
+  const state = await readContent(YOUTRACK_NOTIFICATION_LOG_KEY, { version: 1, sent: [] });
+  const sent = Array.isArray(state.sent) ? state.sent : [];
+  const now = Date.now();
+  const byKey = new Map();
+  sent.forEach((entry) => {
+    const key = entry?.key || "";
+    const sentAtMs = toMillis(entry?.sentAt);
+    if (key && sentAtMs && now - sentAtMs < YOUTRACK_NOTIFICATION_COOLDOWN_MS) {
+      byKey.set(key, entry);
+    }
+  });
+
+  const fresh = [];
+  const suppressed = [];
+  safeChanges.forEach((change) => {
+    const key = getYouTrackChangeKey(change);
+    if (byKey.has(key)) {
+      suppressed.push(change);
+    } else {
+      fresh.push(change);
+    }
+  });
+
+  return { fresh, suppressed, state: { ...state, sent: [...byKey.values()] } };
+}
+
+async function recordFreshYouTrackNotifications(changes = [], previousState = {}) {
+  const nowIso = new Date().toISOString();
+  const previousSent = Array.isArray(previousState.sent) ? previousState.sent : [];
+  const nextSent = [
+    ...changes.map((change) => ({
+      key: getYouTrackChangeKey(change),
+      type: change.type || "change",
+      issueId: change.issue?.id || "",
+      sentAt: nowIso,
+    })),
+    ...previousSent,
+  ]
+    .filter((entry, index, list) => entry?.key && list.findIndex((item) => item.key === entry.key) === index)
+    .slice(0, 500);
+
+  await writeContent(YOUTRACK_NOTIFICATION_LOG_KEY, {
+    ...previousState,
+    version: 1,
+    updatedAt: nowIso,
+    sent: nextSent,
+  });
 }
 
 function getMoscowDigestParts(date = new Date()) {
@@ -887,18 +942,28 @@ async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest
   const changes = isFirstSnapshot ? [] : buildYouTrackChanges(previous, result.issues);
   const urgentChanges = changes.filter(isUrgentYouTrackChange);
   const deferredChanges = changes.filter((change) => !isUrgentYouTrackChange(change));
+  const urgentPlan = notify && urgentChanges.length
+    ? await filterFreshYouTrackNotifications(urgentChanges)
+    : { fresh: urgentChanges, suppressed: [], state: null };
+  const freshUrgentChanges = urgentPlan.fresh || [];
+  const suppressedUrgentChanges = urgentPlan.suppressed || [];
   const nextSnapshot = {
     checkedAt: result.lastCheckedAt,
     issues: Object.fromEntries(result.issues.map((issue) => [issue.id, getIssueSignature(issue)])),
   };
 
   let notification = { ok: true, skipped: true };
-  if (notify && urgentChanges.length) {
-    notification = await sendTelegramMessage(formatYouTrackChangePush(urgentChanges), { parse_mode: "HTML" });
+  if (notify && freshUrgentChanges.length) {
+    notification = await sendTelegramMessage(formatYouTrackChangePush(freshUrgentChanges), { parse_mode: "HTML" });
+    if (notification.ok) {
+      await recordFreshYouTrackNotifications(freshUrgentChanges, urgentPlan.state || {});
+    }
+  } else if (notify && urgentChanges.length) {
+    notification = { ok: true, skipped: true, reason: "duplicate_urgent_changes_suppressed" };
   } else if (notify && changes.length) {
     notification = { ok: true, skipped: true, reason: "no_urgent_changes" };
   }
-  const shouldPersist = persist && (!notify || !urgentChanges.length || notification.ok);
+  const shouldPersist = persist && (!notify || !freshUrgentChanges.length || notification.ok);
   let digestState = null;
   let digestNotification = { ok: true, skipped: true };
   if (shouldPersist && deferredChanges.length) {
@@ -915,6 +980,8 @@ async function checkYouTrackChanges({ notify = true, persist = true, dailyDigest
     ...result,
     changes,
     urgentChanges,
+    freshUrgentChanges,
+    suppressedUrgentChanges,
     deferredChanges,
     notification,
     digestNotification,
