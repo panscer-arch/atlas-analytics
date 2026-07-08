@@ -21,6 +21,7 @@ export const CONTENT_KEYS = {
   archive: "atlas.analytics.taskArchive.v1",
   history: "atlas.analytics.taskHistory.v1",
   telegramOps: "atlas.analytics.telegramOps.v1",
+  telegramMemory: "atlas.analytics.telegramChatMemory.v1",
 };
 
 export const CATEGORY_ALIASES = {

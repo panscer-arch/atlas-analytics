@@ -35,6 +35,20 @@ def build_prompt(payload):
     author = source.get("authorName") or "unknown"
     chat = source.get("chatTitle") or source.get("chatId") or "telegram"
     message_url = source.get("messageUrl") or ""
+    if payload.get("memoryOnly"):
+        context = [
+            "Ты получаешь внутреннюю запись долговременной памяти Telegram-чата для Суперсуса.",
+            "Это не вопрос пользователя. Ничего не надо отправлять в Telegram.",
+            "Запомни участника, стиль общения, внутренние шутки и контекст для будущих ответов.",
+            f"Источник памяти: chat={chat}, author={author}",
+            "",
+            "Запись памяти:",
+            prompt,
+            "",
+            "Ответь коротко только для лога: что именно зафиксировал.",
+        ]
+        return "\n".join(line for line in context if line != "")
+
     context = [
         "Ты отвечаешь Digitex из Telegram через SuperSUS-бота.",
         "Отвечай по-русски, коротко и практически. Если нужно запомнить решение или задачу, явно скажи, что зафиксировал.",

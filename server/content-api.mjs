@@ -47,6 +47,7 @@ const YOUTRACK_STATUS_ALIASES = {
   resolved: YOUTRACK_STATUSES.DONE,
 };
 const YOUTRACK_SHOW_STOPPER_PATTERN = /show-stopper|critical|blocker|критичес|блокер/i;
+const PROTECTED_CONTENT_KEYS = new Set([CONTENT_KEYS.telegramMemory]);
 const PANCAKE_USDT_USDC_POOL = {
   network: "bsc",
   address: "0x92b7807bF19b7DDdf89b706143896d05228f3121",
@@ -121,6 +122,23 @@ function escapeTelegramHtml(value = "") {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function getHeader(request, name) {
+  const value = request.headers?.[String(name).toLowerCase()];
+  return Array.isArray(value) ? value[0] : value || "";
+}
+
+function isTelegramMemoryReadAllowed(request, url) {
+  const token = normalizeTelegramValue(process.env.TELEGRAM_MEMORY_READ_TOKEN || "");
+  if (!token) return false;
+  const provided = normalizeTelegramValue(
+    getHeader(request, "x-telegram-memory-token")
+    || getHeader(request, "x-memory-token")
+    || url.searchParams.get("token")
+    || "",
+  );
+  return Boolean(provided) && provided === token;
 }
 
 function formatTelegramSubtaskPush({ task = {}, subtask = {} }) {
@@ -1313,6 +1331,36 @@ async function sendTelegramReaction(messageId, emoji = "😁", requestedChatId =
   return { ok: true, status: 200, chatId, messageId: safeMessageId };
 }
 
+async function sendTelegramPhoto({ photo = "", caption = "", options = {}, requestedChatId = "" } = {}) {
+  const { token, targetChatIds, preferredChatId } = await getTelegramConfig();
+  if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
+  if (!targetChatIds.length) return { ok: false, status: 503, error: "telegram_push_chat_not_configured" };
+  const chatId = requestedChatId || preferredChatId || targetChatIds[0] || "";
+  if (!chatId) return { ok: false, status: 400, error: "telegram_push_chat_required" };
+  if (!targetChatIds.includes(chatId)) {
+    return { ok: false, status: 403, error: "telegram_push_chat_not_allowed", chatId };
+  }
+  const safePhoto = normalizeTelegramValue(photo);
+  if (!safePhoto) return { ok: false, status: 400, error: "telegram_photo_required", chatId };
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      photo: safePhoto,
+      caption: normalizeTelegramValue(caption).slice(0, 1024),
+      ...options,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload?.ok === false) {
+    return { ok: false, status: response.status || 502, error: payload?.description || "telegram_photo_send_failed", chatId };
+  }
+
+  return { ok: true, status: 200, sent: [{ chatId, messageId: payload?.result?.message_id }] };
+}
+
 async function readBody(request) {
   const chunks = [];
   let size = 0;
@@ -1422,6 +1470,21 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/telegram/memory" && request.method === "GET") {
+      if (!isTelegramMemoryReadAllowed(request, url)) {
+        sendJson(response, 403, { ok: false, error: "telegram_memory_token_required" });
+        return;
+      }
+      const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+      const chatId = url.searchParams.get("chatId") || "";
+      if (chatId) {
+        sendJson(response, 200, { ok: true, chat: memory?.chats?.[chatId] || null });
+        return;
+      }
+      sendJson(response, 200, { ok: true, memory });
+      return;
+    }
+
     if (url.pathname === "/api/telegram/push-subtask" && request.method === "POST") {
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
@@ -1462,6 +1525,28 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/telegram/send-photo" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const replyToMessageId = Number(parsed.replyToMessageId || parsed.reply_to_message_id || 0);
+      const reactionToMessageId = Number(parsed.reactionToMessageId || parsed.reactToMessageId || parsed.reaction_to_message_id || 0);
+      const options = {};
+      if (Number.isFinite(replyToMessageId) && replyToMessageId > 0) options.reply_to_message_id = replyToMessageId;
+      if (parsed.parseMode === "HTML" || parsed.parse_mode === "HTML") options.parse_mode = "HTML";
+      const chatId = String(parsed.chatId || "").trim();
+      const reaction = Number.isFinite(reactionToMessageId) && reactionToMessageId > 0
+        ? await sendTelegramReaction(reactionToMessageId, parsed.reactionEmoji || parsed.emoji || "😁", chatId)
+        : { ok: true, skipped: true };
+      const result = await sendTelegramPhoto({
+        photo: parsed.photo || parsed.photoUrl || parsed.url || "",
+        caption: parsed.caption || "",
+        options,
+        requestedChatId: chatId,
+      });
+      sendJson(response, result.ok ? 200 : result.status, result.ok ? { ok: true, ...result, reaction } : { ok: false, error: result.error, reaction });
+      return;
+    }
+
     if (url.pathname === "/api/telegram/verify-channel" && request.method === "POST") {
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
@@ -1487,6 +1572,10 @@ const server = http.createServer(async (request, response) => {
     const key = getContentKey(url);
     if (!key) {
       sendJson(response, 404, { ok: false, error: "not_found" });
+      return;
+    }
+    if (PROTECTED_CONTENT_KEYS.has(key)) {
+      sendJson(response, 403, { ok: false, error: "protected_content_key" });
       return;
     }
 

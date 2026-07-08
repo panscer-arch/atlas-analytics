@@ -29,6 +29,10 @@ const TASK_TRIGGER_EMOJI = "💋";
 const TASK_DONE_EMOJI = "✅";
 const RECENT_MESSAGES_LIMIT = 800;
 const CORNER_JOKE_REACTION = "😁";
+const MEMORY_MAX_TIMELINE = Number(process.env.TELEGRAM_MEMORY_MAX_TIMELINE || 300);
+const MEMORY_MAX_UNSYNCED = Number(process.env.TELEGRAM_MEMORY_MAX_UNSYNCED || 60);
+const MEMORY_SYNC_MIN_EVENTS = Number(process.env.TELEGRAM_MEMORY_SYNC_MIN_EVENTS || 8);
+const MEMORY_SYNC_MIN_INTERVAL_MS = Number(process.env.TELEGRAM_MEMORY_SYNC_MIN_INTERVAL_MS || 10 * 60 * 1000);
 const CATEGORY_BUTTONS = [
   ["inbox", "launch"],
   ["marketing", "smm"],
@@ -42,6 +46,7 @@ const CATEGORY_BUTTONS = [
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
 const pendingCategory = new Map();
 const recentMessages = new Map();
+const hermesMemorySyncInFlight = new Set();
 
 function botSay(text) {
   return text;
@@ -144,6 +149,7 @@ async function handleUpdate(update) {
   }
 
   storeRecentMessage(message, text);
+  await rememberTelegramChat(message, text);
 
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
@@ -206,6 +212,270 @@ async function tryReactToMessage(message, emoji) {
     });
   } catch (error) {
     log("reaction skipped:", error?.message || String(error));
+  }
+}
+
+function compactMemoryText(value = "", maxLength = 520) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trim()}…`;
+}
+
+function uniqLimited(values = [], limit = 12) {
+  return [...new Set(values.filter(Boolean))].slice(0, limit);
+}
+
+function memoryChatKey(message) {
+  return String(message?.chat?.id || "unknown");
+}
+
+function detectMemoryTags(message, text = "") {
+  const source = buildSource(message, text);
+  const haystack = `${source.authorName || ""} ${source.chatTitle || ""} ${text || ""}`;
+  const tags = [];
+  if (message.reply_to_message) tags.push("reply");
+  if (message.reply_to_message?.from?.is_bot) tags.push("reply_to_bot");
+  if (/\bв\s+угол\b/i.test(text)) tags.push("inside_joke:corner");
+  if (/ротенберг/i.test(haystack)) tags.push("participant:rotenberg");
+  if (/каллисто|callisto/i.test(haystack)) tags.push("context:callisto");
+  if (text.includes(TASK_TRIGGER_EMOJI) || stripBotMention(text).startsWith("/task")) tags.push("task_intent");
+  if (isHermesCommand(text)) tags.push("hermes_command");
+  return uniqLimited(tags, 10);
+}
+
+function upsertMemoryJoke(chat, key, patch = {}) {
+  const jokes = Array.isArray(chat.jokes) ? chat.jokes : [];
+  const now = new Date().toISOString();
+  const index = jokes.findIndex((item) => item.key === key);
+  const previous = index >= 0 ? jokes[index] : { key, firstSeenAt: now, count: 0 };
+  const next = {
+    ...previous,
+    ...patch,
+    count: Number(previous.count || 0) + 1,
+    lastSeenAt: now,
+  };
+  if (index >= 0) jokes[index] = next;
+  else jokes.unshift(next);
+  chat.jokes = jokes.slice(0, 30);
+}
+
+function updateParticipantMemory(participant, text = "", tags = []) {
+  const notes = Array.isArray(participant.notes) ? participant.notes : [];
+  const phrases = Array.isArray(participant.phrases) ? participant.phrases : [];
+
+  if (tags.includes("participant:rotenberg")) {
+    notes.unshift("Ротенберг общается через короткий стёб, можно отвечать живо и без канцелярита.");
+  }
+  if (tags.includes("inside_joke:corner")) {
+    notes.unshift("Шутка участника: на вопрос Суперсуса куда поставить задачу может отвечать «в угол».");
+    phrases.unshift("в угол");
+  }
+  if (/ахах|хаха|😂|😁|😄/i.test(text)) {
+    notes.unshift("Нормально воспринимает лёгкий чатовый юмор.");
+  }
+
+  return {
+    ...participant,
+    notes: uniqLimited(notes, 12),
+    phrases: uniqLimited(phrases, 12),
+  };
+}
+
+function shouldSyncMemoryToHermes(chat, event) {
+  if (!HERMES_BRIDGE_URL || !HERMES_BRIDGE_TOKEN) return false;
+  const unsynced = Array.isArray(chat.unsyncedEvents) ? chat.unsyncedEvents.length : 0;
+  if (event.tags?.some((tag) => tag.startsWith("inside_joke:"))) return true;
+  const lastSyncMs = chat.lastHermesSyncAt ? new Date(chat.lastHermesSyncAt).getTime() : 0;
+  return unsynced >= MEMORY_SYNC_MIN_EVENTS && Date.now() - lastSyncMs >= MEMORY_SYNC_MIN_INTERVAL_MS;
+}
+
+async function rememberTelegramChat(message, text = "") {
+  if (!message?.chat?.id || message.from?.is_bot || !String(text || "").trim()) return;
+
+  const now = new Date().toISOString();
+  const source = buildSource(message, text);
+  const chatId = memoryChatKey(message);
+  const participantId = String(message.from?.id || source.authorName || "unknown");
+  const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+  const chats = memory?.chats && typeof memory.chats === "object" ? memory.chats : {};
+  const previousChat = chats[chatId] || {};
+  const participants = previousChat.participants && typeof previousChat.participants === "object" ? previousChat.participants : {};
+  const previousParticipant = participants[participantId] || {};
+  const tags = detectMemoryTags(message, text);
+  const event = {
+    id: `${chatId}:${message.message_id}`,
+    at: now,
+    chatId,
+    chatTitle: source.chatTitle || "",
+    authorId: participantId,
+    authorName: source.authorName || "unknown",
+    text: compactMemoryText(text),
+    messageId: message.message_id,
+    replyToMessageId: message.reply_to_message?.message_id || null,
+    messageUrl: source.messageUrl || "",
+    tags,
+  };
+
+  let participant = updateParticipantMemory({
+    ...previousParticipant,
+    id: participantId,
+    name: source.authorName || previousParticipant.name || "unknown",
+    username: message.from?.username || previousParticipant.username || "",
+    firstSeenAt: previousParticipant.firstSeenAt || now,
+    lastSeenAt: now,
+    messages: Number(previousParticipant.messages || 0) + 1,
+    lastTexts: [event.text, ...(Array.isArray(previousParticipant.lastTexts) ? previousParticipant.lastTexts : [])].slice(0, 5),
+  }, text, tags);
+
+  const chat = {
+    version: 1,
+    chatId,
+    title: source.chatTitle || previousChat.title || "",
+    platform: "telegram",
+    updatedAt: now,
+    firstSeenAt: previousChat.firstSeenAt || now,
+    persona: previousChat.persona || {
+      name: "Суперсус",
+      role: "живой операционный участник чата",
+      style: [
+        "по-русски",
+        "коротко",
+        "без префикса имени в каждом сообщении",
+        "с лёгким юмором",
+        "не превращать обычный чат в задачи",
+      ],
+    },
+    participants: {
+      ...participants,
+      [participantId]: participant,
+    },
+    jokes: Array.isArray(previousChat.jokes) ? previousChat.jokes : [],
+    timeline: [event, ...(Array.isArray(previousChat.timeline) ? previousChat.timeline.filter((item) => item.id !== event.id) : [])].slice(0, MEMORY_MAX_TIMELINE),
+    unsyncedEvents: [event, ...(Array.isArray(previousChat.unsyncedEvents) ? previousChat.unsyncedEvents.filter((item) => item.id !== event.id) : [])].slice(0, MEMORY_MAX_UNSYNCED),
+    lastHermesSyncAt: previousChat.lastHermesSyncAt || "",
+    hermesSyncCount: Number(previousChat.hermesSyncCount || 0),
+    lastHermesAnswer: previousChat.lastHermesAnswer || "",
+  };
+
+  if (tags.includes("inside_joke:corner")) {
+    upsertMemoryJoke(chat, "corner", {
+      title: "В угол",
+      meaning: "Ротенберг/участники могут отвечать «в угол» на вопрос Суперсуса о категории задачи. Отвечать короткой шуткой и не создавать задачу.",
+      lastAuthor: event.authorName,
+      lastMessage: event.text,
+    });
+  }
+
+  const nextMemory = {
+    version: 1,
+    updatedAt: now,
+    chats: {
+      ...chats,
+      [chatId]: chat,
+    },
+  };
+  await writeContent(CONTENT_KEYS.telegramMemory, nextMemory);
+
+  if (shouldSyncMemoryToHermes(chat, event)) {
+    void syncTelegramMemoryToHermes(chatId, tags.includes("inside_joke:corner") ? "inside_joke" : "batch").catch((error) => {
+      log("hermes memory sync error:", error?.message || String(error));
+    });
+  }
+}
+
+function formatMemoryParticipants(participants = {}) {
+  return Object.values(participants)
+    .sort((a, b) => Number(b.messages || 0) - Number(a.messages || 0))
+    .slice(0, 12)
+    .map((participant) => {
+      const notes = Array.isArray(participant.notes) && participant.notes.length ? `; заметки: ${participant.notes.slice(0, 3).join("; ")}` : "";
+      return `- ${participant.name || participant.username || participant.id}: ${participant.messages || 0} сообщений${notes}`;
+    })
+    .join("\n");
+}
+
+function formatMemoryJokes(jokes = []) {
+  if (!Array.isArray(jokes) || !jokes.length) return "- Пока нет закреплённых внутренних шуток.";
+  return jokes.slice(0, 12).map((joke) => `- ${joke.title || joke.key}: ${joke.meaning || ""} Последний раз: ${joke.lastMessage || ""}`).join("\n");
+}
+
+function buildHermesMemoryPrompt(chat, events = [], reason = "batch") {
+  const eventLines = events.slice(-20).map((event) => (
+    `- ${event.at} · ${event.authorName}: ${event.text}${event.tags?.length ? ` [${event.tags.join(", ")}]` : ""}`
+  )).join("\n");
+
+  return [
+    "Это внутренняя запись памяти Telegram-чата для Суперсуса.",
+    "Не отправляй ответ в Telegram. Просто запомни контекст в своей сессии/памяти и используй его в будущих ответах.",
+    "",
+    `Причина синхронизации: ${reason}`,
+    `Чат: ${chat.title || chat.chatId}`,
+    "",
+    "Характер Суперсуса:",
+    "- Суперсус пишет по-русски, коротко, как живой участник команды.",
+    "- Не начинает обычные ответы с «Суперсус:».",
+    "- Может шутить, но без оскорблений и без лишней служебки.",
+    "- Обычные сообщения не превращает в задачи; задачи создаются только по явному триггеру.",
+    "",
+    "Участники и стиль общения:",
+    formatMemoryParticipants(chat.participants || {}),
+    "",
+    "Внутренние шутки и контекст:",
+    formatMemoryJokes(chat.jokes || []),
+    "",
+    "Новые события для запоминания:",
+    eventLines || "- Новых событий нет.",
+    "",
+    "Что помнить на будущее:",
+    "- Если Ротенберг или другой участник подкалывает Суперсуса, отвечать reply-кнопкой, коротко и по-человечески.",
+    "- Если всплывает старая шутка, можно аккуратно её продолжить, не превращая в задачу.",
+    "- Не выдумывать факты о людях; опираться на эту память и свежий контекст.",
+  ].join("\n");
+}
+
+async function syncTelegramMemoryToHermes(chatId, reason = "batch") {
+  if (!HERMES_BRIDGE_URL || !HERMES_BRIDGE_TOKEN || hermesMemorySyncInFlight.has(chatId)) return;
+  hermesMemorySyncInFlight.add(chatId);
+  try {
+    const memory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+    const chat = memory?.chats?.[chatId];
+    const events = Array.isArray(chat?.unsyncedEvents) ? [...chat.unsyncedEvents].reverse() : [];
+    if (!chat || !events.length) return;
+
+    const prompt = buildHermesMemoryPrompt(chat, events, reason);
+    const answer = await askHermesBridge({
+      prompt,
+      memoryOnly: true,
+      source: {
+        chatId,
+        chatTitle: chat.title || "",
+        authorName: "Суперсус memory sync",
+        rawText: prompt,
+        receivedAt: new Date().toISOString(),
+      },
+    });
+
+    const freshMemory = await readContent(CONTENT_KEYS.telegramMemory, { version: 1, chats: {} });
+    const freshChat = freshMemory?.chats?.[chatId];
+    if (!freshChat) return;
+    const syncedIds = new Set(events.map((event) => event.id));
+    const nextChat = {
+      ...freshChat,
+      lastHermesSyncAt: new Date().toISOString(),
+      hermesSyncCount: Number(freshChat.hermesSyncCount || 0) + 1,
+      lastHermesAnswer: compactMemoryText(answer || "Hermes memory sync ok", 500),
+      unsyncedEvents: (Array.isArray(freshChat.unsyncedEvents) ? freshChat.unsyncedEvents : []).filter((event) => !syncedIds.has(event.id)),
+    };
+    await writeContent(CONTENT_KEYS.telegramMemory, {
+      ...freshMemory,
+      updatedAt: nextChat.lastHermesSyncAt,
+      chats: {
+        ...(freshMemory.chats || {}),
+        [chatId]: nextChat,
+      },
+    });
+  } finally {
+    hermesMemorySyncInFlight.delete(chatId);
   }
 }
 

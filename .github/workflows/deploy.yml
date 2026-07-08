@@ -97,6 +97,12 @@ jobs:
             server/backup-content.sh \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/atlas-content-backup.sh"
 
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            server/hermes-telegram-bridge.py \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/hermes-telegram-bridge.py"
+
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=accept-new \
@@ -109,6 +115,9 @@ jobs:
           sudo mv /tmp/atlas-telegram-task-store.mjs /opt/atlas-content-api/telegram-task-store.mjs
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
+          if id hermes >/dev/null 2>&1 && [ -d /opt/hermes ]; then
+            sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
+          fi
           sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
@@ -126,6 +135,7 @@ jobs:
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ATLAS_YOUTRACK_TELEGRAM_CHAT_ID=${{ secrets.ATLAS_YOUTRACK_TELEGRAM_CHAT_ID }}
+          TELEGRAM_MEMORY_READ_TOKEN=${{ secrets.TELEGRAM_MEMORY_READ_TOKEN }}
           ENV
           sudo chown root:root /etc/atlas-outreach.env
           sudo chmod 600 /etc/atlas-outreach.env
@@ -229,6 +239,9 @@ jobs:
           sudo systemctl restart atlas-content-api.service
           sudo systemctl enable --now atlas-telegram-bot.service
           sudo systemctl restart atlas-telegram-bot.service
+          if systemctl list-unit-files | grep -q '^hermes-telegram-bridge.service'; then
+            sudo systemctl restart hermes-telegram-bridge.service || true
+          fi
           sudo systemctl enable --now atlas-content-backup.timer
           sudo systemctl start atlas-content-backup.service
           sudo systemctl enable --now atlas-youtrack-monitor.timer
