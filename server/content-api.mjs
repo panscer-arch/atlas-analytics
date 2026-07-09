@@ -29,6 +29,53 @@ const PANCAKE_USDT_USDC_POOL = {
   address: "0x92b7807bF19b7DDdf89b706143896d05228f3121",
   label: "PancakeSwap V3 USDT/USDC 0.01%",
 };
+const BSC_RPC_URLS = (process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io")
+  .split(",")
+  .map((item) => item.trim())
+  .filter(Boolean);
+const ATLAS_USDT_TOKEN = {
+  address: "0x55d398326f99059fF775485246999027B3197955",
+  symbol: "USDT",
+  decimals: 18,
+};
+const ATLAS_CONTRACT_ADDRESSES = [
+  {
+    id: "lockup-flow",
+    name: "Lockup Flow",
+    type: "Smart Cycle contract",
+    description: "Smart Cycle contract with a fixed participation term",
+    address: "0x8F6daC6F25A5038112E1A01f1cBBD682e4D64889",
+  },
+  {
+    id: "daily-flow",
+    name: "Daily Flow",
+    type: "Smart Cycle contract",
+    description: "Smart Cycle contract with a daily payout cycle",
+    address: "0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3",
+  },
+  {
+    id: "transport",
+    name: "Transport",
+    type: "Routing contract",
+    description: "Contract for routing and liquidity transfer",
+    address: "0x5a71807861dBFc41aB016271C3191bF96322D42e",
+  },
+  {
+    id: "distribute",
+    name: "Distribute",
+    type: "Distribution contract",
+    description: "Contract for distributing and paying out partner accruals",
+    address: "0xEF156690b98AEc4F805Ec820268B9092bd83B76f",
+  },
+  {
+    id: "usdt-token",
+    name: "USDT Token",
+    type: "BEP-20 token",
+    description: "BEP-20 settlement asset",
+    address: ATLAS_USDT_TOKEN.address,
+    isToken: true,
+  },
+];
 
 let telegramEnvCache = null;
 
@@ -722,6 +769,113 @@ async function getPancakePoolSnapshot() {
   };
 }
 
+function isHexAddress(value = "") {
+  return /^0x[a-fA-F0-9]{40}$/.test(String(value || ""));
+}
+
+function encodeBalanceOfCall(address = "") {
+  if (!isHexAddress(address)) return "";
+  return `0x70a08231${address.slice(2).toLowerCase().padStart(64, "0")}`;
+}
+
+function hexToBigInt(value = "0x0") {
+  try {
+    return BigInt(value || "0x0");
+  } catch {
+    return 0n;
+  }
+}
+
+function decimalFromUnits(value, decimals = 18, precision = 6) {
+  const bigintValue = typeof value === "bigint" ? value : BigInt(value || 0);
+  const divisor = 10n ** BigInt(decimals);
+  const whole = bigintValue / divisor;
+  const fraction = bigintValue % divisor;
+  const fractionText = fraction.toString().padStart(decimals, "0").slice(0, precision);
+  return Number(`${whole.toString()}.${fractionText || "0"}`);
+}
+
+async function callBscRpc(method, params = []) {
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: Date.now(),
+    method,
+    params,
+  });
+  let lastError = null;
+
+  for (const rpcUrl of BSC_RPC_URLS) {
+    try {
+      const result = await fetchJsonWithTimeout(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body,
+      }, 10000);
+
+      if (result.ok && !result.payload?.error) {
+        return result.payload?.result || "0x0";
+      }
+
+      lastError = result.payload?.error?.message || result.payload?.message || `rpc_${result.status || "failed"}`;
+    } catch (error) {
+      lastError = error?.message || "rpc_request_failed";
+    }
+  }
+
+  throw new Error(lastError || "bsc_rpc_unavailable");
+}
+
+async function getAtlasContractBalancesSnapshot() {
+  const rows = await Promise.all(ATLAS_CONTRACT_ADDRESSES.map(async (contract) => {
+    const [bnbHex, usdtHex] = await Promise.all([
+      callBscRpc("eth_getBalance", [contract.address, "latest"]),
+      contract.isToken
+        ? Promise.resolve("0x0")
+        : callBscRpc("eth_call", [{ to: ATLAS_USDT_TOKEN.address, data: encodeBalanceOfCall(contract.address) }, "latest"]),
+    ]);
+    const bnbRaw = hexToBigInt(bnbHex);
+    const usdtRaw = hexToBigInt(usdtHex);
+
+    return {
+      ...contract,
+      shortAddress: `${contract.address.slice(0, 6)}...${contract.address.slice(-4)}`,
+      balances: {
+        bnb: decimalFromUnits(bnbRaw, 18, 8),
+        bnbRaw: bnbRaw.toString(),
+        usdt: decimalFromUnits(usdtRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        usdtRaw: usdtRaw.toString(),
+      },
+      links: {
+        bscScan: `https://bscscan.com/address/${contract.address}`,
+        arkham: `https://arkm.com/explorer/address/${contract.address}`,
+      },
+    };
+  }));
+
+  const totals = rows.reduce(
+    (accumulator, row) => ({
+      usdt: accumulator.usdt + (row.balances?.usdt || 0),
+      bnb: accumulator.bnb + (row.balances?.bnb || 0),
+    }),
+    { usdt: 0, bnb: 0 },
+  );
+
+  return {
+    ok: true,
+    network: {
+      name: "BNB Smart Chain",
+      chainId: 56,
+      explorer: "BscScan",
+    },
+    token: ATLAS_USDT_TOKEN,
+    contracts: rows,
+    totals,
+    source: "BNB Chain RPC",
+    rpcCount: BSC_RPC_URLS.length,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 function normalizeYoutubeNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
@@ -1271,6 +1425,12 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/pools/pancake-usdt-usdc" && request.method === "GET") {
       const result = await getPancakePoolSnapshot();
       sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/contracts/atlas-balances" && request.method === "GET") {
+      const result = await getAtlasContractBalancesSnapshot();
+      sendJson(response, 200, result);
       return;
     }
 

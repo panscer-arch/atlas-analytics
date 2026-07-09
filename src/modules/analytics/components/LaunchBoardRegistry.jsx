@@ -163,7 +163,7 @@ export const TASK_BOARD_IDS = [
 
 export function getAnalyticsTabForBoard(boardId) {
   if (!boardId) return "dashboard";
-  if (boardId === "expenses") return "analytics";
+  if (boardId === "expenses" || boardId === "contractBalances" || boardId === "contracts") return "analytics";
   if (boardId === "parser" || boardId === "telegramParser" || boardId === "influencers") return "parser";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";

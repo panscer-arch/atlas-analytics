@@ -566,10 +566,180 @@
   padding: 0.9rem;
 }
 
+.analytics-contract-balances {
+  display: grid;
+  gap: 1rem;
+}
+
+.analytics-contract-balances-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.32fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1.15rem;
+}
+
+.analytics-contract-balances-hero h2,
+.analytics-contract-balances-table h2 {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.analytics-contract-balances-hero h2 {
+  font-size: clamp(1.5rem, 2vw, 2.3rem);
+}
+
+.analytics-contract-balances-hero p,
+.analytics-contract-balances-card small,
+.analytics-contract-balances-state small,
+.analytics-contract-balances-note p,
+.analytics-contract-balances-note span,
+.analytics-contract-balances-error span,
+.analytics-contract-balances-table td span {
+  color: rgba(185, 204, 225, 0.72);
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.analytics-contract-balances-state {
+  display: grid;
+  gap: 0.45rem;
+  align-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.analytics-contract-balances-state span,
+.analytics-contract-balances-card span {
+  color: rgba(161, 178, 203, 0.78);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-contract-balances-state strong,
+.analytics-contract-balances-card strong,
+.analytics-contract-balances-error strong,
+.analytics-contract-balances-note strong {
+  color: #ffffff;
+  font-weight: 950;
+}
+
+.analytics-contract-balances-state-success {
+  border-color: rgba(79, 212, 141, 0.32);
+  background: rgba(79, 212, 141, 0.08);
+}
+
+.analytics-contract-balances-state-danger,
+.analytics-contract-balances-error {
+  border-color: rgba(255, 89, 89, 0.32);
+  background: rgba(255, 89, 89, 0.08);
+}
+
+.analytics-contract-balances-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.analytics-contract-balances-card {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 7rem;
+  padding: 1rem;
+}
+
+.analytics-contract-balances-card strong {
+  font-size: 1.28rem;
+  line-height: 1.05;
+}
+
+.analytics-contract-balances-table {
+  padding: 1rem;
+}
+
+.analytics-contract-balances-table-grid td:first-child strong,
+.analytics-contract-balances-table-grid td:first-child span {
+  display: block;
+}
+
+.analytics-contract-address {
+  border: 1px solid rgba(79, 134, 255, 0.24);
+  border-radius: 0.55rem;
+  padding: 0.42rem 0.58rem;
+  background: rgba(79, 134, 255, 0.09);
+  color: #dce7ff;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.analytics-contract-copied {
+  display: block;
+  margin-top: 0.35rem;
+  color: #4fd48d;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.analytics-contract-balance {
+  white-space: nowrap;
+}
+
+.analytics-contract-balance-success {
+  color: #4fd48d;
+}
+
+.analytics-contract-balance-warning {
+  color: #ffc766;
+}
+
+.analytics-contract-balance-default {
+  color: rgba(235, 243, 255, 0.78);
+}
+
+.analytics-contract-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.analytics-contract-links a {
+  display: inline-flex;
+  min-height: 2.15rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 177, 42, 0.28);
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.65rem;
+  background: rgba(255, 177, 42, 0.08);
+  color: #ffe0a3;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.analytics-contract-balances-note,
+.analytics-contract-balances-error {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+}
+
+.analytics-contract-balances-note span {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 980px) {
   .analytics-pool-monitor-hero,
   .analytics-pool-monitor-details,
-  .analytics-pool-monitor-grid {
+  .analytics-pool-monitor-grid,
+  .analytics-contract-balances-hero,
+  .analytics-contract-balances-grid {
     grid-template-columns: 1fr;
   }
 

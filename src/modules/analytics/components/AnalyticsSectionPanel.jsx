@@ -1,5 +1,6 @@
 import AnalyticsTabs from "./AnalyticsTabs";
 import BaseCompositionTabSection from "./BaseCompositionTabSection";
+import ContractBalancesPanel from "./ContractBalancesPanel";
 import DashboardTabSection from "./DashboardTabSection";
 import ExpensesBoard from "./ExpensesBoard";
 import GeographyTabSection from "./GeographyTabSection";
@@ -84,6 +85,11 @@ export default function AnalyticsSectionPanel({
       {activeAnalyticsTab === "expenses" ? (
         <Wrapper as="section" marginTop="lg">
           <ExpensesBoard />
+        </Wrapper>
+      ) : null}
+      {activeAnalyticsTab === "contracts" ? (
+        <Wrapper as="section" marginTop="lg">
+          <ContractBalancesPanel />
         </Wrapper>
       ) : null}
       {activeAnalyticsTab === "overview" ? (

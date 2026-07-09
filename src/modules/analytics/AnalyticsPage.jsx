@@ -95,6 +95,7 @@ function getInitialAnalyticsSectionTab() {
 
   const url = new URL(window.location.href);
   if (url.searchParams.get("board") === "expenses") return "expenses";
+  if (url.searchParams.get("board") === "contractBalances" || url.searchParams.get("board") === "contracts") return "contracts";
   return "dashboard";
 }
 
@@ -580,6 +581,7 @@ function AnalyticsPage() {
     { id: "geography", label: "География", hint: "страны" },
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
+    { id: "contracts", label: "Контракты", hint: "BSC" },
     { id: "expenses", label: "Расходы", hint: "бюджет" },
   ];
 
