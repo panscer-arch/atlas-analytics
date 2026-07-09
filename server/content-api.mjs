@@ -98,6 +98,33 @@ const ATLAS_FLOW_EVENT_CONFIG = {
     feeParts: [2],
   },
 };
+const ATLAS_PARTNER_STATUS_TABLE = [
+  { status: "Start", personal: 10, firstLine: 0, structure: 0, rewardPermille: 150, matchingPermille: 0 },
+  { status: "Builder 1", personal: 50, firstLine: 100, structure: 0, rewardPermille: 180, matchingPermille: 0 },
+  { status: "Builder 2", personal: 100, firstLine: 300, structure: 1000, rewardPermille: 210, matchingPermille: 0 },
+  { status: "Builder 3", personal: 200, firstLine: 700, structure: 2000, rewardPermille: 240, matchingPermille: 0 },
+  { status: "Builder 4", personal: 300, firstLine: 1200, structure: 4000, rewardPermille: 270, matchingPermille: 0 },
+  { status: "Builder 5", personal: 500, firstLine: 2000, structure: 7000, rewardPermille: 300, matchingPermille: 0 },
+  { status: "Builder 6", personal: 700, firstLine: 3000, structure: 12000, rewardPermille: 330, matchingPermille: 0 },
+  { status: "Builder 7", personal: 1000, firstLine: 4500, structure: 18000, rewardPermille: 360, matchingPermille: 0 },
+  { status: "Master 1", personal: 1500, firstLine: 7000, structure: 28000, rewardPermille: 380, matchingPermille: 50 },
+  { status: "Master 2", personal: 2000, firstLine: 10000, structure: 40000, rewardPermille: 400, matchingPermille: 70 },
+  { status: "Master 3", personal: 3000, firstLine: 17000, structure: 70000, rewardPermille: 420, matchingPermille: 90 },
+  { status: "Master 4", personal: 4000, firstLine: 25000, structure: 120000, rewardPermille: 440, matchingPermille: 110 },
+  { status: "Master 5", personal: 5000, firstLine: 35000, structure: 200000, rewardPermille: 460, matchingPermille: 130 },
+  { status: "Master 6", personal: 6000, firstLine: 45000, structure: 300000, rewardPermille: 480, matchingPermille: 150 },
+  { status: "Master 7", personal: 7000, firstLine: 60000, structure: 450000, rewardPermille: 500, matchingPermille: 170 },
+  { status: "Strategist", personal: 8000, firstLine: 80000, structure: 600000, rewardPermille: 525, matchingPermille: 190 },
+  { status: "Ambassador", personal: 10000, firstLine: 100000, structure: 800000, rewardPermille: 550, matchingPermille: 210 },
+  { status: "Director", personal: 12000, firstLine: 120000, structure: 1100000, rewardPermille: 575, matchingPermille: 230 },
+  { status: "Executive", personal: 15000, firstLine: 150000, structure: 1500000, rewardPermille: 600, matchingPermille: 250 },
+];
+const ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER = {
+  0: 110,
+  1: 130,
+};
+const ATLAS_DAILY_REWARD_DAYS = 200n;
+const ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE = 300n;
 const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_MS || 120000));
 const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 4)));
 const ATLAS_FLOW_DAY_OFFSET_HOURS = Number(process.env.ATLAS_FLOW_DAY_OFFSET_HOURS || 3);
@@ -964,10 +991,16 @@ function buildEmptyAtlasFlowStats(contract) {
     providedRaw: "0",
     claimedRaw: "0",
     feeRaw: "0",
+    partnerDeltaRaw: "0",
+    lockupDeltaRaw: "0",
+    dailyDeltaRaw: "0",
     remainingRaw: "0",
     provided: 0,
     claimed: 0,
     fee: 0,
+    partnerDelta: 0,
+    lockupDelta: 0,
+    dailyDelta: 0,
     remaining: 0,
     lockedEvents: 0,
     claimedEvents: 0,
@@ -989,6 +1022,94 @@ function getDataWord(data = "0x", index = 0) {
 
 function sumEventDataWords(data = "0x", indexes = []) {
   return indexes.reduce((sum, index) => sum + hexToBigInt(getDataWord(data, index)), 0n);
+}
+
+function multiplyPermilleRaw(rawValue = 0n, permille = 0) {
+  return (BigInt(rawValue || 0) * BigInt(permille || 0)) / 1000n;
+}
+
+function getAtlasPartnerDeltaRaw(contractId = "", data = "0x") {
+  if (contractId === "lockup-flow") {
+    const amountLockedRaw = hexToBigInt(getDataWord(data, 0));
+    const amountEarnedRaw = hexToBigInt(getDataWord(data, 1));
+    return amountEarnedRaw > amountLockedRaw ? amountEarnedRaw - amountLockedRaw : 0n;
+  }
+
+  if (contractId === "daily-flow") {
+    const amountLockedRaw = hexToBigInt(getDataWord(data, 0));
+    const tier = Number(hexToBigInt(getDataWord(data, 1)));
+    const rewardRateBps = BigInt(ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER[tier] || 0);
+    return (amountLockedRaw * rewardRateBps * ATLAS_DAILY_REWARD_DAYS) / 10000n;
+  }
+
+  return 0n;
+}
+
+function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw = 0n, daily = [] } = {}) {
+  const totalDeltaRaw = lockupDeltaRaw + dailyDeltaRaw;
+  const dailyImmediateDeltaRaw = multiplyPermilleRaw(dailyDeltaRaw, ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE);
+  const dailyDeferredDeltaRaw = dailyDeltaRaw - dailyImmediateDeltaRaw;
+  const executivePermille = ATLAS_PARTNER_STATUS_TABLE.at(-1)?.rewardPermille || 0;
+  const maxRewardRaw = multiplyPermilleRaw(totalDeltaRaw, executivePermille);
+  const maxImmediateRewardRaw = multiplyPermilleRaw(lockupDeltaRaw + dailyImmediateDeltaRaw, executivePermille);
+  const maxDeferredRewardRaw = multiplyPermilleRaw(dailyDeferredDeltaRaw, executivePermille);
+
+  return {
+    basis: "Расчетная Delta из событий Locked. Фактические начисления по кошелькам требуют referral tree, статусов участников и истории Distribute.",
+    limitations: [
+      "Не распределяет начисления по конкретным партнерам.",
+      "Не учитывает разницу статусов между пригласителем и приглашенным.",
+      "Matching Bonus можно показать только как правило статуса, а не как факт начисления.",
+      "Daily Flow разделен по правилу 30% сразу и 70% равными частями за 200 дней.",
+    ],
+    dailyRules: {
+      coreDailyPercent: 1.1,
+      eliteDailyPercent: 1.3,
+      rewardDays: Number(ATLAS_DAILY_REWARD_DAYS),
+      immediatePercent: 30,
+      deferredPercent: 70,
+    },
+    totals: {
+      lockupDelta: decimalFromUnits(lockupDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyDelta: decimalFromUnits(dailyDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyImmediateDelta: decimalFromUnits(dailyImmediateDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyDeferredDelta: decimalFromUnits(dailyDeferredDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      totalDelta: decimalFromUnits(totalDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      maxReward: decimalFromUnits(maxRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      maxImmediateReward: decimalFromUnits(maxImmediateRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      maxDeferredReward: decimalFromUnits(maxDeferredRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      lockupDeltaRaw: lockupDeltaRaw.toString(),
+      dailyDeltaRaw: dailyDeltaRaw.toString(),
+      totalDeltaRaw: totalDeltaRaw.toString(),
+    },
+    byStatus: ATLAS_PARTNER_STATUS_TABLE.map((row) => {
+      const lockupRewardRaw = multiplyPermilleRaw(lockupDeltaRaw, row.rewardPermille);
+      const dailyRewardRaw = multiplyPermilleRaw(dailyDeltaRaw, row.rewardPermille);
+      const dailyImmediateRewardRaw = multiplyPermilleRaw(dailyImmediateDeltaRaw, row.rewardPermille);
+      const dailyDeferredRewardRaw = dailyRewardRaw - dailyImmediateRewardRaw;
+
+      return {
+        status: row.status,
+        personal: row.personal,
+        firstLine: row.firstLine,
+        structure: row.structure,
+        rewardPercent: row.rewardPermille / 10,
+        matchingPercent: row.matchingPermille / 10,
+        totalReward: decimalFromUnits(lockupRewardRaw + dailyRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        lockupReward: decimalFromUnits(lockupRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        dailyReward: decimalFromUnits(dailyRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        dailyImmediateReward: decimalFromUnits(dailyImmediateRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        dailyDeferredReward: decimalFromUnits(dailyDeferredRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      };
+    }),
+    byDay: daily.map((day) => ({
+      date: day.date,
+      partnerDelta: day.partnerDelta,
+      lockupDelta: day.lockupDelta,
+      dailyDelta: day.dailyDelta,
+      maxReward: decimalFromUnits(multiplyPermilleRaw(BigInt(day.partnerDeltaRaw || 0), executivePermille), ATLAS_USDT_TOKEN.decimals, 6),
+    })),
+  };
 }
 
 async function mapWithConcurrency(items = [], limit = 4, mapper = async () => null) {
@@ -1084,6 +1205,9 @@ function createDailyBucket(date = "") {
     providedRaw: 0n,
     claimedRaw: 0n,
     feeRaw: 0n,
+    partnerDeltaRaw: 0n,
+    lockupDeltaRaw: 0n,
+    dailyDeltaRaw: 0n,
     lockedEvents: 0,
     claimedEvents: 0,
     contracts: {},
@@ -1096,6 +1220,9 @@ function createDailyContractBucket(name = "") {
     providedRaw: 0n,
     claimedRaw: 0n,
     feeRaw: 0n,
+    partnerDeltaRaw: 0n,
+    lockupDeltaRaw: 0n,
+    dailyDeltaRaw: 0n,
     lockedEvents: 0,
     claimedEvents: 0,
   };
@@ -1120,6 +1247,9 @@ async function getAtlasContractFlowSnapshot() {
     let providedRaw = 0n;
     let claimedRaw = 0n;
     let feeRaw = 0n;
+    let partnerDeltaRaw = 0n;
+    let lockupDeltaRaw = 0n;
+    let dailyDeltaRaw = 0n;
     let lockedEvents = 0;
     let claimedEvents = 0;
     let failedReceipts = 0;
@@ -1133,7 +1263,11 @@ async function getAtlasContractFlowSnapshot() {
           const blockNumber = Number.parseInt(log.blockNumber || receipt.blockNumber || "0x0", 16);
           if (topic === config.lockedTopic.toLowerCase()) {
             const amountRaw = sumEventDataWords(log.data, config.lockedParts);
+            const eventPartnerDeltaRaw = getAtlasPartnerDeltaRaw(contract.id, log.data);
             providedRaw += amountRaw;
+            partnerDeltaRaw += eventPartnerDeltaRaw;
+            if (contract.id === "lockup-flow") lockupDeltaRaw += eventPartnerDeltaRaw;
+            if (contract.id === "daily-flow") dailyDeltaRaw += eventPartnerDeltaRaw;
             lockedEvents += 1;
             eventRows.push({
               contractId: contract.id,
@@ -1144,6 +1278,9 @@ async function getAtlasContractFlowSnapshot() {
               providedRaw: amountRaw,
               claimedRaw: 0n,
               feeRaw: 0n,
+              partnerDeltaRaw: eventPartnerDeltaRaw,
+              lockupDeltaRaw: contract.id === "lockup-flow" ? eventPartnerDeltaRaw : 0n,
+              dailyDeltaRaw: contract.id === "daily-flow" ? eventPartnerDeltaRaw : 0n,
             });
           }
           if (topic === config.claimedTopic.toLowerCase()) {
@@ -1161,6 +1298,9 @@ async function getAtlasContractFlowSnapshot() {
               providedRaw: 0n,
               claimedRaw: claimedAmountRaw,
               feeRaw: feeAmountRaw,
+              partnerDeltaRaw: 0n,
+              lockupDeltaRaw: 0n,
+              dailyDeltaRaw: 0n,
             });
           }
         }
@@ -1181,10 +1321,16 @@ async function getAtlasContractFlowSnapshot() {
       providedRaw: providedRaw.toString(),
       claimedRaw: claimedRaw.toString(),
       feeRaw: feeRaw.toString(),
+      partnerDeltaRaw: partnerDeltaRaw.toString(),
+      lockupDeltaRaw: lockupDeltaRaw.toString(),
+      dailyDeltaRaw: dailyDeltaRaw.toString(),
       remainingRaw: remainingRaw.toString(),
       provided: decimalFromUnits(providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
       claimed: decimalFromUnits(claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
       fee: decimalFromUnits(feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      partnerDelta: decimalFromUnits(partnerDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      lockupDelta: decimalFromUnits(lockupDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyDelta: decimalFromUnits(dailyDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
       remaining: decimalFromUnits(remainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
     });
 
@@ -1213,6 +1359,9 @@ async function getAtlasContractFlowSnapshot() {
     day.providedRaw += event.providedRaw;
     day.claimedRaw += event.claimedRaw;
     day.feeRaw += event.feeRaw;
+    day.partnerDeltaRaw += event.partnerDeltaRaw;
+    day.lockupDeltaRaw += event.lockupDeltaRaw;
+    day.dailyDeltaRaw += event.dailyDeltaRaw;
     if (event.type === "locked") day.lockedEvents += 1;
     if (event.type === "claimed") day.claimedEvents += 1;
 
@@ -1223,6 +1372,9 @@ async function getAtlasContractFlowSnapshot() {
     contractDay.providedRaw += event.providedRaw;
     contractDay.claimedRaw += event.claimedRaw;
     contractDay.feeRaw += event.feeRaw;
+    contractDay.partnerDeltaRaw += event.partnerDeltaRaw;
+    contractDay.lockupDeltaRaw += event.lockupDeltaRaw;
+    contractDay.dailyDeltaRaw += event.dailyDeltaRaw;
     if (event.type === "locked") contractDay.lockedEvents += 1;
     if (event.type === "claimed") contractDay.claimedEvents += 1;
   }
@@ -1238,6 +1390,9 @@ async function getAtlasContractFlowSnapshot() {
           provided: decimalFromUnits(item.providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
           claimed: decimalFromUnits(item.claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
           fee: decimalFromUnits(item.feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          partnerDelta: decimalFromUnits(item.partnerDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          lockupDelta: decimalFromUnits(item.lockupDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          dailyDelta: decimalFromUnits(item.dailyDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
           remaining: decimalFromUnits(itemRemainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
           lockedEvents: item.lockedEvents,
           claimedEvents: item.claimedEvents,
@@ -1249,6 +1404,10 @@ async function getAtlasContractFlowSnapshot() {
         provided: decimalFromUnits(day.providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
         claimed: decimalFromUnits(day.claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
         fee: decimalFromUnits(day.feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        partnerDelta: decimalFromUnits(day.partnerDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        lockupDelta: decimalFromUnits(day.lockupDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        dailyDelta: decimalFromUnits(day.dailyDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        partnerDeltaRaw: day.partnerDeltaRaw.toString(),
         remaining: decimalFromUnits(remainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
         lockedEvents: day.lockedEvents,
         claimedEvents: day.claimedEvents,
@@ -1262,12 +1421,20 @@ async function getAtlasContractFlowSnapshot() {
       claimed: accumulator.claimed + BigInt(row.claimedRaw || 0),
       fee: accumulator.fee + BigInt(row.feeRaw || 0),
       remaining: accumulator.remaining + BigInt(row.remainingRaw || 0),
+      partnerDelta: accumulator.partnerDelta + BigInt(row.partnerDeltaRaw || 0),
+      lockupDelta: accumulator.lockupDelta + BigInt(row.lockupDeltaRaw || 0),
+      dailyDelta: accumulator.dailyDelta + BigInt(row.dailyDeltaRaw || 0),
       receipts: accumulator.receipts + (row.receipts || 0),
       lockedEvents: accumulator.lockedEvents + (row.lockedEvents || 0),
       claimedEvents: accumulator.claimedEvents + (row.claimedEvents || 0),
     }),
-    { provided: 0n, claimed: 0n, fee: 0n, remaining: 0n, receipts: 0, lockedEvents: 0, claimedEvents: 0 },
+    { provided: 0n, claimed: 0n, fee: 0n, remaining: 0n, partnerDelta: 0n, lockupDelta: 0n, dailyDelta: 0n, receipts: 0, lockedEvents: 0, claimedEvents: 0 },
   );
+  const partnerProgram = buildAtlasPartnerProgramSnapshot({
+    lockupDeltaRaw: totalsRaw.lockupDelta,
+    dailyDeltaRaw: totalsRaw.dailyDelta,
+    daily,
+  });
 
   const payload = {
     ok: true,
@@ -1284,15 +1451,22 @@ async function getAtlasContractFlowSnapshot() {
       claimed: decimalFromUnits(totalsRaw.claimed, ATLAS_USDT_TOKEN.decimals, 6),
       fee: decimalFromUnits(totalsRaw.fee, ATLAS_USDT_TOKEN.decimals, 6),
       remaining: decimalFromUnits(totalsRaw.remaining, ATLAS_USDT_TOKEN.decimals, 6),
+      partnerDelta: decimalFromUnits(totalsRaw.partnerDelta, ATLAS_USDT_TOKEN.decimals, 6),
+      lockupDelta: decimalFromUnits(totalsRaw.lockupDelta, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyDelta: decimalFromUnits(totalsRaw.dailyDelta, ATLAS_USDT_TOKEN.decimals, 6),
       providedRaw: totalsRaw.provided.toString(),
       claimedRaw: totalsRaw.claimed.toString(),
       feeRaw: totalsRaw.fee.toString(),
       remainingRaw: totalsRaw.remaining.toString(),
+      partnerDeltaRaw: totalsRaw.partnerDelta.toString(),
+      lockupDeltaRaw: totalsRaw.lockupDelta.toString(),
+      dailyDeltaRaw: totalsRaw.dailyDelta.toString(),
       receipts: totalsRaw.receipts,
       lockedEvents: totalsRaw.lockedEvents,
       claimedEvents: totalsRaw.claimedEvents,
       activeDays: daily.length,
     },
+    partnerProgram,
     range: {
       toBlock: latestBlock,
       receipts: totalsRaw.receipts,

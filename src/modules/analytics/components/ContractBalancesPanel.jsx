@@ -19,6 +19,10 @@ function formatDay(value = "") {
   return new Date(`${value}T00:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
 }
 
+function formatPercent(value = 0) {
+  return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(Number(value) || 0)}%`;
+}
+
 function getBalanceTone(value = 0) {
   if (value > 1000) return "success";
   if (value > 0) return "warning";
@@ -109,6 +113,15 @@ export default function ContractBalancesPanel() {
   const dailyRows = flowSnapshot?.daily || [];
   const dailyRowsDesc = [...dailyRows].reverse();
   const maxDailyProvided = Math.max(...dailyRows.map((item) => Number(item.provided || 0)), 1);
+  const partnerProgram = flowSnapshot?.partnerProgram;
+  const partnerRows = partnerProgram?.byStatus || [];
+  const partnerDailyRows = partnerProgram?.byDay ? [...partnerProgram.byDay].reverse() : [];
+  const partnerStats = [
+    { label: "Расчётная Delta всего", value: formatToken(partnerProgram?.totals?.totalDelta, "USDT"), note: "база для партнёрских процентов" },
+    { label: "Lockup Delta", value: formatToken(partnerProgram?.totals?.lockupDelta, "USDT"), note: "amountEarned минус amountLocked" },
+    { label: "Daily Delta", value: formatToken(partnerProgram?.totals?.dailyDelta, "USDT"), note: "Core 1,1% / Elite 1,3% в день на 200 дней" },
+    { label: "Макс. партнёрка 60%", value: formatToken(partnerProgram?.totals?.maxReward, "USDT"), note: "теоретически для статуса Executive" },
+  ];
 
   return (
     <section className="analytics-contract-balances">
@@ -178,6 +191,7 @@ export default function ContractBalancesPanel() {
                         <span>{formatDay(day.date)}</span>
                         <strong>{formatToken(day.provided, "USDT")}</strong>
                         <small>вывели {formatToken(day.claimed, "USDT")}</small>
+                        <small>Delta {formatToken(day.partnerDelta, "USDT")}</small>
                         <em>{day.lockedEvents || 0} / {day.claimedEvents || 0}</em>
                       </article>
                     );
@@ -190,6 +204,7 @@ export default function ContractBalancesPanel() {
                         <th>День</th>
                         <th>Создано циклов</th>
                         <th>Вывели участники</th>
+                        <th>Delta партнёрки</th>
                         <th>Fee</th>
                         <th>Остаток дня</th>
                         <th>Events</th>
@@ -204,6 +219,7 @@ export default function ContractBalancesPanel() {
                           </td>
                           <td><strong className="analytics-contract-balance analytics-contract-balance-success">{formatToken(day.provided, "USDT")}</strong></td>
                           <td><strong className="analytics-contract-balance analytics-contract-balance-warning">{formatToken(day.claimed, "USDT")}</strong></td>
+                          <td>{formatToken(day.partnerDelta, "USDT")}</td>
                           <td>{formatToken(day.fee, "USDT")}</td>
                           <td>{formatToken(day.remaining, "USDT")}</td>
                           <td>{day.lockedEvents || 0} / {day.claimedEvents || 0}</td>
@@ -214,6 +230,97 @@ export default function ContractBalancesPanel() {
                 </div>
               </section>
             ) : null}
+            {partnerProgram ? (
+              <section className="analytics-contract-partner-program">
+                <div className="analytics-data-table-head">
+                  <div>
+                    <span className="analytics-kicker">Invite & Earn</span>
+                    <h2>Партнёрка: расчётный пул Delta</h2>
+                    <p className="chart-card-subtitle">
+                      Это не фактические выплаты по кошелькам. Здесь показано всё, что можно вывести из on-chain событий:
+                      расчётная Delta и теоретическая сумма партнёрских начислений по статусам.
+                    </p>
+                  </div>
+                </div>
+                <div className="analytics-contract-balances-grid">
+                  {partnerStats.map((item) => (
+                    <article key={item.label} className="analytics-contract-balances-card">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                      <small>{item.note}</small>
+                    </article>
+                  ))}
+                </div>
+                <div className="analytics-contract-partner-note">
+                  <strong>Что считаем вручную</strong>
+                  <span>{partnerProgram.basis}</span>
+                  <span>Daily Flow: 30% партнёрского начисления сразу, 70% равными частями в течение 200 дней.</span>
+                </div>
+                <div className="analytics-table-responsive">
+                  <table className="analytics-table analytics-contract-partner-table">
+                    <thead>
+                      <tr>
+                        <th>Статус</th>
+                        <th>%</th>
+                        <th>Всего</th>
+                        <th>Lockup</th>
+                        <th>Daily сразу 30%</th>
+                        <th>Daily 200д 70%</th>
+                        <th>Matching</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {partnerRows.map((row) => (
+                        <tr key={row.status}>
+                          <td>
+                            <strong>{row.status}</strong>
+                            <span>лично {formatToken(row.personal, "USDT")} · структура {row.structure ? formatToken(row.structure, "USDT") : "—"}</span>
+                          </td>
+                          <td>{formatPercent(row.rewardPercent)}</td>
+                          <td><strong className="analytics-contract-balance analytics-contract-balance-success">{formatToken(row.totalReward, "USDT")}</strong></td>
+                          <td>{formatToken(row.lockupReward, "USDT")}</td>
+                          <td>{formatToken(row.dailyImmediateReward, "USDT")}</td>
+                          <td>{formatToken(row.dailyDeferredReward, "USDT")}</td>
+                          <td>{row.matchingPercent ? formatPercent(row.matchingPercent) : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {partnerDailyRows.length ? (
+                  <details className="analytics-contract-partner-days">
+                    <summary>Показать Delta по дням</summary>
+                    <div className="analytics-table-responsive">
+                      <table className="analytics-table analytics-contract-daily-table">
+                        <thead>
+                          <tr>
+                            <th>День</th>
+                            <th>Delta всего</th>
+                            <th>Lockup Delta</th>
+                            <th>Daily Delta</th>
+                            <th>Макс. 60%</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {partnerDailyRows.map((day) => (
+                            <tr key={day.date}>
+                              <td>
+                                <strong>{formatDay(day.date)}</strong>
+                                <span>{day.date}</span>
+                              </td>
+                              <td>{formatToken(day.partnerDelta, "USDT")}</td>
+                              <td>{formatToken(day.lockupDelta, "USDT")}</td>
+                              <td>{formatToken(day.dailyDelta, "USDT")}</td>
+                              <td>{formatToken(day.maxReward, "USDT")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                ) : null}
+              </section>
+            ) : null}
             <div className="analytics-table-responsive">
               <table className="analytics-table analytics-contract-balances-table-grid analytics-contract-flows-table-grid">
                 <thead>
@@ -221,6 +328,7 @@ export default function ContractBalancesPanel() {
                     <th>Контракт</th>
                     <th>Создано циклов</th>
                     <th>Вывели участники</th>
+                    <th>Delta</th>
                     <th>Fee</th>
                     <th>Остаток</th>
                     <th>Events</th>
@@ -235,6 +343,7 @@ export default function ContractBalancesPanel() {
                       </td>
                       <td><strong className="analytics-contract-balance analytics-contract-balance-success">{formatToken(contract.provided, "USDT")}</strong></td>
                       <td><strong className="analytics-contract-balance analytics-contract-balance-warning">{formatToken(contract.claimed, "USDT")}</strong></td>
+                      <td>{formatToken(contract.partnerDelta, "USDT")}</td>
                       <td>{formatToken(contract.fee, "USDT")}</td>
                       <td><strong className={`analytics-contract-balance analytics-contract-balance-${getBalanceTone(contract.remaining)}`}>{formatToken(contract.remaining, "USDT")}</strong></td>
                       <td>{contract.lockedEvents || 0} / {contract.claimedEvents || 0}</td>
