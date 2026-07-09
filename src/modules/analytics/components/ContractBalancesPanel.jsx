@@ -14,6 +14,11 @@ function formatDateTime(value = "") {
   return new Date(value).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
 }
 
+function formatDay(value = "") {
+  if (!value) return "—";
+  return new Date(`${value}T00:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
+}
+
 function getBalanceTone(value = 0) {
   if (value > 1000) return "success";
   if (value > 0) return "warning";
@@ -101,6 +106,9 @@ export default function ContractBalancesPanel() {
     { label: "Fee / treasury", value: formatToken(flowSnapshot?.totals?.fee, "USDT"), note: "комиссия из событий Claimed" },
     { label: "Осталось по событиям", value: formatToken(flowSnapshot?.totals?.remaining, "USDT"), note: "создано циклов минус выплаты и fee" },
   ];
+  const dailyRows = flowSnapshot?.daily || [];
+  const dailyRowsDesc = [...dailyRows].reverse();
+  const maxDailyProvided = Math.max(...dailyRows.map((item) => Number(item.provided || 0)), 1);
 
   return (
     <section className="analytics-contract-balances">
@@ -148,6 +156,64 @@ export default function ContractBalancesPanel() {
                 </article>
               ))}
             </div>
+            {dailyRows.length ? (
+              <section className="analytics-contract-calendar">
+                <div className="analytics-data-table-head">
+                  <div>
+                    <span className="analytics-kicker">Daily calendar</span>
+                    <h2>Календарь по дням</h2>
+                    <p className="chart-card-subtitle">День считается по времени блока, UTC+{flowSnapshot?.range?.dayOffsetHours ?? 3}. Зеленый — создано циклов, желтый — участники вывели.</p>
+                  </div>
+                </div>
+                <div className="analytics-contract-calendar-grid">
+                  {dailyRows.map((day) => {
+                    const intensity = Math.max(0.08, Math.min(1, Number(day.provided || 0) / maxDailyProvided));
+                    return (
+                      <article
+                        key={day.date}
+                        className="analytics-contract-calendar-day"
+                        style={{ "--calendar-intensity": intensity }}
+                        title={`${day.date}: создано ${formatToken(day.provided, "USDT")}, вывели ${formatToken(day.claimed, "USDT")}`}
+                      >
+                        <span>{formatDay(day.date)}</span>
+                        <strong>{formatToken(day.provided, "USDT")}</strong>
+                        <small>вывели {formatToken(day.claimed, "USDT")}</small>
+                        <em>{day.lockedEvents || 0} / {day.claimedEvents || 0}</em>
+                      </article>
+                    );
+                  })}
+                </div>
+                <div className="analytics-table-responsive">
+                  <table className="analytics-table analytics-contract-daily-table">
+                    <thead>
+                      <tr>
+                        <th>День</th>
+                        <th>Создано циклов</th>
+                        <th>Вывели участники</th>
+                        <th>Fee</th>
+                        <th>Остаток дня</th>
+                        <th>Events</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyRowsDesc.map((day) => (
+                        <tr key={day.date}>
+                          <td>
+                            <strong>{formatDay(day.date)}</strong>
+                            <span>{day.date}</span>
+                          </td>
+                          <td><strong className="analytics-contract-balance analytics-contract-balance-success">{formatToken(day.provided, "USDT")}</strong></td>
+                          <td><strong className="analytics-contract-balance analytics-contract-balance-warning">{formatToken(day.claimed, "USDT")}</strong></td>
+                          <td>{formatToken(day.fee, "USDT")}</td>
+                          <td>{formatToken(day.remaining, "USDT")}</td>
+                          <td>{day.lockedEvents || 0} / {day.claimedEvents || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ) : null}
             <div className="analytics-table-responsive">
               <table className="analytics-table analytics-contract-balances-table-grid analytics-contract-flows-table-grid">
                 <thead>

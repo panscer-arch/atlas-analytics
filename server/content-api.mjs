@@ -100,6 +100,7 @@ const ATLAS_FLOW_EVENT_CONFIG = {
 };
 const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_MS || 120000));
 const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 4)));
+const ATLAS_FLOW_DAY_OFFSET_HOURS = Number(process.env.ATLAS_FLOW_DAY_OFFSET_HOURS || 3);
 let atlasFlowCache = null;
 
 let telegramEnvCache = null;
@@ -835,12 +836,14 @@ function hexToBigInt(value = "0x0") {
 }
 
 function decimalFromUnits(value, decimals = 18, precision = 6) {
-  const bigintValue = typeof value === "bigint" ? value : BigInt(value || 0);
+  const rawBigintValue = typeof value === "bigint" ? value : BigInt(value || 0);
+  const isNegative = rawBigintValue < 0n;
+  const bigintValue = isNegative ? -rawBigintValue : rawBigintValue;
   const divisor = 10n ** BigInt(decimals);
   const whole = bigintValue / divisor;
   const fraction = bigintValue % divisor;
   const fractionText = fraction.toString().padStart(decimals, "0").slice(0, precision);
-  return Number(`${whole.toString()}.${fractionText || "0"}`);
+  return Number(`${isNegative ? "-" : ""}${whole.toString()}.${fractionText || "0"}`);
 }
 
 async function callBscRpc(method, params = []) {
@@ -1053,6 +1056,51 @@ async function getTransactionReceiptWithRetry(hash = "") {
   throw lastError || new Error("receipt_fetch_failed");
 }
 
+async function getBlockTimestampWithRetry(blockNumber = 0) {
+  const blockHex = `0x${Number(blockNumber || 0).toString(16)}`;
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const block = await callBscRpc("eth_getBlockByNumber", [blockHex, false]);
+      const timestamp = Number.parseInt(block?.timestamp || "0x0", 16);
+      if (!timestamp) throw new Error("block_timestamp_empty");
+      return timestamp;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 350 + attempt * 250));
+    }
+  }
+  throw lastError || new Error("block_fetch_failed");
+}
+
+function dayKeyFromTimestamp(timestamp = 0) {
+  const offsetMs = ATLAS_FLOW_DAY_OFFSET_HOURS * 60 * 60 * 1000;
+  return new Date((Number(timestamp) * 1000) + offsetMs).toISOString().slice(0, 10);
+}
+
+function createDailyBucket(date = "") {
+  return {
+    date,
+    providedRaw: 0n,
+    claimedRaw: 0n,
+    feeRaw: 0n,
+    lockedEvents: 0,
+    claimedEvents: 0,
+    contracts: {},
+  };
+}
+
+function createDailyContractBucket(name = "") {
+  return {
+    name,
+    providedRaw: 0n,
+    claimedRaw: 0n,
+    feeRaw: 0n,
+    lockedEvents: 0,
+    claimedEvents: 0,
+  };
+}
+
 async function getAtlasContractFlowSnapshot() {
   if (atlasFlowCache && Date.now() - atlasFlowCache.createdAt < ATLAS_FLOW_CACHE_MS) {
     return { ...atlasFlowCache.payload, cache: { hit: true, ttlMs: ATLAS_FLOW_CACHE_MS } };
@@ -1063,6 +1111,7 @@ async function getAtlasContractFlowSnapshot() {
   const flowContracts = ATLAS_CONTRACT_ADDRESSES.filter((contract) => ATLAS_FLOW_EVENT_CONFIG[contract.id]);
   const contracts = [];
   const failures = [];
+  const eventRows = [];
 
   for (const contract of flowContracts) {
     const config = ATLAS_FLOW_EVENT_CONFIG[contract.id];
@@ -1081,14 +1130,38 @@ async function getAtlasContractFlowSnapshot() {
         for (const log of receipt?.logs || []) {
           if ((log.address || "").toLowerCase() !== contract.address.toLowerCase()) continue;
           const topic = (log.topics?.[0] || "").toLowerCase();
+          const blockNumber = Number.parseInt(log.blockNumber || receipt.blockNumber || "0x0", 16);
           if (topic === config.lockedTopic.toLowerCase()) {
-            providedRaw += sumEventDataWords(log.data, config.lockedParts);
+            const amountRaw = sumEventDataWords(log.data, config.lockedParts);
+            providedRaw += amountRaw;
             lockedEvents += 1;
+            eventRows.push({
+              contractId: contract.id,
+              contractName: contract.name,
+              type: "locked",
+              blockNumber,
+              hash,
+              providedRaw: amountRaw,
+              claimedRaw: 0n,
+              feeRaw: 0n,
+            });
           }
           if (topic === config.claimedTopic.toLowerCase()) {
-            claimedRaw += sumEventDataWords(log.data, config.claimedParts);
-            feeRaw += sumEventDataWords(log.data, config.feeParts);
+            const claimedAmountRaw = sumEventDataWords(log.data, config.claimedParts);
+            const feeAmountRaw = sumEventDataWords(log.data, config.feeParts);
+            claimedRaw += claimedAmountRaw;
+            feeRaw += feeAmountRaw;
             claimedEvents += 1;
+            eventRows.push({
+              contractId: contract.id,
+              contractName: contract.name,
+              type: "claimed",
+              blockNumber,
+              hash,
+              providedRaw: 0n,
+              claimedRaw: claimedAmountRaw,
+              feeRaw: feeAmountRaw,
+            });
           }
         }
       } catch {
@@ -1120,6 +1193,69 @@ async function getAtlasContractFlowSnapshot() {
     }
   }
 
+  const blockTimestampMap = new Map();
+  const uniqueBlocks = [...new Set(eventRows.map((event) => event.blockNumber).filter(Boolean))];
+  await mapWithConcurrency(uniqueBlocks, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (blockNumber) => {
+    try {
+      blockTimestampMap.set(blockNumber, await getBlockTimestampWithRetry(blockNumber));
+    } catch {
+      blockTimestampMap.set(blockNumber, 0);
+    }
+  });
+
+  const dailyMap = new Map();
+  for (const event of eventRows) {
+    const timestamp = blockTimestampMap.get(event.blockNumber) || 0;
+    if (!timestamp) continue;
+    const date = dayKeyFromTimestamp(timestamp);
+    if (!dailyMap.has(date)) dailyMap.set(date, createDailyBucket(date));
+    const day = dailyMap.get(date);
+    day.providedRaw += event.providedRaw;
+    day.claimedRaw += event.claimedRaw;
+    day.feeRaw += event.feeRaw;
+    if (event.type === "locked") day.lockedEvents += 1;
+    if (event.type === "claimed") day.claimedEvents += 1;
+
+    if (!day.contracts[event.contractId]) {
+      day.contracts[event.contractId] = createDailyContractBucket(event.contractName);
+    }
+    const contractDay = day.contracts[event.contractId];
+    contractDay.providedRaw += event.providedRaw;
+    contractDay.claimedRaw += event.claimedRaw;
+    contractDay.feeRaw += event.feeRaw;
+    if (event.type === "locked") contractDay.lockedEvents += 1;
+    if (event.type === "claimed") contractDay.claimedEvents += 1;
+  }
+
+  const daily = [...dailyMap.values()]
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .map((day) => {
+      const remainingRaw = day.providedRaw - day.claimedRaw - day.feeRaw;
+      const contractsById = Object.fromEntries(Object.entries(day.contracts).map(([id, item]) => {
+        const itemRemainingRaw = item.providedRaw - item.claimedRaw - item.feeRaw;
+        return [id, {
+          name: item.name,
+          provided: decimalFromUnits(item.providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          claimed: decimalFromUnits(item.claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          fee: decimalFromUnits(item.feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          remaining: decimalFromUnits(itemRemainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
+          lockedEvents: item.lockedEvents,
+          claimedEvents: item.claimedEvents,
+        }];
+      }));
+
+      return {
+        date: day.date,
+        provided: decimalFromUnits(day.providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        claimed: decimalFromUnits(day.claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        fee: decimalFromUnits(day.feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        remaining: decimalFromUnits(remainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        lockedEvents: day.lockedEvents,
+        claimedEvents: day.claimedEvents,
+        contracts: contractsById,
+      };
+    });
+
   const totalsRaw = contracts.reduce(
     (accumulator, row) => ({
       provided: accumulator.provided + BigInt(row.providedRaw || 0),
@@ -1142,6 +1278,7 @@ async function getAtlasContractFlowSnapshot() {
     },
     token: ATLAS_USDT_TOKEN,
     contracts,
+    daily,
     totals: {
       provided: decimalFromUnits(totalsRaw.provided, ATLAS_USDT_TOKEN.decimals, 6),
       claimed: decimalFromUnits(totalsRaw.claimed, ATLAS_USDT_TOKEN.decimals, 6),
@@ -1154,12 +1291,15 @@ async function getAtlasContractFlowSnapshot() {
       receipts: totalsRaw.receipts,
       lockedEvents: totalsRaw.lockedEvents,
       claimedEvents: totalsRaw.claimedEvents,
+      activeDays: daily.length,
     },
     range: {
       toBlock: latestBlock,
       receipts: totalsRaw.receipts,
       lockedEvents: totalsRaw.lockedEvents,
       claimedEvents: totalsRaw.claimedEvents,
+      activeDays: daily.length,
+      dayOffsetHours: ATLAS_FLOW_DAY_OFFSET_HOURS,
     },
     failures,
     source: "BscScan tx list + BNB Chain transaction receipts",

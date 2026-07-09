@@ -663,6 +663,56 @@
   padding: 1rem;
 }
 
+.analytics-contract-calendar {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.analytics-contract-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.65rem;
+}
+
+.analytics-contract-calendar-day {
+  display: grid;
+  gap: 0.28rem;
+  min-height: 6.4rem;
+  border: 1px solid rgba(79, 212, 141, calc(0.18 + var(--calendar-intensity, 0.1) * 0.42));
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+  background:
+    linear-gradient(135deg, rgba(79, 212, 141, calc(0.06 + var(--calendar-intensity, 0.1) * 0.24)), rgba(255, 199, 102, 0.045)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.analytics-contract-calendar-day span,
+.analytics-contract-calendar-day em {
+  color: rgba(185, 204, 225, 0.78);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-contract-calendar-day strong {
+  color: #4fd48d;
+  font-size: 1.05rem;
+  line-height: 1.05;
+}
+
+.analytics-contract-calendar-day small {
+  color: #ffc766;
+  font-weight: 850;
+}
+
+.analytics-contract-daily-table td:first-child strong,
+.analytics-contract-daily-table td:first-child span {
+  display: block;
+}
+
 .analytics-contract-balances-table-grid td:first-child strong,
 .analytics-contract-balances-table-grid td:first-child span {
   display: block;
