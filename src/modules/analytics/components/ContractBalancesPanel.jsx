@@ -69,9 +69,9 @@ export default function ContractBalancesPanel() {
   const usdtToken = contracts.find((item) => item.isToken);
 
   const stats = [
-    { label: "USDT на контрактах", value: formatToken(snapshot?.totals?.usdt, "USDT"), note: "сумма по official contracts" },
-    { label: "BNB на адресах", value: formatToken(snapshot?.totals?.bnb, "BNB"), note: "native gas/liquidity balance" },
-    { label: "Активные адреса", value: `${activeContracts} / ${contractRows.length}`, note: "где USDT balance больше нуля" },
+    { label: "USDT на адресах сейчас", value: formatToken(snapshot?.totals?.usdt, "USDT"), note: "текущий остаток по рабочим контрактам" },
+    { label: "BNB на адресах сейчас", value: formatToken(snapshot?.totals?.bnb, "BNB"), note: "native gas/liquidity balance" },
+    { label: "Адреса с остатком", value: `${activeContracts} / ${contractRows.length}`, note: "где текущий USDT balance больше нуля" },
     { label: "Крупнейший баланс", value: largestContract?.name || "—", note: largestContract ? formatToken(largestContract.balances?.usdt, "USDT") : "нет данных" },
   ];
 
@@ -82,8 +82,9 @@ export default function ContractBalancesPanel() {
           <p className="analytics-kicker">BSC contracts / balances</p>
           <h2>Балансы официальных контрактов Atlas</h2>
           <p>
-            Read-only мониторинг адресов из Transparency / BscScan Check. Балансы считаются через BNB Chain RPC,
-            а внешние ссылки ведут на BscScan и Arkham для ручной проверки.
+            Read-only мониторинг текущих остатков на адресах из Transparency / BscScan Check.
+            Если Lockup Flow или Daily Flow показывают 0 USDT, это означает, что на этих entry-point адресах
+            сейчас нет удерживаемого остатка; средства могут маршрутизироваться дальше через Transport и Distribute.
           </p>
         </div>
         <div className={`analytics-contract-balances-state analytics-contract-balances-state-${status === "error" ? "danger" : "success"}`}>
@@ -117,8 +118,8 @@ export default function ContractBalancesPanel() {
         <div className="analytics-data-table-head">
           <div>
             <span className="analytics-kicker">Official Atlas contracts</span>
-            <h2>Контракты и текущие балансы</h2>
-            <p className="chart-card-subtitle">Адреса синхронизированы со списком на странице Smart Cycle 1.</p>
+            <h2>Контракты и текущие остатки на адресах</h2>
+            <p className="chart-card-subtitle">Это не исторический оборот и не TVL цикла, а live balanceOf по BNB Chain RPC.</p>
           </div>
         </div>
         <div className="analytics-table-responsive">
@@ -128,8 +129,8 @@ export default function ContractBalancesPanel() {
                 <th>Контракт</th>
                 <th>Назначение</th>
                 <th>Адрес</th>
-                <th>USDT balance</th>
-                <th>BNB balance</th>
+                <th>USDT сейчас</th>
+                <th>BNB сейчас</th>
                 <th>Проверка</th>
               </tr>
             </thead>
@@ -149,7 +150,7 @@ export default function ContractBalancesPanel() {
                   </td>
                   <td>
                     <strong className={`analytics-contract-balance analytics-contract-balance-${getBalanceTone(contract.balances?.usdt)}`}>
-                      {contract.isToken ? "—" : formatToken(contract.balances?.usdt, "USDT")}
+                      {formatToken(contract.balances?.usdt, "USDT")}
                     </strong>
                   </td>
                   <td>{formatToken(contract.balances?.bnb, "BNB")}</td>
@@ -170,7 +171,7 @@ export default function ContractBalancesPanel() {
         <section className="analytics-contract-balances-note analytics-surface">
           <strong>USDT Token</strong>
           <span>{usdtToken.address}</span>
-          <p>Это BEP-20 settlement asset. Для него показываем адрес и BNB balance, а USDT balance по самому токену не суммируем.</p>
+          <p>Это BEP-20 settlement asset. В таблице он тоже отображается числом, но общий USDT total считается по рабочим контрактам Atlas. Для оборота по Lockup/Daily нужен отдельный слой событий и транзакций, а не только текущий balanceOf.</p>
         </section>
       ) : null}
     </section>
