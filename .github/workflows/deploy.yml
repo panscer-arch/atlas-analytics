@@ -257,16 +257,16 @@ jobs:
           WantedBy=multi-user.target
           SERVICE
 
-          sudo systemctl daemon-reload
-          sudo systemctl enable --now atlas-content-api.service
-          sudo systemctl restart atlas-content-api.service
-          sudo systemctl enable --now atlas-telegram-bot.service
-          sudo systemctl restart atlas-telegram-bot.service
-          sudo systemctl enable --now atlas-content-backup.timer
-          sudo systemctl start atlas-content-backup.service
-          sudo systemctl enable --now atlas-youtrack-monitor.timer
+          timeout 45s sudo systemctl daemon-reload
+          timeout 45s sudo systemctl enable --now atlas-content-api.service
+          timeout 45s sudo systemctl restart atlas-content-api.service
+          timeout 45s sudo systemctl enable --now atlas-telegram-bot.service
+          timeout 45s sudo systemctl restart atlas-telegram-bot.service
+          timeout 45s sudo systemctl enable --now atlas-content-backup.timer
+          timeout 90s sudo systemctl start atlas-content-backup.service || true
+          timeout 45s sudo systemctl enable --now atlas-youtrack-monitor.timer
           timeout 70s sudo systemctl start atlas-youtrack-monitor.service || true
-          sudo systemctl enable --now atlas-youtrack-digest.timer
+          timeout 45s sudo systemctl enable --now atlas-youtrack-digest.timer
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then
