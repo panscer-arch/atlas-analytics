@@ -740,6 +740,41 @@
   line-height: 1.45;
 }
 
+.analytics-contract-commission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.65rem;
+}
+
+.analytics-contract-commission-grid article {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid rgba(255, 199, 102, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  background:
+    linear-gradient(135deg, rgba(255, 199, 102, 0.1), rgba(79, 134, 255, 0.045)),
+    rgba(255, 255, 255, 0.025);
+}
+
+.analytics-contract-commission-grid span {
+  color: rgba(185, 204, 225, 0.82);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-contract-commission-grid strong {
+  color: #ffc766;
+  font-size: 1.1rem;
+}
+
+.analytics-contract-commission-grid small {
+  color: rgba(220, 231, 255, 0.68);
+  line-height: 1.35;
+}
+
 .analytics-contract-partner-table td:first-child strong,
 .analytics-contract-partner-table td:first-child span {
   display: block;

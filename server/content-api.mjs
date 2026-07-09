@@ -125,6 +125,7 @@ const ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER = {
 };
 const ATLAS_DAILY_REWARD_DAYS = 200n;
 const ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE = 300n;
+const ATLAS_PLATFORM_COMMISSION_PERMILLE = 100n;
 const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_MS || 120000));
 const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 4)));
 const ATLAS_FLOW_DAY_OFFSET_HOURS = Number(process.env.ATLAS_FLOW_DAY_OFFSET_HOURS || 3);
@@ -1045,7 +1046,7 @@ function getAtlasPartnerDeltaRaw(contractId = "", data = "0x") {
   return 0n;
 }
 
-function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw = 0n, daily = [] } = {}) {
+function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw = 0n, collectedFeeRaw = 0n, daily = [] } = {}) {
   const totalDeltaRaw = lockupDeltaRaw + dailyDeltaRaw;
   const dailyImmediateDeltaRaw = multiplyPermilleRaw(dailyDeltaRaw, ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE);
   const dailyDeferredDeltaRaw = dailyDeltaRaw - dailyImmediateDeltaRaw;
@@ -1053,6 +1054,14 @@ function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw =
   const maxRewardRaw = multiplyPermilleRaw(totalDeltaRaw, executivePermille);
   const maxImmediateRewardRaw = multiplyPermilleRaw(lockupDeltaRaw + dailyImmediateDeltaRaw, executivePermille);
   const maxDeferredRewardRaw = multiplyPermilleRaw(dailyDeferredDeltaRaw, executivePermille);
+  const platformDeltaCommissionRaw = multiplyPermilleRaw(totalDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+  const platformLockupDeltaCommissionRaw = multiplyPermilleRaw(lockupDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+  const platformDailyDeltaCommissionRaw = multiplyPermilleRaw(dailyDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+  const platformMaxPartnerBonusCommissionRaw = multiplyPermilleRaw(maxRewardRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+  const platformMaxTotalCommissionRaw = platformDeltaCommissionRaw + platformMaxPartnerBonusCommissionRaw;
+  const platformUnclaimedDeltaCommissionRaw = platformDeltaCommissionRaw > collectedFeeRaw
+    ? platformDeltaCommissionRaw - collectedFeeRaw
+    : 0n;
 
   return {
     basis: "Расчетная Delta из событий Locked. Фактические начисления по кошелькам требуют referral tree, статусов участников и истории Distribute.",
@@ -1082,11 +1091,25 @@ function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw =
       dailyDeltaRaw: dailyDeltaRaw.toString(),
       totalDeltaRaw: totalDeltaRaw.toString(),
     },
+    platformCommission: {
+      rule: "10% от Delta и партнёрских бонусов. Комиссия не применяется к первоначальной сумме участия.",
+      percent: Number(ATLAS_PLATFORM_COMMISSION_PERMILLE) / 10,
+      deltaCommission: decimalFromUnits(platformDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      lockupDeltaCommission: decimalFromUnits(platformLockupDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyDeltaCommission: decimalFromUnits(platformDailyDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      collectedFee: decimalFromUnits(collectedFeeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      unclaimedDeltaCommission: decimalFromUnits(platformUnclaimedDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      maxPartnerBonusCommission: decimalFromUnits(platformMaxPartnerBonusCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      maxTotalCommission: decimalFromUnits(platformMaxTotalCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      deltaCommissionRaw: platformDeltaCommissionRaw.toString(),
+      collectedFeeRaw: collectedFeeRaw.toString(),
+    },
     byStatus: ATLAS_PARTNER_STATUS_TABLE.map((row) => {
       const lockupRewardRaw = multiplyPermilleRaw(lockupDeltaRaw, row.rewardPermille);
       const dailyRewardRaw = multiplyPermilleRaw(dailyDeltaRaw, row.rewardPermille);
       const dailyImmediateRewardRaw = multiplyPermilleRaw(dailyImmediateDeltaRaw, row.rewardPermille);
       const dailyDeferredRewardRaw = dailyRewardRaw - dailyImmediateRewardRaw;
+      const totalRewardRaw = lockupRewardRaw + dailyRewardRaw;
 
       return {
         status: row.status,
@@ -1095,11 +1118,12 @@ function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw =
         structure: row.structure,
         rewardPercent: row.rewardPermille / 10,
         matchingPercent: row.matchingPermille / 10,
-        totalReward: decimalFromUnits(lockupRewardRaw + dailyRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        totalReward: decimalFromUnits(totalRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
         lockupReward: decimalFromUnits(lockupRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
         dailyReward: decimalFromUnits(dailyRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
         dailyImmediateReward: decimalFromUnits(dailyImmediateRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
         dailyDeferredReward: decimalFromUnits(dailyDeferredRewardRaw, ATLAS_USDT_TOKEN.decimals, 6),
+        platformCommissionOnReward: decimalFromUnits(multiplyPermilleRaw(totalRewardRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE), ATLAS_USDT_TOKEN.decimals, 6),
       };
     }),
     byDay: daily.map((day) => ({
@@ -1433,6 +1457,7 @@ async function getAtlasContractFlowSnapshot() {
   const partnerProgram = buildAtlasPartnerProgramSnapshot({
     lockupDeltaRaw: totalsRaw.lockupDelta,
     dailyDeltaRaw: totalsRaw.dailyDelta,
+    collectedFeeRaw: totalsRaw.fee,
     daily,
   });
 

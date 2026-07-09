@@ -114,6 +114,7 @@ export default function ContractBalancesPanel() {
   const dailyRowsDesc = [...dailyRows].reverse();
   const maxDailyProvided = Math.max(...dailyRows.map((item) => Number(item.provided || 0)), 1);
   const partnerProgram = flowSnapshot?.partnerProgram;
+  const platformCommission = partnerProgram?.platformCommission;
   const partnerRows = partnerProgram?.byStatus || [];
   const partnerDailyRows = partnerProgram?.byDay ? [...partnerProgram.byDay].reverse() : [];
   const partnerStats = [
@@ -121,6 +122,8 @@ export default function ContractBalancesPanel() {
     { label: "Lockup Delta", value: formatToken(partnerProgram?.totals?.lockupDelta, "USDT"), note: "amountEarned минус amountLocked" },
     { label: "Daily Delta", value: formatToken(partnerProgram?.totals?.dailyDelta, "USDT"), note: "Core 1,1% / Elite 1,3% в день на 200 дней" },
     { label: "Макс. партнёрка 60%", value: formatToken(partnerProgram?.totals?.maxReward, "USDT"), note: "теоретически для статуса Executive" },
+    { label: "Комиссия с Delta 10%", value: formatToken(platformCommission?.deltaCommission, "USDT"), note: "не с тела цикла, только с добавочной Delta" },
+    { label: "Фактически удержано fee", value: formatToken(platformCommission?.collectedFee, "USDT"), note: "уже удержано по событиям Claimed" },
   ];
 
   return (
@@ -255,7 +258,27 @@ export default function ContractBalancesPanel() {
                   <strong>Что считаем вручную</strong>
                   <span>{partnerProgram.basis}</span>
                   <span>Daily Flow: 30% партнёрского начисления сразу, 70% равными частями в течение 200 дней.</span>
+                  {platformCommission ? <span>Комиссия платформы: {platformCommission.rule}</span> : null}
                 </div>
+                {platformCommission ? (
+                  <div className="analytics-contract-commission-grid">
+                    <article>
+                      <span>Расчётная комиссия с Delta</span>
+                      <strong>{formatToken(platformCommission.deltaCommission, "USDT")}</strong>
+                      <small>Lockup {formatToken(platformCommission.lockupDeltaCommission, "USDT")} · Daily {formatToken(platformCommission.dailyDeltaCommission, "USDT")}</small>
+                    </article>
+                    <article>
+                      <span>Ещё не удержано с Delta</span>
+                      <strong>{formatToken(platformCommission.unclaimedDeltaCommission, "USDT")}</strong>
+                      <small>разница между расчётными 10% и фактическим fee</small>
+                    </article>
+                    <article>
+                      <span>Комиссия с партнёрки, максимум</span>
+                      <strong>{formatToken(platformCommission.maxPartnerBonusCommission, "USDT")}</strong>
+                      <small>10% от теоретического Executive-бонуса</small>
+                    </article>
+                  </div>
+                ) : null}
                 <div className="analytics-table-responsive">
                   <table className="analytics-table analytics-contract-partner-table">
                     <thead>
@@ -266,6 +289,7 @@ export default function ContractBalancesPanel() {
                         <th>Lockup</th>
                         <th>Daily сразу 30%</th>
                         <th>Daily 200д 70%</th>
+                        <th>Комиссия 10%</th>
                         <th>Matching</th>
                       </tr>
                     </thead>
@@ -281,6 +305,7 @@ export default function ContractBalancesPanel() {
                           <td>{formatToken(row.lockupReward, "USDT")}</td>
                           <td>{formatToken(row.dailyImmediateReward, "USDT")}</td>
                           <td>{formatToken(row.dailyDeferredReward, "USDT")}</td>
+                          <td>{formatToken(row.platformCommissionOnReward, "USDT")}</td>
                           <td>{row.matchingPercent ? formatPercent(row.matchingPercent) : "—"}</td>
                         </tr>
                       ))}
