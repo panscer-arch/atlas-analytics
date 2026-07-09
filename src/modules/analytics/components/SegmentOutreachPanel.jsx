@@ -9,7 +9,7 @@ import {
 } from "../data/segmentOutreachData";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
-const STATUS_OPTIONS = ["Найти контакты", "Собрать список", "Изучить", "Выбрано", "Написали", "Ответили", "Пауза", "Не подходит"];
+const STATUS_OPTIONS = ["Найти контакты", "Собрать список", "Изучить", "Выбрано", "Написали", "Ответили", "Цена получена", "Купили", "Подключили", "Пауза", "Отказ", "Не подходит"];
 
 function hydrateLeads(savedRows, seedRows) {
   if (!Array.isArray(savedRows) || !savedRows.length) return seedRows;
@@ -70,8 +70,8 @@ function downloadCsv(rows) {
 }
 
 function statusTone(status) {
-  if (status === "Выбрано" || status === "Ответили") return "success";
-  if (status === "Не подходит") return "danger";
+  if (["Выбрано", "Ответили", "Цена получена", "Купили", "Подключили"].includes(status)) return "success";
+  if (["Не подходит", "Отказ"].includes(status)) return "danger";
   return "accent";
 }
 

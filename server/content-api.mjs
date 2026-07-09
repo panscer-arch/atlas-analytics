@@ -10,6 +10,12 @@ const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
 const OUTREACH_ENV_FILE = process.env.ATLAS_OUTREACH_ENV_FILE || "/etc/atlas-outreach.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
+const YOUTUBE_API_LEADS_KEY = "atlas.analytics.youtubeApiSearch.leads.v1";
+const SEGMENT_OUTREACH_KEY = "atlas.analytics.segmentOutreach.v10";
+const BITNEST_YOUTUBE_KEY = "atlas.analytics.bitnestYoutube.channels.v1";
+const MARKETING_YOUTUBE_MONITOR_STATE_KEY = "atlas.analytics.marketingYoutubeMonitor.state.v1";
+const MARKETING_YOUTUBE_BOARD_URL = process.env.ATLAS_MARKETING_YOUTUBE_BOARD_URL
+  || "https://pupanel.cc/workspaces/cmp5aou0h0005l5b26ldwn59c/marketing/youtube";
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
 const YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID = "-5158247269";
@@ -180,7 +186,7 @@ async function readTelegramEnv() {
 async function getTelegramConfig() {
   const fileEnv = await readTelegramEnv();
   const token = process.env.TELEGRAM_BOT_TOKEN || fileEnv.TELEGRAM_BOT_TOKEN || "";
-  const targetChatIds = (process.env.TELEGRAM_PUSH_CHAT_ID
+  const targetChatIds = [...new Set((process.env.TELEGRAM_PUSH_CHAT_ID
     || fileEnv.TELEGRAM_PUSH_CHAT_ID
     || process.env.TELEGRAM_PUSH_CHAT_IDS
     || fileEnv.TELEGRAM_PUSH_CHAT_IDS
@@ -189,7 +195,11 @@ async function getTelegramConfig() {
     || "")
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .concat([
+      process.env.ATLAS_MARKETING_TELEGRAM_CHAT_ID,
+      fileEnv.ATLAS_MARKETING_TELEGRAM_CHAT_ID,
+    ].map((item) => String(item || "").trim()).filter(Boolean)))];
 
   return { token, targetChatIds };
 }
@@ -202,6 +212,14 @@ async function getYouTrackTelegramChatId() {
     || fileEnv.TELEGRAM_PUSH_CHAT_ID
     || YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID;
   return value.split(",").map((item) => item.trim()).filter(Boolean)[0] || YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID;
+}
+
+async function getMarketingTelegramChatId() {
+  const fileEnv = await readTelegramEnv();
+  const value = process.env.ATLAS_MARKETING_TELEGRAM_CHAT_ID
+    || fileEnv.ATLAS_MARKETING_TELEGRAM_CHAT_ID
+    || "";
+  return value.split(",").map((item) => item.trim()).filter(Boolean)[0] || "";
 }
 
 function normalizeTelegramValue(value = "") {
@@ -2006,6 +2024,246 @@ async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
   return { ok: true, status: 200, sent };
 }
 
+function getMoscowDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date).reduce((accumulator, part) => {
+    accumulator[part.type] = part.value;
+    return accumulator;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function normalizeMarketingStatus(value = "") {
+  const text = String(value || "").trim();
+  const lower = text.toLowerCase();
+  if (/подключ|размещ|опублик|published|live|готово/.test(lower)) return "connected";
+  if (/куп|оплат|paid|buy|bought|deal|договор/.test(lower)) return "bought";
+  if (/ответ|reply|respond|цена получ|price received/.test(lower)) return "replied";
+  if (/напис|sent|contacted|отправ/.test(lower)) return "contacted";
+  if (/выбран|selected|приоритет|сначала/.test(lower)) return "selected";
+  if (/пауз|отказ|не подходит|reject|declin/.test(lower)) return "rejected";
+  if (/контакт|найти|изуч|собра/.test(lower)) return "research";
+  return text ? "other" : "research";
+}
+
+function marketingStatusLabel(status = "research") {
+  return {
+    research: "в поиске/проверке",
+    selected: "выбрали",
+    contacted: "написали",
+    replied: "ответили",
+    bought: "купили",
+    connected: "подключили",
+    rejected: "не подходит/пауза",
+    other: "другое",
+  }[status] || "другое";
+}
+
+function hasUsefulContact(value = "") {
+  const text = String(value || "").toLowerCase();
+  if (!text.trim()) return false;
+  if (/найти|проверить|about|description|contact route|уточнить/.test(text)) return false;
+  return /@|t\.me|telegram|mailto:|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|whatsapp|wa\.me|http/i.test(text);
+}
+
+function hasUsefulPrice(value = "") {
+  const text = String(value || "").toLowerCase().trim();
+  if (!text) return false;
+  if (/запрос|уточн|request|check|провер/.test(text)) return false;
+  return /\$|usdt|usd|eur|€|₽|\d/.test(text);
+}
+
+function normalizeMarketingLead(row = {}, source = "youtubeApi", index = 0) {
+  const url = String(row.channelUrl || row.url || row.cu || row.videoUrl || row.vu || row.id || "").trim();
+  const id = String(row.id || row.channelId || `${source}-${index}-${url}`).trim();
+  const name = String(row.channelTitle || row.name || row.n || "YouTube lead").trim();
+  const statusText = String(row.status || row.stage || row.outreachStatus || "").trim();
+  const contact = String(row.contact || row.contactRoute || row.adminContact || row.contacts || "").trim();
+  const price = String(row.price || row.priceFormat || row.budget || "").trim();
+  const notes = String(row.notes || row.comment || row.ti || row.videoTitle || row.t || "").trim();
+  const normalizedStatus = normalizeMarketingStatus(statusText || price);
+
+  return {
+    id,
+    key: (url || id || name).toLowerCase(),
+    name,
+    url,
+    source,
+    status: statusText || marketingStatusLabel(normalizedStatus),
+    normalizedStatus,
+    contact,
+    price,
+    notes,
+    region: String(row.region || row.language || row.l || "").trim(),
+    subscribers: Number(row.subscriberCount || row.reach || 0) || 0,
+    views: Number(row.viewCount || row.vw || 0) || 0,
+    hasContact: hasUsefulContact(contact),
+    hasPrice: hasUsefulPrice(price),
+  };
+}
+
+async function collectMarketingYoutubeLeads() {
+  const [youtubeApiRows, segmentRows, bitnestRows] = await Promise.all([
+    readContent(YOUTUBE_API_LEADS_KEY, []),
+    readContent(SEGMENT_OUTREACH_KEY, []),
+    readContent(BITNEST_YOUTUBE_KEY, []),
+  ]);
+  const rows = [];
+  if (Array.isArray(youtubeApiRows)) {
+    rows.push(...youtubeApiRows.filter((row) => !row?.deleted).map((row, index) => normalizeMarketingLead(row, "YouTube API", index)));
+  }
+  if (Array.isArray(segmentRows)) {
+    rows.push(...segmentRows
+      .filter((row) => !row?.deleted && String(row?.social || "").toLowerCase() === "youtube")
+      .map((row, index) => normalizeMarketingLead(row, "Сегментный парсер", index)));
+  }
+  if (Array.isArray(bitnestRows)) {
+    rows.push(...bitnestRows.filter((row) => !row?.deleted).map((row, index) => normalizeMarketingLead(row, "Битнест YouTube", index)));
+  }
+
+  const byKey = new Map();
+  for (const row of rows) {
+    if (!row.key) continue;
+    const existing = byKey.get(row.key);
+    if (!existing) {
+      byKey.set(row.key, row);
+      continue;
+    }
+    const score = Number(row.hasContact) + Number(row.hasPrice) + (row.normalizedStatus !== "research" ? 1 : 0);
+    const existingScore = Number(existing.hasContact) + Number(existing.hasPrice) + (existing.normalizedStatus !== "research" ? 1 : 0);
+    if (score >= existingScore) byKey.set(row.key, { ...existing, ...row, source: `${existing.source}, ${row.source}` });
+  }
+  return [...byKey.values()];
+}
+
+function summarizeMarketingYoutubeLeads(leads = [], previous = {}) {
+  const counters = {
+    total: leads.length,
+    withContact: leads.filter((lead) => lead.hasContact).length,
+    withPrice: leads.filter((lead) => lead.hasPrice).length,
+    totalSubscribers: leads.reduce((sum, lead) => sum + Number(lead.subscribers || 0), 0),
+    totalViews: leads.reduce((sum, lead) => sum + Number(lead.views || 0), 0),
+    byStatus: {},
+    bySource: {},
+  };
+  for (const lead of leads) {
+    counters.byStatus[lead.normalizedStatus] = (counters.byStatus[lead.normalizedStatus] || 0) + 1;
+    counters.bySource[lead.source] = (counters.bySource[lead.source] || 0) + 1;
+  }
+
+  const previousLeads = previous?.leads || {};
+  const currentLeads = Object.fromEntries(leads.map((lead) => [lead.key, {
+    name: lead.name,
+    status: lead.normalizedStatus,
+    statusText: lead.status,
+    hasContact: lead.hasContact,
+    hasPrice: lead.hasPrice,
+    updatedAt: new Date().toISOString(),
+  }]));
+  const newLeads = leads.filter((lead) => !previousLeads[lead.key]);
+  const statusChanges = leads
+    .map((lead) => {
+      const before = previousLeads[lead.key];
+      if (!before || before.status === lead.normalizedStatus) return null;
+      return {
+        name: lead.name,
+        from: before.status,
+        to: lead.normalizedStatus,
+        statusText: lead.status,
+      };
+    })
+    .filter(Boolean);
+  const attention = leads
+    .filter((lead) => ["replied", "bought", "connected"].includes(lead.normalizedStatus) || lead.hasPrice)
+    .slice(0, 8);
+
+  return { counters, newLeads, statusChanges, attention, currentLeads };
+}
+
+function formatMarketingYoutubeReport(summary, { forced = false } = {}) {
+  const { counters, newLeads, statusChanges, attention } = summary;
+  const statusLine = ["research", "selected", "contacted", "replied", "bought", "connected", "rejected"]
+    .map((status) => `${marketingStatusLabel(status)}: <b>${counters.byStatus[status] || 0}</b>`)
+    .join("\n");
+  const changes = statusChanges.length
+    ? statusChanges.slice(0, 8).map((item) => `• ${escapeTelegramHtml(item.name)}: ${marketingStatusLabel(item.from)} → <b>${marketingStatusLabel(item.to)}</b>`).join("\n")
+    : "• переходов по статусам с прошлого отчёта нет";
+  const newBlock = newLeads.length
+    ? newLeads.slice(0, 8).map((lead) => `• ${escapeTelegramHtml(lead.name)}${lead.region ? ` · ${escapeTelegramHtml(lead.region)}` : ""}`).join("\n")
+    : "• новых блогеров с прошлого отчёта нет";
+  const attentionBlock = attention.length
+    ? attention.map((lead) => `• ${escapeTelegramHtml(lead.name)} — ${escapeTelegramHtml(lead.status)}${lead.price ? ` · ${escapeTelegramHtml(lead.price)}` : ""}`).join("\n")
+    : "• пока нет ответов/цен/подключений для реакции";
+
+  return [
+    `<b>Маркетинг / YouTube — ${forced ? "ручной отчёт" : "ежедневный отчёт"}</b>`,
+    "",
+    `Всего блогеров в базе: <b>${counters.total}</b>`,
+    `Есть контакт: <b>${counters.withContact}</b>`,
+    `Есть цена/бюджет: <b>${counters.withPrice}</b>`,
+    `Суммарно подписчиков: <b>${counters.totalSubscribers.toLocaleString("ru-RU")}</b>`,
+    "",
+    "<b>Статусы</b>",
+    statusLine,
+    "",
+    "<b>Что изменилось</b>",
+    changes,
+    "",
+    "<b>Новые лиды</b>",
+    newBlock,
+    "",
+    "<b>Куда смотреть сейчас</b>",
+    attentionBlock,
+    "",
+    `<a href="${MARKETING_YOUTUBE_BOARD_URL}">Открыть YouTube-парсер</a>`,
+  ].join("\n");
+}
+
+async function runMarketingYoutubeMonitor({ notify = true, force = false } = {}) {
+  const now = new Date();
+  const reportDate = getMoscowDateKey(now);
+  const previous = await readContent(MARKETING_YOUTUBE_MONITOR_STATE_KEY, { reportDate: "", sentReportDate: "", leads: {} });
+  if (!force && notify && previous.sentReportDate === reportDate) {
+    return { ok: true, skipped: true, reason: "already_sent_today", reportDate };
+  }
+
+  const leads = await collectMarketingYoutubeLeads();
+  const summary = summarizeMarketingYoutubeLeads(leads, previous);
+  const text = formatMarketingYoutubeReport(summary, { forced: force });
+  let notification = { ok: true, skipped: true, reason: "notify_disabled" };
+  if (notify) {
+    const chatId = await getMarketingTelegramChatId();
+    if (!chatId) {
+      notification = { ok: false, status: 503, error: "marketing_telegram_chat_not_configured" };
+    } else {
+      notification = await sendTelegramMessage(text, { parse_mode: "HTML" }, chatId);
+    }
+  }
+
+  await writeContent(MARKETING_YOUTUBE_MONITOR_STATE_KEY, {
+    reportDate,
+    sentReportDate: notification.ok && notify ? reportDate : previous.sentReportDate || "",
+    checkedAt: now.toISOString(),
+    leads: summary.currentLeads,
+    counters: summary.counters,
+    lastNotification: notification,
+  });
+
+  return {
+    ok: notification.ok !== false,
+    reportDate,
+    counters: summary.counters,
+    newLeads: summary.newLeads.length,
+    statusChanges: summary.statusChanges.length,
+    notification,
+    text,
+  };
+}
+
 async function readBody(request) {
   const chunks = [];
   let size = 0;
@@ -2098,6 +2356,17 @@ const server = http.createServer(async (request, response) => {
         force: parsed.force === true,
       });
       sendJson(response, result.ok ? 200 : result.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/youtube-monitor" && request.method === "POST") {
+      const body = await readBody(request);
+      const parsed = body ? JSON.parse(body) : {};
+      const result = await runMarketingYoutubeMonitor({
+        notify: parsed.notify !== false,
+        force: parsed.force === true,
+      });
+      sendJson(response, result.ok ? 200 : result.notification?.status || 502, result);
       return;
     }
 
