@@ -33,6 +33,12 @@ const BSC_RPC_URLS = (process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "ht
   .split(",")
   .map((item) => item.trim())
   .filter(Boolean);
+const BSC_LOG_RPC_URLS = (process.env.BSC_LOG_RPC_URLS || process.env.BSC_ARCHIVE_RPC_URLS || process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "https://bsc-rpc.publicnode.com,https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io")
+  .split(",")
+  .map((item) => item.trim())
+  .filter(Boolean);
+const ATLAS_CONTRACTS_FROM_BLOCK = Number(process.env.ATLAS_CONTRACTS_FROM_BLOCK || 108000000);
+const ATLAS_CONTRACTS_LOG_CHUNK = Math.max(50, Number(process.env.ATLAS_CONTRACTS_LOG_CHUNK || 2000));
 const ATLAS_USDT_TOKEN = {
   address: "0x55d398326f99059fF775485246999027B3197955",
   symbol: "USDT",
@@ -76,6 +82,25 @@ const ATLAS_CONTRACT_ADDRESSES = [
     isToken: true,
   },
 ];
+const ATLAS_FLOW_EVENT_CONFIG = {
+  "lockup-flow": {
+    lockedTopic: "0xfc19754b7c43ed8f5cf6ce6617a1fff336b6cc4bb8e5ea4bfa6a031d019c49ff",
+    claimedTopic: "0x46f6410c5ade89c93d7353c04c3b9b15e6419e35ad8a0d0a806476b30f2d1344",
+    lockedParts: [0],
+    claimedParts: [1, 2],
+    feeParts: [3],
+  },
+  "daily-flow": {
+    lockedTopic: "0xb487eb29fe0f7991a6856ef7823cffab7461b3d1b9436c6df2f82a56491dd41f",
+    claimedTopic: "0xf0f69f9e2ee7cb1d092c923008e795077ffd8228496080084f26fb6802e20829",
+    lockedParts: [0],
+    claimedParts: [1],
+    feeParts: [2],
+  },
+};
+const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_MS || 120000));
+const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 4)));
+let atlasFlowCache = null;
 
 let telegramEnvCache = null;
 
@@ -279,6 +304,18 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 12000) {
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, payload };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchTextWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const payload = await response.text();
     return { ok: response.ok, status: response.status, payload };
   } finally {
     clearTimeout(timeout);
@@ -778,6 +815,17 @@ function encodeBalanceOfCall(address = "") {
   return `0x70a08231${address.slice(2).toLowerCase().padStart(64, "0")}`;
 }
 
+function addressToTopic(address = "") {
+  if (!isHexAddress(address)) return "";
+  return `0x${address.slice(2).toLowerCase().padStart(64, "0")}`;
+}
+
+function topicToAddress(topic = "") {
+  const clean = String(topic || "").toLowerCase();
+  if (!/^0x[a-f0-9]{64}$/.test(clean)) return "";
+  return `0x${clean.slice(-40)}`;
+}
+
 function hexToBigInt(value = "0x0") {
   try {
     return BigInt(value || "0x0");
@@ -823,6 +871,36 @@ async function callBscRpc(method, params = []) {
   }
 
   throw new Error(lastError || "bsc_rpc_unavailable");
+}
+
+async function callBscLogRpc(method, params = []) {
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: Date.now(),
+    method,
+    params,
+  });
+  let lastError = null;
+
+  for (const rpcUrl of BSC_LOG_RPC_URLS) {
+    try {
+      const result = await fetchJsonWithTimeout(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body,
+      }, 30000);
+
+      if (result.ok && !result.payload?.error) {
+        return result.payload?.result || [];
+      }
+
+      lastError = result.payload?.error?.message || result.payload?.message || `rpc_${result.status || "failed"}`;
+    } catch (error) {
+      lastError = error?.message || "rpc_request_failed";
+    }
+  }
+
+  throw new Error(lastError || "bsc_log_rpc_unavailable");
 }
 
 async function getAtlasContractBalancesSnapshot() {
@@ -874,6 +952,222 @@ async function getAtlasContractBalancesSnapshot() {
     rpcCount: BSC_RPC_URLS.length,
     updatedAt: new Date().toISOString(),
   };
+}
+
+function buildEmptyAtlasFlowStats(contract) {
+  return {
+    ...contract,
+    shortAddress: `${contract.address.slice(0, 6)}...${contract.address.slice(-4)}`,
+    providedRaw: "0",
+    claimedRaw: "0",
+    feeRaw: "0",
+    remainingRaw: "0",
+    provided: 0,
+    claimed: 0,
+    fee: 0,
+    remaining: 0,
+    lockedEvents: 0,
+    claimedEvents: 0,
+    receipts: 0,
+    failedReceipts: 0,
+    links: {
+      bscScan: `https://bscscan.com/address/${contract.address}`,
+      arkham: `https://arkm.com/explorer/address/${contract.address}`,
+    },
+  };
+}
+
+function getDataWord(data = "0x", index = 0) {
+  const clean = String(data || "0x");
+  const start = 2 + index * 64;
+  const value = clean.slice(start, start + 64);
+  return value.length === 64 ? `0x${value}` : "0x0";
+}
+
+function sumEventDataWords(data = "0x", indexes = []) {
+  return indexes.reduce((sum, index) => sum + hexToBigInt(getDataWord(data, index)), 0n);
+}
+
+async function mapWithConcurrency(items = [], limit = 4, mapper = async () => null) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+async function fetchBscScanText(url) {
+  const result = await fetchTextWithTimeout(url, {
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "User-Agent": "Mozilla/5.0 (compatible; AtlasAnalytics/1.0)",
+    },
+  }, 15000);
+  if (!result.ok) throw new Error(`bscscan_${result.status || "failed"}`);
+  return result.payload || "";
+}
+
+function parseBscScanTxTotal(html = "") {
+  const totalText = html.match(/A total of\s+([\d,]+)\s+(?:transactions|txns) found/i)?.[1] || "0";
+  return Number(totalText.replace(/,/g, "")) || 0;
+}
+
+function parseBscScanTxHashes(html = "") {
+  return [...new Set([...html.matchAll(/\/tx\/(0x[a-fA-F0-9]{64})/g)].map((match) => match[1]))];
+}
+
+async function getBscScanContractTxHashes(address = "") {
+  const firstHtml = await fetchBscScanText(`https://bscscan.com/txs?a=${encodeURIComponent(address)}&p=1`);
+  const total = parseBscScanTxTotal(firstHtml);
+  const pages = Math.max(1, Math.ceil(total / 50));
+  let hashes = parseBscScanTxHashes(firstHtml);
+
+  for (let page = 2; page <= pages; page += 1) {
+    const html = await fetchBscScanText(`https://bscscan.com/txs?a=${encodeURIComponent(address)}&p=${page}`);
+    hashes = [...new Set([...hashes, ...parseBscScanTxHashes(html)])];
+  }
+
+  return { total, pages, hashes };
+}
+
+async function getTransactionReceiptWithRetry(hash = "") {
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const receipt = await callBscRpc("eth_getTransactionReceipt", [hash]);
+      if (!receipt || typeof receipt !== "object" || !Array.isArray(receipt.logs)) {
+        throw new Error("receipt_empty");
+      }
+      return receipt;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 350 + attempt * 250));
+    }
+  }
+  throw lastError || new Error("receipt_fetch_failed");
+}
+
+async function getAtlasContractFlowSnapshot() {
+  if (atlasFlowCache && Date.now() - atlasFlowCache.createdAt < ATLAS_FLOW_CACHE_MS) {
+    return { ...atlasFlowCache.payload, cache: { hit: true, ttlMs: ATLAS_FLOW_CACHE_MS } };
+  }
+
+  const latestHex = await callBscRpc("eth_blockNumber", []);
+  const latestBlock = Number.parseInt(latestHex, 16);
+  const flowContracts = ATLAS_CONTRACT_ADDRESSES.filter((contract) => ATLAS_FLOW_EVENT_CONFIG[contract.id]);
+  const contracts = [];
+  const failures = [];
+
+  for (const contract of flowContracts) {
+    const config = ATLAS_FLOW_EVENT_CONFIG[contract.id];
+    const baseStats = buildEmptyAtlasFlowStats(contract);
+    const { total, pages, hashes } = await getBscScanContractTxHashes(contract.address);
+    let providedRaw = 0n;
+    let claimedRaw = 0n;
+    let feeRaw = 0n;
+    let lockedEvents = 0;
+    let claimedEvents = 0;
+    let failedReceipts = 0;
+
+    await mapWithConcurrency(hashes, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (hash) => {
+      try {
+        const receipt = await getTransactionReceiptWithRetry(hash);
+        for (const log of receipt?.logs || []) {
+          if ((log.address || "").toLowerCase() !== contract.address.toLowerCase()) continue;
+          const topic = (log.topics?.[0] || "").toLowerCase();
+          if (topic === config.lockedTopic.toLowerCase()) {
+            providedRaw += sumEventDataWords(log.data, config.lockedParts);
+            lockedEvents += 1;
+          }
+          if (topic === config.claimedTopic.toLowerCase()) {
+            claimedRaw += sumEventDataWords(log.data, config.claimedParts);
+            feeRaw += sumEventDataWords(log.data, config.feeParts);
+            claimedEvents += 1;
+          }
+        }
+      } catch {
+        failedReceipts += 1;
+      }
+    });
+
+    const remainingRaw = providedRaw - claimedRaw - feeRaw;
+    contracts.push({
+      ...baseStats,
+      txListTotal: total,
+      txListPages: pages,
+      receipts: hashes.length,
+      failedReceipts,
+      lockedEvents,
+      claimedEvents,
+      providedRaw: providedRaw.toString(),
+      claimedRaw: claimedRaw.toString(),
+      feeRaw: feeRaw.toString(),
+      remainingRaw: remainingRaw.toString(),
+      provided: decimalFromUnits(providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      claimed: decimalFromUnits(claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      fee: decimalFromUnits(feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      remaining: decimalFromUnits(remainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    });
+
+    if (failedReceipts) {
+      failures.push({ contract: contract.name, failedReceipts });
+    }
+  }
+
+  const totalsRaw = contracts.reduce(
+    (accumulator, row) => ({
+      provided: accumulator.provided + BigInt(row.providedRaw || 0),
+      claimed: accumulator.claimed + BigInt(row.claimedRaw || 0),
+      fee: accumulator.fee + BigInt(row.feeRaw || 0),
+      remaining: accumulator.remaining + BigInt(row.remainingRaw || 0),
+      receipts: accumulator.receipts + (row.receipts || 0),
+      lockedEvents: accumulator.lockedEvents + (row.lockedEvents || 0),
+      claimedEvents: accumulator.claimedEvents + (row.claimedEvents || 0),
+    }),
+    { provided: 0n, claimed: 0n, fee: 0n, remaining: 0n, receipts: 0, lockedEvents: 0, claimedEvents: 0 },
+  );
+
+  const payload = {
+    ok: true,
+    network: {
+      name: "BNB Smart Chain",
+      chainId: 56,
+      explorer: "BscScan",
+    },
+    token: ATLAS_USDT_TOKEN,
+    contracts,
+    totals: {
+      provided: decimalFromUnits(totalsRaw.provided, ATLAS_USDT_TOKEN.decimals, 6),
+      claimed: decimalFromUnits(totalsRaw.claimed, ATLAS_USDT_TOKEN.decimals, 6),
+      fee: decimalFromUnits(totalsRaw.fee, ATLAS_USDT_TOKEN.decimals, 6),
+      remaining: decimalFromUnits(totalsRaw.remaining, ATLAS_USDT_TOKEN.decimals, 6),
+      providedRaw: totalsRaw.provided.toString(),
+      claimedRaw: totalsRaw.claimed.toString(),
+      feeRaw: totalsRaw.fee.toString(),
+      remainingRaw: totalsRaw.remaining.toString(),
+      receipts: totalsRaw.receipts,
+      lockedEvents: totalsRaw.lockedEvents,
+      claimedEvents: totalsRaw.claimedEvents,
+    },
+    range: {
+      toBlock: latestBlock,
+      receipts: totalsRaw.receipts,
+      lockedEvents: totalsRaw.lockedEvents,
+      claimedEvents: totalsRaw.claimedEvents,
+    },
+    failures,
+    source: "BscScan tx list + BNB Chain transaction receipts",
+    rpcCount: BSC_RPC_URLS.length,
+    updatedAt: new Date().toISOString(),
+  };
+  atlasFlowCache = { createdAt: Date.now(), payload };
+  return { ...payload, cache: { hit: false, ttlMs: ATLAS_FLOW_CACHE_MS } };
 }
 
 function normalizeYoutubeNumber(value) {
@@ -1430,6 +1724,12 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/contracts/atlas-balances" && request.method === "GET") {
       const result = await getAtlasContractBalancesSnapshot();
+      sendJson(response, 200, result);
+      return;
+    }
+
+    if (url.pathname === "/api/contracts/atlas-flows" && request.method === "GET") {
+      const result = await getAtlasContractFlowSnapshot();
       sendJson(response, 200, result);
       return;
     }

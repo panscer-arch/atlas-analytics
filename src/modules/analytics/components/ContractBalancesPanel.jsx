@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const CONTRACT_BALANCES_ENDPOINT = "/api/contracts/atlas-balances";
+const CONTRACT_FLOWS_ENDPOINT = "/api/contracts/atlas-flows";
 
 function formatToken(value = 0, symbol = "") {
   return `${new Intl.NumberFormat("ru-RU", {
@@ -21,24 +22,43 @@ function getBalanceTone(value = 0) {
 
 export default function ContractBalancesPanel() {
   const [snapshot, setSnapshot] = useState(null);
+  const [flowSnapshot, setFlowSnapshot] = useState(null);
   const [status, setStatus] = useState("loading");
+  const [flowStatus, setFlowStatus] = useState("loading");
   const [error, setError] = useState("");
+  const [flowError, setFlowError] = useState("");
   const [copiedAddress, setCopiedAddress] = useState("");
 
   async function loadBalances() {
     setStatus("loading");
+    setFlowStatus("loading");
     setError("");
+    setFlowError("");
     try {
-      const response = await fetch(CONTRACT_BALANCES_ENDPOINT, { headers: { Accept: "application/json" }, cache: "no-store" });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload?.ok === false) {
-        throw new Error(payload?.error || "contract_balances_failed");
+      const [balancesResponse, flowsResponse] = await Promise.all([
+        fetch(CONTRACT_BALANCES_ENDPOINT, { headers: { Accept: "application/json" }, cache: "no-store" }),
+        fetch(CONTRACT_FLOWS_ENDPOINT, { headers: { Accept: "application/json" }, cache: "no-store" }),
+      ]);
+      const balancesPayload = await balancesResponse.json().catch(() => ({}));
+      const flowsPayload = await flowsResponse.json().catch(() => ({}));
+      if (!balancesResponse.ok || balancesPayload?.ok === false) {
+        throw new Error(balancesPayload?.error || "contract_balances_failed");
       }
-      setSnapshot(payload);
+      setSnapshot(balancesPayload);
       setStatus("ready");
+      if (!flowsResponse.ok || flowsPayload?.ok === false) {
+        setFlowSnapshot(null);
+        setFlowStatus("error");
+        setFlowError(flowsPayload?.error || "contract_flows_failed");
+      } else {
+        setFlowSnapshot(flowsPayload);
+        setFlowStatus("ready");
+      }
     } catch (loadError) {
       setStatus("error");
+      setFlowStatus("error");
       setError(loadError?.message || "contract_balances_failed");
+      setFlowError(loadError?.message || "contract_flows_failed");
     }
   }
 
@@ -74,28 +94,92 @@ export default function ContractBalancesPanel() {
     { label: "Адреса с остатком", value: `${activeContracts} / ${contractRows.length}`, note: "где текущий USDT balance больше нуля" },
     { label: "Крупнейший баланс", value: largestContract?.name || "—", note: largestContract ? formatToken(largestContract.balances?.usdt, "USDT") : "нет данных" },
   ];
+  const flowRows = flowSnapshot?.contracts || [];
+  const flowStats = [
+    { label: "Всего создали циклов", value: formatToken(flowSnapshot?.totals?.provided, "USDT"), note: "сумма Locked.amountLocked по Lockup/Daily" },
+    { label: "Вывели участники", value: formatToken(flowSnapshot?.totals?.claimed, "USDT"), note: "сумма выплат пользователям по Claimed" },
+    { label: "Fee / treasury", value: formatToken(flowSnapshot?.totals?.fee, "USDT"), note: "комиссия из событий Claimed" },
+    { label: "Осталось по событиям", value: formatToken(flowSnapshot?.totals?.remaining, "USDT"), note: "создано циклов минус выплаты и fee" },
+  ];
 
   return (
     <section className="analytics-contract-balances">
       <div className="analytics-contract-balances-hero analytics-surface">
         <div>
-          <p className="analytics-kicker">BSC contracts / balances</p>
-          <h2>Балансы официальных контрактов Atlas</h2>
-          <p>
-            Read-only мониторинг текущих остатков на адресах из Transparency / BscScan Check.
-            Если Lockup Flow или Daily Flow показывают 0 USDT, это означает, что на этих entry-point адресах
-            сейчас нет удерживаемого остатка; средства могут маршрутизироваться дальше через Transport и Distribute.
+          <p className="analytics-kicker">BSC contracts / flows</p>
+          <h2>Обороты и балансы официальных контрактов Atlas</h2>
+            <p>
+            Read-only мониторинг USDT по адресам из Transparency / BscScan Check. Обороты считаются по событиям
+            Lockup Flow и Daily Flow: сколько создано циклов, сколько участники уже вывели и какой остаток
+            получается по событиям контрактов.
           </p>
         </div>
         <div className={`analytics-contract-balances-state analytics-contract-balances-state-${status === "error" ? "danger" : "success"}`}>
-          <span>{status === "loading" ? "Обновляю" : status === "error" ? "Ошибка RPC" : "Live on-chain"}</span>
+          <span>{status === "loading" || flowStatus === "loading" ? "Обновляю" : status === "error" || flowStatus === "error" ? "Есть ошибка RPC" : "Live on-chain"}</span>
           <strong>{snapshot?.network?.name || "BNB Smart Chain"}</strong>
           <small>{snapshot ? `обновлено ${formatDateTime(snapshot.updatedAt)}` : "ожидание данных"}</small>
           <button type="button" className="analytics-parser-mini-button" onClick={loadBalances} disabled={status === "loading"}>
-            {status === "loading" ? "Загрузка..." : "Обновить"}
+            {status === "loading" || flowStatus === "loading" ? "Загрузка..." : "Обновить"}
           </button>
         </div>
       </div>
+
+      <section className="analytics-contract-balances-table analytics-surface">
+        <div className="analytics-data-table-head">
+          <div>
+            <span className="analytics-kicker">Atlas USDT movement</span>
+            <h2>Сколько всего вложили и вывели</h2>
+            <p className="chart-card-subtitle">Считаем по событиям Locked/Claimed в пользовательских контрактах. Текущий баланс адресов ниже показывает, где USDT лежит прямо сейчас.</p>
+          </div>
+        </div>
+        {flowError ? (
+          <div className="analytics-contract-balances-error">
+            <strong>Не удалось получить историю Transfer-логов</strong>
+            <span>{flowError}. Нужен доступ к BscScan и BNB Chain RPC, чтобы прочитать список транзакций и receipt-события.</span>
+          </div>
+        ) : (
+          <>
+            <div className="analytics-contract-balances-grid">
+              {flowStats.map((item) => (
+                <article key={item.label} className="analytics-contract-balances-card">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.note}</small>
+                </article>
+              ))}
+            </div>
+            <div className="analytics-table-responsive">
+              <table className="analytics-table analytics-contract-balances-table-grid analytics-contract-flows-table-grid">
+                <thead>
+                  <tr>
+                    <th>Контракт</th>
+                    <th>Создано циклов</th>
+                    <th>Вывели участники</th>
+                    <th>Fee</th>
+                    <th>Остаток</th>
+                    <th>Events</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flowRows.map((contract) => (
+                    <tr key={contract.id}>
+                      <td>
+                        <strong>{contract.name}</strong>
+                        <span>{contract.shortAddress}</span>
+                      </td>
+                      <td><strong className="analytics-contract-balance analytics-contract-balance-success">{formatToken(contract.provided, "USDT")}</strong></td>
+                      <td><strong className="analytics-contract-balance analytics-contract-balance-warning">{formatToken(contract.claimed, "USDT")}</strong></td>
+                      <td>{formatToken(contract.fee, "USDT")}</td>
+                      <td><strong className={`analytics-contract-balance analytics-contract-balance-${getBalanceTone(contract.remaining)}`}>{formatToken(contract.remaining, "USDT")}</strong></td>
+                      <td>{contract.lockedEvents || 0} / {contract.claimedEvents || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
 
       {error ? (
         <div className="analytics-contract-balances-error analytics-surface">
