@@ -12,6 +12,22 @@ import SegmentOutreachPanel from "./SegmentOutreachPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
 import Web3SegmentsPanel from "./Web3SegmentsPanel";
 import YouTubeApiSearchPanel from "./YouTubeApiSearchPanel";
+import { defaultLeads as hyipDefaultLeads } from "../data/hyipParserData";
+
+function formatSourcesCount(count) {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  const noun = mod100 >= 11 && mod100 <= 14
+    ? "источников"
+    : mod10 === 1
+      ? "источник"
+      : mod10 >= 2 && mod10 <= 4
+        ? "источника"
+        : "источников";
+  return `${count} ${noun}`;
+}
+
+const HYIP_MONITOR_COUNT_LABEL = formatSourcesCount(hyipDefaultLeads.length);
 
 const PARSER_TABS = [
   {
@@ -22,7 +38,7 @@ const PARSER_TABS = [
   {
     id: "monitors",
     label: "Мониторы",
-    hint: "HYIP / crypto",
+    hint: HYIP_MONITOR_COUNT_LABEL,
   },
   {
     id: "telegram",
@@ -95,7 +111,7 @@ const MARKETING_TOOL_GROUPS = [
     id: "hyip",
     title: "Иностранные HYIP-мониторы",
     subtitle: "HYIP / crypto площадки для первичного outreach",
-    metric: "мониторы",
+    metric: HYIP_MONITOR_COUNT_LABEL,
     action: "Открыть мониторы",
     target: "monitors",
     items: ["HYIP crypto", "проверка контактов", "статусы переговоров"],

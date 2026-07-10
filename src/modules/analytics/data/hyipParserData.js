@@ -1,3 +1,5 @@
+import { expandedHyipMonitorLeads } from "./hyipMonitorExpansionData.js";
+
 export const COUNTRY_OPTIONS = [
   "Все страны",
   "Россия",
@@ -587,4 +589,5 @@ export const defaultLeads = [
     lastSeen: "проверено сегодня",
     notes: "Глобальный monitor, но подходит для India test campaign как высокоприоритетная HYIP-аудитория.",
   },
+  ...expandedHyipMonitorLeads,
 ];
