@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",
     "dev": "vite",
     "prebuild": "node scripts/verify-parser-tabs.mjs",
     "build": "vite build",

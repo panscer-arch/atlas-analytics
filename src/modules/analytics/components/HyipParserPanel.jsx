@@ -140,6 +140,13 @@ function getStatusTone(status) {
   return "default";
 }
 
+function getActivityLabel(score = 0) {
+  if (score >= 85) return "Активен";
+  if (score >= 70) return "Доступен";
+  if (score >= 50) return "Требует проверки";
+  return "Неактивен";
+}
+
 function getHostLabel(url = "") {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -275,6 +282,8 @@ export default function HyipParserPanel({
   const summary = useMemo(() => ({
     total: leads.length,
     ready: leads.filter((lead) => lead.status === "Готов к контакту").length,
+    active: leads.filter((lead) => lead.aliveScore >= 70).length,
+    newBatch: leads.filter((lead) => lead.researchBatch === "2026-07-10").length,
     avgFit: Math.round(leads.reduce((sum, lead) => sum + lead.fitScore, 0) / Math.max(leads.length, 1)),
     contacts: leads.filter((lead) => lead.contacts && lead.contacts !== "form only").length,
   }), [leads]);
@@ -436,7 +445,7 @@ export default function HyipParserPanel({
             <p className="analytics-kicker">{kicker}</p>
             <h2>{title}</h2>
             <p>
-              {filteredLeads.length} строк в фильтре · {summary.ready} готовы к контакту · {outreachSaveState}
+              {filteredLeads.length} строк в фильтре · {summary.active} живых/доступных · +{summary.newBatch} проверено 10.07.2026 · {outreachSaveState}
             </p>
           </div>
           <div>
@@ -598,7 +607,9 @@ export default function HyipParserPanel({
                   ) : (
                     <p className="analytics-parser-static-text">{lead.notes}</p>
                   )}
-                  <small>Fit {lead.fitScore}% · живость {lead.aliveScore}%</small>
+                  <small className={`analytics-parser-status analytics-parser-status-${getScoreTone(lead.aliveScore)}`}>
+                    {getActivityLabel(lead.aliveScore)} · живость {lead.aliveScore}% · Fit {lead.fitScore}%
+                  </small>
                 </div>
                 <div>
                   <textarea
