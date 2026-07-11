@@ -26,7 +26,7 @@ jobs:
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             BEFORE="${{ github.sha }}^"
           fi
-          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^(server/|\.github/workflows/deploy\.yml$)'; then
+          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^server/'; then
             echo "content_api=true" >> "$GITHUB_OUTPUT"
           else
             echo "content_api=false" >> "$GITHUB_OUTPUT"
