@@ -877,6 +877,75 @@ const VERIFIED_MARKET_SOURCE_IDS = new Set([
   "top-consultores-brazil",
 ]);
 
+const PUBLIC_COMPANY_CONTACTS = [
+  {
+    id: "company-vestige-india",
+    platform: "Vestige Marketing Pvt. Ltd.",
+    country: "India",
+    region: "asia",
+    type: "Direct selling company",
+    url: "https://global.myvestige.com/contact-us.aspx",
+    source: "ADSEI India / official company contact page",
+    sourceUrl: "https://adsei.in/executive-member-list.html",
+    profileType: "company",
+    contactVisibility: "Public company contacts",
+    contactRoute: "info@myvestige.com · WhatsApp +91 9315955844 · official contact form",
+    audience: "Indian direct selling company with nationwide distributor network.",
+    whyFits: "ADSEI member with official general email, WhatsApp and contact form published on its website.",
+    outreachAngle: "Начать с краткого B2B-запроса на общий email; не писать отдельным дистрибьюторам без их публичного профиля.",
+    price: "Запросить",
+    priority: "1. Сначала",
+    status: "Проверить контакт",
+    verificationStatus: "Проверено",
+    lastVerifiedAt: "2026-07-11",
+    notes: "Публичный корпоративный маршрут. Не использовать grievance/nodal адреса для коммерческого предложения.",
+  },
+  {
+    id: "company-shopnet-india",
+    platform: "Shopnet Marketing Pvt. Ltd.",
+    country: "India",
+    region: "asia",
+    type: "Direct selling company",
+    url: "https://shopnetindia.com/contact-us.php",
+    source: "ADSEI India / official company contact page",
+    sourceUrl: "https://adsei.in/executive-member-list.html",
+    profileType: "company",
+    contactVisibility: "Public company contacts",
+    contactRoute: "support@shopnetindia.com · +91 88597 67000 · official contact page",
+    audience: "Indian wellness and direct selling company.",
+    whyFits: "ADSEI member with official support email and telephone published on its contact page.",
+    outreachAngle: "Писать через общий corporate/support контакт с запросом о партнёрском или media-разговоре.",
+    price: "Запросить",
+    priority: "1. Сначала",
+    status: "Проверить контакт",
+    verificationStatus: "Проверено",
+    lastVerifiedAt: "2026-07-11",
+    notes: "Публичный корпоративный контакт. Сначала проверить, есть ли отдельный partnerships/marketing email.",
+  },
+  {
+    id: "company-rcm-india",
+    platform: "RCM Consumer Products Pvt. Ltd.",
+    country: "India",
+    region: "asia",
+    type: "Direct selling company",
+    url: "https://blog.rcmworld.com/rcm-health-app-privacy-policy/",
+    source: "ADSEI India / official RCM disclosure",
+    sourceUrl: "https://adsei.in/executive-member-list.html",
+    profileType: "company",
+    contactVisibility: "Public company email",
+    contactRoute: "feedback@rcmworld.com · official RCM contact/disclosure route",
+    audience: "Indian direct selling and consumer products company.",
+    whyFits: "ADSEI member; официальный адрес опубликован RCM для обращений и обратной связи.",
+    outreachAngle: "Сначала использовать как запрос на корректный business-development контакт, без массового коммерческого письма.",
+    price: "Запросить",
+    priority: "2. Следом",
+    status: "Проверить контакт",
+    verificationStatus: "Проверено",
+    lastVerifiedAt: "2026-07-11",
+    notes: "Адрес опубликован для feedback/privacy. Для предложения сначала попросить перенаправить на business/marketing team.",
+  },
+];
+
 export const defaultMlmMarketDirectoryRows = defaultMlmLeaderOutreachPlatforms
   .filter((row) => MARKET_SOURCE_TYPES.test(row.type))
   .map((row) => ({
@@ -887,4 +956,5 @@ export const defaultMlmMarketDirectoryRows = defaultMlmLeaderOutreachPlatforms
     contactVisibility: "Публичный маршрут",
     verificationStatus: row.verificationStatus || (VERIFIED_MARKET_SOURCE_IDS.has(row.id) ? "Проверено" : "Нужна проверка"),
     lastVerifiedAt: row.lastVerifiedAt || "",
-  }));
+  }))
+  .concat(PUBLIC_COMPANY_CONTACTS);
