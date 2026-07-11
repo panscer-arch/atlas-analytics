@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import BusinessForHomeLeadsPanel from "./BusinessForHomeLeadsPanel";
+import DirectSalesDirectoryLeadsPanel from "./DirectSalesDirectoryLeadsPanel";
 import {
   MLM_LEADER_OUTREACH_COLUMNS,
   MLM_LEADER_OUTREACH_REGIONS,
@@ -68,6 +69,16 @@ function MlmViewSwitch({ activeView, onChange }) {
       >
         <span>Источники</span>
         <small>площадки и сообщества</small>
+      </button>
+      <button
+        type="button"
+        className={activeView === "northAmerica" ? "analytics-mlm-view-switch-active" : ""}
+        onClick={() => onChange("northAmerica")}
+        role="tab"
+        aria-selected={activeView === "northAmerica"}
+      >
+        <span>Лидеры США / Канада</span>
+        <small>Direct Sales Directory</small>
       </button>
       <button
         type="button"
@@ -179,6 +190,15 @@ export default function MlmLeaderOutreachPanel() {
       <section className="analytics-parser analytics-mlm-leaders">
         <MlmViewSwitch activeView={activeView} onChange={setActiveView} />
         <BusinessForHomeLeadsPanel />
+      </section>
+    );
+  }
+
+  if (activeView === "northAmerica") {
+    return (
+      <section className="analytics-parser analytics-mlm-leaders">
+        <MlmViewSwitch activeView={activeView} onChange={setActiveView} />
+        <DirectSalesDirectoryLeadsPanel />
       </section>
     );
   }

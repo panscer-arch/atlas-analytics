@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",
+    "refresh:direct-sales-directory": "node scripts/refresh-direct-sales-directory.mjs",
     "dev": "vite",
     "prebuild": "node scripts/verify-parser-tabs.mjs",
     "build": "vite build",

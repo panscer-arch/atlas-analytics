@@ -9,29 +9,30 @@ import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const PAGE_SIZE = 50;
 
-function hydrateLeads(savedLeads) {
-  if (!Array.isArray(savedLeads) || !savedLeads.length) return defaultBusinessForHomeLeads;
+function hydrateLeads(savedLeads, seedLeads) {
+  if (!Array.isArray(savedLeads) || !savedLeads.length) return seedLeads;
   const savedById = new Map(savedLeads.map((lead) => [lead.id, lead]));
-  return defaultBusinessForHomeLeads.map((lead) => ({ ...lead, ...(savedById.get(lead.id) || {}) }));
+  return seedLeads.map((lead) => ({ ...lead, ...(savedById.get(lead.id) || {}) }));
 }
 
-function readStoredLeads() {
-  if (typeof window === "undefined") return defaultBusinessForHomeLeads;
+function readStoredLeads(storageKey, seedLeads) {
+  if (typeof window === "undefined") return seedLeads;
   try {
-    return hydrateLeads(JSON.parse(window.localStorage.getItem(BUSINESS_FOR_HOME_LEADS_STORAGE_KEY) || "null"));
+    return hydrateLeads(JSON.parse(window.localStorage.getItem(storageKey) || "null"), seedLeads);
   } catch {
-    return defaultBusinessForHomeLeads;
+    return seedLeads;
   }
 }
 
-function downloadCsv(rows) {
+function downloadCsv(rows, fileName) {
   const escape = (value) => `"${String(value || "").replaceAll('"', '""')}"`;
-  const header = ["Лидер", "Страна", "Компания", "Сайт", "Facebook", "Business For Home", "Статус", "Заметка"];
+  const header = ["Лидер", "Страна", "Компания", "Сайт", "Email", "Facebook", "Профиль источника", "Статус", "Заметка"];
   const body = rows.map((lead) => [
     lead.name,
     lead.country,
     lead.company,
     lead.website,
+    lead.email,
     lead.facebook,
     lead.profileUrl,
     lead.status,
@@ -41,13 +42,24 @@ function downloadCsv(rows) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "atlas-business-for-home-leads.csv";
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
 }
 
-export default function BusinessForHomeLeadsPanel() {
-  const [leads, setLeads] = useState(readStoredLeads);
+export default function BusinessForHomeLeadsPanel({
+  directory = {
+    storageKey: BUSINESS_FOR_HOME_LEADS_STORAGE_KEY,
+    statusOptions: BUSINESS_FOR_HOME_LEAD_STATUS_OPTIONS,
+    defaultLeads: defaultBusinessForHomeLeads,
+    sourceName: "Business For Home",
+    sourceDescription: "Публичные данные. Перед предложением всегда проверяем, активен ли лидер и его текущая компания.",
+    profileLabel: "Профиль BFH",
+    csvFileName: "atlas-business-for-home-leads.csv",
+  },
+}) {
+  const { storageKey, statusOptions, defaultLeads, sourceName, sourceDescription, profileLabel, csvFileName } = directory;
+  const [leads, setLeads] = useState(() => readStoredLeads(storageKey, defaultLeads));
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
@@ -58,10 +70,10 @@ export default function BusinessForHomeLeadsPanel() {
 
   useEffect(() => {
     let active = true;
-    loadServerContent(BUSINESS_FOR_HOME_LEADS_STORAGE_KEY).then((savedLeads) => {
+    loadServerContent(storageKey).then((savedLeads) => {
       if (!active) return;
       if (Array.isArray(savedLeads) && savedLeads.length) {
-        const hydrated = hydrateLeads(savedLeads);
+        const hydrated = hydrateLeads(savedLeads, defaultLeads);
         setLeads(hydrated);
         window.localStorage.setItem(BUSINESS_FOR_HOME_LEADS_STORAGE_KEY, JSON.stringify(hydrated));
         setSaveState("Сохранено на сервере");
@@ -71,19 +83,19 @@ export default function BusinessForHomeLeadsPanel() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [defaultLeads, storageKey]);
 
   useEffect(() => {
     if (!isLoaded) return undefined;
     const timer = window.setTimeout(() => {
       setSaveState("Сохраняю...");
-      window.localStorage.setItem(BUSINESS_FOR_HOME_LEADS_STORAGE_KEY, JSON.stringify(leads));
-      saveServerContent(BUSINESS_FOR_HOME_LEADS_STORAGE_KEY, leads).then((ok) => {
+      window.localStorage.setItem(storageKey, JSON.stringify(leads));
+      saveServerContent(storageKey, leads).then((ok) => {
         setSaveState(ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
       });
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [isLoaded, leads]);
+  }, [isLoaded, leads, storageKey]);
 
   const countries = useMemo(() => ["Все страны", ...new Set(leads.map((lead) => lead.country).filter(Boolean).sort())], [leads]);
   const visibleLeads = useMemo(() => {
@@ -107,6 +119,7 @@ export default function BusinessForHomeLeadsPanel() {
   const stats = useMemo(() => ({
     total: leads.length,
     withWebsite: leads.filter((lead) => lead.website).length,
+    withEmail: leads.filter((lead) => lead.email).length,
     withFacebook: leads.filter((lead) => lead.facebook).length,
     ready: leads.filter((lead) => lead.status === "Готовить оффер").length,
   }), [leads]);
@@ -124,21 +137,21 @@ export default function BusinessForHomeLeadsPanel() {
     <section className="analytics-parser analytics-bfh-leads">
       <section className="analytics-surface analytics-bfh-leads-hero">
         <div>
-          <p className="analytics-kicker">Business For Home / public directory</p>
+          <p className="analytics-kicker">{sourceName} / public directory</p>
           <h2>Сетевые лидеры и публичные каналы связи</h2>
           <p>Рабочая база из открытых профилей: страна, текущая компания, личный сайт, Facebook и карточка источника.</p>
         </div>
         <div className="analytics-bfh-leads-verdict">
           <span>Источник</span>
-          <strong>Business For Home</strong>
-          <p>Публичные данные. Перед предложением всегда проверяем, активен ли лидер и его текущая компания.</p>
+          <strong>{sourceName}</strong>
+          <p>{sourceDescription}</p>
         </div>
       </section>
 
       <section className="analytics-bfh-leads-stats" aria-label="Сводка базы сетевых лидеров">
         <article><span>Лидеры</span><strong>{stats.total}</strong><small>в базе</small></article>
         <article><span>Сайт</span><strong>{stats.withWebsite}</strong><small>публичных ссылок</small></article>
-        <article><span>Facebook</span><strong>{stats.withFacebook}</strong><small>публичных профилей</small></article>
+        <article><span>Email</span><strong>{stats.withEmail}</strong><small>публичных адресов</small></article>
         <article><span>Оффер</span><strong>{stats.ready}</strong><small>готовить персонально</small></article>
       </section>
 
@@ -146,12 +159,12 @@ export default function BusinessForHomeLeadsPanel() {
         <div className="analytics-parser-table-head">
           <div>
             <p className="analytics-kicker">CRM / leader outreach</p>
-            <h2>Лидеры Business For Home</h2>
+            <h2>Лидеры {sourceName}</h2>
             <p>{visibleLeads.length} в фильтре · показано {displayStart}–{displayEnd} · {saveState}</p>
           </div>
           <div>
             <button type="button" onClick={() => setIsEditing((value) => !value)}>{isEditing ? "Готово" : "Редактировать"}</button>
-            <button type="button" onClick={() => downloadCsv(visibleLeads)}>Экспорт CSV</button>
+            <button type="button" onClick={() => downloadCsv(visibleLeads, csvFileName)}>Экспорт CSV</button>
           </div>
         </div>
 
@@ -170,7 +183,7 @@ export default function BusinessForHomeLeadsPanel() {
             Статус
             <select value={status} onChange={(event) => resetPage(() => setStatus(event.target.value))}>
               <option value="Все статусы">Все статусы</option>
-              {BUSINESS_FOR_HOME_LEAD_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+              {statusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
         </div>
@@ -192,19 +205,20 @@ export default function BusinessForHomeLeadsPanel() {
                   <td>
                     <strong>{lead.name}</strong>
                     <span>{lead.country || "Страна не указана"}</span>
-                    <a href={lead.profileUrl} target="_blank" rel="noreferrer">Профиль BFH</a>
+                    <a href={lead.profileUrl} target="_blank" rel="noreferrer">{profileLabel}</a>
                   </td>
                   <td><p>{lead.company || "Не указана в профиле"}</p></td>
                   <td>
                     <div className="analytics-bfh-leads-actions">
                       {lead.website ? <a href={lead.website} target="_blank" rel="noreferrer">Сайт</a> : <span>Сайт не указан</span>}
+                      {lead.email ? <a href={`mailto:${lead.email}`}>Email</a> : null}
                       {lead.facebook ? <a href={lead.facebook} target="_blank" rel="noreferrer">Facebook</a> : null}
                     </div>
                   </td>
                   <td>
                     {isEditing ? (
                       <select value={lead.status} onChange={(event) => updateLead(lead.id, { status: event.target.value })}>
-                        {BUSINESS_FOR_HOME_LEAD_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+                        {statusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                       </select>
                     ) : (
                       <span className={`analytics-bfh-lead-status analytics-bfh-lead-status-${lead.status === "Ответили" ? "success" : lead.status === "Не подходит" ? "danger" : "accent"}`}>{lead.status}</span>
