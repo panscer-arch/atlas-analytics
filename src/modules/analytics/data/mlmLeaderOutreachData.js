@@ -1,4 +1,11 @@
 export const MLM_LEADER_OUTREACH_STORAGE_KEY = "atlas.analytics.mlmLeaderOutreach.platforms.v1";
+export const MLM_MARKET_DIRECTORY_STORAGE_KEY = "atlas.analytics.mlmLeaders.markets.v1";
+
+export const MLM_MARKET_DIRECTORY_VERIFICATION_OPTIONS = [
+  "Проверено",
+  "Нужна проверка",
+  "Архив / не использовать",
+];
 
 export const MLM_LEADER_OUTREACH_REGIONS = [
   { id: "all", label: "Все" },
@@ -60,6 +67,60 @@ export const mlmLeaderOutreachPlaybook = {
 };
 
 export const defaultMlmLeaderOutreachPlatforms = [
+  {
+    id: "solis-philippines",
+    platform: "SOLIS Philippines",
+    country: "Philippines",
+    region: "asia",
+    type: "Official legitimacy registry",
+    url: "https://sol.dti.gov.ph/",
+    contactRoute: "Registry search / company disclosure",
+    audience: "Philippine direct selling and MLM companies.",
+    whyFits: "Официальный реестр DTI для проверки легитимности direct selling и MLM-компаний на Филиппинах.",
+    outreachAngle: "Использовать только для проверки компаний, не как канал рассылки.",
+    price: "Public registry",
+    priority: "1. Сначала",
+    status: "Проверено",
+    verificationStatus: "Проверено",
+    lastVerifiedAt: "2026-07-11",
+    notes: "Подходит для отбора только легитимных компаний перед поиском лидеров.",
+  },
+  {
+    id: "adsei-india",
+    platform: "ADSEI India",
+    country: "India",
+    region: "asia",
+    type: "Industry association / executive members",
+    url: "https://adsei.in/executive-member-list.html",
+    contactRoute: "Association contact / executive member list",
+    audience: "Indian direct selling companies and industry operators.",
+    whyFits: "Публичный список executive members отраслевой ассоциации Индии.",
+    outreachAngle: "Использовать для проверки компаний и поиска публичных представителей рынка.",
+    price: "Public research",
+    priority: "1. Сначала",
+    status: "Проверено",
+    verificationStatus: "Проверено",
+    lastVerifiedAt: "2026-07-11",
+    notes: "Не добавлять персональные контакты без отдельной публичной карточки.",
+  },
+  {
+    id: "top-consultores-brazil",
+    platform: "Top Consultores",
+    country: "Brazil",
+    region: "latam",
+    type: "Public direct-selling consultant directory",
+    url: "https://topconsultores.com.br/",
+    contactRoute: "Public consultant profile / directory search",
+    audience: "Brazilian direct-selling consultants and customers.",
+    whyFits: "Живой бразильский каталог консультантов прямых продаж.",
+    outreachAngle: "Искать только активные публичные профили с открытым каналом связи.",
+    price: "Public directory",
+    priority: "1. Сначала",
+    status: "Проверено",
+    verificationStatus: "Проверено",
+    lastVerifiedAt: "2026-07-11",
+    notes: "Первый персональный источник для Бразилии; перед импортом профили проверять вручную.",
+  },
   {
     id: "direct-sales-directory",
     platform: "Direct Sales Directory",
@@ -765,3 +826,25 @@ export const defaultMlmLeaderOutreachPlatforms = [
     notes: "Много мусора; использовать только для микро-задач.",
   },
 ];
+
+const MARKET_SOURCE_TYPES = /directory|association|registry|national dsa/i;
+const VERIFIED_MARKET_SOURCE_IDS = new Set([
+  "direct-sales-directory",
+  "npros-company-directory",
+  "dsap-philippines",
+  "solis-philippines",
+  "adsei-india",
+  "top-consultores-brazil",
+]);
+
+export const defaultMlmMarketDirectoryRows = defaultMlmLeaderOutreachPlatforms
+  .filter((row) => MARKET_SOURCE_TYPES.test(row.type))
+  .map((row) => ({
+    ...row,
+    source: row.platform,
+    sourceUrl: row.url,
+    profileType: "market",
+    contactVisibility: "Публичный маршрут",
+    verificationStatus: row.verificationStatus || (VERIFIED_MARKET_SOURCE_IDS.has(row.id) ? "Проверено" : "Нужна проверка"),
+    lastVerifiedAt: row.lastVerifiedAt || "",
+  }));
