@@ -85,7 +85,7 @@ export default function MlmMarketDirectoryPanel() {
     total: rows.length,
     checked: rows.filter((row) => row.verificationStatus === "Проверено").length,
     countries: new Set(rows.map((row) => row.country)).size,
-    ready: rows.filter((row) => row.status === "Готовить оффер").length,
+    companies: rows.filter((row) => row.profileType === "company" && row.contactRoute).length,
   }), [rows]);
 
   function updateRow(id, patch) {
@@ -108,10 +108,10 @@ export default function MlmMarketDirectoryPanel() {
       </section>
 
       <section className="analytics-bfh-leads-stats">
-        <article><span>Рынки</span><strong>{stats.total}</strong><small>источников и реестров</small></article>
+        <article><span>Записи</span><strong>{stats.total}</strong><small>рынков и компаний</small></article>
         <article><span>Проверено</span><strong>{stats.checked}</strong><small>живых источников</small></article>
         <article><span>Страны</span><strong>{stats.countries}</strong><small>в первой волне</small></article>
-        <article><span>Оффер</span><strong>{stats.ready}</strong><small>после проверки лидера</small></article>
+        <article><span>Контакты</span><strong>{stats.companies}</strong><small>публичных компаний</small></article>
       </section>
 
       <section className="analytics-parser-table-wrap analytics-surface">
