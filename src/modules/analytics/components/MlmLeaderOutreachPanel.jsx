@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import BusinessForHomeLeadsPanel from "./BusinessForHomeLeadsPanel";
 import {
   MLM_LEADER_OUTREACH_COLUMNS,
   MLM_LEADER_OUTREACH_REGIONS,
@@ -55,6 +56,33 @@ function statusTone(status) {
   return "accent";
 }
 
+function MlmViewSwitch({ activeView, onChange }) {
+  return (
+    <div className="analytics-mlm-view-switch analytics-surface" role="tablist" aria-label="База MLM-лидеров">
+      <button
+        type="button"
+        className={activeView === "sources" ? "analytics-mlm-view-switch-active" : ""}
+        onClick={() => onChange("sources")}
+        role="tab"
+        aria-selected={activeView === "sources"}
+      >
+        <span>Источники</span>
+        <small>площадки и сообщества</small>
+      </button>
+      <button
+        type="button"
+        className={activeView === "leaders" ? "analytics-mlm-view-switch-active" : ""}
+        onClick={() => onChange("leaders")}
+        role="tab"
+        aria-selected={activeView === "leaders"}
+      >
+        <span>Лидеры BFH</span>
+        <small>публичный каталог</small>
+      </button>
+    </div>
+  );
+}
+
 export default function MlmLeaderOutreachPanel() {
   const [rows, setRows] = useState(readStoredRows);
   const [activeRegion, setActiveRegion] = useState("all");
@@ -62,6 +90,7 @@ export default function MlmLeaderOutreachPanel() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveState, setSaveState] = useState("Локально");
+  const [activeView, setActiveView] = useState("sources");
 
   useEffect(() => {
     let isMounted = true;
@@ -145,8 +174,18 @@ export default function MlmLeaderOutreachPanel() {
     }, ...current]);
   }
 
+  if (activeView === "leaders") {
+    return (
+      <section className="analytics-parser analytics-mlm-leaders">
+        <MlmViewSwitch activeView={activeView} onChange={setActiveView} />
+        <BusinessForHomeLeadsPanel />
+      </section>
+    );
+  }
+
   return (
     <section className="analytics-parser analytics-mlm-leaders">
+      <MlmViewSwitch activeView={activeView} onChange={setActiveView} />
       <section className="analytics-surface analytics-mlm-leaders-hero">
         <div>
           <p className="analytics-kicker">MLM / Network Marketing leaders</p>
