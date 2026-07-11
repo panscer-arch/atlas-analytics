@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import BusinessForHomeLeadsPanel from "./BusinessForHomeLeadsPanel";
 import DirectSalesDirectoryLeadsPanel from "./DirectSalesDirectoryLeadsPanel";
+import MlmMarketDirectoryPanel from "./MlmMarketDirectoryPanel";
 import {
   MLM_LEADER_OUTREACH_COLUMNS,
   MLM_LEADER_OUTREACH_REGIONS,
@@ -67,18 +68,8 @@ function MlmViewSwitch({ activeView, onChange }) {
         role="tab"
         aria-selected={activeView === "sources"}
       >
-        <span>Источники</span>
-        <small>площадки и сообщества</small>
-      </button>
-      <button
-        type="button"
-        className={activeView === "northAmerica" ? "analytics-mlm-view-switch-active" : ""}
-        onClick={() => onChange("northAmerica")}
-        role="tab"
-        aria-selected={activeView === "northAmerica"}
-      >
-        <span>Лидеры США / Канада</span>
-        <small>Direct Sales Directory</small>
+        <span>Компании и рынки</span>
+        <small>реестры, каталоги, ассоциации</small>
       </button>
       <button
         type="button"
@@ -87,8 +78,8 @@ function MlmViewSwitch({ activeView, onChange }) {
         role="tab"
         aria-selected={activeView === "leaders"}
       >
-        <span>Лидеры BFH</span>
-        <small>публичный каталог</small>
+        <span>Публичные лидеры</span>
+        <small>открытые профили и каналы связи</small>
       </button>
     </div>
   );
@@ -102,6 +93,7 @@ export default function MlmLeaderOutreachPanel() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveState, setSaveState] = useState("Локально");
   const [activeView, setActiveView] = useState("sources");
+  const [leaderSource, setLeaderSource] = useState("bfh");
 
   useEffect(() => {
     let isMounted = true;
@@ -189,19 +181,20 @@ export default function MlmLeaderOutreachPanel() {
     return (
       <section className="analytics-parser analytics-mlm-leaders">
         <MlmViewSwitch activeView={activeView} onChange={setActiveView} />
-        <BusinessForHomeLeadsPanel />
+        <div className="analytics-mlm-view-switch analytics-surface" role="tablist" aria-label="Источник публичных лидеров">
+          <button type="button" className={leaderSource === "bfh" ? "analytics-mlm-view-switch-active" : ""} onClick={() => setLeaderSource("bfh")}>
+            <span>Лидеры BFH</span><small>международный каталог</small>
+          </button>
+          <button type="button" className={leaderSource === "northAmerica" ? "analytics-mlm-view-switch-active" : ""} onClick={() => setLeaderSource("northAmerica")}>
+            <span>США / Канада</span><small>Direct Sales Directory</small>
+          </button>
+        </div>
+        {leaderSource === "bfh" ? <BusinessForHomeLeadsPanel /> : <DirectSalesDirectoryLeadsPanel />}
       </section>
     );
   }
 
-  if (activeView === "northAmerica") {
-    return (
-      <section className="analytics-parser analytics-mlm-leaders">
-        <MlmViewSwitch activeView={activeView} onChange={setActiveView} />
-        <DirectSalesDirectoryLeadsPanel />
-      </section>
-    );
-  }
+  if (activeView === "sources") return <section className="analytics-parser analytics-mlm-leaders"><MlmViewSwitch activeView={activeView} onChange={setActiveView} /><MlmMarketDirectoryPanel /></section>;
 
   return (
     <section className="analytics-parser analytics-mlm-leaders">

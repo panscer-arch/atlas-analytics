@@ -18,6 +18,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect server changes
+        id: server_changes
+        shell: bash
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="${{ github.sha }}^"
+          fi
+          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^(server/|\.github/workflows/deploy\.yml$)'; then
+            echo "content_api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "content_api=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure SSH
         shell: bash
         run: |
@@ -37,7 +51,6 @@ jobs:
 
       - name: Deploy on VPS
         shell: bash
-        continue-on-error: true
         timeout-minutes: 3
         run: |
           for attempt in 1 2 3 4 5 6; do
@@ -50,8 +63,8 @@ jobs:
                 timeout 240s /opt/atlas-analytics/deploy.sh
                 status=$?
                 if [ "$status" -eq 124 ]; then
-                  echo "deploy.sh timed out after 240s; continuing to deploy content API and nginx routes"
-                  exit 0
+                  echo "deploy.sh timed out after 240s"
+                  exit 124
                 fi
                 exit "$status"
               '"'"''; then
@@ -60,8 +73,8 @@ jobs:
 
             status=$?
             if [ "$status" -eq 124 ]; then
-              echo "Deploy SSH command timed out after 90s; continuing to deploy content API and nginx routes"
-              exit 0
+              echo "Deploy SSH command timed out after 90s"
+              exit 1
             fi
             echo "Deploy SSH attempt $attempt failed with status $status"
             if [ "$attempt" -eq 6 ]; then
@@ -71,6 +84,7 @@ jobs:
           done
 
       - name: Deploy content API
+        if: steps.server_changes.outputs.content_api == 'true'
         shell: bash
         timeout-minutes: 6
         run: |
@@ -78,10 +92,11 @@ jobs:
             local label="$1"
             shift
             for attempt in 1 2 3 4 5; do
-              if "$@"; then
-                return 0
-              fi
+            if "$@"; then
+              return 0
+            else
               local status=$?
+            fi
               echo "$label attempt $attempt failed with status $status"
               if [ "$attempt" -eq 5 ]; then
                 return "$status"

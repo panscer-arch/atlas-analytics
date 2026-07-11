@@ -26,11 +26,16 @@ function readStoredLeads(storageKey, seedLeads) {
 
 function downloadCsv(rows, fileName) {
   const escape = (value) => `"${String(value || "").replaceAll('"', '""')}"`;
-  const header = ["Лидер", "Страна", "Компания", "Сайт", "Email", "Facebook", "Профиль источника", "Статус", "Заметка"];
+  const header = ["Лидер", "Страна", "Компания", "Источник", "Источник URL", "Тип записи", "Видимость контакта", "Проверено", "Сайт", "Email", "Facebook", "Профиль источника", "Статус", "Заметка"];
   const body = rows.map((lead) => [
     lead.name,
     lead.country,
     lead.company,
+    lead.source,
+    lead.sourceUrl,
+    lead.profileType,
+    lead.contactVisibility,
+    lead.lastVerifiedAt,
     lead.website,
     lead.email,
     lead.facebook,
@@ -56,9 +61,11 @@ export default function BusinessForHomeLeadsPanel({
     sourceDescription: "Публичные данные. Перед предложением всегда проверяем, активен ли лидер и его текущая компания.",
     profileLabel: "Профиль BFH",
     csvFileName: "atlas-business-for-home-leads.csv",
+    sourceUrl: "https://www.businessforhome.org/",
+    lastVerifiedAt: "2026-07-11",
   },
 }) {
-  const { storageKey, statusOptions, defaultLeads, sourceName, sourceDescription, profileLabel, csvFileName } = directory;
+  const { storageKey, statusOptions, defaultLeads, sourceName, sourceDescription, profileLabel, csvFileName, sourceUrl, lastVerifiedAt } = directory;
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, defaultLeads));
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("Все страны");
@@ -73,7 +80,14 @@ export default function BusinessForHomeLeadsPanel({
     loadServerContent(storageKey).then((savedLeads) => {
       if (!active) return;
       if (Array.isArray(savedLeads) && savedLeads.length) {
-        const hydrated = hydrateLeads(savedLeads, defaultLeads);
+        const hydrated = hydrateLeads(savedLeads, defaultLeads).map((lead) => ({
+          ...lead,
+          source: lead.source || sourceName,
+          sourceUrl: lead.sourceUrl || sourceUrl,
+          profileType: lead.profileType || "leader",
+          contactVisibility: lead.contactVisibility || "Публичный профиль",
+          lastVerifiedAt: lead.lastVerifiedAt || lastVerifiedAt,
+        }));
         setLeads(hydrated);
         window.localStorage.setItem(BUSINESS_FOR_HOME_LEADS_STORAGE_KEY, JSON.stringify(hydrated));
         setSaveState("Сохранено на сервере");
@@ -97,17 +111,25 @@ export default function BusinessForHomeLeadsPanel({
     return () => window.clearTimeout(timer);
   }, [isLoaded, leads, storageKey]);
 
-  const countries = useMemo(() => ["Все страны", ...new Set(leads.map((lead) => lead.country).filter(Boolean).sort())], [leads]);
+  const normalizedLeads = useMemo(() => leads.map((lead) => ({
+    ...lead,
+    source: lead.source || sourceName,
+    sourceUrl: lead.sourceUrl || sourceUrl,
+    profileType: lead.profileType || "leader",
+    contactVisibility: lead.contactVisibility || "Публичный профиль",
+    lastVerifiedAt: lead.lastVerifiedAt || lastVerifiedAt,
+  })), [lastVerifiedAt, leads, sourceName, sourceUrl]);
+  const countries = useMemo(() => ["Все страны", ...new Set(normalizedLeads.map((lead) => lead.country).filter(Boolean).sort())], [normalizedLeads]);
   const visibleLeads = useMemo(() => {
     const search = query.trim().toLowerCase();
-    return leads.filter((lead) => {
+    return normalizedLeads.filter((lead) => {
       if (country !== "Все страны" && lead.country !== country) return false;
       if (status !== "Все статусы" && lead.status !== status) return false;
       if (!search) return true;
       return [lead.name, lead.country, lead.company, lead.status, lead.notes]
         .some((value) => String(value || "").toLowerCase().includes(search));
     });
-  }, [country, leads, query, status]);
+  }, [country, normalizedLeads, query, status]);
 
   const totalPages = Math.max(1, Math.ceil(visibleLeads.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -117,12 +139,12 @@ export default function BusinessForHomeLeadsPanel({
   const displayEnd = Math.min(pageStart + PAGE_SIZE, visibleLeads.length);
 
   const stats = useMemo(() => ({
-    total: leads.length,
-    withWebsite: leads.filter((lead) => lead.website).length,
-    withEmail: leads.filter((lead) => lead.email).length,
-    withFacebook: leads.filter((lead) => lead.facebook).length,
-    ready: leads.filter((lead) => lead.status === "Готовить оффер").length,
-  }), [leads]);
+    total: normalizedLeads.length,
+    withWebsite: normalizedLeads.filter((lead) => lead.website).length,
+    withEmail: normalizedLeads.filter((lead) => lead.email).length,
+    withFacebook: normalizedLeads.filter((lead) => lead.facebook).length,
+    ready: normalizedLeads.filter((lead) => lead.status === "Готовить оффер").length,
+  }), [normalizedLeads]);
 
   function updateLead(id, patch) {
     setLeads((current) => current.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)));
@@ -139,12 +161,13 @@ export default function BusinessForHomeLeadsPanel({
         <div>
           <p className="analytics-kicker">{sourceName} / public directory</p>
           <h2>Сетевые лидеры и публичные каналы связи</h2>
-          <p>Рабочая база из открытых профилей: страна, текущая компания, личный сайт, Facebook и карточка источника.</p>
+          <p>Рабочая база из открытых профилей: страна, текущая компания, публичный контакт, источник и дата проверки.</p>
         </div>
         <div className="analytics-bfh-leads-verdict">
           <span>Источник</span>
           <strong>{sourceName}</strong>
           <p>{sourceDescription}</p>
+          <small>Проверено: {lastVerifiedAt}</small>
         </div>
       </section>
 

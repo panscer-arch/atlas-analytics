@@ -13,6 +13,8 @@ const directory = {
   sourceDescription: "Открытые карточки представителей из США и Канады. Email указан только там, где владелец профиля опубликовал его сам.",
   profileLabel: "Карточка DSD",
   csvFileName: "atlas-direct-sales-directory-leads.csv",
+  sourceUrl: "https://www.directsalesdirectory.com/find-a-rep/",
+  lastVerifiedAt: "2026-07-11",
 };
 
 export default function DirectSalesDirectoryLeadsPanel() {
