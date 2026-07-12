@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Atlas System: как работает Smart Cycle, где проверить документы и какие риски учитывать.">
+  <link rel="icon" href="assets/atlas-logo.png">
+  <title>Atlas System - знакомство и проверка</title>
+  <style>
+    :root {
+      --ink: #20130d;
+      --muted: #6f655f;
+      --line: #eadfd6;
+      --paper: #ffffff;
+      --warm: #fff8f1;
+      --warm-2: #fff1e2;
+      --orange: #ff6900;
+      --orange-dark: #d94f00;
+      --yellow: #ffb31a;
+      --green: #14865b;
+      --red: #b93333;
+      --charcoal: #171411;
+      --radius: 8px;
+      --header: 76px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    a { color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    img { display: block; max-width: 100%; }
+    h1, h2, h3, p { margin: 0; }
+
+    .container { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+
+    .site-header {
+      position: relative;
+      z-index: 50;
+      height: var(--header);
+      border-bottom: 1px solid rgba(32, 19, 13, 0.10);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(14px);
+    }
+    .header-inner {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .logo { width: 178px; height: auto; }
+    .nav { display: flex; align-items: center; gap: 28px; }
+    .nav a {
+      color: #4f4540;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .nav a:hover { color: var(--orange); }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .menu-button {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .button:hover { transform: translateY(-2px); border-color: #ffc08f; }
+    .button.primary { border-color: var(--orange); background: var(--orange); color: #fff; }
+    .button.primary:hover { background: var(--orange-dark); }
+    .button.dark { border-color: #3a332d; background: var(--charcoal); color: #fff; }
+    .button svg { width: 18px; height: 18px; }
+
+    .screen {
+      min-height: calc(100svh - var(--header));
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+    }
+    .screen-inner { padding-top: 72px; padding-bottom: 72px; }
+    .section-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--orange-dark);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .section-kicker::before { content: ""; width: 28px; height: 2px; background: var(--orange); }
+    .section-title { max-width: 820px; margin-top: 18px; font-size: 52px; line-height: 1.04; font-weight: 850; }
+    .section-lead { max-width: 760px; margin-top: 20px; color: var(--muted); font-size: 19px; line-height: 1.65; }
+
+    .hero {
+      align-items: stretch;
+      background-image: url("assets/atlas-network.png");
+      background-repeat: no-repeat;
+      background-size: min(1020px, 72vw) auto;
+      background-position: calc(50% + 350px) 56%;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 58%;
+      background: rgba(255, 255, 255, 0.94);
+    }
+    .hero-copy { position: relative; z-index: 2; width: min(700px, 62%); padding: 62px 0 92px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 34px;
+      padding: 0 13px;
+      border: 1px solid #ffbd8c;
+      border-radius: 999px;
+      background: rgba(255, 248, 241, 0.92);
+      color: var(--orange-dark);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+    h1 { margin-top: 24px; font-size: 74px; line-height: .98; font-weight: 900; }
+    h1 span { color: var(--orange); }
+    .hero-lead { max-width: 640px; margin-top: 24px; color: #514640; font-size: 21px; line-height: 1.55; }
+    .hero-lead strong { color: var(--ink); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .hero-proof { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 38px; }
+    .proof-item { display: flex; align-items: center; gap: 10px; color: #5e514b; font-size: 13px; font-weight: 700; }
+    .proof-item svg { width: 19px; color: var(--orange); }
+    .scroll-hint {
+      position: absolute;
+      z-index: 3;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #8a7e76;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .how { background: var(--warm); }
+    .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 56px; border-top: 1px solid #d9cbbf; }
+    .step { min-height: 250px; padding: 30px 28px 24px 0; border-right: 1px solid #d9cbbf; }
+    .step + .step { padding-left: 28px; }
+    .step:last-child { border-right: 0; }
+    .step-number { color: var(--orange); font-size: 14px; font-weight: 900; }
+    .step-icon {
+      display: grid;
+      place-items: center;
+      width: 50px;
+      height: 50px;
+      margin-top: 22px;
+      border: 1px solid #ffc79e;
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--orange-dark);
+    }
+    .step-icon svg { width: 24px; height: 24px; }
+    .step h3 { margin-top: 22px; font-size: 21px; line-height: 1.2; }
+    .step p { margin-top: 10px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .plain-note { margin-top: 34px; padding: 16px 0 0 26px; border-left: 3px solid var(--orange); color: #5a4c45; font-size: 15px; line-height: 1.6; }
+
+    .example { background: #fff; }
+    .example-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 76px; align-items: center; }
+    .math { display: flex; align-items: baseline; gap: 18px; margin-top: 42px; white-space: nowrap; }
+    .math strong { font-size: 74px; line-height: 1; }
+    .math span { color: var(--orange); font-size: 35px; font-weight: 900; }
+    .math-labels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    .risk-inline { margin-top: 34px; padding: 18px 20px; border: 1px solid #f0c7c7; border-radius: var(--radius); background: #fff8f8; color: #704343; font-size: 14px; line-height: 1.55; }
+    .app-window { border: 1px solid #dfd4ca; border-radius: var(--radius); background: #fff; box-shadow: 0 26px 70px rgba(69, 40, 23, .13); overflow: hidden; }
+    .app-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fbf9f7; }
+    .app-dots { display: flex; gap: 6px; }
+    .app-dots i { width: 8px; height: 8px; border-radius: 50%; background: #d8cec7; }
+    .wallet-pill { padding: 7px 10px; border: 1px solid #dbcfc5; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .app-body { padding: 28px; }
+    .app-label { color: #81756d; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    .cycle-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .cycle-choice { padding: 14px 10px; border: 1px solid var(--line); border-radius: var(--radius); text-align: center; }
+    .cycle-choice.active { border-color: var(--orange); background: var(--warm); }
+    .cycle-choice strong { display: block; font-size: 17px; }
+    .cycle-choice span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .amount-row { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; padding: 15px 16px; border: 1px solid var(--line); border-radius: var(--radius); }
+    .amount-row strong { font-size: 24px; }
+    .amount-row span { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .request-button { width: 100%; margin-top: 16px; min-height: 52px; border: 0; border-radius: var(--radius); background: var(--orange); color: #fff; font-size: 15px; font-weight: 900; }
+    .app-caption { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--green); font-size: 12px; font-weight: 800; }
+
+    .verify { background: var(--warm); }
+    .verify-head { display: flex; align-items: end; justify-content: space-between; gap: 40px; }
+    .verify-head .section-lead { max-width: 480px; margin: 0; }
+    .documents { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 48px; }
+    .document {
+      min-height: 188px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      border: 1px solid #e4d6ca;
+      border-radius: var(--radius);
+      background: #fff;
+      text-decoration: none;
+      transition: transform .18s ease, border-color .18s ease;
+    }
+    .document:hover { transform: translateY(-3px); border-color: #ffad73; }
+    .document-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .doc-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: var(--radius); background: var(--warm-2); color: var(--orange-dark); }
+    .doc-icon svg, .document-arrow svg { width: 20px; height: 20px; }
+    .document-arrow { color: #a09187; }
+    .document h3 { margin-top: 26px; font-size: 19px; }
+    .document p { margin-top: 9px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .verification-note { margin-top: 22px; color: #70635b; font-size: 13px; }
+
+    .risks { background: var(--charcoal); color: #fff; border-bottom-color: #332d28; }
+    .risks .section-kicker { color: #ff9a58; }
+    .risks .section-title { max-width: 760px; }
+    .risk-layout { display: grid; grid-template-columns: .86fr 1.14fr; gap: 76px; align-items: start; }
+    .risk-summary { margin-top: 26px; color: #cfc6c0; font-size: 19px; line-height: 1.65; }
+    .risk-list { border-top: 1px solid #4b433d; }
+    .risk-item { display: grid; grid-template-columns: 38px 1fr; gap: 16px; padding: 22px 0; border-bottom: 1px solid #4b433d; }
+    .risk-item svg { width: 22px; color: #ff8a3d; }
+    .risk-item h3 { font-size: 17px; }
+    .risk-item p { margin-top: 6px; color: #bfb4ad; font-size: 14px; line-height: 1.55; }
+    .security-strip { display: flex; flex-wrap: wrap; gap: 14px 26px; margin-top: 34px; color: #eee6e1; font-size: 13px; font-weight: 800; }
+    .security-strip span { display: inline-flex; align-items: center; gap: 8px; }
+    .security-strip svg { width: 17px; color: #ff8a3d; }
+
+    .official { background: #fff; }
+    .official-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 82px; align-items: center; }
+    .channel-list { margin-top: 34px; border-top: 1px solid var(--line); }
+    .channel {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      min-height: 72px;
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+    }
+    .channel-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius); background: var(--warm); color: var(--orange-dark); }
+    .channel-icon svg, .channel > svg { width: 20px; height: 20px; }
+    .channel strong { display: block; font-size: 15px; }
+    .channel small { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .final-panel { padding: 42px; border: 1px solid #e4d6ca; border-radius: var(--radius); background: var(--warm); }
+    .final-panel h2 { font-size: 38px; line-height: 1.1; }
+    .final-panel p { margin-top: 18px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+    .final-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .final-disclaimer { margin-top: 24px; padding-top: 18px; border-top: 1px solid #dfd2c7; color: #7b6e66; font-size: 11px; line-height: 1.55; }
+
+    .site-footer { padding: 24px 0; background: #0f0d0b; color: #a9a09a; font-size: 12px; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+
+    @media (max-width: 1020px) {
+      .nav { display: none; }
+      .menu-button { display: grid; place-items: center; }
+      .hero { background-size: 900px auto; background-position: calc(50% + 260px) 70%; }
+      .hero::before { width: 70%; }
+      .hero-copy { width: 70%; }
+      h1 { font-size: 60px; }
+      .section-title { font-size: 44px; }
+      .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .step:nth-child(2) { border-right: 0; }
+      .step:nth-child(3), .step:nth-child(4) { border-top: 1px solid #d9cbbf; }
+      .example-grid, .risk-layout, .official-grid { grid-template-columns: 1fr; gap: 46px; }
+      .documents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .screen { min-height: auto; }
+    }
+
+    @media (max-width: 680px) {
+      :root { --header: 66px; }
+      .container { width: min(100% - 30px, 1180px); }
+      .site-header { height: var(--header); }
+      .logo { width: 146px; }
+      .header-actions > .button { display: none; }
+      .screen-inner { padding: 58px 0; }
+      .hero { min-height: calc(100svh - var(--header)); background-size: 760px auto; background-position: 52% 90%; }
+      .hero::before { width: 100%; background: rgba(255, 255, 255, .88); }
+      .hero-copy { width: 100%; padding: 54px 0 112px; }
+      h1 { font-size: 45px; }
+      .hero-lead { font-size: 17px; }
+      .hero-proof { gap: 13px 20px; }
+      .scroll-hint { display: none; }
+      .section-title { font-size: 36px; }
+      .section-lead { font-size: 17px; }
+      .steps { grid-template-columns: 1fr; margin-top: 38px; }
+      .step, .step + .step { min-height: 0; padding: 24px 0; border-right: 0; border-top: 1px solid #d9cbbf; }
+      .step:first-child { border-top: 0; }
+      .step-icon { margin-top: 16px; }
+      .math { gap: 9px; }
+      .math strong { font-size: 42px; }
+      .math span { font-size: 24px; }
+      .math-labels { gap: 7px; font-size: 9px; }
+      .app-body { padding: 20px; }
+      .verify-head { display: block; }
+      .verify-head .section-lead { margin-top: 20px; }
+      .documents { grid-template-columns: 1fr; }
+      .document { min-height: 160px; }
+      .risk-layout { gap: 38px; }
+      .final-panel { padding: 28px 22px; }
+      .final-panel h2 { font-size: 31px; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#top" aria-label="Atlas System - наверх"><img class="logo" src="assets/atlas-logo.png" alt="Atlas System"></a>
+      <nav class="nav" aria-label="Навигация по странице">
+        <a href="#how">Как работает</a>
+        <a href="#example">Пример</a>
+        <a href="#verify">Проверка</a>
+        <a href="#risks">Риски</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button primary" href="https://atlas-system.io/ru/" target="_blank" rel="noopener">Открыть Atlas <i data-lucide="arrow-up-right"></i></a>
+        <button class="menu-button" type="button" aria-label="Открыть меню" id="menuButton"><i data-lucide="menu"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="screen hero" data-screen="01-hero">
+      <div class="container">
+        <div class="hero-copy">
+          <div class="eyebrow">Знакомство и независимая проверка</div>
+          <h1>Atlas <span>System</span></h1>
+          <p class="hero-lead"><strong>Цифровая платформа добровольного взаимного финансирования.</strong> Подключите Web3-кошелёк, выберите Smart Cycle и самостоятельно подтвердите оказание помощи через смарт-контракт.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://atlas-system.io/ru/" target="_blank" rel="noopener">Открыть Atlas <i data-lucide="arrow-up-right"></i></a>
+            <a class="button" href="#verify">Проверить документы <i data-lucide="file-check-2"></i></a>
+          </div>
+          <div class="hero-proof">
+            <div class="proof-item"><i data-lucide="wallet-cards"></i> Собственный Web3-кошелёк</div>
+            <div class="proof-item"><i data-lucide="scan-search"></i> Проверяемые on-chain операции</div>
+            <div class="proof-item"><i data-lucide="shield-check"></i> Открытое раскрытие рисков</div>
+          </div>
+        </div>
+      </div>
+      <a class="scroll-hint" href="#how">Как это работает <i data-lucide="arrow-down"></i></a>
+    </section>
+
+    <section class="screen how" id="how" data-screen="02-how-it-works">
+      <div class="container screen-inner">
+        <div class="section-kicker">Smart Cycle</div>
+        <h2 class="section-title">Четыре действия. Управление остаётся у пользователя.</h2>
+        <p class="section-lead">Atlas не хранит seed-фразу и не получает доступ к вашему кошельку. Каждое действие подтверждается пользователем в интерфейсе кошелька.</p>
+        <div class="steps">
+          <article class="step">
+            <div class="step-number">01</div>
+            <div class="step-icon"><i data-lucide="wallet"></i></div>
+            <h3>Подключите кошелёк</h3>
+            <p>Откройте официальный сайт и подключите совместимый Web3-кошелёк.</p>
+          </article>
+          <article class="step">
+            <div class="step-number">02</div>
+            <div class="step-icon"><i data-lucide="calendar-clock"></i></div>
+            <h3>Выберите Smart Cycle</h3>
+            <p>Укажите доступную сумму и срок, предварительно изучив условия цикла.</p>
+          </article>
+          <article class="step">
+            <div class="step-number">03</div>
+            <div class="step-icon"><i data-lucide="hand-heart"></i></div>
+            <h3>Окажите помощь</h3>
+            <p>Проверьте параметры и самостоятельно подтвердите транзакцию в кошельке.</p>
+          </article>
+          <article class="step">
+            <div class="step-number">04</div>
+            <div class="step-icon"><i data-lucide="badge-check"></i></div>
+            <h3>Запросите помощь</h3>
+            <p>После завершения срока используйте Request Assistance согласно правилам Smart Cycle.</p>
+          </article>
+        </div>
+        <p class="plain-note">Smart Cycle - это добровольная помощь системе. Возврат основной суммы и расчётной Delta не гарантируется.</p>
+      </div>
+    </section>
+
+    <section class="screen example" id="example" data-screen="03-example">
+      <div class="container screen-inner example-grid">
+        <div>
+          <div class="section-kicker">Пример расчёта</div>
+          <h2 class="section-title">Один день без сложных формул</h2>
+          <p class="section-lead">Иллюстрация для однодневного Smart Cycle с расчётной Delta 0,3%.</p>
+          <div class="math" aria-label="1000 плюс 3 равно 1003 USDT">
+            <strong>1 000</strong><span>+</span><strong>3</strong><span>=</span><strong>1 003</strong>
+          </div>
+          <div class="math-labels"><span>Помощь, USDT</span><span>Delta</span><span>Запрос, USDT</span></div>
+          <p class="risk-inline"><strong>Важно:</strong> это расчётный пример, а не обещание результата. Исполнение запроса зависит от правил Smart Cycle, состояния смарт-контракта и доступной ликвидности.</p>
+        </div>
+        <div class="app-window" aria-label="Макет интерфейса Smart Cycle">
+          <div class="app-top"><div class="app-dots"><i></i><i></i><i></i></div><div class="wallet-pill">0x71...A92F</div></div>
+          <div class="app-body">
+            <div class="app-label">Выберите срок</div>
+            <div class="cycle-row">
+              <div class="cycle-choice active"><strong>1 день</strong><span>Delta 0,3%</span></div>
+              <div class="cycle-choice"><strong>5 дней</strong><span>Delta 2%</span></div>
+              <div class="cycle-choice"><strong>10 дней</strong><span>Delta 5%</span></div>
+            </div>
+            <div class="amount-row"><div><div class="app-label">Сумма помощи</div><strong>1 000</strong></div><span>USDT</span></div>
+            <button class="request-button" type="button">Оказать помощь</button>
+            <div class="app-caption"><i data-lucide="shield-check"></i> Подтверждение выполняется в вашем кошельке</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen verify" id="verify" data-screen="04-verification">
+      <div class="container screen-inner">
+        <div class="verify-head">
+          <div>
+            <div class="section-kicker">Проверяйте самостоятельно</div>
+            <h2 class="section-title">Все основания для решения - в открытом доступе</h2>
+          </div>
+          <p class="section-lead">Не полагайтесь только на рекламное письмо или отзывы. Сверьте правила, документы и on-chain данные.</p>
+        </div>
+        <div class="documents">
+          <a class="document" href="https://atlas-system.io/ru/documents/" target="_blank" rel="noopener">
+            <div class="document-top"><span class="doc-icon"><i data-lucide="badge-check"></i></span><span class="document-arrow"><i data-lucide="arrow-up-right"></i></span></div>
+            <div><h3>Аудит</h3><p>Объём проверки, ограничения и опубликованные результаты.</p></div>
+          </a>
+          <a class="document" href="https://atlas-system.io/ru/documents/" target="_blank" rel="noopener">
+            <div class="document-top"><span class="doc-icon"><i data-lucide="blocks"></i></span><span class="document-arrow"><i data-lucide="arrow-up-right"></i></span></div>
+            <div><h3>Контракты и BscScan</h3><p>Официальный реестр адресов и история транзакций.</p></div>
+          </a>
+          <a class="document" href="https://atlas-system.io/ru/documents/" target="_blank" rel="noopener">
+            <div class="document-top"><span class="doc-icon"><i data-lucide="book-open-text"></i></span><span class="document-arrow"><i data-lucide="arrow-up-right"></i></span></div>
+            <div><h3>Whitepaper</h3><p>Архитектура, механика Smart Cycle и терминология.</p></div>
+          </a>
+          <a class="document" href="https://atlas-system.io/ru/documents/" target="_blank" rel="noopener">
+            <div class="document-top"><span class="doc-icon"><i data-lucide="scroll-text"></i></span><span class="document-arrow"><i data-lucide="arrow-up-right"></i></span></div>
+            <div><h3>Манифест</h3><p>Принципы добровольного взаимного финансирования.</p></div>
+          </a>
+          <a class="document" href="https://atlas-system.io/ru/smartcycle-1/" target="_blank" rel="noopener">
+            <div class="document-top"><span class="doc-icon"><i data-lucide="workflow"></i></span><span class="document-arrow"><i data-lucide="arrow-up-right"></i></span></div>
+            <div><h3>Правила Smart Cycle</h3><p>Сроки, расчётная Delta и порядок запроса помощи.</p></div>
+          </a>
+          <a class="document" href="https://atlas-system.io/ru/risk-disclosure/" target="_blank" rel="noopener">
+            <div class="document-top"><span class="doc-icon"><i data-lucide="triangle-alert"></i></span><span class="document-arrow"><i data-lucide="arrow-up-right"></i></span></div>
+            <div><h3>Раскрытие рисков</h3><p>Условия, при которых результат может отличаться от расчёта.</p></div>
+          </a>
+        </div>
+        <p class="verification-note">Адреса контрактов следует брать только из официального реестра Atlas System.</p>
+      </div>
+    </section>
+
+    <section class="screen risks" id="risks" data-screen="05-risks">
+      <div class="container screen-inner risk-layout">
+        <div>
+          <div class="section-kicker">Риски без мелкого шрифта</div>
+          <h2 class="section-title">Понимайте условия до подтверждения транзакции</h2>
+          <p class="risk-summary">Atlas показывает расчётную механику, но не обещает обязательный возврат помощи или получение Delta.</p>
+          <div class="security-strip">
+            <span><i data-lucide="key-round"></i> Никому не сообщайте seed-фразу</span>
+            <span><i data-lucide="link"></i> Проверяйте домен</span>
+            <span><i data-lucide="scan-search"></i> Сверяйте транзакцию</span>
+          </div>
+        </div>
+        <div class="risk-list">
+          <article class="risk-item"><i data-lucide="circle-dollar-sign"></i><div><h3>Возврат не гарантируется</h3><p>Каждая сумма является добровольной помощью. Результат зависит от условий системы и доступной ликвидности.</p></div></article>
+          <article class="risk-item"><i data-lucide="activity"></i><div><h3>Delta является расчётной</h3><p>Отображаемая Delta описывает сценарий Smart Cycle, но не является обещанием дохода.</p></div></article>
+          <article class="risk-item"><i data-lucide="network"></i><div><h3>Есть блокчейн-риски</h3><p>Учитывайте состояние сети, комиссии, ошибки пользователя и риски взаимодействия со смарт-контрактом.</p></div></article>
+          <article class="risk-item"><i data-lucide="mouse-pointer-click"></i><div><h3>Решение принимаете вы</h3><p>Проверяйте документы и подтверждайте только те действия, смысл и последствия которых вам понятны.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen official" id="official" data-screen="06-official">
+      <div class="container screen-inner official-grid">
+        <div>
+          <div class="section-kicker">Официальные источники</div>
+          <h2 class="section-title">Продолжайте только через проверенные каналы</h2>
+          <div class="channel-list">
+            <a class="channel" href="https://atlas-system.io/ru/" target="_blank" rel="noopener"><span class="channel-icon"><i data-lucide="globe-2"></i></span><span><strong>Официальный сайт</strong><small>atlas-system.io</small></span><i data-lucide="arrow-up-right"></i></a>
+            <a class="channel" href="https://www.youtube.com/watch?v=xvgYC0EooqE" target="_blank" rel="noopener"><span class="channel-icon"><i data-lucide="youtube"></i></span><span><strong>YouTube</strong><small>Вводное видео Atlas System</small></span><i data-lucide="arrow-up-right"></i></a>
+            <a class="channel" href="https://atlas-system.io/ru/contacts/" target="_blank" rel="noopener"><span class="channel-icon"><i data-lucide="send"></i></span><span><strong>Telegram и поддержка</strong><small>Ссылки только с официальной страницы контактов</small></span><i data-lucide="arrow-up-right"></i></a>
+          </div>
+        </div>
+        <div class="final-panel">
+          <h2>Изучите. Проверьте. Решите самостоятельно.</h2>
+          <p>Если механика, документы и риски понятны, перейдите на официальный сайт Atlas System и выберите дальнейшее действие.</p>
+          <div class="final-actions">
+            <a class="button primary" href="https://atlas-system.io/ru/" target="_blank" rel="noopener">Открыть Atlas <i data-lucide="arrow-up-right"></i></a>
+            <a class="button" href="https://atlas-system.io/ru/documents/" target="_blank" rel="noopener">Документы <i data-lucide="files"></i></a>
+          </div>
+          <p class="final-disclaimer">Информация носит образовательный и информационный характер. Она не является финансовой рекомендацией или гарантией результата.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner"><span>Atlas System - digital mutual funding platform</span><span>Проверяйте официальный домен перед подключением кошелька</span></div>
+  </footer>
+
+  <script src="assets/lucide.min.js"></script>
+  <script>
+    if (window.lucide) window.lucide.createIcons();
+    document.getElementById('menuButton').addEventListener('click', function () {
+      document.getElementById('how').scrollIntoView({ behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
