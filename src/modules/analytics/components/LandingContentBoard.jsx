@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import "./LandingContentBoard.css";
+import LandingLibraryBoard from "./LandingLibraryBoard";
 import {
   LANDING_SOURCE_URL,
   landingBriefs,
@@ -16,6 +17,14 @@ const LANDINGS = [
     title: "Лендинг 1",
     subtitle: "Главная продающая страница Atlas System",
     status: "Вычитано",
+    href: "/landings/landing-1/",
+  },
+  {
+    id: "atlas-email-intro",
+    title: "Email / Web3",
+    subtitle: "Знакомство, проверка документов и переход в Atlas",
+    status: "Готов",
+    href: "/landings/atlas-email-intro/",
   },
 ];
 
@@ -87,7 +96,10 @@ function LandingContentBoard() {
 
   async function copyLandingText() {
     try {
-      await navigator.clipboard.writeText(landingCopy);
+      const copyValue = activeLanding.id === "atlas-email-intro"
+        ? new URL(activeLanding.href, window.location.origin).toString()
+        : landingCopy;
+      await navigator.clipboard.writeText(copyValue);
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1600);
     } catch {
@@ -102,15 +114,15 @@ function LandingContentBoard() {
           <span className="analytics-kicker">SuperSUS Content / лендинги</span>
           <h2>Лендинги Atlas</h2>
           <p>
-            Рабочая витрина для вычитки и сборки посадочных страниц. «Лендинг 1» пересобран из Google Doc,
-            сверстан в стиле Atlas и очищен от рискованных обещаний.
+            Рабочая витрина готовых посадочных страниц Atlas: исходные тексты, ТЗ, вычитка, публичные версии и
+            отдельные лендинги под конкретные источники трафика.
           </p>
         </div>
         <div className="analytics-landings-actions">
-          <a href="/landings/landing-1/" target="_blank" rel="noreferrer">Открыть готовый лендинг</a>
-          <a href={LANDING_SOURCE_URL} target="_blank" rel="noreferrer">Открыть Google Doc</a>
+          <a href={activeLanding.href} target="_blank" rel="noreferrer">Открыть выбранный лендинг</a>
+          {activeLanding.id === "landing-1" ? <a href={LANDING_SOURCE_URL} target="_blank" rel="noreferrer">Открыть Google Doc</a> : null}
           <button type="button" onClick={copyLandingText}>
-            {copyState === "copied" ? "Скопировано" : activeMode === "briefs" ? "Скопировать ТЗ" : "Скопировать текст"}
+            {copyState === "copied" ? "Скопировано" : activeLanding.id === "atlas-email-intro" ? "Скопировать ссылку" : activeMode === "briefs" ? "Скопировать ТЗ" : "Скопировать текст"}
           </button>
         </div>
       </div>
@@ -243,6 +255,10 @@ function LandingContentBoard() {
         </aside>
 
         <div className="analytics-landings-main">
+          {activeLanding.id === "atlas-email-intro" ? (
+            <LandingLibraryBoard />
+          ) : (
+          <>
           <section className="analytics-landings-status">
             <article>
               <span>Источник</span>
@@ -440,6 +456,8 @@ function LandingContentBoard() {
               <a href="https://atlas-system.io/" target="_blank" rel="noreferrer">Перейти к Atlas System</a>
             </section>
           </article>
+          </>
+          )}
         </div>
       </div>
       )}
