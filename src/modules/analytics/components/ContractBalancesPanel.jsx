@@ -111,7 +111,7 @@ export default function ContractBalancesPanel() {
     { label: "Осталось по событиям", value: formatToken(flowSnapshot?.totals?.remaining, "USDT"), note: "создано циклов минус выплаты и fee" },
   ];
   const cycleStats = flowSnapshot?.cycleStats;
-  const cycleTotals = cycleStats?.totals;
+  const cycleTotals = cycleStats?.productionTotals || cycleStats?.totals;
   const cycleTermRows = cycleStats?.byTerm || [];
   const cycleSummaryStats = [
     { label: "Открыто циклов", value: cycleTotals?.open || 0, note: `активный объём ${formatToken(cycleTotals?.openVolume, "USDT")}` },
@@ -189,7 +189,8 @@ export default function ContractBalancesPanel() {
                     <h2>Циклы по срокам и ожидаемая нагрузка</h2>
                     <p className="chart-card-subtitle">
                       Открытые и закрытые циклы восстановлены по orderId из событий Locked/Claimed. Нагрузка показывает
-                      расчётную сумму, которая уже доступна или ещё должна стать доступной по условиям циклов.
+                      расчётную сумму, которая уже доступна или ещё должна стать доступной по условиям циклов. Рабочая
+                      сводка не включает Contract Test, но тестовые события сохранены в таблице отдельной строкой.
                     </p>
                   </div>
                 </div>
@@ -241,6 +242,7 @@ export default function ContractBalancesPanel() {
                   <span><strong>Открыт:</strong> {cycleStats.definitions?.open}</span>
                   <span><strong>Закрыт:</strong> {cycleStats.definitions?.closed}</span>
                   <span><strong>Доступно:</strong> {cycleStats.definitions?.claimable}</span>
+                  <span><strong>Рабочая сводка:</strong> {cycleStats.definitions?.production}</span>
                 </div>
               </section>
             ) : null}

@@ -1126,6 +1126,11 @@ function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
   const now = Number(snapshotTimestamp || Math.floor(Date.now() / 1000));
   const byTermMap = new Map();
   const totals = createAtlasCycleStatsBucket({ contractId: "all", contractName: "Все потоки", tierName: "Все сроки" });
+  const productionTotals = createAtlasCycleStatsBucket({
+    contractId: "production",
+    contractName: "Рабочие потоки",
+    tierName: "Без Contract Test",
+  });
 
   for (const event of eventRows) {
     if (event.type !== "locked") continue;
@@ -1170,7 +1175,11 @@ function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
       next30DaysLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(accruedDaysIn(30));
     }
 
-    for (const bucket of [byTermMap.get(termKey), totals]) {
+    const isContractTest = event.contractId === "lockup-flow" && event.tier === 0;
+    const buckets = [byTermMap.get(termKey), totals];
+    if (!isContractTest) buckets.push(productionTotals);
+
+    for (const bucket of buckets) {
       bucket.total += 1;
       bucket.totalVolumeRaw += amountLockedRaw;
       if (closed) {
@@ -1216,8 +1225,10 @@ function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
       closed: "Lockup: выполнен Claim. Daily: выплачены все 200 расчётных дней.",
       claimable: "Открытый цикл, по которому прямо сейчас доступна сумма к Claim.",
       load: "Расчётная оставшаяся сумма выплат по условиям открытых циклов.",
+      production: "Рабочая сводка не включает Contract Test; тестовые события показаны отдельной строкой.",
     },
     totals: serializeBucket(totals),
+    productionTotals: serializeBucket(productionTotals),
     byTerm: [...byTermMap.values()]
       .sort((left, right) => left.termSeconds - right.termSeconds || left.tier - right.tier)
       .map(serializeBucket),
