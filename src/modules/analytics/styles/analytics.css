@@ -713,6 +713,73 @@
   display: block;
 }
 
+.analytics-contract-cycle-load {
+  display: grid;
+  gap: 0.95rem;
+  margin-top: 1.2rem;
+}
+
+.analytics-contract-cycle-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.analytics-contract-cycle-summary article {
+  display: grid;
+  gap: 0.3rem;
+  min-height: 6.6rem;
+  border: 1px solid rgba(79, 134, 255, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: rgba(79, 134, 255, 0.055);
+}
+
+.analytics-contract-cycle-summary span {
+  color: rgba(185, 204, 225, 0.82);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-contract-cycle-summary strong {
+  color: #ffffff;
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+
+.analytics-contract-cycle-summary small {
+  color: rgba(220, 231, 255, 0.7);
+  line-height: 1.4;
+}
+
+.analytics-contract-cycle-table td:first-child strong,
+.analytics-contract-cycle-table td:first-child span {
+  display: block;
+}
+
+.analytics-contract-cycle-table td:first-child span {
+  margin-top: 0.2rem;
+  color: rgba(185, 204, 225, 0.68);
+  font-size: 0.78rem;
+}
+
+.analytics-contract-cycle-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.75rem;
+  color: rgba(185, 204, 225, 0.72);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.analytics-contract-cycle-legend strong {
+  color: #dce7ff;
+}
+
 .analytics-contract-partner-program {
   display: grid;
   gap: 0.95rem;
@@ -879,7 +946,8 @@
   .analytics-pool-monitor-details,
   .analytics-pool-monitor-grid,
   .analytics-contract-balances-hero,
-  .analytics-contract-balances-grid {
+  .analytics-contract-balances-grid,
+  .analytics-contract-cycle-summary {
     grid-template-columns: 1fr;
   }
 

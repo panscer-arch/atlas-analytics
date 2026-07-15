@@ -105,10 +105,19 @@ export default function ContractBalancesPanel() {
   ];
   const flowRows = flowSnapshot?.contracts || [];
   const flowStats = [
-    { label: "Всего создали циклов", value: formatToken(flowSnapshot?.totals?.provided, "USDT"), note: "сумма Locked.amountLocked по Lockup/Daily" },
-    { label: "Вывели участники", value: formatToken(flowSnapshot?.totals?.claimed, "USDT"), note: "сумма выплат пользователям по Claimed" },
-    { label: "Fee / treasury", value: formatToken(flowSnapshot?.totals?.fee, "USDT"), note: "комиссия из событий Claimed" },
+    { label: "Входящий поток", value: formatToken(flowSnapshot?.totals?.provided, "USDT"), note: "вся помощь, внесённая в Lockup и Daily" },
+    { label: "Выплачено участникам", value: formatToken(flowSnapshot?.totals?.claimed, "USDT"), note: "фактические net-выплаты по Claim" },
+    { label: "Получено комиссий", value: formatToken(flowSnapshot?.totals?.fee, "USDT"), note: "фактически удержанный platform fee" },
     { label: "Осталось по событиям", value: formatToken(flowSnapshot?.totals?.remaining, "USDT"), note: "создано циклов минус выплаты и fee" },
+  ];
+  const cycleStats = flowSnapshot?.cycleStats;
+  const cycleTotals = cycleStats?.totals;
+  const cycleTermRows = cycleStats?.byTerm || [];
+  const cycleSummaryStats = [
+    { label: "Открыто циклов", value: cycleTotals?.open || 0, note: `активный объём ${formatToken(cycleTotals?.openVolume, "USDT")}` },
+    { label: "Закрыто циклов", value: cycleTotals?.closed || 0, note: `закрытый объём ${formatToken(cycleTotals?.closedVolume, "USDT")}` },
+    { label: "Доступно к Claim", value: cycleTotals?.claimable || 0, note: `нагрузка сейчас ${formatToken(cycleTotals?.claimableNow, "USDT")}` },
+    { label: "Осталось выплатить", value: formatToken(cycleTotals?.remainingLoad, "USDT"), note: `новая нагрузка: 7д ${formatToken(cycleTotals?.next7DaysLoad, "USDT")} · 30д ${formatToken(cycleTotals?.next30DaysLoad, "USDT")}` },
   ];
   const dailyRows = flowSnapshot?.daily || [];
   const dailyRowsDesc = [...dailyRows].reverse();
@@ -122,8 +131,8 @@ export default function ContractBalancesPanel() {
     { label: "Lockup Delta", value: formatToken(partnerProgram?.totals?.lockupDelta, "USDT"), note: "amountEarned минус amountLocked" },
     { label: "Daily Delta", value: formatToken(partnerProgram?.totals?.dailyDelta, "USDT"), note: "Core 1,1% / Elite 1,3% в день на 200 дней" },
     { label: "Макс. партнёрка 60%", value: formatToken(partnerProgram?.totals?.maxReward, "USDT"), note: "теоретически для статуса Executive" },
-    { label: "Комиссия с Delta 10%", value: formatToken(platformCommission?.deltaCommission, "USDT"), note: "не с тела цикла, только с добавочной Delta" },
-    { label: "Фактически удержано fee", value: formatToken(platformCommission?.collectedFee, "USDT"), note: "уже удержано по событиям Claimed" },
+    { label: "Получено комиссий", value: formatToken(platformCommission?.collectedFee, "USDT"), note: "фактически удержано по завершённым Claim" },
+    { label: "Ожидается комиссий", value: formatToken(platformCommission?.unclaimedDeltaCommission, "USDT"), note: "будет удержано только при будущих Claim" },
   ];
 
   return (
@@ -172,6 +181,69 @@ export default function ContractBalancesPanel() {
                 </article>
               ))}
             </div>
+            {cycleStats ? (
+              <section className="analytics-contract-cycle-load">
+                <div className="analytics-data-table-head">
+                  <div>
+                    <span className="analytics-kicker">Cycles & load forecast</span>
+                    <h2>Циклы по срокам и ожидаемая нагрузка</h2>
+                    <p className="chart-card-subtitle">
+                      Открытые и закрытые циклы восстановлены по orderId из событий Locked/Claimed. Нагрузка показывает
+                      расчётную сумму, которая уже доступна или ещё должна стать доступной по условиям циклов.
+                    </p>
+                  </div>
+                </div>
+                <div className="analytics-contract-cycle-summary">
+                  {cycleSummaryStats.map((item) => (
+                    <article key={item.label}>
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                      <small>{item.note}</small>
+                    </article>
+                  ))}
+                </div>
+                <div className="analytics-table-responsive">
+                  <table className="analytics-table analytics-contract-cycle-table">
+                    <thead>
+                      <tr>
+                        <th>Поток / тариф</th>
+                        <th>Срок</th>
+                        <th>Всего</th>
+                        <th>Открыто</th>
+                        <th>Доступно к Claim</th>
+                        <th>Закрыто</th>
+                        <th>Объём открытых</th>
+                        <th>Нагрузка сейчас</th>
+                        <th>Осталось выплатить</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cycleTermRows.map((row) => (
+                        <tr key={`${row.contractId}-${row.tier}-${row.termSeconds}`}>
+                          <td>
+                            <strong>{row.tierName}</strong>
+                            <span>{row.contractName}</span>
+                          </td>
+                          <td>{row.termLabel}</td>
+                          <td>{row.total}</td>
+                          <td><strong className="analytics-contract-balance analytics-contract-balance-success">{row.open}</strong></td>
+                          <td><strong className="analytics-contract-balance analytics-contract-balance-warning">{row.claimable}</strong></td>
+                          <td>{row.closed}</td>
+                          <td>{formatToken(row.openVolume, "USDT")}</td>
+                          <td>{formatToken(row.claimableNow, "USDT")}</td>
+                          <td>{formatToken(row.remainingLoad, "USDT")}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="analytics-contract-cycle-legend">
+                  <span><strong>Открыт:</strong> {cycleStats.definitions?.open}</span>
+                  <span><strong>Закрыт:</strong> {cycleStats.definitions?.closed}</span>
+                  <span><strong>Доступно:</strong> {cycleStats.definitions?.claimable}</span>
+                </div>
+              </section>
+            ) : null}
             {dailyRows.length ? (
               <section className="analytics-contract-calendar">
                 <div className="analytics-data-table-head">
@@ -263,19 +335,19 @@ export default function ContractBalancesPanel() {
                 {platformCommission ? (
                   <div className="analytics-contract-commission-grid">
                     <article>
-                      <span>Расчётная комиссия с Delta</span>
-                      <strong>{formatToken(platformCommission.deltaCommission, "USDT")}</strong>
-                      <small>Lockup {formatToken(platformCommission.lockupDeltaCommission, "USDT")} · Daily {formatToken(platformCommission.dailyDeltaCommission, "USDT")}</small>
+                      <span>Получено фактически</span>
+                      <strong>{formatToken(platformCommission.collectedFee, "USDT")}</strong>
+                      <small>уже удержано при выполненных Claim</small>
                     </article>
                     <article>
-                      <span>Ещё не удержано с Delta</span>
+                      <span>Ожидается в будущем</span>
                       <strong>{formatToken(platformCommission.unclaimedDeltaCommission, "USDT")}</strong>
-                      <small>разница между расчётными 10% и фактическим fee</small>
+                      <small>будет получено только при будущих Claim</small>
                     </article>
                     <article>
-                      <span>Комиссия с партнёрки, максимум</span>
-                      <strong>{formatToken(platformCommission.maxPartnerBonusCommission, "USDT")}</strong>
-                      <small>10% от теоретического Executive-бонуса</small>
+                      <span>Расчётный итог по Delta</span>
+                      <strong>{formatToken(platformCommission.deltaCommission, "USDT")}</strong>
+                      <small>факт плюс ожидаемая комиссия по текущим циклам</small>
                     </article>
                   </div>
                 ) : null}

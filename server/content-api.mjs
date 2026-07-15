@@ -129,6 +129,9 @@ const ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER = {
   0: 110,
   1: 130,
 };
+const ATLAS_LOCKUP_TIER_NAMES = ["Contract Test", "Launch", "Momentum", "Premiere", "President", "Imperium"];
+const ATLAS_DAILY_TIER_NAMES = ["Core", "Elite"];
+const ATLAS_DAY_SECONDS = 24 * 60 * 60;
 const ATLAS_DAILY_REWARD_DAYS = 200n;
 const ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE = 300n;
 const ATLAS_PLATFORM_COMMISSION_PERMILLE = 100n;
@@ -1043,6 +1046,185 @@ function sumEventDataWords(data = "0x", indexes = []) {
   return indexes.reduce((sum, index) => sum + hexToBigInt(getDataWord(data, index)), 0n);
 }
 
+function getEventOrderId(log = {}) {
+  return hexToBigInt(log?.topics?.[1] || "0x0").toString();
+}
+
+function getAtlasLockedCycleDetails(contractId = "", data = "0x") {
+  if (contractId === "lockup-flow") {
+    const lockTime = Number(hexToBigInt(getDataWord(data, 4)));
+    const unlockTime = Number(hexToBigInt(getDataWord(data, 5)));
+    const tier = Number(hexToBigInt(getDataWord(data, 3)));
+    return {
+      tier,
+      tierName: ATLAS_LOCKUP_TIER_NAMES[tier] || `Tier ${tier}`,
+      lockTime,
+      unlockTime,
+      termSeconds: Math.max(0, unlockTime - lockTime),
+      expectedLoadRaw: hexToBigInt(getDataWord(data, 1)),
+    };
+  }
+
+  if (contractId === "daily-flow") {
+    const lockTime = Number(hexToBigInt(getDataWord(data, 2)));
+    const tier = Number(hexToBigInt(getDataWord(data, 1)));
+    return {
+      tier,
+      tierName: ATLAS_DAILY_TIER_NAMES[tier] || `Tier ${tier}`,
+      lockTime,
+      unlockTime: lockTime + Number(ATLAS_DAILY_REWARD_DAYS) * ATLAS_DAY_SECONDS,
+      termSeconds: Number(ATLAS_DAILY_REWARD_DAYS) * ATLAS_DAY_SECONDS,
+      expectedLoadRaw: getAtlasPartnerDeltaRaw(contractId, data),
+    };
+  }
+
+  return { tier: 0, tierName: "Unknown", lockTime: 0, unlockTime: 0, termSeconds: 0, expectedLoadRaw: 0n };
+}
+
+function formatAtlasTerm(termSeconds = 0) {
+  if (termSeconds > 0 && termSeconds < ATLAS_DAY_SECONDS) {
+    return `${Math.round(termSeconds / 60)} мин`;
+  }
+  const days = Math.round(termSeconds / ATLAS_DAY_SECONDS);
+  return `${days} дн.`;
+}
+
+function createAtlasCycleStatsBucket({ contractId = "", contractName = "", tier = 0, tierName = "", termSeconds = 0 } = {}) {
+  return {
+    contractId,
+    contractName,
+    tier,
+    tierName,
+    termSeconds,
+    termLabel: formatAtlasTerm(termSeconds),
+    total: 0,
+    open: 0,
+    claimable: 0,
+    closed: 0,
+    termEnded: 0,
+    totalVolumeRaw: 0n,
+    openVolumeRaw: 0n,
+    closedVolumeRaw: 0n,
+    claimableNowRaw: 0n,
+    remainingLoadRaw: 0n,
+    next7DaysLoadRaw: 0n,
+    next30DaysLoadRaw: 0n,
+  };
+}
+
+function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
+  const claimsByCycle = new Map();
+  for (const event of eventRows) {
+    if (event.type !== "claimed") continue;
+    const key = `${event.contractId}:${event.orderId}`;
+    const claim = claimsByCycle.get(key) || { events: 0, claimedDays: 0 };
+    claim.events += 1;
+    claim.claimedDays += event.claimedDays || 0;
+    claimsByCycle.set(key, claim);
+  }
+
+  const now = Number(snapshotTimestamp || Math.floor(Date.now() / 1000));
+  const byTermMap = new Map();
+  const totals = createAtlasCycleStatsBucket({ contractId: "all", contractName: "Все потоки", tierName: "Все сроки" });
+
+  for (const event of eventRows) {
+    if (event.type !== "locked") continue;
+    const key = `${event.contractId}:${event.orderId}`;
+    const claim = claimsByCycle.get(key) || { events: 0, claimedDays: 0 };
+    const termKey = `${event.contractId}:${event.tier}:${event.termSeconds}`;
+    if (!byTermMap.has(termKey)) {
+      byTermMap.set(termKey, createAtlasCycleStatsBucket(event));
+    }
+
+    const amountLockedRaw = event.providedRaw || 0n;
+    let closed = false;
+    let claimable = false;
+    let termEnded = now >= event.unlockTime;
+    let claimableNowRaw = 0n;
+    let remainingLoadRaw = 0n;
+    let next7DaysLoadRaw = 0n;
+    let next30DaysLoadRaw = 0n;
+
+    if (event.contractId === "lockup-flow") {
+      closed = claim.events > 0;
+      claimable = !closed && termEnded;
+      claimableNowRaw = claimable ? event.expectedLoadRaw : 0n;
+      remainingLoadRaw = closed ? 0n : event.expectedLoadRaw;
+      if (!closed && !termEnded && event.unlockTime <= now + 7 * ATLAS_DAY_SECONDS) next7DaysLoadRaw = event.expectedLoadRaw;
+      if (!closed && !termEnded && event.unlockTime <= now + 30 * ATLAS_DAY_SECONDS) next30DaysLoadRaw = event.expectedLoadRaw;
+    } else if (event.contractId === "daily-flow") {
+      const claimedDays = Math.min(Number(ATLAS_DAILY_REWARD_DAYS), claim.claimedDays || 0);
+      const elapsedDays = Math.max(0, Math.min(Number(ATLAS_DAILY_REWARD_DAYS), Math.floor((now - event.lockTime) / ATLAS_DAY_SECONDS)));
+      const dailyRewardRaw = event.expectedLoadRaw / ATLAS_DAILY_REWARD_DAYS;
+      const claimableDays = Math.max(0, elapsedDays - claimedDays);
+      closed = claimedDays >= Number(ATLAS_DAILY_REWARD_DAYS);
+      claimable = !closed && claimableDays > 0;
+      claimableNowRaw = dailyRewardRaw * BigInt(claimableDays);
+      remainingLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(Number(ATLAS_DAILY_REWARD_DAYS) - claimedDays);
+
+      const accruedDaysIn = (daysAhead) => Math.max(0, Math.min(
+        Number(ATLAS_DAILY_REWARD_DAYS),
+        Math.floor(((now + daysAhead * ATLAS_DAY_SECONDS) - event.lockTime) / ATLAS_DAY_SECONDS),
+      ) - elapsedDays);
+      next7DaysLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(accruedDaysIn(7));
+      next30DaysLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(accruedDaysIn(30));
+    }
+
+    for (const bucket of [byTermMap.get(termKey), totals]) {
+      bucket.total += 1;
+      bucket.totalVolumeRaw += amountLockedRaw;
+      if (closed) {
+        bucket.closed += 1;
+        bucket.closedVolumeRaw += amountLockedRaw;
+      } else {
+        bucket.open += 1;
+        bucket.openVolumeRaw += amountLockedRaw;
+      }
+      if (claimable) bucket.claimable += 1;
+      if (!closed && termEnded) bucket.termEnded += 1;
+      bucket.claimableNowRaw += claimableNowRaw;
+      bucket.remainingLoadRaw += remainingLoadRaw;
+      bucket.next7DaysLoadRaw += next7DaysLoadRaw;
+      bucket.next30DaysLoadRaw += next30DaysLoadRaw;
+    }
+  }
+
+  const serializeBucket = (bucket) => ({
+    contractId: bucket.contractId,
+    contractName: bucket.contractName,
+    tier: bucket.tier,
+    tierName: bucket.tierName,
+    termSeconds: bucket.termSeconds,
+    termLabel: bucket.termLabel,
+    total: bucket.total,
+    open: bucket.open,
+    claimable: bucket.claimable,
+    closed: bucket.closed,
+    termEnded: bucket.termEnded,
+    totalVolume: decimalFromUnits(bucket.totalVolumeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    openVolume: decimalFromUnits(bucket.openVolumeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    closedVolume: decimalFromUnits(bucket.closedVolumeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    claimableNow: decimalFromUnits(bucket.claimableNowRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    remainingLoad: decimalFromUnits(bucket.remainingLoadRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    next7DaysLoad: decimalFromUnits(bucket.next7DaysLoadRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    next30DaysLoad: decimalFromUnits(bucket.next30DaysLoadRaw, ATLAS_USDT_TOKEN.decimals, 6),
+  });
+
+  return {
+    definitions: {
+      open: "Цикл создан и ещё не закрыт полностью.",
+      closed: "Lockup: выполнен Claim. Daily: выплачены все 200 расчётных дней.",
+      claimable: "Открытый цикл, по которому прямо сейчас доступна сумма к Claim.",
+      load: "Расчётная оставшаяся сумма выплат по условиям открытых циклов.",
+    },
+    totals: serializeBucket(totals),
+    byTerm: [...byTermMap.values()]
+      .sort((left, right) => left.termSeconds - right.termSeconds || left.tier - right.tier)
+      .map(serializeBucket),
+    asOf: new Date(now * 1000).toISOString(),
+  };
+}
+
 function multiplyPermilleRaw(rawValue = 0n, permille = 0) {
   return (BigInt(rawValue || 0) * BigInt(permille || 0)) / 1000n;
 }
@@ -1306,6 +1488,7 @@ async function getAtlasContractFlowSnapshot() {
           if (topic === config.lockedTopic.toLowerCase()) {
             const amountRaw = sumEventDataWords(log.data, config.lockedParts);
             const eventPartnerDeltaRaw = getAtlasPartnerDeltaRaw(contract.id, log.data);
+            const cycleDetails = getAtlasLockedCycleDetails(contract.id, log.data);
             providedRaw += amountRaw;
             partnerDeltaRaw += eventPartnerDeltaRaw;
             if (contract.id === "lockup-flow") lockupDeltaRaw += eventPartnerDeltaRaw;
@@ -1315,6 +1498,7 @@ async function getAtlasContractFlowSnapshot() {
               contractId: contract.id,
               contractName: contract.name,
               type: "locked",
+              orderId: getEventOrderId(log),
               blockNumber,
               hash,
               providedRaw: amountRaw,
@@ -1323,11 +1507,15 @@ async function getAtlasContractFlowSnapshot() {
               partnerDeltaRaw: eventPartnerDeltaRaw,
               lockupDeltaRaw: contract.id === "lockup-flow" ? eventPartnerDeltaRaw : 0n,
               dailyDeltaRaw: contract.id === "daily-flow" ? eventPartnerDeltaRaw : 0n,
+              ...cycleDetails,
             });
           }
           if (topic === config.claimedTopic.toLowerCase()) {
-            const claimedAmountRaw = sumEventDataWords(log.data, config.claimedParts);
+            const eventClaimedAmountRaw = sumEventDataWords(log.data, config.claimedParts);
             const feeAmountRaw = sumEventDataWords(log.data, config.feeParts);
+            const claimedAmountRaw = contract.id === "lockup-flow" && eventClaimedAmountRaw > feeAmountRaw
+              ? eventClaimedAmountRaw - feeAmountRaw
+              : eventClaimedAmountRaw;
             claimedRaw += claimedAmountRaw;
             feeRaw += feeAmountRaw;
             claimedEvents += 1;
@@ -1335,6 +1523,8 @@ async function getAtlasContractFlowSnapshot() {
               contractId: contract.id,
               contractName: contract.name,
               type: "claimed",
+              orderId: getEventOrderId(log),
+              claimedDays: contract.id === "daily-flow" ? Number(hexToBigInt(getDataWord(log.data, 0))) : 0,
               blockNumber,
               hash,
               providedRaw: 0n,
@@ -1390,6 +1580,12 @@ async function getAtlasContractFlowSnapshot() {
       blockTimestampMap.set(blockNumber, 0);
     }
   });
+  let snapshotTimestamp = Math.floor(Date.now() / 1000);
+  try {
+    snapshotTimestamp = await getBlockTimestampWithRetry(latestBlock);
+  } catch {
+    // Wall-clock fallback keeps the status summary available if the latest block lookup briefly fails.
+  }
 
   const dailyMap = new Map();
   for (const event of eventRows) {
@@ -1478,6 +1674,7 @@ async function getAtlasContractFlowSnapshot() {
     collectedFeeRaw: totalsRaw.fee,
     daily,
   });
+  const cycleStats = buildAtlasCycleStats({ eventRows, snapshotTimestamp });
 
   const payload = {
     ok: true,
@@ -1489,6 +1686,7 @@ async function getAtlasContractFlowSnapshot() {
     token: ATLAS_USDT_TOKEN,
     contracts,
     daily,
+    cycleStats,
     totals: {
       provided: decimalFromUnits(totalsRaw.provided, ATLAS_USDT_TOKEN.decimals, 6),
       claimed: decimalFromUnits(totalsRaw.claimed, ATLAS_USDT_TOKEN.decimals, 6),
