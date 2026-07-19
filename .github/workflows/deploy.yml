@@ -360,6 +360,7 @@ jobs:
           timeout 45s sudo systemctl enable --now atlas-youtrack-digest.timer
           timeout 45s sudo systemctl enable --now atlas-marketing-youtube-monitor.timer
           timeout 45s sudo systemctl enable --now atlas-marketing-dashboard-monitor.timer
+          timeout 70s sudo systemctl start atlas-marketing-dashboard-monitor.service
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then
