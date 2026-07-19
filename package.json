@@ -11,6 +11,7 @@
     "build": "vite build",
     "test:marketing-monitor": "node scripts/verify-marketing-dashboard-monitor.mjs && node scripts/verify-marketing-monitor-api.mjs",
     "test:youtrack-monitor": "node scripts/verify-youtrack-monitor.mjs",
+    "test:expenses": "node scripts/verify-expense-center.mjs",
     "preview": "vite preview",
     "check:local": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-local-page.mjs",
     "check:boards": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-analytics-boards.mjs",

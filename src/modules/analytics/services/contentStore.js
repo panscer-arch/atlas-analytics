@@ -64,12 +64,12 @@ export async function loadServerContentResult(key) {
   }
 }
 
-export async function saveServerContent(key, value) {
-  const result = await saveServerContentResult(key, value);
+export async function saveServerContent(key, value, options = {}) {
+  const result = await saveServerContentResult(key, value, options);
   return result.ok;
 }
 
-export async function saveServerContentResult(key, value) {
+export async function saveServerContentResult(key, value, options = {}) {
   try {
     await ensureMarketingBrowserSession();
     const response = await fetch(contentApiUrl(key), {
@@ -77,6 +77,7 @@ export async function saveServerContentResult(key, value) {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ value }),
+      keepalive: Boolean(options.keepalive),
     });
 
     const payload = await response.json().catch(() => ({}));
@@ -84,6 +85,7 @@ export async function saveServerContentResult(key, value) {
       ok: response.ok && payload?.ok !== false,
       status: response.status,
       error: payload?.error || "",
+      revision: Number(payload?.revision || 0),
     };
   } catch {
     return { ok: false, status: 0, error: "network_error" };

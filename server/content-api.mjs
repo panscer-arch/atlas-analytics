@@ -23,6 +23,12 @@ const SEGMENT_OUTREACH_KEY = "atlas.analytics.segmentOutreach.v10";
 const BITNEST_YOUTUBE_KEY = "atlas.analytics.bitnestYoutube.channels.v1";
 const MARKETING_YOUTUBE_MONITOR_STATE_KEY = "atlas.analytics.marketingYoutubeMonitor.state.v1";
 const MARKETING_DASHBOARD_KEY = "atlas.analytics.marketingDashboard.v1";
+const EXPENSE_CENTER_KEY = "atlas.analytics.expenseCenter.v2";
+const FINANCE_CONTENT_KEYS = new Set([
+  EXPENSE_CENTER_KEY,
+  "atlas.analytics.expenses.v1",
+  "atlas.analytics.expenseFunds.v1",
+]);
 const MARKETING_DASHBOARD_MONITOR_STATE_KEY = "atlas.analytics.marketingDashboardMonitor.state.v1";
 const MARKETING_TELEGRAM_BINDING_KEY = "atlas.analytics.marketingTelegramBinding.v1";
 const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLinkRequest.v1";
@@ -58,6 +64,7 @@ const MARKETING_SOURCE_CONFIGS = [
 ];
 const MARKETING_MONITORED_CONTENT_KEYS = new Set([
   MARKETING_DASHBOARD_KEY,
+  ...FINANCE_CONTENT_KEYS,
   YOUTUBE_API_LEADS_KEY,
   SEGMENT_OUTREACH_KEY,
   BITNEST_YOUTUBE_KEY,
@@ -189,6 +196,7 @@ let atlasFlowCache = null;
 
 let telegramEnvCache = null;
 let marketingSessionMutationQueue = Promise.resolve();
+let expenseCenterMutationQueue = Promise.resolve();
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
@@ -2978,6 +2986,10 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET") {
+      if (FINANCE_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "finance_read_auth_required" });
+        return;
+      }
       try {
         const raw = await readFile(filePathForKey(key), "utf8");
         sendJson(response, 200, { ok: true, exists: true, value: JSON.parse(raw) });
@@ -2999,13 +3011,47 @@ const server = http.createServer(async (request, response) => {
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
       const value = Object.prototype.hasOwnProperty.call(parsed, "value") ? parsed.value : parsed;
-      const targetPath = filePathForKey(key);
-      const tempPath = `${targetPath}.${Date.now()}.${randomBytes(6).toString("hex")}.tmp`;
+      const persistValue = async () => {
+        const targetPath = filePathForKey(key);
+        const tempPath = `${targetPath}.${Date.now()}.${randomBytes(6).toString("hex")}.tmp`;
+        if (key === EXPENSE_CENTER_KEY) {
+          const current = await readContent(key, { revision: 0 });
+          const currentRevision = Number(current?.revision || 0);
+          const incomingRevision = Number(value?.revision || 0);
+          if (incomingRevision !== currentRevision + 1) {
+            return {
+              ok: false,
+              status: 409,
+              error: "expense_revision_conflict",
+              revision: currentRevision,
+            };
+          }
+        }
+        await backupExistingContent(key, targetPath);
+        await writeFile(tempPath, JSON.stringify(value, null, 2), "utf8");
+        await rename(tempPath, targetPath);
+        return {
+          ok: true,
+          status: 200,
+          revision: key === EXPENSE_CENTER_KEY ? Number(value?.revision || 0) : undefined,
+        };
+      };
 
-      await backupExistingContent(key, targetPath);
-      await writeFile(tempPath, JSON.stringify(value, null, 2), "utf8");
-      await rename(tempPath, targetPath);
-      sendJson(response, 200, { ok: true, exists: true });
+      let result;
+      if (key === EXPENSE_CENTER_KEY) {
+        const operation = expenseCenterMutationQueue.then(persistValue, persistValue);
+        expenseCenterMutationQueue = operation.then(() => undefined, () => undefined);
+        result = await operation;
+      } else {
+        result = await persistValue();
+      }
+      sendJson(
+        response,
+        result.status,
+        result.ok
+          ? { ok: true, exists: true, revision: result.revision }
+          : { ok: false, error: result.error, revision: result.revision },
+      );
       return;
     }
 

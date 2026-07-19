@@ -20,6 +20,7 @@ const waitUntil = args.waitUntil || "networkidle";
 const screenshotPath = args.screenshot || "";
 const titleIncludes = args.titleIncludes || "";
 const textIncludes = args.textIncludes || "";
+const waitForText = args.waitForText || "";
 const clickSelector = args.clickSelector || "";
 const clickText = args.clickText || "";
 const clickSequence = args.clickSequence || "";
@@ -68,6 +69,10 @@ try {
     }
   }
 
+  if (waitForText) {
+    await page.getByText(waitForText, { exact: true }).first().waitFor({ timeout });
+  }
+
   if (clickSelector) {
     await page.locator(clickSelector).first().click({ timeout });
   } else if (clickText) {
@@ -90,6 +95,7 @@ try {
   }
 
   if (afterClickTextIncludes) {
+    await page.getByText(afterClickTextIncludes, { exact: false }).first().waitFor({ timeout });
     const afterClickText = await page.locator(afterClickSelector || "body").innerText({ timeout });
     if (!afterClickText.includes(afterClickTextIncludes)) {
       throw new Error(`After-click text check failed. Could not find "${afterClickTextIncludes}".`);

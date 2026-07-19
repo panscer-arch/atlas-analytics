@@ -63,6 +63,7 @@ const MAIN_TAB_BOARD_IDS = {
   session: "sessionQueue",
   parser: "parser",
   analytics: "analytics",
+  expenses: "expenses",
   tasks: "launch",
   content: "materials",
   diary: "diary",
@@ -79,7 +80,6 @@ const ANALYTICS_TAB_BOARD_IDS = {
   partner: "analytics-partner",
   wallets: "analytics-wallets",
   contracts: "contracts",
-  expenses: "expenses",
 };
 const BOARD_ANALYTICS_TABS = Object.fromEntries(
   Object.entries(ANALYTICS_TAB_BOARD_IDS).map(([tabId, boardId]) => [boardId, tabId]),
@@ -618,6 +618,7 @@ function AnalyticsPage() {
     { id: "session", label: "Сессия" },
     { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
+    { id: "expenses", label: "Расходы" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
   ];
@@ -634,7 +635,6 @@ function AnalyticsPage() {
     { id: "partner", label: "Партнёрская структура", hint: "ветки" },
     { id: "wallets", label: "Кошельки", hint: "адреса" },
     { id: "contracts", label: "Контракты", hint: "BSC" },
-    { id: "expenses", label: "Расходы", hint: "бюджет" },
   ];
 
   const crmAnalyticsCoverageValue = Math.min(Math.max(outgoingCoverage, 0), 100);

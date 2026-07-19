@@ -17247,6 +17247,907 @@ input.analytics-smm-cell-input {
   margin-top: 0;
 }
 
+/* Expense center v2 */
+.analytics-expenses {
+  display: grid;
+  gap: 1rem;
+  overflow: visible;
+  min-width: 0;
+  background: transparent;
+  color: #eaf4ff;
+}
+
+.analytics-expenses::before {
+  display: none;
+}
+
+.analytics-expenses-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  border-radius: 0.75rem;
+  padding: 1.4rem;
+  background:
+    radial-gradient(circle at 86% 15%, rgba(255, 143, 46, 0.16), transparent 30%),
+    linear-gradient(135deg, rgba(11, 31, 48, 0.98), rgba(7, 17, 29, 0.98));
+}
+
+.analytics-expenses-hero h2 {
+  margin: 0.38rem 0 0.45rem;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.analytics-expenses-hero p {
+  margin: 0;
+  max-width: 760px;
+}
+
+.analytics-expenses-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.analytics-expenses-save {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.6rem;
+  border: 1px solid rgba(102, 227, 195, 0.2);
+  border-radius: 0.55rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(102, 227, 195, 0.07);
+  color: #8df2d1;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.analytics-expenses-save.is-error {
+  border-color: rgba(255, 94, 105, 0.28);
+  background: rgba(255, 94, 105, 0.08);
+  color: #ff9da6;
+}
+
+.analytics-expenses-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border-radius: 0.65rem;
+}
+
+.analytics-expenses-nav button {
+  min-height: 3rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: rgba(226, 237, 250, 0.68);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.analytics-expenses-nav button:hover,
+.analytics-expenses-nav button:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.analytics-expenses-nav button.is-active {
+  border-color: rgba(77, 205, 255, 0.35);
+  background: linear-gradient(135deg, rgba(44, 130, 172, 0.2), rgba(102, 227, 195, 0.08));
+  color: #fff;
+}
+
+.analytics-expenses-load-state {
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.analytics-expenses-load-state h3 {
+  margin: 0.45rem 0 0.4rem;
+  color: #fff;
+  font-size: 1.3rem;
+}
+
+.analytics-expenses-load-state p {
+  margin: 0 auto 0.9rem;
+  max-width: 680px;
+}
+
+.analytics-expenses-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.analytics-expenses-kpis article {
+  min-height: 118px;
+  border-radius: 0.65rem;
+  padding: 0.9rem;
+}
+
+.analytics-expenses-kpis article.is-danger {
+  border-color: rgba(255, 92, 103, 0.35);
+  background: linear-gradient(145deg, rgba(68, 23, 34, 0.6), rgba(9, 18, 31, 0.94));
+}
+
+.analytics-expenses-kpis article.is-warning {
+  border-color: rgba(255, 175, 66, 0.4);
+}
+
+.analytics-expenses-overview-grid,
+.analytics-expenses-calendar-layout,
+.analytics-expenses-budget-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.analytics-expenses-overview-grid {
+  grid-template-columns: 1fr;
+}
+
+.analytics-expenses-calendar-layout,
+.analytics-expenses-budget-layout {
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+}
+
+.analytics-expenses-panel {
+  min-width: 0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.analytics-expenses-panel-head,
+.analytics-expenses-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.analytics-expenses-panel-head h3,
+.analytics-expenses-calendar-head h3 {
+  margin: 0.3rem 0 0;
+  color: #fff;
+  font-size: 1.25rem;
+  letter-spacing: 0;
+}
+
+.analytics-expenses-panel-head > strong {
+  color: #8df2d1;
+  font-size: 1.3rem;
+}
+
+.analytics-expenses-panel-head select,
+.analytics-expenses-calendar-head select,
+.analytics-expenses-toolbar input,
+.analytics-expenses-toolbar select,
+.analytics-expenses-form input,
+.analytics-expenses-form select,
+.analytics-expenses-form textarea,
+.analytics-expenses-fund-form input,
+.analytics-expenses-fund-form select,
+.analytics-expenses-budget-list input {
+  width: 100%;
+  min-height: 2.7rem;
+  border: 1px solid rgba(119, 159, 194, 0.2);
+  border-radius: 0.45rem;
+  padding: 0.65rem 0.72rem;
+  background: rgba(3, 11, 21, 0.76);
+  color: #f6fbff;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.analytics-expenses-form textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.analytics-expenses-upcoming {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.analytics-expenses-upcoming article {
+  border: 1px solid rgba(119, 159, 194, 0.15);
+  border-radius: 0.55rem;
+  padding: 0;
+  overflow: hidden;
+  background: rgba(3, 11, 21, 0.5);
+}
+
+.analytics-expenses-upcoming article.is-overdue {
+  border-color: rgba(255, 92, 103, 0.34);
+}
+
+.analytics-expenses-upcoming article > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  padding: 0.78rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-expenses-upcoming article > button > span:last-child {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.analytics-expenses-upcoming b,
+.analytics-expenses-upcoming strong {
+  color: #fff;
+}
+
+.analytics-expenses-upcoming small {
+  display: block;
+  margin-top: 0.22rem;
+}
+
+.analytics-expenses-category-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.analytics-expenses-category-list button {
+  display: grid;
+  gap: 0.46rem;
+  border-radius: 0.55rem;
+  padding: 0.72rem;
+}
+
+.analytics-expenses-category-list button > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.analytics-expenses-category-list progress {
+  accent-color: #64dfc2;
+}
+
+.analytics-expenses-category-list small {
+  font-size: 0.72rem;
+}
+
+.analytics-expenses-quick {
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.analytics-expenses-quick > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.analytics-expenses-quick > div:last-child button,
+.analytics-expenses-secondary,
+.analytics-expenses-icon-action {
+  min-height: 2.55rem;
+  border: 1px solid rgba(98, 222, 196, 0.2);
+  border-radius: 0.45rem;
+  padding: 0.62rem 0.78rem;
+  background: rgba(98, 222, 196, 0.07);
+  color: #a5f4df;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.analytics-expenses-activity {
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.analytics-expenses-activity > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.analytics-expenses-activity article {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(119, 159, 194, 0.14);
+  border-radius: 0.5rem;
+  padding: 0.72rem;
+  background: rgba(3, 11, 21, 0.46);
+}
+
+.analytics-expenses-activity article span {
+  min-width: 0;
+}
+
+.analytics-expenses-activity b,
+.analytics-expenses-activity small {
+  display: block;
+}
+
+.analytics-expenses-activity small,
+.analytics-expenses-activity time {
+  margin-top: 0.2rem;
+  color: rgba(193, 213, 234, 0.58);
+  font-size: 0.72rem;
+}
+
+.analytics-expenses-activity time {
+  flex: 0 0 auto;
+}
+
+.analytics-expenses-calendar-head {
+  margin-bottom: 1rem;
+}
+
+.analytics-expenses-calendar-head > button,
+.analytics-expenses-icon-action {
+  display: grid;
+  place-items: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border: 1px solid rgba(82, 182, 255, 0.25);
+  border-radius: 0.45rem;
+  background: rgba(82, 182, 255, 0.08);
+  color: #d9f2ff;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.analytics-expenses-calendar-weekdays,
+.analytics-expenses-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.analytics-expenses-calendar-weekdays {
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.analytics-expenses-calendar-weekdays span {
+  color: rgba(200, 218, 238, 0.54);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.analytics-expenses-calendar {
+  gap: 0.35rem;
+}
+
+.analytics-expenses-calendar > button,
+.analytics-expenses-calendar > .is-empty {
+  min-width: 0;
+  height: 116px;
+}
+
+.analytics-expenses-calendar > button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(119, 159, 194, 0.14);
+  border-radius: 0.45rem;
+  padding: 0.48rem;
+  background: rgba(3, 11, 21, 0.5);
+  color: #e9f3ff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-expenses-calendar > button:hover,
+.analytics-expenses-calendar > button:focus-visible,
+.analytics-expenses-calendar > button.is-selected {
+  border-color: rgba(82, 182, 255, 0.52);
+  background: rgba(82, 182, 255, 0.1);
+  outline: none;
+}
+
+.analytics-expenses-calendar > button.is-today > span {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #f29438;
+  color: #08111d;
+}
+
+.analytics-expenses-calendar > button.is-overdue {
+  border-color: rgba(255, 92, 103, 0.35);
+}
+
+.analytics-expenses-calendar > button strong {
+  color: #8df2d1;
+  font-size: 0.8rem;
+}
+
+.analytics-expenses-calendar > button small {
+  overflow: hidden;
+  color: rgba(222, 234, 247, 0.72);
+  font-size: 0.67rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-expenses-calendar > button em {
+  margin-top: auto;
+  color: #ffc27a;
+  font-size: 0.68rem;
+  font-style: normal;
+}
+
+.analytics-expenses-day-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.analytics-expenses-day-list article {
+  border: 1px solid rgba(119, 159, 194, 0.14);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.analytics-expenses-day-list button {
+  display: grid;
+  width: 100%;
+  gap: 0.28rem;
+  border: 0;
+  padding: 0.72rem;
+  background: rgba(3, 11, 21, 0.5);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-expenses-day-list span,
+.analytics-expenses-day-list strong {
+  color: rgba(216, 231, 247, 0.64);
+  font-size: 0.76rem;
+}
+
+.analytics-expenses-month-total {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(119, 159, 194, 0.16);
+  padding-top: 1rem;
+}
+
+.analytics-expenses-month-total strong {
+  color: #fff;
+  font-size: 1.7rem;
+}
+
+.analytics-expenses-month-total small {
+  color: rgba(216, 231, 247, 0.62);
+}
+
+.analytics-expenses-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(140px, 0.7fr));
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.analytics-expenses-toolbar label,
+.analytics-expenses-form label,
+.analytics-expenses-budget-list label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.analytics-expenses-toolbar label > span,
+.analytics-expenses-form label > span,
+.analytics-expenses-budget-list label > span {
+  color: rgba(193, 213, 234, 0.62);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.analytics-expenses .analytics-table-responsive {
+  margin-top: 0.9rem;
+}
+
+.analytics-expenses-table {
+  min-width: 1220px;
+  table-layout: fixed;
+}
+
+.analytics-expenses-table th {
+  color: rgba(193, 213, 234, 0.6);
+}
+
+.analytics-expenses-table > :not(caption) > * > * {
+  padding: 0.72rem 0.65rem;
+}
+
+.analytics-expenses-table th:nth-child(1) {
+  width: 24%;
+}
+
+.analytics-expenses-table th:nth-child(2),
+.analytics-expenses-table th:nth-child(3) {
+  width: 12%;
+}
+
+.analytics-expenses-table th:nth-child(4) {
+  width: 15%;
+}
+
+.analytics-expenses-table th:nth-child(5) {
+  width: 12%;
+}
+
+.analytics-expenses-table th:nth-child(6) {
+  width: 10%;
+}
+
+.analytics-expenses-table th:nth-child(7) {
+  width: 15%;
+}
+
+.analytics-expenses-table td {
+  vertical-align: top;
+}
+
+.analytics-expenses-table td:nth-child(2),
+.analytics-expenses-table td:nth-child(3),
+.analytics-expenses-table td:nth-child(5),
+.analytics-expenses-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
+.analytics-expenses-table td > small,
+.analytics-expenses-table td > strong {
+  display: block;
+  margin-top: 0.24rem;
+}
+
+.analytics-expenses-table td > small {
+  color: rgba(193, 213, 234, 0.55);
+  font-size: 0.72rem;
+}
+
+.analytics-expenses-record-title {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytics-expenses-status {
+  min-width: 126px;
+  min-height: 2.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  padding: 0.52rem;
+  font-weight: 850;
+}
+
+.analytics-expenses-status-cancelled {
+  background: rgba(151, 165, 184, 0.1);
+  color: #b8c3d1;
+}
+
+.analytics-expenses-overdue-label {
+  display: block;
+  margin-top: 0.35rem;
+  color: #ff9da6;
+  font-size: 0.68rem;
+}
+
+.analytics-expenses-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 165px;
+}
+
+.analytics-expenses-actions button {
+  min-height: 2.1rem;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.62rem;
+}
+
+.analytics-expenses-actions button:nth-last-child(2) {
+  border-color: rgba(82, 182, 255, 0.24);
+  background: rgba(82, 182, 255, 0.08);
+  color: #bde8ff;
+  box-shadow: none;
+}
+
+.analytics-expenses-budget-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.analytics-expenses-budget-list article {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 0.35fr) minmax(220px, 0.8fr);
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid rgba(119, 159, 194, 0.14);
+  border-radius: 0.5rem;
+  padding: 0.72rem;
+  background: rgba(3, 11, 21, 0.46);
+}
+
+.analytics-expenses-budget-list article.is-warning {
+  border-color: rgba(255, 175, 66, 0.4);
+}
+
+.analytics-expenses-budget-list article.is-danger {
+  border-color: rgba(255, 92, 103, 0.42);
+}
+
+.analytics-expenses-budget-list article > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.analytics-expenses-budget-list article strong {
+  color: #fff;
+}
+
+.analytics-expenses-budget-list article span,
+.analytics-expenses-budget-list article small {
+  color: rgba(193, 213, 234, 0.6);
+  font-size: 0.72rem;
+}
+
+.analytics-expenses-budget-list progress {
+  width: 100%;
+  height: 0.5rem;
+  accent-color: #64dfc2;
+}
+
+.analytics-expenses-fund-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+.analytics-expenses-fund-form > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 0.5rem;
+}
+
+.analytics-expenses-funds {
+  margin-top: 0.9rem;
+}
+
+.analytics-expenses-funds article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 2rem;
+  gap: 0.7rem;
+  align-items: center;
+  border-radius: 0.5rem;
+  padding: 0.65rem;
+}
+
+.analytics-expenses-funds article span {
+  min-width: 0;
+}
+
+.analytics-expenses-funds article b,
+.analytics-expenses-funds article small {
+  display: block;
+}
+
+.analytics-expenses-funds article small {
+  margin-top: 0.2rem;
+  color: rgba(193, 213, 234, 0.56);
+  font-size: 0.7rem;
+}
+
+.analytics-expenses-funds article > button {
+  width: 2rem;
+  min-height: 2rem;
+  border-radius: 0.4rem;
+}
+
+.analytics-expenses-cash-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  border-top: 1px solid rgba(119, 159, 194, 0.16);
+  padding-top: 0.9rem;
+}
+
+.analytics-expenses-cash-summary span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.analytics-expenses-cash-summary small {
+  color: rgba(193, 213, 234, 0.56);
+}
+
+.analytics-expenses-cash-summary b {
+  color: #fff;
+}
+
+.analytics-expenses-modal {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 1rem;
+  background: rgba(1, 7, 14, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.analytics-expenses-editor {
+  width: min(900px, 100%);
+  max-height: min(900px, calc(100vh - 2rem));
+  overflow: auto;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.analytics-expenses-editor > header,
+.analytics-expenses-editor > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.analytics-expenses-editor > header {
+  margin-bottom: 1rem;
+}
+
+.analytics-expenses-editor > header h3 {
+  margin: 0.3rem 0 0;
+  color: #fff;
+  font-size: 1.35rem;
+}
+
+.analytics-expenses-editor > header > button {
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid rgba(119, 159, 194, 0.2);
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.analytics-expenses-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.analytics-expenses-form-wide {
+  grid-column: 1 / -1;
+}
+
+.analytics-expenses-editor > footer {
+  justify-content: flex-end;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(119, 159, 194, 0.16);
+  padding-top: 1rem;
+}
+
+@media (max-width: 1150px) {
+  .analytics-expenses-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .analytics-expenses-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .analytics-expenses-category-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-expenses-search {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 820px) {
+  .analytics-expenses-hero,
+  .analytics-expenses-overview-grid,
+  .analytics-expenses-calendar-layout,
+  .analytics-expenses-budget-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-expenses-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-expenses-hero-actions {
+    justify-content: space-between;
+  }
+
+  .analytics-expenses-budget-list article,
+  .analytics-expenses-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-expenses-calendar > button,
+  .analytics-expenses-calendar > .is-empty {
+    height: 92px;
+  }
+}
+
+@media (max-width: 600px) {
+  .analytics-expenses-nav,
+  .analytics-expenses-kpis,
+  .analytics-expenses-toolbar,
+  .analytics-expenses-category-list,
+  .analytics-expenses-activity > div:last-child,
+  .analytics-expenses-budget-list article,
+  .analytics-expenses-form,
+  .analytics-expenses-cash-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-expenses-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-expenses-search,
+  .analytics-expenses-form-wide {
+    grid-column: auto;
+  }
+
+  .analytics-expenses-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-expenses-calendar {
+    overflow-x: auto;
+    grid-template-columns: repeat(7, minmax(74px, 1fr));
+  }
+
+  .analytics-expenses-calendar-weekdays {
+    grid-template-columns: repeat(7, minmax(74px, 1fr));
+    overflow: hidden;
+  }
+}
+
 .analytics-parser {
   display: grid;
   gap: 1rem;
