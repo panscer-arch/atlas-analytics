@@ -163,8 +163,10 @@ export const TASK_BOARD_IDS = [
 
 export function getAnalyticsTabForBoard(boardId) {
   if (!boardId) return "dashboard";
-  if (boardId === "expenses" || boardId === "contractBalances" || boardId === "contracts") return "analytics";
-  if (boardId === "parser" || boardId === "telegramParser" || boardId === "influencers") return "parser";
+  if (boardId === "dashboard") return "dashboard";
+  if (boardId === "analytics" || boardId.startsWith("analytics-") || boardId === "expenses" || boardId === "contractBalances" || boardId === "contracts") return "analytics";
+  if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "telegramParser" || boardId === "influencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "segmentOutreach" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";
+  if (boardId === "taskMonitor") return "taskMonitor";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";
   if (CONTENT_BOARD_IDS.includes(boardId)) return "content";

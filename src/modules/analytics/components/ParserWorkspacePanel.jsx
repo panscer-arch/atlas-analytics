@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import ArticlePlacementPanel from "./ArticlePlacementPanel";
+import AtlasCreativesPanel from "./AtlasCreativesPanel";
 import BitnestYoutubeParserPanel from "./BitnestYoutubeParserPanel";
 import HyipParserPanel from "./HyipParserPanel";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
+import MarketingDirectionWorkspace from "./MarketingDirectionWorkspace";
 import MarketSegmentsPanel from "./MarketSegmentsPanel";
 import MlmLeaderOutreachPanel from "./MlmLeaderOutreachPanel";
 import PoolMonitorPanel from "./PoolMonitorPanel";
@@ -12,43 +14,63 @@ import SegmentOutreachPanel from "./SegmentOutreachPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
 import Web3SegmentsPanel from "./Web3SegmentsPanel";
 import YouTubeApiSearchPanel from "./YouTubeApiSearchPanel";
-import { defaultLeads as hyipDefaultLeads } from "../data/hyipParserData";
-
-function formatSourcesCount(count) {
-  const mod100 = count % 100;
-  const mod10 = count % 10;
-  const noun = mod100 >= 11 && mod100 <= 14
-    ? "источников"
-    : mod10 === 1
-      ? "источник"
-      : mod10 >= 2 && mod10 <= 4
-        ? "источника"
-        : "источников";
-  return `${count} ${noun}`;
-}
-
-const HYIP_MONITOR_COUNT_LABEL = formatSourcesCount(hyipDefaultLeads.length);
+import {
+  OUTREACH_STORAGE_KEY as HYIP_OUTREACH_STORAGE_KEY,
+  STORAGE_KEY as HYIP_STORAGE_KEY,
+  defaultLeads as hyipDefaultLeads,
+} from "../data/hyipParserData";
+import {
+  INFLUENCER_OUTREACH_STORAGE_KEY,
+  INFLUENCER_STORAGE_KEY,
+  defaultInfluencerProspects,
+} from "../data/influencerProspectsData";
+import {
+  MLM_LEADER_OUTREACH_STORAGE_KEY,
+  defaultMlmLeaderOutreachPlatforms,
+} from "../data/mlmLeaderOutreachData";
+import {
+  ARTICLE_PLACEMENT_STORAGE_KEY,
+  defaultArticlePlacementResources,
+} from "../data/articlePlacementData";
+import {
+  TELEGRAM_OUTREACH_STORAGE_KEY,
+  TELEGRAM_STORAGE_KEY,
+  defaultTelegramLeads,
+} from "../data/telegramParserData";
+import {
+  MARKETING_DASHBOARD_STORAGE_KEY,
+  MARKETING_DIRECTIONS,
+  createDefaultMarketingDashboardState,
+  hydrateMarketingDashboardState,
+} from "../data/marketingDashboardData";
+import { loadServerContent, loadServerContentResult, saveServerContent } from "../services/contentStore";
+import "../styles/marketing-dashboard.css";
 
 const PARSER_TABS = [
   {
     id: "overview",
     label: "Маркетинг",
-    hint: "дашборд",
+    hint: "центр",
+  },
+  {
+    id: "creatives",
+    label: "Креативы / SEO",
+    hint: "тексты и баннеры",
   },
   {
     id: "monitors",
     label: "Мониторы",
-    hint: HYIP_MONITOR_COUNT_LABEL,
+    hint: `${hyipDefaultLeads.length} источника`,
   },
   {
     id: "telegram",
     label: "Telegram-каналы",
-    hint: "100 лидов",
+    hint: `${defaultTelegramLeads.length} лидов`,
   },
   {
     id: "influencers",
     label: "Инфлюенсеры",
-    hint: "500 лидов",
+    hint: `${defaultInfluencerProspects.length} лидов`,
   },
   {
     id: "youtubeApi",
@@ -63,7 +85,7 @@ const PARSER_TABS = [
   {
     id: "articlePlacement",
     label: "SuperSource",
-    hint: "100 площадок",
+    hint: `${defaultArticlePlacementResources.length} площадок`,
   },
   {
     id: "marketSegments",
@@ -78,7 +100,7 @@ const PARSER_TABS = [
   {
     id: "mlmLeaders",
     label: "MLM лидеры",
-    hint: "43 источника",
+    hint: `${defaultMlmLeaderOutreachPlatforms.length} источника`,
   },
   {
     id: "segmentOutreach",
@@ -97,150 +119,436 @@ const PARSER_TABS = [
   },
 ];
 
-const MARKETING_TOOL_GROUPS = [
-  {
-    id: "youtube",
-    title: "YouTube-блогеры",
-    subtitle: "обзорщики Bitnest, YouTube API и каналы",
-    metric: "593+ каналов",
-    action: "Открыть YouTube",
-    target: "bitnestYoutube",
-    items: ["Битнест YouTube", "YouTube API"],
-  },
-  {
-    id: "hyip",
-    title: "Иностранные HYIP-мониторы",
-    subtitle: "HYIP / crypto площадки для первичного outreach",
-    metric: HYIP_MONITOR_COUNT_LABEL,
-    action: "Открыть мониторы",
-    target: "monitors",
-    items: ["HYIP crypto", "проверка контактов", "статусы переговоров"],
-  },
-  {
-    id: "telegram",
-    title: "Telega.io и Telegram-каналы",
-    subtitle: "каналы, закупы, лиды и рекламные размещения",
-    metric: "100 лидов",
-    action: "Открыть Telegram",
-    target: "telegram",
-    items: ["Telegram-каналы", "Telega.io", "админы каналов"],
-  },
-  {
-    id: "articles",
-    title: "Статьи и SuperSource",
-    subtitle: "площадки под обзоры, публикации и внешние материалы",
-    metric: "100 площадок",
-    action: "Открыть площадки",
-    target: "articlePlacement",
-    items: ["Colaborator.pro", "SuperSource", "статейные площадки"],
-  },
-  {
-    id: "mlm",
-    title: "MLM-лидеры и знакомые сетевики",
-    subtitle: "сетевики, региональные лидеры и партнёрские контакты",
-    metric: "43 источника",
-    action: "Открыть MLM",
-    target: "mlmLeaders",
-    items: ["MLM лидеры", "Regional Partners", "личные знакомства"],
-  },
-  {
-    id: "segmentation",
-    title: "Сегментация и аналитика рынков",
-    subtitle: "сегменты, аудитории Web3 и сегментный парсер",
-    metric: "7 направлений",
-    action: "Открыть сегменты",
-    target: "marketSegments",
-    items: ["Сегменты рынка", "Web3 сегменты", "Сегментный парсер"],
-  },
-  {
-    id: "influencers",
-    title: "Инфлюенсеры",
-    subtitle: "лиды по соцсетям, охватам, статусам и следующим шагам",
-    metric: "500 лидов",
-    action: "Открыть инфлюенсеров",
-    target: "influencers",
-    items: ["соцсети", "контакты", "оценка релевантности"],
-  },
-  {
-    id: "special",
-    title: "Генри, Бона и спец-истории",
-    subtitle: "отдельные каналы реализации, договорённости и история работ",
-    metric: "ручной трек",
-    action: "Открыть бриф",
-    target: "regionalHiring",
-    items: ["Генри", "Бона", "история реализации"],
-  },
-];
+const PARSER_TAB_BOARD_IDS = {
+  overview: "parser",
+  creatives: "atlasCreatives",
+  monitors: "hyipParser",
+  telegram: "telegramParser",
+  influencers: "influencers",
+  youtubeApi: "youtubeApiSearch",
+  bitnestYoutube: "bitnestYoutube",
+  articlePlacement: "articlePlacement",
+  marketSegments: "marketSegments",
+  regionalHiring: "regionalHiring",
+  mlmLeaders: "mlmLeaders",
+  segmentOutreach: "segmentOutreach",
+  web3Segments: "web3Segments",
+  poolMonitor: "poolMonitor",
+};
+const BOARD_PARSER_TABS = Object.fromEntries(
+  Object.entries(PARSER_TAB_BOARD_IDS).map(([tabId, boardId]) => [boardId, tabId]),
+);
 
-const MARKETING_HISTORY_ROWS = [
-  ["Формирование базы", "Собираем источники, лиды и площадки в единый маркетинговый контур."],
-  ["Outreach", "Фиксируем контакт, статус, следующий шаг, бюджет и результат."],
-  ["Отчётность", "По каждому направлению можно вести проделанную работу, расходы и выводы."],
-];
+const RESULT_OUTREACH_STATUSES = new Set(["Подключено", "Размещено", "Опубликовано", "Завершено", "Разместили"]);
+const IN_PROGRESS_OUTREACH_STATUSES = new Set(["Черновик", "Отправлено", "Написали", "Связались", "Переговоры", "Ответили", "Цена получена", "Договорились", "Запланировано"]);
+
+function outreachStats(leads, outreach, nextStep) {
+  const records = Object.values(outreach && typeof outreach === "object" ? outreach : {});
+  const results = records.filter((record) => RESULT_OUTREACH_STATUSES.has(record?.status)).length;
+  const inProgress = records.filter((record) => IN_PROGRESS_OUTREACH_STATUSES.has(record?.status)).length;
+  return {
+    total: leads.length,
+    connected: results,
+    results,
+    negotiations: inProgress,
+    inProgress,
+    candidates: Math.max(0, leads.length - results - inProgress),
+    nextStep,
+  };
+}
+
+function defaultSourceStats() {
+  return {
+    mlm: {
+      total: defaultMlmLeaderOutreachPlatforms.length,
+      connected: 0,
+      results: 0,
+      negotiations: 0,
+      inProgress: 0,
+      candidates: defaultMlmLeaderOutreachPlatforms.length,
+      nextStep: "Назначить ответственного и выбрать первых знакомых лидеров",
+    },
+    influencers: {
+      ...outreachStats(defaultInfluencerProspects, {}, "Косте выбрать первые каналы для персонального контакта"),
+      platforms: { YouTube: 0, Instagram: 0, Telegram: 0, X: 0 },
+    },
+    monitors: outreachStats(hyipDefaultLeads, {}, "Продолжить переговоры с живыми мониторами высокого приоритета"),
+    telegram: outreachStats(defaultTelegramLeads, {}, "Отобрать каналы и запросить цену размещения"),
+    articles: {
+      total: defaultArticlePlacementResources.length,
+      connected: 0,
+      results: 0,
+      negotiations: 0,
+      inProgress: 0,
+      candidates: defaultArticlePlacementResources.length,
+      nextStep: "Добавить ссылки на AMBCrypto и BSC.News, затем выбрать следующую площадку",
+    },
+    creatives: {
+      total: 8,
+      connected: 0,
+      negotiations: 0,
+      candidates: 8,
+      nextStep: "Собрать актуальные креативы и привязать их к каналам продвижения",
+    },
+  };
+}
+
+function buildSourceStats({
+  mlmRows,
+  influencerLeads,
+  influencerOutreach,
+  monitorLeads,
+  monitorOutreach,
+  telegramLeads,
+  telegramOutreach,
+  articleRows,
+}) {
+  const activeMlmRows = mlmRows.filter((row) => !row.deleted);
+  const mlmResults = activeMlmRows.filter((row) => RESULT_OUTREACH_STATUSES.has(row.status)).length;
+  const mlmInProgress = activeMlmRows.filter((row) => IN_PROGRESS_OUTREACH_STATUSES.has(row.status)).length;
+  const influencerStats = outreachStats(influencerLeads, influencerOutreach, "Косте выбрать первые каналы для персонального контакта");
+  const connectedInfluencerIds = new Set(
+    Object.entries(influencerOutreach || {})
+      .filter(([, record]) => RESULT_OUTREACH_STATUSES.has(record?.status))
+      .map(([id]) => id),
+  );
+  const platforms = { YouTube: 0, Instagram: 0, Telegram: 0, X: 0 };
+  influencerLeads.forEach((lead) => {
+    if (connectedInfluencerIds.has(lead.id) && Object.hasOwn(platforms, lead.platform)) {
+      platforms[lead.platform] += 1;
+    }
+  });
+  const activeArticles = articleRows.filter((row) => !row.deleted);
+  const publishedArticles = activeArticles.filter((row) => (
+    row.status === "Опубликовано"
+    && Boolean(row.publicationUrl || row.publishedUrl || row.articleUrl)
+  )).length;
+  const articleInProgress = activeArticles.filter((row) => IN_PROGRESS_OUTREACH_STATUSES.has(row.status) || row.status === "Договориться").length;
+
+  return {
+    ...defaultSourceStats(),
+    mlm: {
+      total: activeMlmRows.length,
+      connected: mlmResults,
+      results: mlmResults,
+      negotiations: mlmInProgress,
+      inProgress: mlmInProgress,
+      candidates: Math.max(0, activeMlmRows.length - mlmResults - mlmInProgress),
+      nextStep: "Назначить ответственного и выбрать первых знакомых лидеров",
+    },
+    influencers: { ...influencerStats, platforms },
+    monitors: outreachStats(monitorLeads, monitorOutreach, "Продолжить переговоры с живыми мониторами высокого приоритета"),
+    telegram: outreachStats(telegramLeads, telegramOutreach, "Отобрать каналы и запросить цену размещения"),
+    articles: {
+      total: activeArticles.length,
+      connected: publishedArticles,
+      results: publishedArticles,
+      negotiations: articleInProgress,
+      inProgress: articleInProgress,
+      candidates: Math.max(0, activeArticles.length - publishedArticles - articleInProgress),
+      nextStep: "Добавить ссылки на AMBCrypto и BSC.News, затем выбрать следующую площадку",
+    },
+  };
+}
+
+function genericStats(directionValue) {
+  const rows = (directionValue?.rows || []).filter((row) => !row.deleted);
+  const results = rows.filter((row) => RESULT_OUTREACH_STATUSES.has(row.status)).length;
+  const inProgress = rows.filter((row) => IN_PROGRESS_OUTREACH_STATUSES.has(row.status)).length;
+  return {
+    total: rows.length,
+    connected: results,
+    results,
+    negotiations: inProgress,
+    inProgress,
+    candidates: Math.max(0, rows.length - results - inProgress),
+  };
+}
+
+function operationalPhase(directionValue, stats) {
+  if (directionValue?.phase === "На паузе") return "На паузе";
+  if ((stats.results || stats.connected || 0) > 0) return "Запущено";
+  if ((stats.inProgress || stats.negotiations || 0) > 0) return "Переговоры";
+  if ((stats.total || 0) > 0) return "Сбор базы";
+  return "Не начато";
+}
+
+function cardMetrics(direction, stats, directionValue) {
+  if (direction.id === "influencers") {
+    return [
+      ["YouTube", stats.platforms?.YouTube || 0],
+      ["Instagram", stats.platforms?.Instagram || 0],
+      ["Telegram", stats.platforms?.Telegram || 0],
+      ["X", stats.platforms?.X || 0],
+    ];
+  }
+  if (direction.id === "articles") {
+    return [
+      ["Опубликовано", stats.connected || 0],
+      ["В работе", stats.inProgress || stats.negotiations || 0],
+      ["Площадок", stats.total || 0],
+    ];
+  }
+  if (direction.id === "email") {
+    return [
+      ["Писем", 0],
+      ["Ответы", stats.connected || 0],
+      ["Агентства", stats.total || 0],
+    ];
+  }
+  if (direction.id === "revshare") {
+    return [
+      ["Подключено", stats.connected || 0],
+      ["В работе", stats.inProgress || stats.negotiations || 0],
+      ["Кандидаты", stats.candidates || 0],
+    ];
+  }
+  return [
+    ["В базе", stats.total || 0],
+    ["В работе", stats.inProgress || stats.negotiations || 0],
+    ["Результат", stats.results || stats.connected || 0],
+  ];
+}
+
+function MarketingOverview({ dashboardState, sourceStats, onSelectDirection }) {
+  return (
+    <div className="analytics-marketing-hub">
+      <section className="analytics-marketing-hub-hero analytics-surface">
+        <div>
+          <p className="analytics-kicker">Marketing command center</p>
+          <h2>Marketing Dashboard</h2>
+          <p>
+            Все каналы продвижения Atlas, ответственные, переговоры и результаты в одном рабочем пространстве.
+          </p>
+        </div>
+        <div className="analytics-marketing-hub-summary" aria-label="Сводка маркетинговых инструментов">
+          <span>Направления</span>
+          <strong>{MARKETING_DIRECTIONS.length}</strong>
+          <small>{MARKETING_DIRECTIONS.filter((direction) => dashboardState.directions[direction.id]?.owner !== "Назначить").length} с назначенным ответственным</small>
+        </div>
+      </section>
+
+      <section className="analytics-marketing-tool-grid" aria-label="Маркетинговые направления">
+        {MARKETING_DIRECTIONS.map((direction) => {
+          const value = dashboardState.directions[direction.id];
+          const stats = sourceStats[direction.sourceKey] || genericStats(value);
+          const phase = operationalPhase(value, stats);
+          return (
+            <article key={direction.id} className={`analytics-marketing-tool-card analytics-surface is-${direction.accent}`}>
+              <button type="button" onClick={() => onSelectDirection(direction.id)}>
+                <div className="analytics-marketing-card-meta">
+                  <span>{String(direction.order).padStart(2, "0")}</span>
+                  <em>{phase}</em>
+                </div>
+                <strong>{direction.title}</strong>
+                <p>{direction.description}</p>
+                <div className="analytics-marketing-card-metrics">
+                  {cardMetrics(direction, stats, value).map(([label, metricValue]) => (
+                    <div key={label}>
+                      <b>{metricValue}</b>
+                      <small>{label}</small>
+                    </div>
+                  ))}
+                </div>
+                <div className="analytics-marketing-card-owner">
+                  <span>Ответственный</span>
+                  <b className={value.owner === "Назначить" ? "is-empty" : ""}>{value.owner || "Назначить"}</b>
+                  <i aria-hidden="true">→</i>
+                </div>
+              </button>
+            </article>
+          );
+        })}
+      </section>
+    </div>
+  );
+}
 
 export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
+  const [dashboardState, setDashboardState] = useState(() => {
+    if (typeof window === "undefined") return createDefaultMarketingDashboardState();
+    try {
+      const saved = window.localStorage.getItem(MARKETING_DASHBOARD_STORAGE_KEY);
+      return hydrateMarketingDashboardState(saved ? JSON.parse(saved) : null);
+    } catch {
+      return createDefaultMarketingDashboardState();
+    }
+  });
+  const [sourceStats, setSourceStats] = useState(defaultSourceStats);
+  const [isDashboardLoaded, setIsDashboardLoaded] = useState(false);
+  const [dashboardSync, setDashboardSync] = useState({
+    status: "loading",
+    label: "Проверяем синхронизацию…",
+  });
+  const dashboardSaveRef = useRef(0);
+  const initialBoard = typeof window !== "undefined" ? new URL(window.location.href).searchParams.get("board") : "";
+  const initialDirectionId = initialBoard?.startsWith("marketing-") ? initialBoard.replace("marketing-", "") : "";
+  const [selectedDirectionId, setSelectedDirectionId] = useState(
+    MARKETING_DIRECTIONS.some((direction) => direction.id === initialDirectionId) ? initialDirectionId : "",
+  );
   const [activeTab, setActiveTab] = useState(() => {
-    if (initialTab === "overview") return "overview";
-    if (initialTab === "telegram") return "telegram";
-    if (initialTab === "influencers") return "influencers";
-    if (initialTab === "youtubeApi") return "youtubeApi";
-    if (initialTab === "bitnestYoutube") return "bitnestYoutube";
-    if (initialTab === "articlePlacement") return "articlePlacement";
-    if (initialTab === "marketSegments") return "marketSegments";
-    if (initialTab === "regionalHiring") return "regionalHiring";
-    if (initialTab === "mlmLeaders") return "mlmLeaders";
-    if (initialTab === "segmentOutreach") return "segmentOutreach";
-    if (initialTab === "web3Segments") return "web3Segments";
-    if (initialTab === "poolMonitor") return "poolMonitor";
+    if (MARKETING_DIRECTIONS.some((direction) => direction.id === initialDirectionId)) return "direction";
     if (typeof window !== "undefined") {
       const board = new URL(window.location.href).searchParams.get("board");
-      if (board === "telegramParser") return "telegram";
-      if (board === "influencers") return "influencers";
-      if (board === "youtubeApiSearch") return "youtubeApi";
-      if (board === "bitnestYoutube") return "bitnestYoutube";
-      if (board === "articlePlacement") return "articlePlacement";
-      if (board === "marketSegments") return "marketSegments";
-      if (board === "regionalHiring") return "regionalHiring";
-      if (board === "mlmLeaders") return "mlmLeaders";
-      if (board === "segmentOutreach") return "segmentOutreach";
-      if (board === "web3Segments") return "web3Segments";
-      if (board === "poolMonitor") return "poolMonitor";
+      if (BOARD_PARSER_TABS[board]) return BOARD_PARSER_TABS[board];
     }
-    return "overview";
+    return PARSER_TAB_BOARD_IDS[initialTab] ? initialTab : "overview";
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([
+      loadServerContentResult(MARKETING_DASHBOARD_STORAGE_KEY),
+      loadServerContent(MLM_LEADER_OUTREACH_STORAGE_KEY),
+      loadServerContent(INFLUENCER_STORAGE_KEY),
+      loadServerContent(INFLUENCER_OUTREACH_STORAGE_KEY),
+      loadServerContent(HYIP_STORAGE_KEY),
+      loadServerContent(HYIP_OUTREACH_STORAGE_KEY),
+      loadServerContent(TELEGRAM_STORAGE_KEY),
+      loadServerContent(TELEGRAM_OUTREACH_STORAGE_KEY),
+      loadServerContent(ARTICLE_PLACEMENT_STORAGE_KEY),
+    ]).then(([
+      dashboardResult,
+      savedMlmRows,
+      savedInfluencerLeads,
+      savedInfluencerOutreach,
+      savedMonitorLeads,
+      savedMonitorOutreach,
+      savedTelegramLeads,
+      savedTelegramOutreach,
+      savedArticleRows,
+    ]) => {
+      if (!isMounted) return;
+      const savedDashboard = dashboardResult?.ok && dashboardResult.exists ? dashboardResult.value : null;
+      const hydratedDashboard = savedDashboard && typeof savedDashboard === "object"
+        ? hydrateMarketingDashboardState(savedDashboard)
+        : null;
+      if (hydratedDashboard) {
+        setDashboardState(hydratedDashboard);
+      }
+      setSourceStats(buildSourceStats({
+        mlmRows: Array.isArray(savedMlmRows) ? savedMlmRows : defaultMlmLeaderOutreachPlatforms,
+        influencerLeads: Array.isArray(savedInfluencerLeads) ? savedInfluencerLeads : defaultInfluencerProspects,
+        influencerOutreach: savedInfluencerOutreach && typeof savedInfluencerOutreach === "object" ? savedInfluencerOutreach : {},
+        monitorLeads: Array.isArray(savedMonitorLeads) ? savedMonitorLeads : hyipDefaultLeads,
+        monitorOutreach: savedMonitorOutreach && typeof savedMonitorOutreach === "object" ? savedMonitorOutreach : {},
+        telegramLeads: Array.isArray(savedTelegramLeads) ? savedTelegramLeads : defaultTelegramLeads,
+        telegramOutreach: savedTelegramOutreach && typeof savedTelegramOutreach === "object" ? savedTelegramOutreach : {},
+        articleRows: Array.isArray(savedArticleRows) ? savedArticleRows : defaultArticlePlacementResources,
+      }));
+      if (hydratedDashboard) {
+        try {
+          window.localStorage.setItem(MARKETING_DASHBOARD_STORAGE_KEY, JSON.stringify(hydratedDashboard));
+        } catch {
+          // Серверное состояние уже загружено.
+        }
+      }
+      setDashboardSync(
+        dashboardResult?.ok
+          ? { status: "server", label: "Синхронизация с сервером" }
+          : { status: "local", label: "Локальные данные · сервер недоступен" },
+      );
+      setIsDashboardLoaded(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isDashboardLoaded) return undefined;
+    setDashboardSync((current) => (
+      current.status === "local"
+        ? current
+        : { status: "saving", label: "Сохраняем…" }
+    ));
+    const timer = window.setTimeout(() => {
+      const requestId = dashboardSaveRef.current + 1;
+      dashboardSaveRef.current = requestId;
+      try {
+        window.localStorage.setItem(MARKETING_DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardState));
+      } catch {
+        // Content API ниже остаётся основным серверным хранилищем.
+      }
+      saveServerContent(MARKETING_DASHBOARD_STORAGE_KEY, dashboardState).then((saved) => {
+        if (dashboardSaveRef.current !== requestId) return;
+        setDashboardSync(
+          saved
+            ? { status: "saved", label: "Сохранено на сервере" }
+            : { status: "local", label: "Сохранено локально · сервер недоступен" },
+        );
+      });
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [dashboardState, isDashboardLoaded]);
+
+  useEffect(() => {
+    function handleHistoryChange() {
+      const board = new URL(window.location.href).searchParams.get("board") || "";
+      const directionId = board.startsWith("marketing-") ? board.replace("marketing-", "") : "";
+      if (MARKETING_DIRECTIONS.some((direction) => direction.id === directionId)) {
+        setSelectedDirectionId(directionId);
+        setActiveTab("direction");
+        return;
+      }
+      setSelectedDirectionId("");
+      setActiveTab(BOARD_PARSER_TABS[board] || "overview");
+    }
+
+    window.addEventListener("popstate", handleHistoryChange);
+    return () => window.removeEventListener("popstate", handleHistoryChange);
+  }, []);
 
   function selectTab(nextTab) {
     setActiveTab(nextTab);
+    setSelectedDirectionId("");
     if (typeof window === "undefined") return;
 
     const url = new URL(window.location.href);
-    url.searchParams.set(
-      "board",
-      nextTab === "telegram"
-        ? "telegramParser"
-        : nextTab === "influencers"
-          ? "influencers"
-          : nextTab === "youtubeApi"
-            ? "youtubeApiSearch"
-            : nextTab === "bitnestYoutube"
-              ? "bitnestYoutube"
-              : nextTab === "articlePlacement"
-                ? "articlePlacement"
-              : nextTab === "marketSegments"
-                ? "marketSegments"
-                : nextTab === "regionalHiring"
-                  ? "regionalHiring"
-                  : nextTab === "mlmLeaders"
-                    ? "mlmLeaders"
-                    : nextTab === "segmentOutreach"
-                      ? "segmentOutreach"
-                      : nextTab === "web3Segments"
-                        ? "web3Segments"
-                        : nextTab === "poolMonitor"
-                          ? "poolMonitor"
-                          : "parser",
-    );
-    window.history.replaceState({}, "", url);
+    url.searchParams.delete("view");
+    url.searchParams.set("board", PARSER_TAB_BOARD_IDS[nextTab] || "parser");
+    window.history.pushState({}, "", url);
+  }
+
+  function selectDirection(directionId) {
+    setSelectedDirectionId(directionId);
+    setActiveTab("direction");
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("view");
+    url.searchParams.set("board", `marketing-${directionId}`);
+    window.history.pushState({}, "", url);
+  }
+
+  function updateDirection(directionId, patch) {
+    setDashboardState((current) => ({
+      ...current,
+      directions: {
+        ...current.directions,
+        [directionId]: {
+          ...current.directions[directionId],
+          ...patch,
+        },
+      },
+    }));
+  }
+
+  const selectedDirection = useMemo(
+    () => MARKETING_DIRECTIONS.find((direction) => direction.id === selectedDirectionId),
+    [selectedDirectionId],
+  );
+
+  function linkedPanelFor(direction) {
+    if (!direction?.baseTab) return null;
+    if (direction.baseTab === "mlmLeaders") return <MlmLeaderOutreachPanel />;
+    if (direction.baseTab === "influencers") return <InfluencerProspectsPanel />;
+    if (direction.baseTab === "monitors") return <HyipParserPanel />;
+    if (direction.baseTab === "telegram") return <TelegramChannelsParserPanel />;
+    if (direction.baseTab === "articlePlacement") return <ArticlePlacementPanel />;
+    if (direction.baseTab === "creatives") return <AtlasCreativesPanel />;
+    return null;
   }
 
   return (
@@ -262,7 +570,28 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       </div>
 
       {activeTab === "overview" ? (
-        <MarketingOverview onOpen={selectTab} />
+        <MarketingOverview
+          dashboardState={dashboardState}
+          sourceStats={sourceStats}
+          onSelectDirection={selectDirection}
+        />
+      ) : activeTab === "direction" && selectedDirection ? (
+        <MarketingDirectionWorkspace
+          direction={selectedDirection}
+          value={dashboardState.directions[selectedDirection.id]}
+          syncStatus={dashboardSync.status}
+          syncLabel={dashboardSync.label}
+          operationalPhase={operationalPhase(
+            dashboardState.directions[selectedDirection.id],
+            sourceStats[selectedDirection.sourceKey] || genericStats(dashboardState.directions[selectedDirection.id]),
+          )}
+          sourceStats={sourceStats[selectedDirection.sourceKey] || genericStats(dashboardState.directions[selectedDirection.id])}
+          onChange={(patch) => updateDirection(selectedDirection.id, patch)}
+          onBack={() => selectTab("overview")}
+          linkedPanel={linkedPanelFor(selectedDirection)}
+        />
+      ) : activeTab === "creatives" ? (
+        <AtlasCreativesPanel />
       ) : activeTab === "telegram" ? (
         <TelegramChannelsParserPanel />
       ) : activeTab === "influencers" ? (
@@ -288,71 +617,6 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       ) : (
         <HyipParserPanel />
       )}
-    </section>
-  );
-}
-
-function MarketingOverview({ onOpen }) {
-  const totalTools = MARKETING_TOOL_GROUPS.length;
-  const totalSources = "1300+";
-  const activeTracks = MARKETING_TOOL_GROUPS.filter((group) => group.metric).length;
-
-  return (
-    <section className="analytics-marketing-hub">
-      <div className="analytics-marketing-hero analytics-surface">
-        <div>
-          <p className="analytics-kicker">Marketing command center</p>
-          <h1>Маркетинг Atlas / SuperSUS</h1>
-          <p>
-            Единая страница для инструментов продвижения, истории реализации, бюджетов,
-            статусов переговоров и мини-отчётности по каждому каналу.
-          </p>
-        </div>
-        <div className="analytics-marketing-hero-stats">
-          <article>
-            <span>Направления</span>
-            <strong>{totalTools}</strong>
-          </article>
-          <article>
-            <span>Источники</span>
-            <strong>{totalSources}</strong>
-          </article>
-          <article>
-            <span>Треки</span>
-            <strong>{activeTracks}</strong>
-          </article>
-        </div>
-      </div>
-
-      <div className="analytics-marketing-grid">
-        {MARKETING_TOOL_GROUPS.map((group) => (
-          <button
-            key={group.id}
-            type="button"
-            className="analytics-marketing-card analytics-surface"
-            onClick={() => onOpen(group.target)}
-          >
-            <span className="analytics-marketing-card-metric">{group.metric}</span>
-            <strong>{group.title}</strong>
-            <p>{group.subtitle}</p>
-            <small>{group.items.join(" · ")}</small>
-            <em>{group.action}</em>
-          </button>
-        ))}
-      </div>
-
-      <div className="analytics-marketing-history analytics-surface">
-        <div>
-          <p className="analytics-kicker">История реализации</p>
-          <h2>Как вести работу внутри разделов</h2>
-        </div>
-        {MARKETING_HISTORY_ROWS.map(([title, description]) => (
-          <article key={title}>
-            <strong>{title}</strong>
-            <p>{description}</p>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }

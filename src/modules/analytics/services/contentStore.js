@@ -10,6 +10,11 @@ function apiUrl(path) {
 }
 
 export async function loadServerContent(key) {
+  const result = await loadServerContentResult(key);
+  return result.ok && result.exists ? result.value : null;
+}
+
+export async function loadServerContentResult(key) {
   try {
     const response = await fetch(contentApiUrl(key), {
       method: "GET",
@@ -17,12 +22,19 @@ export async function loadServerContent(key) {
       cache: "no-store",
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      return { ok: false, exists: false, value: null, status: response.status };
+    }
 
     const payload = await response.json();
-    return payload?.exists ? payload.value : null;
+    return {
+      ok: payload?.ok !== false,
+      exists: payload?.exists === true,
+      value: payload?.exists ? payload.value : null,
+      status: response.status,
+    };
   } catch {
-    return null;
+    return { ok: false, exists: false, value: null, status: 0 };
   }
 }
 

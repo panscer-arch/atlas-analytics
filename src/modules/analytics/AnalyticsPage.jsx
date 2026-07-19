@@ -58,6 +58,40 @@ import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
+const MAIN_TAB_BOARD_IDS = {
+  dashboard: "dashboard",
+  parser: "parser",
+  analytics: "analytics",
+  tasks: "launch",
+  content: "materials",
+  diary: "diary",
+};
+const ANALYTICS_TAB_BOARD_IDS = {
+  dashboard: "analytics",
+  overview: "analytics-overview",
+  traffic: "analytics-traffic",
+  products: "analytics-products",
+  reinvest: "analytics-reinvest",
+  base: "analytics-base",
+  leaders: "analytics-leaders",
+  geography: "analytics-geography",
+  partner: "analytics-partner",
+  wallets: "analytics-wallets",
+  contracts: "contracts",
+  expenses: "expenses",
+};
+const BOARD_ANALYTICS_TABS = Object.fromEntries(
+  Object.entries(ANALYTICS_TAB_BOARD_IDS).map(([tabId, boardId]) => [boardId, tabId]),
+);
+
+function pushBoardRoute(boardId, { replace = false } = {}) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("b");
+  url.searchParams.delete("view");
+  url.searchParams.set("board", boardId);
+  window.history[replace ? "replaceState" : "pushState"]({}, "", url);
+}
 
 function readStoredQuickNotesCount() {
   if (typeof window === "undefined") return 0;
@@ -94,9 +128,9 @@ function getInitialAnalyticsSectionTab() {
   if (typeof window === "undefined") return "dashboard";
 
   const url = new URL(window.location.href);
-  if (url.searchParams.get("board") === "expenses") return "expenses";
-  if (url.searchParams.get("board") === "contractBalances" || url.searchParams.get("board") === "contracts") return "contracts";
-  return "dashboard";
+  const board = url.searchParams.get("board");
+  if (board === "contractBalances") return "contracts";
+  return BOARD_ANALYTICS_TABS[board] || "dashboard";
 }
 
 function AnalyticsPage() {
@@ -131,6 +165,21 @@ function AnalyticsPage() {
   }));
   const [crmContentStats, setCrmContentStats] = useState(() => buildCrmContentStats());
   const { data, isLoading } = useAnalyticsData();
+
+  useEffect(() => {
+    function handleHistoryChange() {
+      const board = new URL(window.location.href).searchParams.get("board");
+      setActiveTab(getAnalyticsTabForBoard(board));
+      setActiveAnalyticsTab(
+        board === "contractBalances"
+          ? "contracts"
+          : BOARD_ANALYTICS_TABS[board] || "dashboard",
+      );
+    }
+
+    window.addEventListener("popstate", handleHistoryChange);
+    return () => window.removeEventListener("popstate", handleHistoryChange);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -321,6 +370,7 @@ function AnalyticsPage() {
   function handleOpenCharts() {
     setActiveTab("analytics");
     setActiveAnalyticsTab("overview");
+    pushBoardRoute(ANALYTICS_TAB_BOARD_IDS.overview);
     setGraphsOpenSignal((current) => current + 1);
     window.setTimeout(() => scrollToSection("overview-graphs"), 60);
   }
@@ -629,19 +679,28 @@ function AnalyticsPage() {
     }
 
     setActiveTab(nextTab);
+    if (nextTab === "analytics") {
+      setActiveAnalyticsTab("dashboard");
+    }
+    pushBoardRoute(MAIN_TAB_BOARD_IDS[nextTab] || nextTab);
+  }
+
+  function handleAnalyticsTabChange(nextTab) {
+    setActiveAnalyticsTab(nextTab);
+    pushBoardRoute(ANALYTICS_TAB_BOARD_IDS[nextTab] || "analytics");
   }
 
   return (
     <main className="analytics-layout">
       <AnalyticsHeader
         onAiReview={() => {
-          setActiveTab("dashboard");
+          handleMainTabChange("dashboard");
           setIsAiReviewOpen((current) => !current);
         }}
-        onParserOpen={() => setActiveTab("parser")}
+        onParserOpen={() => handleMainTabChange("parser")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
         hermesUrl="/hermes/"
-        onLiveAnalyticsClick={() => setActiveTab("diary")}
+        onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />
 
       <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} />
@@ -682,7 +741,7 @@ function AnalyticsPage() {
         analyticsSection={{
           activeAnalyticsTab,
           analyticsSectionTabs,
-          setActiveAnalyticsTab,
+          setActiveAnalyticsTab: handleAnalyticsTabChange,
           data,
           overviewOperations,
           cashPosition,

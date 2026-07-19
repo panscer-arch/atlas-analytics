@@ -177,13 +177,22 @@ function LaunchChecklistSection({ mode = "tasks", analyticsBoardUrl }) {
     }
 
     const url = new URL(window.location.href);
-    if (nextBoard === fallbackBoard) {
-      url.searchParams.delete("board");
-    } else {
-      url.searchParams.set("board", nextBoard);
-    }
+    url.searchParams.set("board", nextBoard);
     window.history.replaceState({}, "", url.toString());
   }, [activeBoard, customChecklists, mode]);
+
+  useEffect(() => {
+    function handleHistoryChange() {
+      const board = new URL(window.location.href).searchParams.get("board");
+      const visibleBoardIds = [...visibleBoardTabs.map((tab) => tab.id), ...STATIC_CONTENT_BOARD_IDS];
+      if (visibleBoardIds.includes(board) || (mode === "tasks" && customChecklists.some((checklist) => checklist.id === board))) {
+        setActiveBoard(board);
+      }
+    }
+
+    window.addEventListener("popstate", handleHistoryChange);
+    return () => window.removeEventListener("popstate", handleHistoryChange);
+  }, [customChecklists, mode, visibleBoardTabs]);
 
   function persistArchive(nextArchive) {
     try {
@@ -428,6 +437,13 @@ function LaunchChecklistSection({ mode = "tasks", analyticsBoardUrl }) {
     setActiveBoard(boardId);
     setEditingCell(null);
     setAssigneeFilter("");
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("b");
+      url.searchParams.delete("view");
+      url.searchParams.set("board", boardId);
+      window.history.pushState({}, "", url);
+    }
   }
 
   return (

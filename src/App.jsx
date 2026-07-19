@@ -34,6 +34,10 @@ function isPublicAccessRoute() {
   }
 
   try {
+    if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
+      return true;
+    }
+
     const params = new URLSearchParams(window.location.search);
     return PUBLIC_BOARD_IDS.has(params.get("board"));
   } catch {
