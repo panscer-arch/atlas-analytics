@@ -3907,6 +3907,30 @@ input.analytics-smm-cell-input {
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
+.analytics-header-media-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.7rem;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 152, 67, 0.46);
+  border-radius: 999px;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 36% 20%, rgba(255, 225, 185, 0.24), transparent 34%),
+    radial-gradient(circle at 72% 76%, rgba(255, 110, 43, 0.2), transparent 42%),
+    linear-gradient(145deg, rgba(47, 24, 12, 0.98), rgba(10, 10, 17, 0.98));
+  color: #ffe9d5;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 14px 28px rgba(0, 0, 0, 0.26),
+    0 0 22px rgba(255, 110, 43, 0.14);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
 .analytics-header-notes-button:hover,
 .analytics-header-notes-button:focus-visible {
   border-color: rgba(255, 232, 188, 0.58);
@@ -3938,6 +3962,66 @@ input.analytics-smm-cell-input {
     0 0 26px rgba(166, 139, 255, 0.24);
   outline: 0;
   transform: translateY(-2px) scale(1.04);
+}
+
+.analytics-header-media-button:hover,
+.analytics-header-media-button:focus-visible {
+  border-color: rgba(255, 196, 128, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 16px 34px rgba(0, 0, 0, 0.32),
+    0 0 28px rgba(255, 110, 43, 0.26);
+  outline: 0;
+  transform: translateY(-2px) scale(1.04);
+}
+
+.analytics-header-media-mark {
+  position: relative;
+  width: 1.95rem;
+  height: 1.55rem;
+  border: 1px solid rgba(255, 235, 215, 0.8);
+  border-radius: 0.34rem;
+  box-shadow: 0 0 12px rgba(255, 152, 67, 0.22);
+}
+
+.analytics-header-media-mark::before {
+  position: absolute;
+  top: -0.26rem;
+  left: 0.3rem;
+  width: 1.28rem;
+  height: 0.24rem;
+  border: 1px solid rgba(255, 235, 215, 0.58);
+  border-bottom: 0;
+  border-radius: 0.3rem 0.3rem 0 0;
+  content: "";
+}
+
+.analytics-header-media-picture {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.28rem;
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 0.15rem;
+  background: linear-gradient(145deg, #ff6e2b, #fbb353);
+}
+
+.analytics-header-media-line {
+  position: absolute;
+  right: 0.26rem;
+  height: 1px;
+  border-radius: 999px;
+  background: rgba(255, 235, 215, 0.78);
+}
+
+.analytics-header-media-line-1 {
+  top: 0.4rem;
+  width: 0.64rem;
+}
+
+.analytics-header-media-line-2 {
+  top: 0.72rem;
+  width: 0.52rem;
 }
 
 .analytics-header-parser-radar {

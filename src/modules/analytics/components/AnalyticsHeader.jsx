@@ -1,6 +1,15 @@
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
-function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, hermesUrl, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
+function AnalyticsHeader({
+  onAiReview,
+  onParserOpen,
+  onQuickNotes,
+  hermesUrl,
+  mediaPreviewUrl,
+  onLiveAnalyticsClick,
+  showAdmins = false,
+  showMotion = true,
+}) {
   return (
     <div className="analytics-surface analytics-header">
       <div className="analytics-header-main">
@@ -72,6 +81,22 @@ function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, hermesUrl, on
               <span className="analytics-header-hermes-orbit analytics-header-hermes-orbit-2" />
               <span className="analytics-header-hermes-spark analytics-header-hermes-spark-1" />
               <span className="analytics-header-hermes-spark analytics-header-hermes-spark-2" />
+            </span>
+          </a>
+        ) : null}
+        {mediaPreviewUrl ? (
+          <a
+            className="analytics-header-media-button"
+            href={mediaPreviewUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Открыть макет Atlas Media"
+            title="Atlas Media"
+          >
+            <span className="analytics-header-media-mark" aria-hidden="true">
+              <span className="analytics-header-media-picture" />
+              <span className="analytics-header-media-line analytics-header-media-line-1" />
+              <span className="analytics-header-media-line analytics-header-media-line-2" />
             </span>
           </a>
         ) : null}

@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Atlas Media section concept for the Atlas System website">
+  <title>Atlas Media - Website Section Concept</title>
+  <style>
+    @font-face {
+      font-family: "Manrope";
+      src: url("https://atlas-system.io/wp-content/themes/atlas-system/assets/fonts/manrope-medium.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Manrope";
+      src: url("https://atlas-system.io/wp-content/themes/atlas-system/assets/fonts/manrope-bold.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: light;
+      --ink: #250c01;
+      --muted: #575757;
+      --muted-soft: #767676;
+      --line: #e6e6e6;
+      --line-brand: #ffbf80;
+      --surface: #f6f6f6;
+      --surface-warm: #fffaf5;
+      --white: #ffffff;
+      --orange: #ff6e2b;
+      --orange-deep: #e96d00;
+      --yellow: #fbb353;
+      --gradient: linear-gradient(90deg, #ec6424 0%, #fbb353 100%);
+      --wrapper: 1312px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--white);
+      color: var(--ink);
+      font-family: "Manrope", Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1.56;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .wrapper {
+      width: min(var(--wrapper), calc(100% - 64px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid #eeeeee;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(14px);
+    }
+
+    .site-header__inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 38px;
+    }
+
+    .site-header__logo {
+      width: 163px;
+      flex: 0 0 auto;
+    }
+
+    .site-header__nav {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      margin-left: auto;
+      color: #2e1c15;
+      font-size: 15px;
+    }
+
+    .site-header__action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 22px;
+      border-radius: 12px;
+      background: var(--gradient);
+      color: var(--white);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .roadmap-context {
+      position: relative;
+      overflow: hidden;
+      padding: 86px 0 112px;
+    }
+
+    .roadmap-context::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 245px;
+      opacity: 0.45;
+      background-image:
+        linear-gradient(rgba(255, 150, 29, 0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 150, 29, 0.2) 1px, transparent 1px);
+      background-size: 46px 28px;
+      transform: perspective(340px) rotateX(58deg) scale(1.18);
+      transform-origin: bottom;
+      pointer-events: none;
+    }
+
+    .section-heading {
+      margin: 0;
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .roadmap-context__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 56px;
+    }
+
+    .roadmap-context__controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-control {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 12px;
+      background: #ececec;
+      color: var(--ink);
+    }
+
+    .roadmap-context__grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .roadmap-item {
+      min-height: 268px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 32px;
+      border: 2px solid var(--line-brand);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .roadmap-item__brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 23px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .roadmap-item__mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--gradient);
+      color: var(--white);
+      font-size: 18px;
+    }
+
+    .roadmap-item__badge {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 14px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: #fff1df;
+      color: var(--orange-deep);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .roadmap-item__text {
+      max-width: 330px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .atlas-media {
+      position: relative;
+      padding: 104px 0 112px;
+      border-top: 1px solid #efefef;
+      background: var(--surface);
+    }
+
+    .atlas-media__head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 510px);
+      gap: 72px;
+      align-items: end;
+      margin-bottom: 52px;
+    }
+
+    .atlas-media__eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--orange-deep);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .atlas-media__eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--gradient);
+    }
+
+    .atlas-media__intro {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .atlas-media__note {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--muted-soft);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .atlas-media__note svg {
+      flex: 0 0 auto;
+      margin-top: 2px;
+      color: var(--orange);
+    }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .media-card {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--white);
+      transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+    }
+
+    .media-card:hover {
+      transform: translateY(-4px);
+      border-color: #ffab67;
+      box-shadow: 0 18px 38px rgba(77, 34, 6, 0.1);
+    }
+
+    .media-card:focus-visible {
+      outline: 3px solid rgba(255, 110, 43, 0.35);
+      outline-offset: 4px;
+    }
+
+    .media-card__image {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: var(--surface-warm);
+    }
+
+    .media-card__image::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 30%;
+      background: linear-gradient(180deg, transparent 0%, rgba(37, 12, 1, 0.09) 100%);
+      pointer-events: none;
+    }
+
+    .media-card__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 420ms ease;
+    }
+
+    .media-card:hover .media-card__image img {
+      transform: scale(1.025);
+    }
+
+    .media-card__body {
+      min-height: 326px;
+      display: flex;
+      flex-direction: column;
+      padding: 28px 30px 30px;
+    }
+
+    .media-card__topline {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .publisher {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .publisher--bscn img {
+      width: 28px;
+      height: 36px;
+      object-fit: contain;
+    }
+
+    .publisher--bscn span {
+      color: #171717;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .publisher--amb img {
+      width: 154px;
+      height: auto;
+      mix-blend-mode: multiply;
+    }
+
+    .publication-type {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid #e2e2e2;
+      border-radius: 8px;
+      color: #6a625f;
+      background: #fafafa;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .publication-type::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    .media-card__date {
+      margin-bottom: 10px;
+      color: var(--muted-soft);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .media-card__title {
+      margin: 0 0 14px;
+      color: var(--ink);
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    .media-card__summary {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .media-card__action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid #eeeeee;
+      color: var(--orange-deep);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .media-card__action-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: #fff2e7;
+      transition: background 220ms ease, color 220ms ease;
+    }
+
+    .media-card:hover .media-card__action-icon {
+      background: var(--gradient);
+      color: var(--white);
+    }
+
+    .atlas-media__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-top: 26px;
+      color: var(--muted-soft);
+      font-size: 13px;
+    }
+
+    .atlas-media__sources {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .atlas-media__sources span:not(:last-child)::after {
+      content: "·";
+      margin-left: 12px;
+      color: #b0b0b0;
+    }
+
+    .next-context {
+      overflow: hidden;
+      padding: 86px 0 100px;
+      background: var(--white);
+    }
+
+    .next-context__inner {
+      min-height: 260px;
+      display: grid;
+      grid-template-columns: minmax(0, 590px) 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .next-context__title {
+      margin: 0 0 34px;
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .next-context__title strong {
+      background: linear-gradient(90deg, #250c01 0%, #ec6424 55%, #fbb353 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .next-context__links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .social-placeholder {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .next-context__visual {
+      position: relative;
+      min-height: 260px;
+    }
+
+    .next-context__visual::before,
+    .next-context__visual::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(255, 110, 43, 0.28);
+      transform: rotate(-9deg);
+    }
+
+    .next-context__visual::before {
+      width: 540px;
+      height: 170px;
+      top: 54px;
+      left: 20px;
+      border-radius: 50%;
+    }
+
+    .next-context__visual::after {
+      width: 410px;
+      height: 110px;
+      top: 84px;
+      left: 86px;
+      border-radius: 50%;
+    }
+
+    .next-context__logo {
+      position: absolute;
+      top: 95px;
+      left: 160px;
+      width: 230px;
+      filter: drop-shadow(0 18px 28px rgba(236, 100, 36, 0.1));
+    }
+
+    @media (max-width: 900px) {
+      .site-header__nav {
+        display: none;
+      }
+
+      .site-header__action {
+        margin-left: auto;
+      }
+
+      .roadmap-context__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .roadmap-item:last-child {
+        display: none;
+      }
+
+      .atlas-media__head {
+        grid-template-columns: 1fr;
+        gap: 22px;
+      }
+
+      .media-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .next-context__inner {
+        grid-template-columns: 1fr;
+      }
+
+      .next-context__visual {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrapper {
+        width: min(100% - 32px, var(--wrapper));
+      }
+
+      .site-header__inner {
+        min-height: 64px;
+      }
+
+      .site-header__logo {
+        width: 136px;
+      }
+
+      .site-header__action {
+        min-height: 40px;
+        padding: 0 15px;
+        border-radius: 10px;
+        font-size: 13px;
+      }
+
+      .roadmap-context {
+        padding: 54px 0 72px;
+      }
+
+      .section-heading {
+        font-size: 32px;
+        line-height: 1.25;
+      }
+
+      .roadmap-context__head {
+        margin-bottom: 28px;
+      }
+
+      .roadmap-context__controls {
+        display: none;
+      }
+
+      .roadmap-context__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .roadmap-item {
+        min-height: 214px;
+        padding: 22px;
+        border-radius: 18px;
+      }
+
+      .roadmap-item:not(:first-child) {
+        display: none;
+      }
+
+      .atlas-media {
+        padding: 64px 0 72px;
+      }
+
+      .atlas-media__head {
+        margin-bottom: 30px;
+      }
+
+      .atlas-media__eyebrow {
+        margin-bottom: 10px;
+        font-size: 12px;
+      }
+
+      .atlas-media__intro {
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .atlas-media__note {
+        font-size: 12px;
+      }
+
+      .media-grid {
+        gap: 16px;
+      }
+
+      .media-card {
+        border-radius: 16px;
+      }
+
+      .media-card__body {
+        min-height: 0;
+        padding: 20px;
+      }
+
+      .media-card__topline {
+        min-height: 36px;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .publisher--bscn span {
+        font-size: 19px;
+      }
+
+      .publisher--bscn img {
+        width: 24px;
+        height: 31px;
+      }
+
+      .publisher--amb img {
+        width: 126px;
+      }
+
+      .publication-type {
+        max-width: 124px;
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+
+      .media-card__date {
+        font-size: 12px;
+      }
+
+      .media-card__title {
+        font-size: 21px;
+        line-height: 1.34;
+      }
+
+      .media-card__summary {
+        font-size: 14px;
+      }
+
+      .atlas-media__footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .atlas-media__sources {
+        flex-wrap: wrap;
+      }
+
+      .next-context {
+        padding: 62px 0 74px;
+      }
+
+      .next-context__inner {
+        min-height: 0;
+      }
+
+      .next-context__title {
+        margin-bottom: 28px;
+        font-size: 30px;
+      }
+    }
+  </style>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrapper site-header__inner">
+      <img class="site-header__logo" src="./assets/atlas-logo.svg" alt="Atlas System">
+      <nav class="site-header__nav" aria-label="Main navigation">
+        <a href="#roadmap">Assistance Cycles</a>
+        <a href="#roadmap">Partner Program</a>
+        <a href="#media">Documents</a>
+        <a href="#media">Contacts</a>
+      </nav>
+      <a class="site-header__action" href="#media">Dashboard</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="roadmap-context" id="roadmap" aria-labelledby="roadmap-title">
+      <div class="wrapper">
+        <div class="roadmap-context__head">
+          <h2 class="section-heading" id="roadmap-title">Roadmap</h2>
+          <div class="roadmap-context__controls" aria-hidden="true">
+            <button class="icon-control" type="button" tabindex="-1"><i data-lucide="chevron-left"></i></button>
+            <button class="icon-control" type="button" tabindex="-1"><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+
+        <div class="roadmap-context__grid">
+          <article class="roadmap-item">
+            <div class="roadmap-item__brand">
+              <span class="roadmap-item__mark">C1</span>
+              <span>Smart Cycle 1</span>
+            </div>
+            <div>
+              <div class="roadmap-item__badge">Available at launch</div>
+              <div class="roadmap-item__text">The first pilot financial product and the core of the Atlas System ecosystem</div>
+            </div>
+          </article>
+
+          <article class="roadmap-item">
+            <div class="roadmap-item__brand">
+              <span class="roadmap-item__mark"><i data-lucide="users"></i></span>
+              <span>Invite &amp; Earn</span>
+            </div>
+            <div>
+              <div class="roadmap-item__badge">Available at launch</div>
+              <div class="roadmap-item__text">Atlas System Referral Program</div>
+            </div>
+          </article>
+
+          <article class="roadmap-item">
+            <div class="roadmap-item__brand">
+              <span class="roadmap-item__mark"><i data-lucide="book-open"></i></span>
+              <span>Knowledge Hub</span>
+            </div>
+            <div>
+              <div class="roadmap-item__badge">Available at launch</div>
+              <div class="roadmap-item__text">The knowledge base of the Atlas System ecosystem</div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="atlas-media" id="media" aria-labelledby="media-title">
+      <div class="wrapper">
+        <div class="atlas-media__head">
+          <div>
+            <div class="atlas-media__eyebrow">External publications</div>
+            <h2 class="section-heading" id="media-title">Atlas Media</h2>
+          </div>
+          <div>
+            <p class="atlas-media__intro">Selected publications and press materials about Atlas System, its smart contracts, and the upcoming platform launch.</p>
+            <div class="atlas-media__note">
+              <i data-lucide="info" width="16" height="16" aria-hidden="true"></i>
+              <span>Publication format is shown on each card. Links open the original material on the publisher's website.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="media-grid">
+          <a
+            class="media-card"
+            href="https://bsc.news/sponsored/atlas-system-smart-cycle-contracts"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            aria-label="Read the sponsored BSCN article about Atlas System"
+          >
+            <div class="media-card__image">
+              <img
+                src="./assets/bsc-atlas.webp"
+                alt="Atlas System Smart Cycle v1 contract architecture on BNB Chain"
+                width="1280"
+                height="720"
+              >
+            </div>
+            <div class="media-card__body">
+              <div class="media-card__topline">
+                <div class="publisher publisher--bscn" aria-label="BSCN">
+                  <img src="./assets/bscn-mark.svg" alt="">
+                  <span>BSCN</span>
+                </div>
+                <span class="publication-type">Sponsored article</span>
+              </div>
+              <div class="media-card__date">July 18, 2026 · English</div>
+              <h3 class="media-card__title">Inside Atlas System's Smart Cycle v1: How Its BNB Chain Contracts Work</h3>
+              <p class="media-card__summary">An overview of Smart Cycle v1 on BNB Chain, including Lockup Flow, Daily Flow, USDT routing, and the role of PancakeSwap V3.</p>
+              <div class="media-card__action">
+                <span>Read original on BSCN</span>
+                <span class="media-card__action-icon" aria-hidden="true"><i data-lucide="arrow-up-right"></i></span>
+              </div>
+            </div>
+          </a>
+
+          <a
+            class="media-card"
+            href="https://ambcrypto.com/atlas-system-to-launch-on-1-august-2026-introducing-a-web3-based-model-for-voluntary-mutual-financing/"
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            aria-label="Read the paid AMBCrypto press release about Atlas System"
+          >
+            <div class="media-card__image">
+              <img
+                src="./assets/amb-atlas.png"
+                alt="Atlas System launch and community smart contract illustration"
+                width="640"
+                height="360"
+              >
+            </div>
+            <div class="media-card__body">
+              <div class="media-card__topline">
+                <div class="publisher publisher--amb" aria-label="AMBCrypto">
+                  <img src="./assets/ambcrypto-logo.jpg" alt="AMBCrypto">
+                </div>
+                <span class="publication-type">Paid press release</span>
+              </div>
+              <div class="media-card__date">July 16, 2026 · English</div>
+              <h3 class="media-card__title">Atlas System to Launch on 1 August 2026: A Web3 Model for Voluntary Mutual Financing</h3>
+              <p class="media-card__summary">A launch overview covering voluntary mutual financing, on-chain transparency, Smart Cycle 1, and the wider Atlas System roadmap.</p>
+              <div class="media-card__action">
+                <span>Read original on AMBCrypto</span>
+                <span class="media-card__action-icon" aria-hidden="true"><i data-lucide="arrow-up-right"></i></span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="atlas-media__footer">
+          <div class="atlas-media__sources">
+            <span>2 publications</span>
+            <span>English</span>
+            <span>External sources</span>
+          </div>
+          <span>More materials will be added as they are published.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="next-context" aria-label="Atlas System social links">
+      <div class="wrapper next-context__inner">
+        <div>
+          <h2 class="next-context__title"><strong>Atlas System</strong> - an idea whose time has finally come!</h2>
+          <div class="next-context__links" aria-label="Social networks">
+            <span class="social-placeholder">YT</span>
+            <span class="social-placeholder">GH</span>
+            <span class="social-placeholder">X</span>
+            <span class="social-placeholder">TG</span>
+            <span class="social-placeholder">TT</span>
+          </div>
+        </div>
+        <div class="next-context__visual" aria-hidden="true">
+          <img class="next-context__logo" src="./assets/atlas-logo.svg" alt="">
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) {
+        window.lucide.createIcons({ "stroke-width": 2 });
+      }
+    });
+  </script>
+</body>
+</html>

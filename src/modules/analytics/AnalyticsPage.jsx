@@ -57,7 +57,7 @@ import "./styles/analytics.css";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
-const ATLAS_SITE_PREVIEW_URL = "/atlas-site-preview/index.html";
+const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
 const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
   parser: "parser",
@@ -700,6 +700,7 @@ function AnalyticsPage() {
         onParserOpen={() => handleMainTabChange("parser")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
         hermesUrl="/hermes/"
+        mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />
 
