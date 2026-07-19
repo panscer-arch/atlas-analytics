@@ -202,7 +202,9 @@ function ExpensesBoard() {
       const hasCurrentCenter = centerResult.ok && centerResult.value?.version === 2;
       const canMigrateLegacy = centerResult.ok && expensesResult.ok && fundsResult.ok;
       if (!hasCurrentCenter && !canMigrateLegacy) {
-        setSaveState("Ошибка загрузки — изменения заблокированы");
+        const needsFinanceSession = [centerResult, expensesResult, fundsResult]
+          .some((result) => result.status === 401);
+        setSaveState(needsFinanceSession ? "Требуется финансовая сессия" : "Ошибка загрузки — изменения заблокированы");
         return;
       }
       let nextCenter = hasCurrentCenter
@@ -582,7 +584,7 @@ function ExpensesBoard() {
         </div>
         <div className="analytics-expenses-hero-actions">
           <span
-            className={`analytics-expenses-save is-${saveState.includes("Ошибка") || saveState.includes("Конфликт") ? "error" : "ok"}`}
+            className={`analytics-expenses-save is-${saveState.includes("Ошибка") || saveState.includes("Конфликт") || saveState.includes("Требуется") ? "error" : "ok"}`}
             role="status"
             aria-live="polite"
           >
@@ -610,9 +612,21 @@ function ExpensesBoard() {
       {!isLoaded ? (
         <section className="analytics-expenses-load-state analytics-surface">
           <span className="analytics-kicker">Данные расходов</span>
-          <h3>{saveState.includes("Ошибка") ? "Не удалось загрузить финансовый реестр" : "Загружаю расходы..."}</h3>
-          <p>{saveState.includes("Ошибка") ? "Ничего не перезаписано. Проверьте соединение с сервером и повторите загрузку." : "Получаю актуальные записи, бюджеты и календарь оплат."}</p>
-          {saveState.includes("Ошибка") ? (
+          <h3>
+            {saveState.includes("Требуется")
+              ? "Нужен доступ к финансовым данным"
+              : saveState.includes("Ошибка")
+                ? "Не удалось загрузить финансовый реестр"
+                : "Загружаю расходы..."}
+          </h3>
+          <p>
+            {saveState.includes("Требуется")
+              ? "Получите у SuperSUS-бота ссылку командой /marketing_access, откройте её один раз и вернитесь в раздел расходов."
+              : saveState.includes("Ошибка")
+                ? "Ничего не перезаписано. Проверьте соединение с сервером и повторите загрузку."
+                : "Получаю актуальные записи, бюджеты и календарь оплат."}
+          </p>
+          {saveState.includes("Ошибка") || saveState.includes("Требуется") ? (
             <button type="button" className="analytics-expenses-secondary" onClick={() => {
               setSaveState("Загрузка...");
               setLoadAttempt((attempt) => attempt + 1);
