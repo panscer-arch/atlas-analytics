@@ -34,6 +34,8 @@ export default function MarketingDirectionWorkspace({
   sourceStats,
   syncStatus,
   syncLabel,
+  canEdit = false,
+  accessBotUrl = "",
   operationalPhase,
   onChange,
   onBack,
@@ -112,11 +114,22 @@ export default function MarketingDirectionWorkspace({
           <span className={`analytics-marketing-sync is-${syncStatus || "loading"}`}>
             {syncLabel || "Проверяем синхронизацию…"}
           </span>
+          {syncStatus !== "loading" && !canEdit ? (
+            <div className="analytics-marketing-access-lock" data-testid="marketing-write-lock" role="status">
+              <div>
+                <span>Редактирование выключено</span>
+                <strong>Получите ссылку командой /marketing_access и откройте её в этом браузере.</strong>
+              </div>
+              <a href={accessBotUrl} target="_blank" rel="noreferrer">Открыть SuperSUS-бота</a>
+            </div>
+          ) : null}
         </div>
         <div className="analytics-marketing-direction-controls">
           <label>
             Ответственный
             <input
+              data-testid="marketing-owner-input"
+              disabled={!canEdit}
               value={value.owner}
               onChange={(event) => onChange({ owner: event.target.value })}
               placeholder="Назначить"
@@ -125,6 +138,7 @@ export default function MarketingDirectionWorkspace({
           <label>
             Этап
             <select
+              disabled={!canEdit}
               value={value.phase === "На паузе" ? "На паузе" : "Авто"}
               onChange={(event) => onChange({ phase: event.target.value })}
             >
@@ -195,7 +209,7 @@ export default function MarketingDirectionWorkspace({
                 <h3>Контакты, площадки и переговоры</h3>
                 <p>{stats.total} записей · {stats.inProgress} в работе · {stats.results} с результатом</p>
               </div>
-              <button type="button" onClick={addRow}>Добавить запись</button>
+              <button type="button" disabled={!canEdit} onClick={addRow}>Добавить запись</button>
             </div>
             {(value.rows || []).filter((row) => !row.deleted).length ? (
               <div className="analytics-marketing-crm-table-wrap">
@@ -216,20 +230,20 @@ export default function MarketingDirectionWorkspace({
                   <tbody>
                     {(value.rows || []).filter((row) => !row.deleted).map((row) => (
                       <tr key={row.id}>
-                        <td><input value={row.name} onChange={(event) => updateRows(updateItem(value.rows, row.id, { name: event.target.value }))} /></td>
-                        <td><input value={row.type} onChange={(event) => updateRows(updateItem(value.rows, row.id, { type: event.target.value }))} /></td>
+                        <td><input disabled={!canEdit} value={row.name} onChange={(event) => updateRows(updateItem(value.rows, row.id, { name: event.target.value }))} /></td>
+                        <td><input disabled={!canEdit} value={row.type} onChange={(event) => updateRows(updateItem(value.rows, row.id, { type: event.target.value }))} /></td>
                         <td>
-                          <select value={row.status} onChange={(event) => updateRows(updateItem(value.rows, row.id, { status: event.target.value }))}>
+                          <select disabled={!canEdit} value={row.status} onChange={(event) => updateRows(updateItem(value.rows, row.id, { status: event.target.value }))}>
                             {MARKETING_PIPELINE_STATUSES.map((status) => <option key={status}>{status}</option>)}
                           </select>
                         </td>
-                        <td><input value={row.contact} onChange={(event) => updateRows(updateItem(value.rows, row.id, { contact: event.target.value }))} /></td>
-                        <td><input type="date" value={row.lastContactAt || ""} onChange={(event) => updateRows(updateItem(value.rows, row.id, { lastContactAt: event.target.value }))} /></td>
-                        <td><input value={row.nextStep} onChange={(event) => updateRows(updateItem(value.rows, row.id, { nextStep: event.target.value }))} /></td>
-                        <td><input type="date" value={row.nextActionDueAt || ""} onChange={(event) => updateRows(updateItem(value.rows, row.id, { nextActionDueAt: event.target.value }))} /></td>
-                        <td><textarea rows="2" value={row.note} onChange={(event) => updateRows(updateItem(value.rows, row.id, { note: event.target.value }))} /></td>
+                        <td><input disabled={!canEdit} value={row.contact} onChange={(event) => updateRows(updateItem(value.rows, row.id, { contact: event.target.value }))} /></td>
+                        <td><input disabled={!canEdit} type="date" value={row.lastContactAt || ""} onChange={(event) => updateRows(updateItem(value.rows, row.id, { lastContactAt: event.target.value }))} /></td>
+                        <td><input disabled={!canEdit} value={row.nextStep} onChange={(event) => updateRows(updateItem(value.rows, row.id, { nextStep: event.target.value }))} /></td>
+                        <td><input disabled={!canEdit} type="date" value={row.nextActionDueAt || ""} onChange={(event) => updateRows(updateItem(value.rows, row.id, { nextActionDueAt: event.target.value }))} /></td>
+                        <td><textarea disabled={!canEdit} rows="2" value={row.note} onChange={(event) => updateRows(updateItem(value.rows, row.id, { note: event.target.value }))} /></td>
                         <td>
-                          <button type="button" className="analytics-marketing-row-delete" onClick={() => updateRows(updateItem(value.rows, row.id, { deleted: true }))} aria-label={`Удалить ${row.name}`}>×</button>
+                          <button type="button" disabled={!canEdit} className="analytics-marketing-row-delete" onClick={() => updateRows(updateItem(value.rows, row.id, { deleted: true }))} aria-label={`Удалить ${row.name}`}>×</button>
                         </td>
                       </tr>
                     ))}
@@ -240,7 +254,7 @@ export default function MarketingDirectionWorkspace({
               <div className="analytics-marketing-empty">
                 <strong>Рабочая база пока пустая</strong>
                 <p>Добавь первый контакт или площадку. Здесь будут храниться статусы, контакты, следующий шаг и история работы.</p>
-                <button type="button" onClick={addRow}>Добавить первую запись</button>
+                <button type="button" disabled={!canEdit} onClick={addRow}>Добавить первую запись</button>
               </div>
             )}
           </section>
@@ -255,24 +269,24 @@ export default function MarketingDirectionWorkspace({
               <h3>Материалы направления</h3>
               <p>Ссылки на статьи, брифы, тексты, таблицы и готовые рекламные материалы.</p>
             </div>
-            <button type="button" onClick={addMaterial}>Добавить материал</button>
+            <button type="button" disabled={!canEdit} onClick={addMaterial}>Добавить материал</button>
           </div>
           <div className="analytics-marketing-material-list">
             {(value.materials || []).filter((item) => !item.deleted).map((item) => (
               <article key={item.id}>
-                <input value={item.title} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { title: event.target.value }) })} />
-                <input value={item.url} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { url: event.target.value }) })} placeholder="https://" />
-                <input value={item.status} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { status: event.target.value }) })} />
-                <textarea rows="2" value={item.note} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { note: event.target.value }) })} placeholder="Комментарий" />
+                <input disabled={!canEdit} value={item.title} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { title: event.target.value }) })} />
+                <input disabled={!canEdit} value={item.url} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { url: event.target.value }) })} placeholder="https://" />
+                <input disabled={!canEdit} value={item.status} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { status: event.target.value }) })} />
+                <textarea disabled={!canEdit} rows="2" value={item.note} onChange={(event) => onChange({ materials: updateItem(value.materials, item.id, { note: event.target.value }) })} placeholder="Комментарий" />
                 {item.url ? <a href={item.url} target="_blank" rel="noreferrer" aria-label={`Открыть ${item.title}`}>↗</a> : <span />}
-                <button type="button" onClick={() => onChange({ materials: updateItem(value.materials, item.id, { deleted: true }) })} aria-label={`Удалить ${item.title}`}>×</button>
+                <button type="button" disabled={!canEdit} onClick={() => onChange({ materials: updateItem(value.materials, item.id, { deleted: true }) })} aria-label={`Удалить ${item.title}`}>×</button>
               </article>
             ))}
             {!(value.materials || []).some((item) => !item.deleted) ? (
               <div className="analytics-marketing-empty">
                 <strong>Материалов пока нет</strong>
                 <p>Добавь ссылку на бриф, статью, таблицу или рекламный макет, когда он появится.</p>
-                <button type="button" onClick={addMaterial}>Добавить первый материал</button>
+                <button type="button" disabled={!canEdit} onClick={addMaterial}>Добавить первый материал</button>
               </div>
             ) : null}
           </div>
@@ -287,6 +301,7 @@ export default function MarketingDirectionWorkspace({
             <p>Решения, договоренности, контекст и то, что важно не потерять между созвонами.</p>
           </div>
           <textarea
+            disabled={!canEdit}
             rows="14"
             value={value.notes}
             onChange={(event) => onChange({ notes: event.target.value })}

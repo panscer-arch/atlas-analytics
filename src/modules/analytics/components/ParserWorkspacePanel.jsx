@@ -143,6 +143,8 @@ const PARSER_TAB_BOARD_IDS = {
 const BOARD_PARSER_TABS = Object.fromEntries(
   Object.entries(PARSER_TAB_BOARD_IDS).map(([tabId, boardId]) => [boardId, tabId]),
 );
+const MARKETING_DASHBOARD_PENDING_STORAGE_KEY = `${MARKETING_DASHBOARD_STORAGE_KEY}.pending.v2`;
+const MARKETING_ACCESS_BOT_URL = "https://t.me/Supersussystembot?text=%2Fmarketing_access";
 
 const RESULT_OUTREACH_STATUSES = new Set(["Подключено", "Размещено", "Опубликовано", "Завершено", "Разместили"]);
 const IN_PROGRESS_OUTREACH_STATUSES = new Set(["Черновик", "Отправлено", "Написали", "Связались", "Переговоры", "Ответили", "Цена получена", "Договорились", "Запланировано"]);
@@ -278,6 +280,76 @@ function operationalPhase(directionValue, stats) {
   return "Не начато";
 }
 
+function readPendingDashboardPatch() {
+  if (typeof window === "undefined") return { directions: {} };
+  try {
+    const saved = window.localStorage.getItem(MARKETING_DASHBOARD_PENDING_STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : null;
+    return parsed && typeof parsed === "object" && parsed.directions && typeof parsed.directions === "object"
+      ? parsed
+      : { directions: {} };
+  } catch {
+    return { directions: {} };
+  }
+}
+
+function hasPendingDashboardPatch(patch) {
+  return Object.keys(patch?.directions || {}).length > 0;
+}
+
+function mergeDashboardPatch(state, patch) {
+  const directionPatches = patch?.directions || {};
+  return {
+    ...state,
+    directions: Object.fromEntries(
+      Object.entries(state?.directions || {}).map(([directionId, direction]) => [
+        directionId,
+        { ...direction, ...(directionPatches[directionId] || {}) },
+      ]),
+    ),
+  };
+}
+
+function createLegacyOwnerPatch(localState, serverState) {
+  const localDirections = localState?.directions || {};
+  const serverDirections = serverState?.directions || {};
+  const assignedLocalOwners = Object.values(localDirections).filter((direction) => {
+    const owner = String(direction?.owner || "").trim();
+    return owner && owner !== "Назначить";
+  }).length;
+  const assignedServerOwners = Object.values(serverDirections).filter((direction) => {
+    const owner = String(direction?.owner || "").trim();
+    return owner && owner !== "Назначить";
+  }).length;
+  if (assignedLocalOwners <= assignedServerOwners) return { directions: {} };
+
+  return {
+    directions: Object.fromEntries(
+      Object.entries(localDirections)
+        .filter(([directionId, direction]) => {
+          const owner = String(direction?.owner || "").trim();
+          return owner
+            && owner !== "Назначить"
+            && owner !== String(serverDirections[directionId]?.owner || "").trim();
+        })
+        .map(([directionId, direction]) => [directionId, { owner: direction.owner }]),
+    ),
+  };
+}
+
+function writePendingDashboardPatch(patch) {
+  if (typeof window === "undefined") return;
+  try {
+    if (hasPendingDashboardPatch(patch)) {
+      window.localStorage.setItem(MARKETING_DASHBOARD_PENDING_STORAGE_KEY, JSON.stringify(patch));
+    } else {
+      window.localStorage.removeItem(MARKETING_DASHBOARD_PENDING_STORAGE_KEY);
+    }
+  } catch {
+    // The in-memory dashboard remains usable when browser storage is unavailable.
+  }
+}
+
 function cardMetrics(direction, stats, directionValue) {
   if (direction.id === "influencers") {
     return [
@@ -385,7 +457,10 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
     status: "loading",
     label: "Проверяем синхронизацию…",
   });
+  const [canWriteDashboard, setCanWriteDashboard] = useState(false);
   const dashboardSaveRef = useRef(0);
+  const dashboardPendingPatchRef = useRef(readPendingDashboardPatch());
+  const dashboardDirtyRef = useRef(hasPendingDashboardPatch(dashboardPendingPatchRef.current));
   const initialBoard = typeof window !== "undefined" ? new URL(window.location.href).searchParams.get("board") : "";
   const initialDirectionId = initialBoard?.startsWith("marketing-") ? initialBoard.replace("marketing-", "") : "";
   const [selectedDirectionId, setSelectedDirectionId] = useState(
@@ -402,9 +477,10 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
 
   useEffect(() => {
     let isMounted = true;
+    const dashboardRequest = loadServerContentResult(MARKETING_DASHBOARD_STORAGE_KEY);
 
     Promise.all([
-      loadServerContentResult(MARKETING_DASHBOARD_STORAGE_KEY),
+      dashboardRequest,
       loadServerContent(MLM_LEADER_OUTREACH_STORAGE_KEY),
       loadServerContent(INFLUENCER_STORAGE_KEY),
       loadServerContent(INFLUENCER_OUTREACH_STORAGE_KEY),
@@ -413,7 +489,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       loadServerContent(TELEGRAM_STORAGE_KEY),
       loadServerContent(TELEGRAM_OUTREACH_STORAGE_KEY),
       loadServerContent(ARTICLE_PLACEMENT_STORAGE_KEY),
-      getServerJson("/api/marketing/browser-session"),
+      dashboardRequest.then(() => getServerJson("/api/marketing/browser-session")),
     ]).then(([
       dashboardResult,
       savedMlmRows,
@@ -431,8 +507,21 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       const hydratedDashboard = savedDashboard && typeof savedDashboard === "object"
         ? hydrateMarketingDashboardState(savedDashboard)
         : null;
+      const isAuthorized = Boolean(marketingSession?.payload?.authorized);
+      const legacyOwnerPatch = hydratedDashboard && !dashboardDirtyRef.current
+        ? createLegacyOwnerPatch(dashboardState, hydratedDashboard)
+        : { directions: {} };
+      if (hasPendingDashboardPatch(legacyOwnerPatch)) {
+        dashboardPendingPatchRef.current = legacyOwnerPatch;
+        dashboardDirtyRef.current = true;
+        writePendingDashboardPatch(legacyOwnerPatch);
+      }
+      const keepPendingLocalState = dashboardDirtyRef.current;
+      const nextDashboard = hydratedDashboard
+        ? mergeDashboardPatch(hydratedDashboard, dashboardPendingPatchRef.current)
+        : dashboardState;
       if (hydratedDashboard) {
-        setDashboardState(hydratedDashboard);
+        setDashboardState(nextDashboard);
       }
       setSourceStats(buildSourceStats({
         mlmRows: Array.isArray(savedMlmRows) ? savedMlmRows : defaultMlmLeaderOutreachPlatforms,
@@ -446,16 +535,21 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       }));
       if (hydratedDashboard) {
         try {
-          window.localStorage.setItem(MARKETING_DASHBOARD_STORAGE_KEY, JSON.stringify(hydratedDashboard));
+          window.localStorage.setItem(MARKETING_DASHBOARD_STORAGE_KEY, JSON.stringify(nextDashboard));
         } catch {
           // Серверное состояние уже загружено.
         }
       }
+      setCanWriteDashboard(isAuthorized);
       setDashboardSync(
-        marketingSession?.payload?.authorized
-          ? { status: "server", label: "Синхронизация с сервером" }
+        isAuthorized
+          ? keepPendingLocalState
+            ? { status: "saving", label: "Отправляем сохранённые изменения…" }
+            : { status: "server", label: "Синхронизация с сервером" }
           : dashboardResult?.ok
-            ? { status: "local", label: "Только чтение · запросите /marketing_access" }
+            ? keepPendingLocalState
+              ? { status: "locked", label: "Изменения ждут доступа к серверу" }
+              : { status: "locked", label: "Запись на сервер выключена" }
             : { status: "local", label: "Локальные данные · сервер недоступен" },
       );
       setIsDashboardLoaded(true);
@@ -467,33 +561,45 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   }, []);
 
   useEffect(() => {
-    if (!isDashboardLoaded) return undefined;
+    if (!isDashboardLoaded || !dashboardDirtyRef.current) return undefined;
+    try {
+      window.localStorage.setItem(MARKETING_DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardState));
+    } catch {
+      // The current page state remains available until the tab is closed.
+    }
+    writePendingDashboardPatch(dashboardPendingPatchRef.current);
+    if (!canWriteDashboard) {
+      setDashboardSync({ status: "locked", label: "Изменения ждут доступа к серверу" });
+      return undefined;
+    }
     setDashboardSync((current) => (
       current.status === "local"
         ? current
         : { status: "saving", label: "Сохраняем…" }
     ));
     const timer = window.setTimeout(() => {
-      const requestId = dashboardSaveRef.current + 1;
-      dashboardSaveRef.current = requestId;
-      try {
-        window.localStorage.setItem(MARKETING_DASHBOARD_STORAGE_KEY, JSON.stringify(dashboardState));
-      } catch {
-        // Content API ниже остаётся основным серверным хранилищем.
-      }
+      const requestId = dashboardSaveRef.current;
       saveServerContentResult(MARKETING_DASHBOARD_STORAGE_KEY, dashboardState).then((result) => {
         if (dashboardSaveRef.current !== requestId) return;
+        if (result.ok) {
+          dashboardDirtyRef.current = false;
+          dashboardPendingPatchRef.current = { directions: {} };
+          writePendingDashboardPatch(dashboardPendingPatchRef.current);
+        } else {
+          writePendingDashboardPatch(dashboardPendingPatchRef.current);
+        }
+        if (result.status === 401) setCanWriteDashboard(false);
         setDashboardSync(
           result.ok
             ? { status: "saved", label: "Сохранено на сервере" }
             : result.status === 401
-              ? { status: "local", label: "Сохранено локально · запросите /marketing_access" }
-              : { status: "local", label: "Сохранено локально · сервер недоступен" },
+              ? { status: "locked", label: "Изменения ждут доступа к серверу" }
+              : { status: "local", label: "Не удалось отправить · сохранено в браузере" },
         );
       });
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [dashboardState, isDashboardLoaded]);
+  }, [canWriteDashboard, dashboardState, isDashboardLoaded]);
 
   useEffect(() => {
     function handleHistoryChange() {
@@ -534,6 +640,18 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   }
 
   function updateDirection(directionId, patch) {
+    dashboardSaveRef.current += 1;
+    dashboardPendingPatchRef.current = {
+      directions: {
+        ...(dashboardPendingPatchRef.current?.directions || {}),
+        [directionId]: {
+          ...(dashboardPendingPatchRef.current?.directions?.[directionId] || {}),
+          ...patch,
+        },
+      },
+    };
+    writePendingDashboardPatch(dashboardPendingPatchRef.current);
+    dashboardDirtyRef.current = true;
     setDashboardState((current) => ({
       ...current,
       directions: {
@@ -592,6 +710,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
           value={dashboardState.directions[selectedDirection.id]}
           syncStatus={dashboardSync.status}
           syncLabel={dashboardSync.label}
+          canEdit={canWriteDashboard}
+          accessBotUrl={MARKETING_ACCESS_BOT_URL}
           operationalPhase={operationalPhase(
             dashboardState.directions[selectedDirection.id],
             sourceStats[selectedDirection.sourceKey] || genericStats(dashboardState.directions[selectedDirection.id]),
