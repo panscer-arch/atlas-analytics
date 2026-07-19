@@ -20,6 +20,18 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Verify application and marketing monitor
+        run: |
+          npm ci
+          npm run test:marketing-monitor
+          npm run build
+
       - name: Detect server changes
         id: server_changes
         shell: bash
@@ -121,6 +133,7 @@ jobs:
           }
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/marketing-dashboard-monitor.mjs /tmp/atlas-marketing-dashboard-monitor.mjs
           scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
           scp_to_vps server/backup-content.sh /tmp/atlas-content-backup.sh
@@ -135,6 +148,7 @@ jobs:
 
           sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-marketing-dashboard-monitor.mjs /opt/atlas-content-api/marketing-dashboard-monitor.mjs
           sudo mv /tmp/atlas-telegram-task-store.mjs /opt/atlas-content-api/telegram-task-store.mjs
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
@@ -150,13 +164,14 @@ jobs:
           TGSTAT_TOKEN=${{ secrets.TGSTAT_TOKEN }}
           TELEMETR_API_KEY=${{ secrets.TELEMETR_API_KEY }}
           TELEGRAM_PUSH_CHAT_ID=-5158247269
-          ATLAS_MARKETING_TELEGRAM_CHAT_ID=${{ secrets.ATLAS_MARKETING_TELEGRAM_CHAT_ID }}
           ATLAS_YOUTRACK_URL=${{ secrets.ATLAS_YOUTRACK_URL }}
           ATLAS_YOUTRACK_LOGIN=${{ secrets.ATLAS_YOUTRACK_LOGIN }}
           ATLAS_YOUTRACK_PASSWORD=${{ secrets.ATLAS_YOUTRACK_PASSWORD }}
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ENV
+          INTERNAL_MONITOR_TOKEN="$(openssl rand -hex 32)"
+          echo "ATLAS_INTERNAL_MONITOR_TOKEN=$INTERNAL_MONITOR_TOKEN" | sudo tee -a /etc/atlas-outreach.env >/dev/null
           sudo chown root:root /etc/atlas-outreach.env
           sudo chmod 600 /etc/atlas-outreach.env
 
@@ -267,7 +282,8 @@ jobs:
 
           [Service]
           Type=oneshot
-          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -fsS -X POST http://127.0.0.1:8787/api/marketing/youtube-monitor -H "Content-Type: application/json" -d "{\"notify\":true}"'
+          EnvironmentFile=-/etc/atlas-outreach.env
+          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -fsS -X POST http://127.0.0.1:8787/internal/marketing/youtube-monitor -H "Content-Type: application/json" -H "X-Atlas-Internal-Token: $ATLAS_INTERNAL_MONITOR_TOKEN" -d "{\"notify\":true}"'
           User=www-data
           Group=www-data
           SERVICE
@@ -280,6 +296,34 @@ jobs:
           OnCalendar=*-*-* 12:10:00 UTC
           Persistent=true
           Unit=atlas-marketing-youtube-monitor.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
+          sudo tee /etc/systemd/system/atlas-marketing-dashboard-monitor.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Send meaningful Marketing Dashboard changes to Telegram
+          After=atlas-content-api.service
+          Requires=atlas-content-api.service
+
+          [Service]
+          Type=oneshot
+          EnvironmentFile=-/etc/atlas-outreach.env
+          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -fsS -X POST http://127.0.0.1:8787/internal/marketing/dashboard-monitor -H "Content-Type: application/json" -H "X-Atlas-Internal-Token: $ATLAS_INTERNAL_MONITOR_TOKEN" -d "{\"notify\":true}"'
+          User=www-data
+          Group=www-data
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-marketing-dashboard-monitor.timer >/dev/null <<'TIMER'
+          [Unit]
+          Description=Check Marketing Dashboard changes every 10 minutes
+
+          [Timer]
+          OnBootSec=2min
+          OnUnitActiveSec=10min
+          Persistent=true
+          Unit=atlas-marketing-dashboard-monitor.service
 
           [Install]
           WantedBy=timers.target
@@ -315,6 +359,7 @@ jobs:
           timeout 70s sudo systemctl start atlas-youtrack-monitor.service || true
           timeout 45s sudo systemctl enable --now atlas-youtrack-digest.timer
           timeout 45s sudo systemctl enable --now atlas-marketing-youtube-monitor.timer
+          timeout 45s sudo systemctl enable --now atlas-marketing-dashboard-monitor.timer
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then

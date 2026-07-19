@@ -205,6 +205,7 @@ export default function HyipParserPanel({
 } = {}) {
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, seedLeads));
   const [outreach, setOutreach] = useState(() => readStoredOutreach(outreachStorageKey));
+  const [isLeadsLoaded, setIsLeadsLoaded] = useState(false);
   const [isOutreachLoaded, setIsOutreachLoaded] = useState(false);
   const [outreachSaveState, setOutreachSaveState] = useState("Локально");
   const [selectedLeadId, setSelectedLeadId] = useState("");
@@ -225,8 +226,19 @@ export default function HyipParserPanel({
   useEffect(() => {
     let isMounted = true;
 
-    loadServerContent(outreachStorageKey).then((savedOutreach) => {
+    Promise.all([
+      loadServerContent(storageKey),
+      loadServerContent(outreachStorageKey),
+    ]).then(([savedLeads, savedOutreach]) => {
       if (!isMounted) return;
+      if (Array.isArray(savedLeads) && savedLeads.length) {
+        setLeads(savedLeads);
+        try {
+          window.localStorage.setItem(storageKey, JSON.stringify(savedLeads));
+        } catch {
+          // Серверная база уже загружена в состояние страницы.
+        }
+      }
       if (savedOutreach && typeof savedOutreach === "object" && !Array.isArray(savedOutreach)) {
         setOutreach(savedOutreach);
         try {
@@ -236,13 +248,27 @@ export default function HyipParserPanel({
         }
         setOutreachSaveState("Сохранено на сервере");
       }
+      setIsLeadsLoaded(true);
       setIsOutreachLoaded(true);
     });
 
     return () => {
       isMounted = false;
     };
-  }, [outreachStorageKey]);
+  }, [outreachStorageKey, storageKey]);
+
+  useEffect(() => {
+    if (!isLeadsLoaded) return undefined;
+    const timer = window.setTimeout(() => {
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(leads));
+      } catch {
+        // Серверное сохранение ниже остаётся основным.
+      }
+      saveServerContent(storageKey, leads);
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [isLeadsLoaded, leads, storageKey]);
 
   useEffect(() => {
     if (!isOutreachLoaded) return undefined;

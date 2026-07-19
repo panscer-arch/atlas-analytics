@@ -1,3 +1,4 @@
+import { randomBytes, randomInt } from "node:crypto";
 import {
   addTelegramTask,
   appendTelegramOperation,
@@ -7,6 +8,7 @@ import {
   readContent,
   STORE_DIR,
   updateTelegramTaskBySource,
+  writeContent,
 } from "./telegram-task-store.mjs";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
@@ -27,6 +29,12 @@ const POLL_TIMEOUT_SECONDS = 25;
 const TASK_TRIGGER_EMOJI = "💋";
 const TASK_DONE_EMOJI = "✅";
 const RECENT_MESSAGES_LIMIT = 800;
+const MARKETING_TELEGRAM_BINDING_KEY = "atlas.analytics.marketingTelegramBinding.v1";
+const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLinkRequest.v1";
+const MARKETING_BROWSER_LINK_REQUEST_KEY = "atlas.analytics.marketingBrowserLinkRequest.v1";
+const MARKETING_BROWSER_SESSIONS_KEY = "atlas.analytics.marketingBrowserSessions.v1";
+const MARKETING_DASHBOARD_URL = process.env.ATLAS_MARKETING_DASHBOARD_URL
+  || "https://supersussystem.com/?board=parser";
 const CATEGORY_BUTTONS = [
   ["inbox", "launch"],
   ["marketing", "smm"],
@@ -106,7 +114,17 @@ async function handleUpdate(update) {
   }
 
   const message = update.message;
-  if (!message?.chat?.id || !isAllowedChat(message.chat.id)) return;
+  if (!message?.chat?.id) return;
+  const rawText = String(message.text || message.caption || "").trim();
+  if (rawText.startsWith("/marketing_here")) {
+    await handleMarketingHereCommand(message);
+    return;
+  }
+  if (rawText.startsWith("/marketing_off")) {
+    await handleMarketingOffCommand(message);
+    return;
+  }
+  if (!isAllowedChat(message.chat.id)) return;
 
   let text = "";
   try {
@@ -146,6 +164,8 @@ async function handleUpdate(update) {
   if (text.startsWith("/tasks")) return handleTasksCommand(message, text);
   if (text.startsWith("/overdue")) return handleTasksCommand(message, "/tasks");
   if (text.startsWith("/chatid")) return handleChatIdCommand(message);
+  if (text.startsWith("/marketing_link")) return handleMarketingLinkCommand(message);
+  if (text.startsWith("/marketing_access")) return handleMarketingAccessCommand(message);
   if (text.startsWith("/decision")) return handleOperationCommand(message, text, "decisions", "Решение сохранено");
   if (text.startsWith("/question")) return handleOperationCommand(message, text, "questions", "Вопрос сохранён");
   if (text.startsWith("/report")) return handleOperationCommand(message, text, "reports", "Отчёт сохранён");
@@ -552,6 +572,173 @@ async function handleChatIdCommand(message) {
   });
 }
 
+async function isControlChatAdmin(message) {
+  if (!message.from?.id || !ALLOWED_CHAT_IDS.size || !isAllowedChat(message.chat.id)) return false;
+  const membership = await telegram("getChatMember", {
+    chat_id: message.chat.id,
+    user_id: message.from.id,
+  }).catch(() => null);
+  return ["creator", "administrator"].includes(membership?.status);
+}
+
+async function handleMarketingLinkCommand(message) {
+  if (!await isControlChatAdmin(message)) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Одноразовую привязку может создать только администратор основной командной группы.",
+    });
+    return;
+  }
+
+  const code = String(randomInt(100000, 1000000));
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  await writeContent(MARKETING_TELEGRAM_LINK_REQUEST_KEY, {
+    code,
+    userId: message.from.id,
+    createdAt: new Date().toISOString(),
+    expiresAt,
+  });
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: [
+      `Код для маркетингового чата: ${code}`,
+      `Добавь бота в новую группу и отправь там: /marketing_here ${code}`,
+      "Код действует 10 минут и привязан к твоему Telegram-аккаунту.",
+    ].join("\n"),
+  });
+}
+
+async function createMarketingBrowserAccess(message) {
+  const code = randomBytes(24).toString("hex");
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  await writeContent(MARKETING_BROWSER_LINK_REQUEST_KEY, {
+    code,
+    createdAt: new Date().toISOString(),
+    expiresAt,
+    createdBy: {
+      id: message.from?.id || null,
+      username: message.from?.username || "",
+      name: [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" "),
+    },
+  });
+  const accessUrl = new URL(MARKETING_DASHBOARD_URL);
+  accessUrl.searchParams.set("board", "parser");
+  accessUrl.searchParams.set("marketing_access", code);
+  return accessUrl.toString();
+}
+
+async function handleMarketingAccessCommand(message) {
+  if (!await isControlChatAdmin(message)) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Доступ к редактированию Marketing Dashboard может выдать только администратор основной командной группы.",
+    });
+    return;
+  }
+
+  const accessUrl = await createMarketingBrowserAccess(message);
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: [
+      "Открой ссылку в браузере, где работаешь с Marketing Dashboard:",
+      accessUrl,
+      "Ссылка одноразовая и действует 10 минут. Доступ в этом браузере сохранится на 90 дней.",
+    ].join("\n"),
+  });
+}
+
+async function handleMarketingHereCommand(message) {
+  if (!["group", "supergroup"].includes(message.chat.type)) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Эту команду нужно отправить в отдельной группе для маркетинговых отчётов.",
+    });
+    return;
+  }
+
+  const member = await telegram("getChatMember", {
+    chat_id: message.chat.id,
+    user_id: message.from?.id,
+  }).catch(() => null);
+  if (!["creator", "administrator"].includes(member?.status)) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Привязать маркетинговый чат может только администратор группы.",
+    });
+    return;
+  }
+
+  const suppliedCode = String(message.text || "").trim().split(/\s+/)[1] || "";
+  const request = await readContent(MARKETING_TELEGRAM_LINK_REQUEST_KEY, {});
+  const isValidRequest = suppliedCode
+    && suppliedCode === String(request.code || "")
+    && Number(message.from?.id) === Number(request.userId)
+    && Date.parse(request.expiresAt || "") > Date.now();
+  if (!isValidRequest) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Код привязки неверный или уже истёк. Получи новый командой /marketing_link в основной группе.",
+    });
+    return;
+  }
+
+  await writeContent(MARKETING_TELEGRAM_BINDING_KEY, {
+    chatId: String(message.chat.id),
+    title: message.chat.title || "",
+    boundAt: new Date().toISOString(),
+    boundBy: {
+      id: message.from?.id || null,
+      username: message.from?.username || "",
+      name: [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" "),
+    },
+  });
+  await writeContent(MARKETING_TELEGRAM_LINK_REQUEST_KEY, {});
+  const accessUrl = await createMarketingBrowserAccess(message);
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: [
+      "Маркетинговые отчёты подключены к этому чату.",
+      "Сюда будут приходить только важные изменения и одна сводка по событиям, без сообщений на каждое сохранение.",
+      "",
+      "Чтобы изменения из панели принимались монитором, один раз открой эту ссылку в рабочем браузере:",
+      accessUrl,
+      "Ссылка действует 10 минут.",
+    ].join("\n"),
+  });
+}
+
+async function handleMarketingOffCommand(message) {
+  if (!await isControlChatAdmin(message)) {
+    if (isAllowedChat(message.chat.id)) {
+      await telegram("sendMessage", {
+        chat_id: message.chat.id,
+        reply_to_message_id: message.message_id,
+        text: "Отключить маркетинговый чат может только администратор основной командной группы.",
+      });
+    }
+    return;
+  }
+
+  await Promise.all([
+    writeContent(MARKETING_TELEGRAM_BINDING_KEY, {}),
+    writeContent(MARKETING_BROWSER_LINK_REQUEST_KEY, {}),
+    writeContent(MARKETING_BROWSER_SESSIONS_KEY, { sessions: [] }),
+  ]);
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: "Маркетинговые отчёты отключены. Накопившиеся события останутся в очереди до новой привязки.",
+  });
+}
+
 async function handleOperationCommand(message, text, type, successText) {
   const command = `/${type === "decisions" ? "decision" : type === "questions" ? "question" : type === "reports" ? "report" : "remind"}`;
   let body = parseArgs(text, command);
@@ -703,6 +890,8 @@ async function sendHelp(chatId) {
       "Reply + /deadline 05.06 — поменять дедлайн",
       "✅ на исходном сообщении задачи — закрыть задачу",
       "/chatid — показать ID текущего Telegram-чата для Push",
+      "/marketing_link — привязать отдельный чат маркетинговых отчётов",
+      "/marketing_access — выдать одноразовый доступ к редактированию Marketing Dashboard",
       "/decision текст — зафиксировать решение",
       "/question текст — зафиксировать вопрос",
       "/report текст — зафиксировать отчёт",

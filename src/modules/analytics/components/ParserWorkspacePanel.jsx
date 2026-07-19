@@ -43,7 +43,12 @@ import {
   createDefaultMarketingDashboardState,
   hydrateMarketingDashboardState,
 } from "../data/marketingDashboardData";
-import { loadServerContent, loadServerContentResult, saveServerContent } from "../services/contentStore";
+import {
+  getServerJson,
+  loadServerContent,
+  loadServerContentResult,
+  saveServerContentResult,
+} from "../services/contentStore";
 import "../styles/marketing-dashboard.css";
 
 const PARSER_TABS = [
@@ -408,6 +413,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       loadServerContent(TELEGRAM_STORAGE_KEY),
       loadServerContent(TELEGRAM_OUTREACH_STORAGE_KEY),
       loadServerContent(ARTICLE_PLACEMENT_STORAGE_KEY),
+      getServerJson("/api/marketing/browser-session"),
     ]).then(([
       dashboardResult,
       savedMlmRows,
@@ -418,6 +424,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       savedTelegramLeads,
       savedTelegramOutreach,
       savedArticleRows,
+      marketingSession,
     ]) => {
       if (!isMounted) return;
       const savedDashboard = dashboardResult?.ok && dashboardResult.exists ? dashboardResult.value : null;
@@ -445,9 +452,11 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         }
       }
       setDashboardSync(
-        dashboardResult?.ok
+        marketingSession?.payload?.authorized
           ? { status: "server", label: "Синхронизация с сервером" }
-          : { status: "local", label: "Локальные данные · сервер недоступен" },
+          : dashboardResult?.ok
+            ? { status: "local", label: "Только чтение · запросите /marketing_access" }
+            : { status: "local", label: "Локальные данные · сервер недоступен" },
       );
       setIsDashboardLoaded(true);
     });
@@ -472,12 +481,14 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       } catch {
         // Content API ниже остаётся основным серверным хранилищем.
       }
-      saveServerContent(MARKETING_DASHBOARD_STORAGE_KEY, dashboardState).then((saved) => {
+      saveServerContentResult(MARKETING_DASHBOARD_STORAGE_KEY, dashboardState).then((result) => {
         if (dashboardSaveRef.current !== requestId) return;
         setDashboardSync(
-          saved
+          result.ok
             ? { status: "saved", label: "Сохранено на сервере" }
-            : { status: "local", label: "Сохранено локально · сервер недоступен" },
+            : result.status === 401
+              ? { status: "local", label: "Сохранено локально · запросите /marketing_access" }
+              : { status: "local", label: "Сохранено локально · сервер недоступен" },
         );
       });
     }, 450);

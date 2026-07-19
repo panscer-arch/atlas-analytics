@@ -1,7 +1,15 @@
 import http from "node:http";
+import { createHash, randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
+import {
+  collectMarketingDashboardEvents,
+  collectMarketingDueEvents,
+  collectMarketingSourceEvents,
+  formatMarketingDashboardDigest,
+  mergeMarketingEvents,
+} from "./marketing-dashboard-monitor.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
@@ -14,8 +22,47 @@ const YOUTUBE_API_LEADS_KEY = "atlas.analytics.youtubeApiSearch.leads.v1";
 const SEGMENT_OUTREACH_KEY = "atlas.analytics.segmentOutreach.v10";
 const BITNEST_YOUTUBE_KEY = "atlas.analytics.bitnestYoutube.channels.v1";
 const MARKETING_YOUTUBE_MONITOR_STATE_KEY = "atlas.analytics.marketingYoutubeMonitor.state.v1";
+const MARKETING_DASHBOARD_KEY = "atlas.analytics.marketingDashboard.v1";
+const MARKETING_DASHBOARD_MONITOR_STATE_KEY = "atlas.analytics.marketingDashboardMonitor.state.v1";
+const MARKETING_TELEGRAM_BINDING_KEY = "atlas.analytics.marketingTelegramBinding.v1";
+const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLinkRequest.v1";
+const MARKETING_BROWSER_LINK_REQUEST_KEY = "atlas.analytics.marketingBrowserLinkRequest.v1";
+const MARKETING_BROWSER_SESSIONS_KEY = "atlas.analytics.marketingBrowserSessions.v1";
+const MARKETING_SESSION_COOKIE = "atlas_marketing_session";
+const INTERNAL_CONTENT_KEYS = new Set([
+  MARKETING_YOUTUBE_MONITOR_STATE_KEY,
+  MARKETING_DASHBOARD_MONITOR_STATE_KEY,
+  MARKETING_TELEGRAM_BINDING_KEY,
+  MARKETING_TELEGRAM_LINK_REQUEST_KEY,
+  MARKETING_BROWSER_LINK_REQUEST_KEY,
+  MARKETING_BROWSER_SESSIONS_KEY,
+]);
 const MARKETING_YOUTUBE_BOARD_URL = process.env.ATLAS_MARKETING_YOUTUBE_BOARD_URL
   || "https://pupanel.cc/workspaces/cmp5aou0h0005l5b26ldwn59c/marketing/youtube";
+const MARKETING_DASHBOARD_URL = process.env.ATLAS_MARKETING_DASHBOARD_URL
+  || "https://supersussystem.com/?board=parser";
+const MARKETING_SOURCE_CONFIGS = [
+  { id: "mlm-sources", directionId: "mlm", label: "MLM-лидеры / источники", key: "atlas.analytics.mlmLeaderOutreach.platforms.v1", nameFields: ["platform", "name"] },
+  { id: "mlm-markets", directionId: "mlm", label: "MLM-компании и рынки", key: "atlas.analytics.mlmLeaders.markets.v1", nameFields: ["company", "association", "name"] },
+  { id: "mlm-bfh", directionId: "mlm", label: "MLM-лидеры BFH", key: "atlas.analytics.mlmLeaders.businessForHome.v1", nameFields: ["name", "company"] },
+  { id: "mlm-direct-sales", directionId: "mlm", label: "MLM-лидеры США / Канада", key: "atlas.analytics.mlmLeaders.directSalesDirectory.v1", nameFields: ["name", "company"] },
+  { id: "influencers", directionId: "influencers", label: "Инфлюенсеры", key: "atlas.analytics.influencerProspects.v1", outreachKey: "atlas.analytics.influencerOutreach.queue.v1", nameFields: ["name"] },
+  { id: "monitors", directionId: "monitors", label: "HYIP-мониторы", key: "atlas.analytics.hyipParserLeads.v3", outreachKey: "atlas.analytics.hyipOutreach.queue.v1", nameFields: ["name"] },
+  { id: "telega", directionId: "telega", label: "Telegram-каналы", key: "atlas.analytics.telegramParserLeads.v2", outreachKey: "atlas.analytics.telegramOutreach.queue.v2", nameFields: ["name"] },
+  { id: "articles", directionId: "articles", label: "Статьи и PR", key: "atlas.analytics.articlePlacement.resources.v1", nameFields: ["name"] },
+  { id: "creatives", directionId: "creatives", label: "Креативы и SEO", key: "atlas.analytics.atlasCreatives.v1", nameFields: ["title", "name"] },
+  { id: "market-segments", directionId: "segments", label: "Сегменты рынка", key: "atlas.analytics.marketSegments.v1", nameFields: ["direction", "name"] },
+  { id: "regional-hiring", directionId: "regional", label: "Региональные партнёры", key: "atlas.analytics.regionalHiring.platforms.v1", nameFields: ["platform", "name"] },
+  { id: "web3-segments", directionId: "web3", label: "Web3-сегменты", key: "atlas.analytics.web3Segments.v1", nameFields: ["segment", "name"] },
+  { id: "segment-outreach", directionId: "segments", label: "Сегментный парсер", key: "atlas.analytics.segmentOutreach.v10", nameFields: ["name", "source"] },
+];
+const MARKETING_MONITORED_CONTENT_KEYS = new Set([
+  MARKETING_DASHBOARD_KEY,
+  YOUTUBE_API_LEADS_KEY,
+  SEGMENT_OUTREACH_KEY,
+  BITNEST_YOUTUBE_KEY,
+  ...MARKETING_SOURCE_CONFIGS.flatMap((config) => [config.key, config.outreachKey].filter(Boolean)),
+]);
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
 const YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID = "-5158247269";
@@ -141,13 +188,43 @@ const ATLAS_FLOW_DAY_OFFSET_HOURS = Number(process.env.ATLAS_FLOW_DAY_OFFSET_HOU
 let atlasFlowCache = null;
 
 let telegramEnvCache = null;
+let marketingSessionMutationQueue = Promise.resolve();
 
-function sendJson(response, statusCode, payload) {
+function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
+    ...extraHeaders,
   });
   response.end(JSON.stringify(payload));
+}
+
+function parseCookies(request) {
+  return String(request.headers.cookie || "")
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce((cookies, part) => {
+      const separator = part.indexOf("=");
+      if (separator <= 0) return cookies;
+      const rawValue = part.slice(separator + 1);
+      try {
+        cookies[part.slice(0, separator)] = decodeURIComponent(rawValue);
+      } catch {
+        cookies[part.slice(0, separator)] = rawValue;
+      }
+      return cookies;
+    }, {});
+}
+
+function hashMarketingSession(token = "") {
+  return createHash("sha256").update(String(token)).digest("hex");
+}
+
+function hasInternalMonitorAccess(request) {
+  const expected = String(process.env.ATLAS_INTERNAL_MONITOR_TOKEN || "").trim();
+  const supplied = String(request.headers["x-atlas-internal-token"] || "").trim();
+  return Boolean(expected && supplied && supplied === expected);
 }
 
 function getContentKey(url) {
@@ -198,11 +275,7 @@ async function getTelegramConfig() {
     || "")
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean)
-    .concat([
-      process.env.ATLAS_MARKETING_TELEGRAM_CHAT_ID,
-      fileEnv.ATLAS_MARKETING_TELEGRAM_CHAT_ID,
-    ].map((item) => String(item || "").trim()).filter(Boolean)))];
+    .filter(Boolean))];
 
   return { token, targetChatIds };
 }
@@ -218,10 +291,8 @@ async function getYouTrackTelegramChatId() {
 }
 
 async function getMarketingTelegramChatId() {
-  const fileEnv = await readTelegramEnv();
-  const value = process.env.ATLAS_MARKETING_TELEGRAM_CHAT_ID
-    || fileEnv.ATLAS_MARKETING_TELEGRAM_CHAT_ID
-    || "";
+  const marketingBinding = await readContent(MARKETING_TELEGRAM_BINDING_KEY, {});
+  const value = marketingBinding?.chatId || "";
   return value.split(",").map((item) => item.trim()).filter(Boolean)[0] || "";
 }
 
@@ -2199,6 +2270,38 @@ async function sendOutreachEmail({ lead = {}, to = "", subject = "", body = "" }
   return { ok: true, status: 200, resendId: payload?.id || "" };
 }
 
+async function deliverTelegramMessages(token, chatIds, text, options = {}) {
+  const sent = [];
+  for (const chatId of chatIds) {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          ...options,
+          disable_web_page_preview: true,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.ok === false) {
+        return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed", chatId };
+      }
+      sent.push({ chatId, messageId: payload?.result?.message_id });
+    } catch (error) {
+      return {
+        ok: false,
+        status: 502,
+        error: error?.message || "telegram_transport_failed",
+        chatId,
+      };
+    }
+  }
+
+  return { ok: true, status: 200, sent };
+}
+
 async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
   const { token, targetChatIds } = await getTelegramConfig();
   if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
@@ -2210,27 +2313,15 @@ async function sendTelegramMessage(text, options = {}, requestedChatId = "") {
     return { ok: false, status: 400, error: "telegram_push_chat_required" };
   }
 
-  const chatIdsToSend = requestedChatId ? [requestedChatId] : targetChatIds;
-  const sent = [];
-  for (const chatId of chatIdsToSend) {
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        ...options,
-        disable_web_page_preview: true,
-      }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload?.ok === false) {
-      return { ok: false, status: response.status || 502, error: payload?.description || "telegram_send_failed", chatId };
-    }
-    sent.push({ chatId, messageId: payload?.result?.message_id });
-  }
+  return deliverTelegramMessages(token, requestedChatId ? [requestedChatId] : targetChatIds, text, options);
+}
 
-  return { ok: true, status: 200, sent };
+async function sendMarketingTelegramMessage(text, options = {}) {
+  const { token } = await getTelegramConfig();
+  const chatId = await getMarketingTelegramChatId();
+  if (!token) return { ok: false, status: 503, error: "telegram_token_not_configured" };
+  if (!chatId) return { ok: false, status: 503, error: "marketing_telegram_chat_not_configured" };
+  return deliverTelegramMessages(token, [chatId], text, options);
 }
 
 function getMoscowDateKey(date = new Date()) {
@@ -2445,19 +2536,14 @@ async function runMarketingYoutubeMonitor({ notify = true, force = false } = {})
   const text = formatMarketingYoutubeReport(summary, { forced: force });
   let notification = { ok: true, skipped: true, reason: "notify_disabled" };
   if (notify) {
-    const chatId = await getMarketingTelegramChatId();
-    if (!chatId) {
-      notification = { ok: false, status: 503, error: "marketing_telegram_chat_not_configured" };
-    } else {
-      notification = await sendTelegramMessage(text, { parse_mode: "HTML" }, chatId);
-    }
+    notification = await sendMarketingTelegramMessage(text, { parse_mode: "HTML" });
   }
 
-  await writeContent(MARKETING_YOUTUBE_MONITOR_STATE_KEY, {
+  await writeInternalState(MARKETING_YOUTUBE_MONITOR_STATE_KEY, {
     reportDate,
     sentReportDate: notification.ok && notify ? reportDate : previous.sentReportDate || "",
     checkedAt: now.toISOString(),
-    leads: summary.currentLeads,
+    leads: notification.ok || !notify ? summary.currentLeads : previous.leads || {},
     counters: summary.counters,
     lastNotification: notification,
   });
@@ -2470,6 +2556,138 @@ async function runMarketingYoutubeMonitor({ notify = true, force = false } = {})
     statusChanges: summary.statusChanges.length,
     notification,
     text,
+  };
+}
+
+function firstMarketingSourceValue(row, fields = []) {
+  for (const field of fields) {
+    const value = String(row?.[field] || "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+async function collectMarketingSourceSnapshot() {
+  const entries = await Promise.all(MARKETING_SOURCE_CONFIGS.map(async (config) => {
+    const [rows, outreach] = await Promise.all([
+      readContent(config.key, []),
+      config.outreachKey ? readContent(config.outreachKey, {}) : Promise.resolve({}),
+    ]);
+    const records = {};
+    const activeRows = (Array.isArray(rows) ? rows : []).filter((row) => row && !row.deleted);
+    const idCounts = activeRows.reduce((counts, row) => {
+      const id = String(row.id || "").trim();
+      if (id) counts.set(id, (counts.get(id) || 0) + 1);
+      return counts;
+    }, new Map());
+    for (const [index, row] of activeRows.entries()) {
+      if (!row || row.deleted) continue;
+      const name = firstMarketingSourceValue(row, config.nameFields) || `Запись ${index + 1}`;
+      const rawId = String(row.id || "").trim();
+      const rowId = rawId && idCounts.get(rawId) === 1
+        ? rawId
+        : String(row.profileUrl || row.url || `${rawId || config.id}:${index}`);
+      const outreachRecord = outreach && typeof outreach === "object" ? outreach[row.id] : null;
+      records[rowId] = {
+        name,
+        status: String(outreachRecord?.status || row.status || "").trim(),
+      };
+    }
+    return [config.id, {
+      directionId: config.directionId,
+      label: config.label,
+      records,
+    }];
+  }));
+
+  return Object.fromEntries(entries);
+}
+
+async function runMarketingDashboardMonitor({ notify = true } = {}) {
+  const now = new Date();
+  const checkedAt = now.toISOString();
+  const dateKey = getMoscowDateKey(now);
+  const dashboard = await readContent(MARKETING_DASHBOARD_KEY, null);
+  if (!dashboard?.directions) {
+    return {
+      ok: true,
+      changed: false,
+      notified: false,
+      reason: "dashboard_not_initialized",
+    };
+  }
+
+  const [previous, sourceSnapshot] = await Promise.all([
+    readContent(MARKETING_DASHBOARD_MONITOR_STATE_KEY, {
+      snapshot: null,
+      sourceSnapshot: null,
+      pendingEvents: [],
+      reminded: {},
+    }),
+    collectMarketingSourceSnapshot(),
+  ]);
+  const hasBaseline = Boolean(previous?.snapshot?.directions);
+  const changedEvents = hasBaseline
+    ? collectMarketingDashboardEvents(previous.snapshot, dashboard, checkedAt)
+    : [];
+  const sourceEvents = hasBaseline && previous.sourceSnapshot
+    ? collectMarketingSourceEvents(previous.sourceSnapshot, sourceSnapshot, checkedAt)
+    : [];
+  const dueResult = hasBaseline
+    ? collectMarketingDueEvents(dashboard, dateKey, previous.reminded || {})
+    : { events: [], reminded: previous.reminded || {} };
+  const pendingEvents = mergeMarketingEvents(
+    previous.pendingEvents || [],
+    [...changedEvents, ...sourceEvents, ...dueResult.events],
+  );
+
+  let notification = { ok: true, skipped: true, reason: hasBaseline ? "no_changes" : "baseline_created" };
+  let remainingEvents = pendingEvents;
+  if (notify && pendingEvents.length) {
+    const text = formatMarketingDashboardDigest(pendingEvents, MARKETING_DASHBOARD_URL);
+    notification = await sendMarketingTelegramMessage(text, { parse_mode: "HTML" });
+    if (notification.ok) remainingEvents = [];
+  }
+
+  await writeInternalState(MARKETING_DASHBOARD_MONITOR_STATE_KEY, {
+    snapshot: dashboard,
+    sourceSnapshot,
+    pendingEvents: remainingEvents,
+    reminded: dueResult.reminded,
+    checkedAt,
+    lastDeliveredAt: notification.ok && !notification.skipped
+      ? checkedAt
+      : previous.lastDeliveredAt || "",
+    lastNotification: notification,
+  });
+
+  return {
+    ok: !(notify && pendingEvents.length && notification.ok === false),
+    changed: changedEvents.length > 0 || sourceEvents.length > 0 || dueResult.events.length > 0,
+    baselineCreated: !hasBaseline,
+    detected: changedEvents.length + sourceEvents.length + dueResult.events.length,
+    pending: remainingEvents.length,
+    notified: Boolean(notification.ok && !notification.skipped),
+    notification,
+  };
+}
+
+async function getMarketingDashboardMonitorStatus() {
+  const [state, chatId] = await Promise.all([
+    readContent(MARKETING_DASHBOARD_MONITOR_STATE_KEY, {}),
+    getMarketingTelegramChatId(),
+  ]);
+  return {
+    ok: true,
+    configured: Boolean(chatId),
+    pending: Array.isArray(state.pendingEvents) ? state.pendingEvents.length : 0,
+    checkedAt: state.checkedAt || "",
+    lastDeliveredAt: state.lastDeliveredAt || "",
+    lastNotification: state.lastNotification
+      ? {
+        ok: state.lastNotification.ok !== false,
+      }
+      : null,
   };
 }
 
@@ -2490,6 +2708,70 @@ async function readBody(request) {
 
 function filePathForKey(key) {
   return path.join(STORE_DIR, `${key}.json`);
+}
+
+async function writeInternalState(key, value) {
+  await mkdir(STORE_DIR, { recursive: true });
+  const targetPath = filePathForKey(key);
+  const tempPath = `${targetPath}.${Date.now()}.${randomBytes(6).toString("hex")}.tmp`;
+  await writeFile(tempPath, JSON.stringify(value, null, 2), "utf8");
+  await rename(tempPath, targetPath);
+}
+
+async function hasMarketingWriteSession(request) {
+  const token = parseCookies(request)[MARKETING_SESSION_COOKIE] || "";
+  if (!token) return false;
+
+  const now = Date.now();
+  const tokenHash = hashMarketingSession(token);
+  const state = await readContent(MARKETING_BROWSER_SESSIONS_KEY, { sessions: [] });
+  return (Array.isArray(state.sessions) ? state.sessions : []).some((session) => (
+    session?.tokenHash === tokenHash && Date.parse(session.expiresAt || "") > now
+  ));
+}
+
+async function exchangeMarketingBrowserSession(request) {
+  const body = await readBody(request);
+  const parsed = JSON.parse(body || "{}");
+  const suppliedCode = String(parsed.code || "").trim();
+  const execute = async () => {
+    const linkRequest = await readContent(MARKETING_BROWSER_LINK_REQUEST_KEY, {});
+    const valid = suppliedCode
+      && suppliedCode === String(linkRequest.code || "")
+      && Date.parse(linkRequest.expiresAt || "") > Date.now();
+    if (!valid) {
+      return { ok: false, status: 401, error: "invalid_or_expired_marketing_access" };
+    }
+
+    const token = randomBytes(32).toString("hex");
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const state = await readContent(MARKETING_BROWSER_SESSIONS_KEY, { sessions: [] });
+    const sessions = (Array.isArray(state.sessions) ? state.sessions : [])
+      .filter((session) => Date.parse(session?.expiresAt || "") > now.getTime())
+      .slice(-19);
+    sessions.push({
+      tokenHash: hashMarketingSession(token),
+      createdAt: now.toISOString(),
+      expiresAt,
+      createdBy: linkRequest.createdBy || null,
+    });
+    await writeInternalState(MARKETING_BROWSER_LINK_REQUEST_KEY, {});
+    await writeInternalState(MARKETING_BROWSER_SESSIONS_KEY, { sessions });
+
+    const host = String(request.headers.host || "").split(":")[0];
+    const secureAttribute = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) ? "" : "; Secure";
+    return {
+      ok: true,
+      status: 200,
+      expiresAt,
+      cookie: `${MARKETING_SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly${secureAttribute}; SameSite=Strict; Path=/; Max-Age=${90 * 24 * 60 * 60}`,
+    };
+  };
+
+  const result = marketingSessionMutationQueue.then(execute, execute);
+  marketingSessionMutationQueue = result.then(() => undefined, () => undefined);
+  return result;
 }
 
 async function backupExistingContent(key, targetPath) {
@@ -2513,6 +2795,22 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/content/health") {
       sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/browser-session" && request.method === "POST") {
+      const result = await exchangeMarketingBrowserSession(request);
+      sendJson(
+        response,
+        result.status,
+        result.ok ? { ok: true, expiresAt: result.expiresAt } : { ok: false, error: result.error },
+        result.cookie ? { "Set-Cookie": result.cookie } : {},
+      );
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/browser-session" && request.method === "GET") {
+      sendJson(response, 200, { ok: true, authorized: await hasMarketingWriteSession(request) });
       return;
     }
 
@@ -2568,12 +2866,36 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    if (url.pathname === "/api/marketing/youtube-monitor" && request.method === "POST") {
+    if (url.pathname === "/internal/marketing/youtube-monitor" && request.method === "POST") {
+      if (!hasInternalMonitorAccess(request)) {
+        sendJson(response, 403, { ok: false, error: "forbidden" });
+        return;
+      }
       const body = await readBody(request);
       const parsed = body ? JSON.parse(body) : {};
       const result = await runMarketingYoutubeMonitor({
         notify: parsed.notify !== false,
         force: parsed.force === true,
+      });
+      sendJson(response, result.ok ? 200 : result.notification?.status || 502, result);
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/dashboard-monitor" && request.method === "GET") {
+      const result = await getMarketingDashboardMonitorStatus();
+      sendJson(response, 200, result);
+      return;
+    }
+
+    if (url.pathname === "/internal/marketing/dashboard-monitor" && request.method === "POST") {
+      if (!hasInternalMonitorAccess(request)) {
+        sendJson(response, 403, { ok: false, error: "forbidden" });
+        return;
+      }
+      const body = await readBody(request);
+      const parsed = body ? JSON.parse(body) : {};
+      const result = await runMarketingDashboardMonitor({
+        notify: parsed.notify !== false,
       });
       sendJson(response, result.ok ? 200 : result.notification?.status || 502, result);
       return;
@@ -2650,6 +2972,10 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 404, { ok: false, error: "not_found" });
       return;
     }
+    if (INTERNAL_CONTENT_KEYS.has(key)) {
+      sendJson(response, 404, { ok: false, error: "not_found" });
+      return;
+    }
 
     if (request.method === "GET") {
       try {
@@ -2666,11 +2992,15 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "PUT") {
+      if (MARKETING_MONITORED_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
+        return;
+      }
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");
       const value = Object.prototype.hasOwnProperty.call(parsed, "value") ? parsed.value : parsed;
       const targetPath = filePathForKey(key);
-      const tempPath = `${targetPath}.${Date.now()}.tmp`;
+      const tempPath = `${targetPath}.${Date.now()}.${randomBytes(6).toString("hex")}.tmp`;
 
       await backupExistingContent(key, targetPath);
       await writeFile(tempPath, JSON.stringify(value, null, 2), "utf8");
