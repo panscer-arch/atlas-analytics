@@ -143,6 +143,7 @@ export default function BusinessForHomeLeadsPanel({
   displaySourceDescription = "",
   displayVerifiedAt = "",
   tableTitle = "",
+  totalStatLabel = "Лидеры",
 }) {
   const { storageKey, statusOptions, defaultLeads, sourceName, sourceDescription, profileLabel, csvFileName, sourceUrl, lastVerifiedAt } = directory;
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, defaultLeads, sourceName));
@@ -240,12 +241,23 @@ export default function BusinessForHomeLeadsPanel({
   const displayStart = visibleLeads.length ? pageStart + 1 : 0;
   const displayEnd = Math.min(pageStart + PAGE_SIZE, visibleLeads.length);
 
-  const stats = useMemo(() => ({
-    total: normalizedLeads.length,
-    withFacebook: normalizedLeads.filter((lead) => lead.facebook).length,
-    withLinkedIn: normalizedLeads.filter((lead) => lead.linkedin).length,
-    ready: normalizedLeads.filter((lead) => lead.status === "Готовить оффер").length,
-  }), [normalizedLeads]);
+  const stats = useMemo(() => {
+    const scopedLeads = normalizedLeads.filter((lead) => {
+      if (initialSourceFilter !== "Все источники" && lead.source !== initialSourceFilter) return false;
+      if (initialContactFilter === "Facebook" && !lead.facebook) return false;
+      if (initialContactFilter === "LinkedIn" && !lead.linkedin) return false;
+      if (initialContactFilter === "Соцсети" && !lead.facebook && !lead.linkedin) return false;
+      if (initialContactFilter === "Email" && !lead.email) return false;
+      if (initialContactFilter === "Сайт" && !lead.website) return false;
+      return true;
+    });
+    return {
+      total: scopedLeads.length,
+      withFacebook: scopedLeads.filter((lead) => lead.facebook).length,
+      withLinkedIn: scopedLeads.filter((lead) => lead.linkedin).length,
+      ready: scopedLeads.filter((lead) => lead.status === "Готовить оффер").length,
+    };
+  }, [initialContactFilter, initialSourceFilter, normalizedLeads]);
 
   function updateLead(id, patch) {
     setLeads((current) => current.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead)));
@@ -304,7 +316,7 @@ export default function BusinessForHomeLeadsPanel({
       </section>
 
       <section className="analytics-bfh-leads-stats" aria-label="Сводка базы сетевых лидеров">
-        <article><span>Лидеры</span><strong>{stats.total}</strong><small>в базе</small></article>
+        <article><span>{totalStatLabel}</span><strong>{stats.total}</strong><small>в базе</small></article>
         <article><span>Facebook</span><strong>{stats.withFacebook}</strong><small>публичных профилей</small></article>
         <article><span>LinkedIn</span><strong>{stats.withLinkedIn}</strong><small>публичных профилей</small></article>
         <article><span>Оффер</span><strong>{stats.ready}</strong><small>готовить персонально</small></article>

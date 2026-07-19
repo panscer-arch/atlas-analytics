@@ -209,6 +209,7 @@ export default function MlmLeaderOutreachPanel() {
             displaySourceDescription="Открытые Facebook-профили из публичных каталогов и проверяемые профессиональные LinkedIn-профили."
             displayVerifiedAt="2026-07-19"
             tableTitle="Социальные контакты"
+            totalStatLabel="Контакты"
           />
         ) : null}
       </section>
