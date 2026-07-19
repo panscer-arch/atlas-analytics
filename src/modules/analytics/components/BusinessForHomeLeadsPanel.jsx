@@ -9,6 +9,37 @@ import { defaultLinkedInMlmLeads } from "../data/socialMlmLeadsData";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const PAGE_SIZE = 50;
+const CONNECTION_STATUS_OPTIONS = [
+  "Не определено",
+  "Не подключён",
+  "Подключается",
+  "Подключён",
+  "Отказался",
+  "Пауза",
+];
+const NEGOTIATION_STAGE_OPTIONS = [
+  "Новый",
+  "Проверить активность",
+  "Готовить оффер",
+  "Написали",
+  "Ответили",
+  "Созвон назначен",
+  "Презентация Atlas",
+  "Обсуждение условий",
+  "Договорились",
+  "Онбординг",
+  "Пауза",
+  "Не подходит",
+];
+const ACTIVE_NEGOTIATION_STAGES = new Set([
+  "Написали",
+  "Ответили",
+  "Созвон назначен",
+  "Презентация Atlas",
+  "Обсуждение условий",
+  "Договорились",
+  "Онбординг",
+]);
 const DEFAULT_LEADER_DIRECTORY = {
   storageKey: BUSINESS_FOR_HOME_LEADS_STORAGE_KEY,
   statusOptions: BUSINESS_FOR_HOME_LEAD_STATUS_OPTIONS,
@@ -41,6 +72,21 @@ function leadIdentity(lead, index = 0) {
   ].find((value) => String(value || "").trim());
 }
 
+function inferConnectionStatus(lead) {
+  if (lead.connectionStatus) return lead.connectionStatus;
+  if (lead.status === "Подключён" || lead.status === "Подключено") return "Подключён";
+  if (lead.status === "Не подходит") return "Не подключён";
+  if (lead.status === "Пауза") return "Пауза";
+  return "Не определено";
+}
+
+function connectionTone(connectionStatus) {
+  if (connectionStatus === "Подключён") return "success";
+  if (connectionStatus === "Отказался" || connectionStatus === "Не подключён") return "danger";
+  if (connectionStatus === "Подключается") return "accent";
+  return "neutral";
+}
+
 function normalizeLeads(leads, sourceName) {
   const usedIds = new Set();
   const usedIdentities = new Set();
@@ -65,6 +111,8 @@ function normalizeLeads(leads, sourceName) {
       source: lead.source || sourceName,
       profileType: lead.profileType || "leader",
       contactVisibility: lead.contactVisibility || "Публичный профиль",
+      connectionStatus: inferConnectionStatus(lead),
+      nextStep: lead.nextStep || "",
     });
     return result;
   }, []);
@@ -106,7 +154,7 @@ function readStoredLeads(storageKey, seedLeads, sourceName) {
 
 function downloadCsv(rows, fileName) {
   const escape = (value) => `"${String(value || "").replaceAll('"', '""')}"`;
-  const header = ["Лидер", "Страна", "Компания", "Источник", "Источник URL", "Тип записи", "Видимость контакта", "Проверено", "Сайт", "Email", "Facebook", "LinkedIn", "Профиль источника", "Статус", "Заметка"];
+  const header = ["Лидер", "Страна", "Компания", "Источник", "Источник URL", "Тип записи", "Видимость контакта", "Проверено", "Сайт", "Email", "Facebook", "LinkedIn", "Профиль источника", "Подключение", "Этап переговоров", "Следующий шаг", "Заметка"];
   const body = rows.map((lead) => [
     lead.name,
     lead.country,
@@ -121,7 +169,9 @@ function downloadCsv(rows, fileName) {
     lead.facebook,
     lead.linkedin,
     lead.profileUrl,
+    lead.connectionStatus,
     lead.status,
+    lead.nextStep,
     lead.notes,
   ].map(escape).join(","));
   const blob = new Blob(["\ufeff" + [header.map(escape).join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
@@ -142,20 +192,26 @@ export default function BusinessForHomeLeadsPanel({
   displaySourceName = "",
   displaySourceDescription = "",
   displayVerifiedAt = "",
+  verificationLabel = "",
+  kicker = "",
   tableTitle = "",
   totalStatLabel = "Лидеры",
+  allowManualAdd = true,
+  restrictToInitialSource = false,
 }) {
   const { storageKey, statusOptions, defaultLeads, sourceName, sourceDescription, profileLabel, csvFileName, sourceUrl, lastVerifiedAt } = directory;
   const [leads, setLeads] = useState(() => readStoredLeads(storageKey, defaultLeads, sourceName));
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("Все страны");
   const [status, setStatus] = useState("Все статусы");
+  const [connectionFilter, setConnectionFilter] = useState("Все подключения");
   const [source, setSource] = useState(initialSourceFilter);
   const [contactFilter, setContactFilter] = useState(initialContactFilter);
   const [page, setPage] = useState(1);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveState, setSaveState] = useState("Локально");
+  const effectiveSource = restrictToInitialSource ? initialSourceFilter : source;
 
   useEffect(() => {
     let active = true;
@@ -169,6 +225,8 @@ export default function BusinessForHomeLeadsPanel({
           profileType: lead.profileType || "leader",
           contactVisibility: lead.contactVisibility || "Публичный профиль",
           lastVerifiedAt: lead.lastVerifiedAt || lastVerifiedAt,
+          connectionStatus: inferConnectionStatus(lead),
+          nextStep: lead.nextStep || "",
         }));
         setLeads(hydrated);
         window.localStorage.setItem(storageKey, JSON.stringify(hydrated));
@@ -200,15 +258,22 @@ export default function BusinessForHomeLeadsPanel({
     profileType: lead.profileType || "leader",
     contactVisibility: lead.contactVisibility || "Публичный профиль",
     lastVerifiedAt: lead.lastVerifiedAt || lastVerifiedAt,
+    connectionStatus: inferConnectionStatus(lead),
+    nextStep: lead.nextStep || "",
   })), [lastVerifiedAt, leads, sourceName, sourceUrl]);
   const countries = useMemo(() => ["Все страны", ...new Set(normalizedLeads.map((lead) => lead.country).filter(Boolean).sort())], [normalizedLeads]);
   const sources = useMemo(() => ["Все источники", ...new Set(normalizedLeads.map((lead) => lead.source).filter(Boolean).sort())], [normalizedLeads]);
+  const availableStatusOptions = useMemo(
+    () => [...new Set([...statusOptions, ...NEGOTIATION_STAGE_OPTIONS])],
+    [statusOptions],
+  );
   const visibleLeads = useMemo(() => {
     const search = query.trim().toLowerCase();
     const filtered = normalizedLeads.filter((lead) => {
       if (country !== "Все страны" && lead.country !== country) return false;
       if (status !== "Все статусы" && lead.status !== status) return false;
-      if (source !== "Все источники" && lead.source !== source) return false;
+      if (connectionFilter !== "Все подключения" && lead.connectionStatus !== connectionFilter) return false;
+      if (effectiveSource !== "Все источники" && lead.source !== effectiveSource) return false;
       if (contactFilter === "Facebook" && !lead.facebook) return false;
       if (contactFilter === "LinkedIn" && !lead.linkedin) return false;
       if (contactFilter === "Email" && !lead.email) return false;
@@ -221,6 +286,8 @@ export default function BusinessForHomeLeadsPanel({
         lead.company,
         lead.source,
         lead.status,
+        lead.connectionStatus,
+        lead.nextStep,
         lead.notes,
         lead.facebook,
         lead.linkedin,
@@ -232,7 +299,7 @@ export default function BusinessForHomeLeadsPanel({
       filtered.sort((left, right) => Number(Boolean(right.linkedin)) - Number(Boolean(left.linkedin)));
     }
     return filtered;
-  }, [contactFilter, country, initialContactFilter, normalizedLeads, query, source, status]);
+  }, [connectionFilter, contactFilter, country, effectiveSource, initialContactFilter, normalizedLeads, query, status]);
 
   const totalPages = Math.max(1, Math.ceil(visibleLeads.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -255,7 +322,8 @@ export default function BusinessForHomeLeadsPanel({
       total: scopedLeads.length,
       withFacebook: scopedLeads.filter((lead) => lead.facebook).length,
       withLinkedIn: scopedLeads.filter((lead) => lead.linkedin).length,
-      ready: scopedLeads.filter((lead) => lead.status === "Готовить оффер").length,
+      negotiating: scopedLeads.filter((lead) => ACTIVE_NEGOTIATION_STAGES.has(lead.status)).length,
+      connected: scopedLeads.filter((lead) => lead.connectionStatus === "Подключён").length,
     };
   }, [initialContactFilter, initialSourceFilter, normalizedLeads]);
 
@@ -269,15 +337,12 @@ export default function BusinessForHomeLeadsPanel({
   }
 
   function addLead() {
-    const nextSource = initialSourceFilter !== "Все источники"
-      ? initialSourceFilter
-      : "Facebook / LinkedIn";
     const nextLead = {
       id: `social-mlm-${Date.now()}`,
       name: "Новый MLM-лидер",
       country: "",
       company: "",
-      source: nextSource,
+      source: "Добавлено вручную",
       sourceUrl: "",
       profileUrl: "",
       profileType: "Network marketing leader",
@@ -287,14 +352,17 @@ export default function BusinessForHomeLeadsPanel({
       email: "",
       facebook: "",
       linkedin: "",
-      status: statusOptions[0] || "Новый",
+      status: "Новый",
+      connectionStatus: "Не определено",
+      nextStep: "Проверить профиль и выбрать канал для первого контакта",
       notes: "",
     };
     setLeads((current) => [nextLead, ...current]);
-    setSource("Все источники");
+    setSource(initialSourceFilter);
     setContactFilter("Все контакты");
     setCountry("Все страны");
     setStatus("Все статусы");
+    setConnectionFilter("Все подключения");
     setPage(1);
     setIsEditing(true);
   }
@@ -303,7 +371,7 @@ export default function BusinessForHomeLeadsPanel({
     <section className="analytics-parser analytics-bfh-leads">
       <section className="analytics-surface analytics-bfh-leads-hero">
         <div>
-          <p className="analytics-kicker">{displaySourceName || sourceName} / public directory</p>
+          <p className="analytics-kicker">{kicker || `${displaySourceName || sourceName} / public directory`}</p>
           <h2>{title}</h2>
           <p>{description}</p>
         </div>
@@ -311,7 +379,7 @@ export default function BusinessForHomeLeadsPanel({
           <span>Источник</span>
           <strong>{displaySourceName || sourceName}</strong>
           <p>{displaySourceDescription || sourceDescription}</p>
-          <small>Проверено: {displayVerifiedAt || lastVerifiedAt}</small>
+          <small>{verificationLabel || `Проверено: ${displayVerifiedAt || lastVerifiedAt}`}</small>
         </div>
       </section>
 
@@ -319,7 +387,8 @@ export default function BusinessForHomeLeadsPanel({
         <article><span>{totalStatLabel}</span><strong>{stats.total}</strong><small>в базе</small></article>
         <article><span>Facebook</span><strong>{stats.withFacebook}</strong><small>публичных профилей</small></article>
         <article><span>LinkedIn</span><strong>{stats.withLinkedIn}</strong><small>публичных профилей</small></article>
-        <article><span>Оффер</span><strong>{stats.ready}</strong><small>готовить персонально</small></article>
+        <article><span>Переговоры</span><strong>{stats.negotiating}</strong><small>активных диалогов</small></article>
+        <article><span>Подключено</span><strong>{stats.connected}</strong><small>лидеров Atlas</small></article>
       </section>
 
       <section className="analytics-parser-table-wrap analytics-surface">
@@ -331,7 +400,7 @@ export default function BusinessForHomeLeadsPanel({
           </div>
           <div>
             <button type="button" onClick={() => setIsEditing((value) => !value)}>{isEditing ? "Готово" : "Редактировать"}</button>
-            <button type="button" onClick={addLead}>Добавить контакт</button>
+            {allowManualAdd ? <button type="button" onClick={addLead}>Добавить лидера</button> : null}
             <button type="button" onClick={() => downloadCsv(visibleLeads, csvFileName)}>Экспорт CSV</button>
           </div>
         </div>
@@ -348,18 +417,27 @@ export default function BusinessForHomeLeadsPanel({
             </select>
           </label>
           <label>
-            Статус
+            Этап переговоров
             <select value={status} onChange={(event) => resetPage(() => setStatus(event.target.value))}>
               <option value="Все статусы">Все статусы</option>
-              {statusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+              {availableStatusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
           <label>
-            Источник
-            <select value={source} onChange={(event) => resetPage(() => setSource(event.target.value))}>
-              {sources.map((item) => <option key={item} value={item}>{item}</option>)}
+            Подключение
+            <select value={connectionFilter} onChange={(event) => resetPage(() => setConnectionFilter(event.target.value))}>
+              <option value="Все подключения">Все подключения</option>
+              {CONNECTION_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
+          {!restrictToInitialSource ? (
+            <label>
+              Источник
+              <select value={source} onChange={(event) => resetPage(() => setSource(event.target.value))}>
+                {sources.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+          ) : null}
           <label>
             Контакт
             <select value={contactFilter} onChange={(event) => resetPage(() => setContactFilter(event.target.value))}>
@@ -377,7 +455,7 @@ export default function BusinessForHomeLeadsPanel({
                 <th>Лидер</th>
                 <th>Компания</th>
                 <th>Контакты</th>
-                <th>Переговоры</th>
+                <th>Подключение / переговоры</th>
                 <th>Заметка</th>
               </tr>
             </thead>
@@ -434,11 +512,30 @@ export default function BusinessForHomeLeadsPanel({
                   </td>
                   <td>
                     {isEditing ? (
-                      <select value={lead.status} onChange={(event) => updateLead(lead.id, { status: event.target.value })}>
-                        {statusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-                      </select>
+                      <div className="analytics-bfh-lead-pipeline">
+                        <label>
+                          Подключение
+                          <select value={lead.connectionStatus || "Не определено"} onChange={(event) => updateLead(lead.id, { connectionStatus: event.target.value })}>
+                            {CONNECTION_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          Этап переговоров
+                          <select value={lead.status || "Новый"} onChange={(event) => updateLead(lead.id, { status: event.target.value })}>
+                            {availableStatusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          Следующий шаг
+                          <input value={lead.nextStep || ""} onChange={(event) => updateLead(lead.id, { nextStep: event.target.value })} placeholder="Что сделать дальше" />
+                        </label>
+                      </div>
                     ) : (
-                      <span className={`analytics-bfh-lead-status analytics-bfh-lead-status-${lead.status === "Ответили" ? "success" : lead.status === "Не подходит" ? "danger" : "accent"}`}>{lead.status}</span>
+                      <div className="analytics-bfh-lead-pipeline">
+                        <span className={`analytics-bfh-lead-status analytics-bfh-lead-status-${connectionTone(lead.connectionStatus)}`}>{lead.connectionStatus}</span>
+                        <strong>{lead.status || "Новый"}</strong>
+                        <small>{lead.nextStep ? `Дальше: ${lead.nextStep}` : "Следующий шаг не указан"}</small>
+                      </div>
                     )}
                   </td>
                   <td>

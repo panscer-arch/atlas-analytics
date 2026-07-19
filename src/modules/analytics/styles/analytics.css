@@ -19489,17 +19489,17 @@ input.analytics-smm-cell-input {
 .analytics-bfh-leads-verdict { display: grid; align-content: center; gap: 0.45rem; border: 1px solid rgba(114, 239, 214, 0.26); border-radius: 0.9rem; padding: 1rem; background: linear-gradient(135deg, rgba(114, 239, 214, 0.13), rgba(79, 134, 255, 0.08)); }
 .analytics-bfh-leads-verdict span, .analytics-bfh-leads-stats span { color: rgba(185, 204, 225, 0.72); font-size: 0.72rem; font-weight: 950; letter-spacing: 0.04em; text-transform: uppercase; }
 .analytics-bfh-leads-verdict strong { color: #ffffff; font-size: 1.35rem; font-weight: 950; }
-.analytics-bfh-leads-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+.analytics-bfh-leads-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.75rem; }
 .analytics-bfh-leads-stats article { display: grid; gap: 0.32rem; min-height: 5.65rem; border: 1px solid rgba(114, 239, 214, 0.16); border-radius: 0.8rem; padding: 0.85rem; background: rgba(255, 255, 255, 0.04); }
 .analytics-bfh-leads-stats strong { color: #ffffff; font-size: 1.7rem; font-weight: 950; line-height: 1; }
 .analytics-bfh-leads-stats small { color: rgba(185, 204, 225, 0.64); font-weight: 750; }
-.analytics-bfh-leads-controls { grid-template-columns: minmax(260px, 1.35fr) repeat(4, minmax(145px, 0.42fr)); }
+.analytics-bfh-leads-controls { grid-template-columns: minmax(260px, 1.35fr) repeat(5, minmax(135px, 0.42fr)); }
 .analytics-bfh-leads-table-scroll { overflow-x: auto; border: 1px solid rgba(120, 236, 213, 0.16); border-radius: 0.85rem; background: rgba(6, 12, 24, 0.4); }
-.analytics-bfh-leads-table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 0.83rem; }
+.analytics-bfh-leads-table { width: 100%; min-width: 1320px; border-collapse: collapse; font-size: 0.83rem; }
 .analytics-bfh-leads-table th, .analytics-bfh-leads-table td { padding: 0.74rem 0.8rem; border-bottom: 1px solid rgba(161, 178, 203, 0.11); text-align: left; vertical-align: top; }
 .analytics-bfh-leads-table th { position: sticky; top: 0; z-index: 1; background: rgba(8, 16, 30, 0.96); color: rgba(184, 202, 228, 0.86); font-size: 0.72rem; font-weight: 950; letter-spacing: 0.03em; text-transform: uppercase; }
 .analytics-bfh-leads-table tr:hover td { background: rgba(79, 134, 255, 0.055); }
-.analytics-bfh-leads-table td:first-child { width: 16rem; }.analytics-bfh-leads-table td:nth-child(2) { width: 15rem; }.analytics-bfh-leads-table td:nth-child(3) { width: 13rem; }.analytics-bfh-leads-table td:nth-child(4) { width: 12rem; }.analytics-bfh-leads-table td:nth-child(5) { width: 24rem; }
+.analytics-bfh-leads-table td:first-child { width: 16rem; }.analytics-bfh-leads-table td:nth-child(2) { width: 14rem; }.analytics-bfh-leads-table td:nth-child(3) { width: 12rem; }.analytics-bfh-leads-table td:nth-child(4) { width: 22rem; }.analytics-bfh-leads-table td:nth-child(5) { width: 22rem; }
 .analytics-bfh-leads-table strong { display: block; color: #ffffff; font-weight: 950; line-height: 1.25; }
 .analytics-bfh-leads-table a, .analytics-bfh-leads-actions a { display: inline-flex; width: fit-content; margin-top: 0.48rem; border: 1px solid rgba(114, 239, 214, 0.28); border-radius: 999px; padding: 0.38rem 0.6rem; background: rgba(114, 239, 214, 0.08); color: #dffdf8; font-weight: 900; text-decoration: none; }
 .analytics-bfh-leads-actions { display: grid; gap: 0.38rem; }.analytics-bfh-leads-actions a { margin-top: 0; }
@@ -19515,6 +19515,11 @@ input.analytics-smm-cell-input {
 .analytics-bfh-lead-status-accent { border: 1px solid rgba(255, 178, 64, 0.28); background: rgba(255, 122, 26, 0.1); color: rgba(255, 225, 190, 0.96) !important; }
 .analytics-bfh-lead-status-success { border: 1px solid rgba(114, 239, 214, 0.3); background: rgba(114, 239, 214, 0.1); color: #dffdf8 !important; }
 .analytics-bfh-lead-status-danger { border: 1px solid rgba(255, 115, 115, 0.28); background: rgba(255, 83, 83, 0.1); color: #ffd1d1 !important; }
+.analytics-bfh-lead-status-neutral { border: 1px solid rgba(161, 178, 203, 0.22); background: rgba(161, 178, 203, 0.08); color: rgba(214, 225, 241, 0.82) !important; }
+.analytics-bfh-lead-pipeline { display: grid; gap: 0.46rem; }
+.analytics-bfh-lead-pipeline label { display: grid; gap: 0.24rem; color: rgba(185, 204, 225, 0.68); font-size: 0.7rem; font-weight: 850; }
+.analytics-bfh-lead-pipeline strong { color: #ffffff; font-size: 0.82rem; }
+.analytics-bfh-lead-pipeline small { color: rgba(185, 204, 225, 0.68); font-weight: 700; line-height: 1.35; }
 
 .analytics-mlm-leaders-hero {
   display: grid;

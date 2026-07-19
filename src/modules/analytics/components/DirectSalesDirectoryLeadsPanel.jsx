@@ -18,5 +18,5 @@ const directory = {
 };
 
 export default function DirectSalesDirectoryLeadsPanel() {
-  return <BusinessForHomeLeadsPanel directory={directory} />;
+  return <BusinessForHomeLeadsPanel directory={directory} allowManualAdd={false} />;
 }

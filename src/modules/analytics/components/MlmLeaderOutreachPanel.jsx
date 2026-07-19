@@ -191,6 +191,9 @@ export default function MlmLeaderOutreachPanel() {
           <button type="button" className={leaderSource === "social" ? "analytics-mlm-view-switch-active" : ""} onClick={() => setLeaderSource("social")}>
             <span>Facebook / LinkedIn</span><small>публичные социальные профили</small>
           </button>
+          <button type="button" className={leaderSource === "manual" ? "analytics-mlm-view-switch-active" : ""} onClick={() => setLeaderSource("manual")}>
+            <span>Ручная база</span><small>добавляем и ведём сами</small>
+          </button>
         </div>
         {leaderSource === "bfh" ? (
           <BusinessForHomeLeadsPanel
@@ -210,6 +213,21 @@ export default function MlmLeaderOutreachPanel() {
             displayVerifiedAt="2026-07-19"
             tableTitle="Социальные контакты"
             totalStatLabel="Контакты"
+          />
+        ) : null}
+        {leaderSource === "manual" ? (
+          <BusinessForHomeLeadsPanel
+            key="manual"
+            initialSourceFilter="Добавлено вручную"
+            title="Ручная база MLM-лидеров"
+            description="Добавляйте знакомых лидеров и ведите весь путь: первый контакт, переговоры, решение и подключение к Atlas."
+            displaySourceName="Ручное добавление"
+            displaySourceDescription="Рабочая CRM-база команды: контакты, этап переговоров, статус подключения и следующий шаг."
+            verificationLabel="Обновляется командой"
+            kicker="CRM / РУЧНОЕ ДОБАВЛЕНИЕ"
+            tableTitle="Лидеры в работе"
+            totalStatLabel="Лидеры"
+            restrictToInitialSource
           />
         ) : null}
       </section>
