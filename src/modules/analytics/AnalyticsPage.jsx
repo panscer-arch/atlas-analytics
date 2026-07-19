@@ -60,6 +60,7 @@ const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analy
 const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
 const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
+  session: "sessionQueue",
   parser: "parser",
   analytics: "analytics",
   tasks: "launch",
@@ -614,6 +615,7 @@ function AnalyticsPage() {
 
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
+    { id: "session", label: "Сессия" },
     { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
