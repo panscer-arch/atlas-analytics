@@ -8,6 +8,7 @@ import LifeDiaryBoard from "./LifeDiaryBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
+import TwentyCrmPanel from "./TwentyCrmPanel";
 import WorkSessionQueue from "./WorkSessionQueue";
 import Wrapper from "./Wrapper";
 import YouTrackTaskMonitor from "./YouTrackTaskMonitor";
@@ -88,6 +89,13 @@ export default function AnalyticsMainPanel({
   }
 
   if (activeTab === "session") return <WorkSessionQueue />;
+  if (activeTab === "twentyCrm") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <TwentyCrmPanel />
+      </Wrapper>
+    );
+  }
   if (activeTab === "tasks") return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} />;
   if (activeTab === "taskMonitor") {
     return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} initialView="monitor" />;

@@ -4,6 +4,128 @@
   padding: 1.5rem 1rem;
 }
 
+.analytics-twenty-crm {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.analytics-twenty-crm-head,
+.analytics-twenty-crm-launch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+}
+
+.analytics-twenty-crm-head h2 {
+  margin: 6px 0 8px;
+  color: #fff;
+  font-size: clamp(28px, 4vw, 46px);
+  letter-spacing: 0;
+}
+
+.analytics-twenty-crm-head p,
+.analytics-twenty-crm-card p,
+.analytics-twenty-crm-launch p {
+  margin: 0;
+  color: rgba(221, 232, 247, 0.72);
+  line-height: 1.5;
+}
+
+.analytics-twenty-crm-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #eef5ff;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.analytics-twenty-crm-state span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffb84d;
+}
+
+.analytics-twenty-crm-state.is-ready span {
+  background: #4fd48d;
+}
+
+.analytics-twenty-crm-state.is-offline span {
+  background: #ff5f70;
+}
+
+.analytics-twenty-crm-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analytics-twenty-crm-card {
+  min-height: 146px;
+  padding: 20px;
+}
+
+.analytics-twenty-crm-card span {
+  display: block;
+  margin-bottom: 12px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.analytics-twenty-crm-launch strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #fff;
+  font-size: 18px;
+}
+
+.analytics-twenty-crm-launch .analytics-export-btn {
+  flex: 0 0 auto;
+  min-width: 180px;
+  text-align: center;
+}
+
+.analytics-twenty-crm-launch .analytics-export-btn.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 900px) {
+  .analytics-twenty-crm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .analytics-twenty-crm-head,
+  .analytics-twenty-crm-launch {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-twenty-crm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-twenty-crm-state {
+    align-self: flex-start;
+    white-space: normal;
+  }
+
+  .analytics-twenty-crm-launch .analytics-export-btn {
+    width: 100%;
+  }
+}
+
 .analytics-youtrack {
   display: grid;
   gap: 1.1rem;
