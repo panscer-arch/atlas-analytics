@@ -283,7 +283,7 @@ jobs:
           [Service]
           Type=oneshot
           EnvironmentFile=-/etc/atlas-outreach.env
-          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -sS --fail-with-body -X POST http://127.0.0.1:8787/internal/marketing/youtube-monitor -H "Content-Type: application/json" -H "X-Atlas-Internal-Token: $ATLAS_INTERNAL_MONITOR_TOKEN" -d "{\"notify\":true}"'
+          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -sS --fail-with-body -X POST http://127.0.0.1:8787/internal/marketing/youtube-monitor -H "X-Atlas-Internal-Token: $ATLAS_INTERNAL_MONITOR_TOKEN"'
           User=www-data
           Group=www-data
           SERVICE
@@ -310,7 +310,7 @@ jobs:
           [Service]
           Type=oneshot
           EnvironmentFile=-/etc/atlas-outreach.env
-          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -sS --fail-with-body -X POST http://127.0.0.1:8787/internal/marketing/dashboard-monitor -H "Content-Type: application/json" -H "X-Atlas-Internal-Token: $ATLAS_INTERNAL_MONITOR_TOKEN" -d "{\"notify\":true}"'
+          ExecStart=/bin/sh -c '/usr/bin/curl --max-time 45 -sS --fail-with-body -X POST http://127.0.0.1:8787/internal/marketing/dashboard-monitor -H "X-Atlas-Internal-Token: $ATLAS_INTERNAL_MONITOR_TOKEN"'
           User=www-data
           Group=www-data
           SERVICE
