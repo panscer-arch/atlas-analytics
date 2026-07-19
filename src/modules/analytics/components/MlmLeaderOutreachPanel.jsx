@@ -188,8 +188,29 @@ export default function MlmLeaderOutreachPanel() {
           <button type="button" className={leaderSource === "northAmerica" ? "analytics-mlm-view-switch-active" : ""} onClick={() => setLeaderSource("northAmerica")}>
             <span>США / Канада</span><small>Direct Sales Directory</small>
           </button>
+          <button type="button" className={leaderSource === "social" ? "analytics-mlm-view-switch-active" : ""} onClick={() => setLeaderSource("social")}>
+            <span>Facebook / LinkedIn</span><small>публичные социальные профили</small>
+          </button>
         </div>
-        {leaderSource === "bfh" ? <BusinessForHomeLeadsPanel /> : <DirectSalesDirectoryLeadsPanel />}
+        {leaderSource === "bfh" ? (
+          <BusinessForHomeLeadsPanel
+            key="bfh"
+            initialSourceFilter="Business For Home"
+          />
+        ) : null}
+        {leaderSource === "northAmerica" ? <DirectSalesDirectoryLeadsPanel /> : null}
+        {leaderSource === "social" ? (
+          <BusinessForHomeLeadsPanel
+            key="social"
+            initialContactFilter="Соцсети"
+            title="Контакты сетевиков из Facebook и LinkedIn"
+            description="Публичные профили для персональной квалификации: без закрытых телефонов, личных email и массовых рассылок."
+            displaySourceName="Facebook + LinkedIn"
+            displaySourceDescription="Открытые Facebook-профили из публичных каталогов и проверяемые профессиональные LinkedIn-профили."
+            displayVerifiedAt="2026-07-19"
+            tableTitle="Социальные контакты"
+          />
+        ) : null}
       </section>
     );
   }
