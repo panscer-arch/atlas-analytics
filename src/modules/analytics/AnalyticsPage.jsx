@@ -61,7 +61,6 @@ const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
 const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
   session: "sessionQueue",
-  twentyCrm: "twentyCrm",
   parser: "parser",
   analytics: "analytics",
   tasks: "launch",
@@ -617,7 +616,6 @@ function AnalyticsPage() {
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
     { id: "session", label: "Сессия" },
-    { id: "twentyCrm", label: "CRM" },
     { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
     { id: "tasks", label: "Задачи" },
@@ -704,6 +702,7 @@ function AnalyticsPage() {
         onParserOpen={() => handleMainTabChange("parser")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
         hermesUrl="/hermes/"
+        crmUrl="https://crm.46.202.153.132.sslip.io"
         mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />

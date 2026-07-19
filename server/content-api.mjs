@@ -1,6 +1,5 @@
 import http from "node:http";
 import { createHash, randomBytes } from "node:crypto";
-import { resolve4 } from "node:dns/promises";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
@@ -2796,51 +2795,6 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/content/health") {
       sendJson(response, 200, { ok: true });
-      return;
-    }
-
-    if (url.pathname === "/api/content/crm-status" && request.method === "GET") {
-      let service = "offline";
-      let dnsReady = false;
-      let publicAccess = false;
-
-      try {
-        const healthResponse = await fetch("http://127.0.0.1:3000/healthz", {
-          signal: AbortSignal.timeout(2500),
-        });
-        service = healthResponse.ok ? "healthy" : "degraded";
-      } catch {
-        service = "offline";
-      }
-
-      try {
-        const addresses = await Promise.race([
-          resolve4("crm.supersussystem.com"),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("dns_timeout")), 1500)),
-        ]);
-        dnsReady = addresses.includes("46.202.153.132");
-      } catch {
-        dnsReady = false;
-      }
-
-      if (service === "healthy" && dnsReady) {
-        try {
-          const publicHealthResponse = await fetch("https://crm.supersussystem.com/healthz", {
-            signal: AbortSignal.timeout(3500),
-          });
-          publicAccess = publicHealthResponse.ok;
-        } catch {
-          publicAccess = false;
-        }
-      }
-
-      sendJson(response, 200, {
-        ok: true,
-        service,
-        publicAccess,
-        dnsReady,
-        url: "https://crm.supersussystem.com",
-      });
       return;
     }
 

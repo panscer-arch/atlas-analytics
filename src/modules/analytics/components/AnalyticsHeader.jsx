@@ -5,6 +5,7 @@ function AnalyticsHeader({
   onParserOpen,
   onQuickNotes,
   hermesUrl,
+  crmUrl,
   mediaPreviewUrl,
   onLiveAnalyticsClick,
   showAdmins = false,
@@ -82,6 +83,18 @@ function AnalyticsHeader({
               <span className="analytics-header-hermes-spark analytics-header-hermes-spark-1" />
               <span className="analytics-header-hermes-spark analytics-header-hermes-spark-2" />
             </span>
+          </a>
+        ) : null}
+        {crmUrl ? (
+          <a
+            className="analytics-header-crm-button"
+            href={crmUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Открыть CRM"
+            title="CRM"
+          >
+            CRM
           </a>
         ) : null}
         {mediaPreviewUrl ? (

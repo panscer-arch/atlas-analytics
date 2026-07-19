@@ -3,7 +3,7 @@ set -euo pipefail
 
 TWENTY_DIR="${TWENTY_DIR:-/opt/supersus-twenty}"
 TWENTY_ENV="${TWENTY_ENV:-/etc/supersus-twenty.env}"
-TWENTY_DOMAIN="${TWENTY_DOMAIN:-crm.supersussystem.com}"
+TWENTY_DOMAIN="${TWENTY_DOMAIN:-crm.46.202.153.132.sslip.io}"
 TWENTY_SERVER_URL="${TWENTY_SERVER_URL:-https://${TWENTY_DOMAIN}}"
 TWENTY_TAG="${TWENTY_TAG:-v2.22.0}"
 BACKUP_DIR="${TWENTY_BACKUP_DIR:-/var/backups/supersus-twenty}"
@@ -55,6 +55,20 @@ PG_DATABASE_PASSWORD=$(openssl rand -hex 32)
 ENCRYPTION_KEY=$(openssl rand -base64 32)
 EOF
 fi
+
+upsert_env_value() {
+  local key="$1"
+  local value="$2"
+  if grep -q "^${key}=" "$TWENTY_ENV"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$TWENTY_ENV"
+  else
+    printf '%s=%s\n' "$key" "$value" >>"$TWENTY_ENV"
+  fi
+}
+
+upsert_env_value "TAG" "$TWENTY_TAG"
+upsert_env_value "SERVER_URL" "$TWENTY_SERVER_URL"
+
 chown root:root "$TWENTY_ENV"
 chmod 600 "$TWENTY_ENV"
 
