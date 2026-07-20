@@ -2959,7 +2959,10 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    if (url.pathname === "/api/finance/browser-session" && request.method === "POST") {
+    const isFinanceBrowserSessionRoute = url.pathname === "/api/content/finance-browser-session"
+      || url.pathname === "/api/finance/browser-session";
+
+    if (isFinanceBrowserSessionRoute && request.method === "POST") {
       const result = await exchangeFinanceBrowserSession(request);
       sendJson(
         response,
@@ -2970,12 +2973,12 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    if (url.pathname === "/api/finance/browser-session" && request.method === "GET") {
+    if (isFinanceBrowserSessionRoute && request.method === "GET") {
       sendJson(response, 200, { ok: true, authorized: await hasFinanceContentAccess(request) });
       return;
     }
 
-    if (url.pathname === "/api/finance/browser-session" && request.method === "DELETE") {
+    if (isFinanceBrowserSessionRoute && request.method === "DELETE") {
       const cookie = await revokeFinanceBrowserSession(request);
       sendJson(response, 200, { ok: true }, { "Set-Cookie": cookie });
       return;

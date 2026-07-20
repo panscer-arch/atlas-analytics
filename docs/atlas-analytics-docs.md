@@ -152,7 +152,7 @@ Endpoints:
 | `GET` | `/api/content/health` | healthcheck |
 | `GET` | `/api/content/:key` | загрузить JSON по ключу |
 | `PUT` | `/api/content/:key` | сохранить JSON по ключу |
-| `POST` | `/api/finance/browser-session` | проверить общий пароль Центра расходов и открыть доступ в браузере |
+| `POST` | `/api/content/finance-browser-session` | проверить общий пароль Центра расходов и открыть доступ в браузере |
 | `POST` | `/api/outreach/send-email` | отправить outreach email через Resend после подтверждения в UI |
 | `POST` | `/api/telegram/verify-channel` | проверить Telegram-канал через Telemetr/TGStat и вернуть контакты, живость, просмотры и дату последнего поста |
 

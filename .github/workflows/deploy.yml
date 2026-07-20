@@ -148,7 +148,6 @@ jobs:
           scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
           scp_to_vps server/backup-content.sh /tmp/atlas-content-backup.sh
-          scp_to_vps server/configure-nginx-finance.py /tmp/atlas-configure-nginx-finance.py
 
           run_with_retry "content-api ssh" ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
@@ -618,11 +617,6 @@ jobs:
               open(path, "w", encoding="utf-8").write(text)
           PY
             fi
-
-            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/finance/' "$NGINX_FILE"; then
-              sudo python3 /tmp/atlas-configure-nginx-finance.py "$NGINX_FILE"
-            fi
-            rm -f /tmp/atlas-configure-nginx-finance.py
 
             if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/marketing/' "$NGINX_FILE"; then
               sudo python3 - "$NGINX_FILE" <<'PY'

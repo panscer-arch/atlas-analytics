@@ -12,7 +12,6 @@ export default defineConfig({
       "/api/pools": "http://127.0.0.1:8787",
       "/api/youtrack": "http://127.0.0.1:8787",
       "/api/marketing": "http://127.0.0.1:8787",
-      "/api/finance": "http://127.0.0.1:8787",
     },
   },
 });

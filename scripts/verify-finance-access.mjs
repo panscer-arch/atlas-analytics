@@ -10,6 +10,7 @@ function assert(condition, message) {
 const storeDir = await mkdtemp(path.join(os.tmpdir(), "atlas-finance-access-"));
 const port = 19300 + Math.floor(Math.random() * 500);
 const password = "test-finance-password";
+const financeSessionUrl = `http://127.0.0.1:${port}/api/content/finance-browser-session`;
 let stderr = "";
 const server = spawn(process.execPath, ["server/content-api.mjs"], {
   cwd: process.cwd(),
@@ -59,7 +60,7 @@ try {
   );
   assert(privateState.status === 404, "Finance session state must not be public");
 
-  const anonymousLogout = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+  const anonymousLogout = await fetch(financeSessionUrl, {
     method: "DELETE",
   });
   assert(anonymousLogout.status === 200, "Anonymous finance logout must remain idempotent");
@@ -84,7 +85,7 @@ try {
   const marketingFinanceRead = await fetch(contentUrl, { headers: { Cookie: marketingCookie } });
   assert(marketingFinanceRead.status === 401, "Marketing access must not unlock finance data");
 
-  const wrongPassword = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+  const wrongPassword = await fetch(financeSessionUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password: "wrong-password" }),
@@ -92,7 +93,7 @@ try {
   assert(wrongPassword.status === 401, "Wrong finance password must be rejected");
   assert(!wrongPassword.headers.get("set-cookie"), "Wrong password must not create a cookie");
 
-  const login = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+  const login = await fetch(financeSessionUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
@@ -101,7 +102,7 @@ try {
   const cookie = String(login.headers.get("set-cookie") || "").split(";")[0];
   assert(cookie.startsWith("atlas_finance_session="), "Finance access must use an HttpOnly cookie");
 
-  const status = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+  const status = await fetch(financeSessionUrl, {
     headers: { Cookie: cookie },
   });
   const statusPayload = await status.json();
@@ -123,7 +124,7 @@ try {
   const savedPayload = await savedRead.json();
   assert(savedPayload.value?.revision === 1, "Saved finance data must survive a fresh read");
 
-  const logout = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+  const logout = await fetch(financeSessionUrl, {
     method: "DELETE",
     headers: { Cookie: cookie },
   });
@@ -137,7 +138,7 @@ try {
 
   const concurrentStatuses = await Promise.all(
     Array.from({ length: 16 }, async (_, attempt) => {
-      const rejected = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+      const rejected = await fetch(financeSessionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +155,7 @@ try {
       && concurrentStatuses.filter((statusCode) => statusCode === 429).length === 8,
     "Concurrent attempts and spoofed forwarding headers must share one rate limit",
   );
-  const rateLimited = await fetch(`http://127.0.0.1:${port}/api/finance/browser-session`, {
+  const rateLimited = await fetch(financeSessionUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Real-IP": "203.0.113.25" },
       body: JSON.stringify({ password }),

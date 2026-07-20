@@ -94,7 +94,7 @@ export async function saveServerContentResult(key, value, options = {}) {
 
 export async function unlockFinanceContent(password) {
   try {
-    const response = await fetch(apiUrl("/api/finance/browser-session"), {
+    const response = await fetch(apiUrl("/api/content/finance-browser-session"), {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       credentials: "include",
@@ -113,7 +113,7 @@ export async function unlockFinanceContent(password) {
 
 export async function lockFinanceContent() {
   try {
-    const response = await fetch(apiUrl("/api/finance/browser-session"), {
+    const response = await fetch(apiUrl("/api/content/finance-browser-session"), {
       method: "DELETE",
       headers: { Accept: "application/json" },
       credentials: "include",
