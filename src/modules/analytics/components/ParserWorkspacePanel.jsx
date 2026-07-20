@@ -439,6 +439,7 @@ function hasAssignedOwner(owner) {
 function MarketingOverview({
   dashboardState,
   sourceStats,
+  canEdit,
   onSelectDirection,
   onUpdateDirection,
 }) {
@@ -491,10 +492,12 @@ function MarketingOverview({
                   <span>Ответственный</span>
                   <input
                     id={`marketing-owner-${direction.id}`}
+                    disabled={!canEdit}
                     value={value.owner === "Назначить" ? "" : value.owner || ""}
                     onChange={(event) => onUpdateDirection(direction.id, { owner: event.target.value })}
-                    placeholder="Назначить"
+                    placeholder={canEdit ? "Назначить" : "Войдите заново"}
                     aria-label={`Ответственный за направление ${direction.title}`}
+                    title={canEdit ? "Ответственный сохраняется автоматически" : "Серверное сохранение недоступно"}
                   />
                 </label>
                 <button
@@ -806,6 +809,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         <MarketingOverview
           dashboardState={dashboardState}
           sourceStats={sourceStats}
+          canEdit={canWriteDashboard}
           onSelectDirection={selectDirection}
           onUpdateDirection={updateDirection}
         />

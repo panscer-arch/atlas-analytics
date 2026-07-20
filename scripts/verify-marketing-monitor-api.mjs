@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +10,8 @@ function assert(condition, message) {
 
 const storeDir = await mkdtemp(path.join(os.tmpdir(), "atlas-marketing-monitor-api-"));
 const port = 18800 + Math.floor(Math.random() * 500);
+const accessPassword = "test-supersus-access";
+const accessPasswordHash = createHash("sha256").update(accessPassword).digest("hex");
 const server = spawn(process.execPath, ["server/content-api.mjs"], {
   cwd: process.cwd(),
   env: {
@@ -16,6 +19,7 @@ const server = spawn(process.execPath, ["server/content-api.mjs"], {
     ATLAS_CONTENT_API_PORT: String(port),
     ATLAS_CONTENT_STORE_DIR: storeDir,
     ATLAS_INTERNAL_MONITOR_TOKEN: "test-internal-monitor-token",
+    SUPERSUS_ACCESS_PASSWORD_HASH: accessPasswordHash,
     TELEGRAM_BOT_TOKEN: "",
   },
   stdio: ["ignore", "ignore", "pipe"],
@@ -88,6 +92,38 @@ try {
     body: JSON.stringify({ value: [{ id: "attacker", title: "Overwrite" }] }),
   });
   assert(unauthorizedCreativeWrite.status === 401, "The retired creative library must remain write-protected");
+
+  const invalidPasswordExchange = await fetch(`http://127.0.0.1:${port}/api/marketing/browser-session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: "wrong-password" }),
+  });
+  assert(invalidPasswordExchange.status === 401, "An invalid SuperSUS password must not create a browser session");
+
+  const passwordExchange = await fetch(`http://127.0.0.1:${port}/api/marketing/browser-session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: accessPassword }),
+  });
+  assert(passwordExchange.status === 200, "The SuperSUS password must create a Marketing Dashboard session");
+  const passwordCookie = String(passwordExchange.headers.get("set-cookie") || "").split(";")[0];
+  assert(passwordCookie.startsWith("atlas_marketing_session="), "Password access must use the secure browser cookie");
+
+  const ownerValue = "Regression owner";
+  const passwordAuthorizedWrite = await fetch(`http://127.0.0.1:${port}/api/content/${dashboardKey}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Cookie: passwordCookie },
+    body: JSON.stringify({ value: { directions: { mlm: { owner: ownerValue } } } }),
+  });
+  assert(passwordAuthorizedWrite.status === 200, "Password access must allow an owner update");
+  const persistedDashboardResponse = await fetch(`http://127.0.0.1:${port}/api/content/${dashboardKey}`, {
+    headers: { Cookie: passwordCookie },
+  });
+  const persistedDashboard = await persistedDashboardResponse.json();
+  assert(
+    persistedDashboard?.value?.directions?.mlm?.owner === ownerValue,
+    "The updated Marketing Dashboard owner must persist on the server",
+  );
 
   const accessCode = "test-browser-access-code";
   await writeFile(

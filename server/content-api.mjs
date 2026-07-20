@@ -35,6 +35,14 @@ const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLi
 const MARKETING_BROWSER_LINK_REQUEST_KEY = "atlas.analytics.marketingBrowserLinkRequest.v1";
 const MARKETING_BROWSER_SESSIONS_KEY = "atlas.analytics.marketingBrowserSessions.v1";
 const MARKETING_SESSION_COOKIE = "atlas_marketing_session";
+const MARKETING_SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const MARKETING_LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const MARKETING_LOGIN_MAX_ATTEMPTS = 8;
+const MARKETING_LOGIN_MAX_BUCKETS = 1000;
+const SUPERSUS_ACCESS_PASSWORD_HASH = String(
+  process.env.SUPERSUS_ACCESS_PASSWORD_HASH
+  || "734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e",
+).trim().toLowerCase();
 const FINANCE_BROWSER_SESSIONS_KEY = "atlas.analytics.financeBrowserSessions.v1";
 const FINANCE_SESSION_COOKIE = "atlas_finance_session";
 const FINANCE_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -213,6 +221,7 @@ let marketingSessionMutationQueue = Promise.resolve();
 let financeSessionMutationQueue = Promise.resolve();
 let expenseCenterMutationQueue = Promise.resolve();
 const financeLoginAttempts = new Map();
+const marketingLoginAttempts = new Map();
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
@@ -272,6 +281,26 @@ function getFinanceLoginAttempt(request) {
   if (!current || current.resetAt <= now) {
     const next = { count: 0, resetAt: now + FINANCE_LOGIN_WINDOW_MS };
     financeLoginAttempts.set(key, next);
+    return { key, attempt: next };
+  }
+  return { key, attempt: current };
+}
+
+function getMarketingLoginAttempt(request) {
+  let key = getFinanceLoginKey(request);
+  const now = Date.now();
+  if (marketingLoginAttempts.size >= MARKETING_LOGIN_MAX_BUCKETS) {
+    for (const [storedKey, storedAttempt] of marketingLoginAttempts) {
+      if (storedAttempt.resetAt <= now) marketingLoginAttempts.delete(storedKey);
+    }
+  }
+  if (!marketingLoginAttempts.has(key) && marketingLoginAttempts.size >= MARKETING_LOGIN_MAX_BUCKETS) {
+    key = "overflow";
+  }
+  const current = marketingLoginAttempts.get(key);
+  if (!current || current.resetAt <= now) {
+    const next = { count: 0, resetAt: now + MARKETING_LOGIN_WINDOW_MS };
+    marketingLoginAttempts.set(key, next);
     return { key, attempt: next };
   }
   return { key, attempt: current };
@@ -2879,18 +2908,33 @@ async function exchangeMarketingBrowserSession(request) {
   const body = await readBody(request);
   const parsed = JSON.parse(body || "{}");
   const suppliedCode = String(parsed.code || "").trim();
+  const suppliedPassword = String(parsed.password || "").trim();
+  const login = getMarketingLoginAttempt(request);
+  if (login.attempt.count >= MARKETING_LOGIN_MAX_ATTEMPTS) {
+    return { ok: false, status: 429, error: "too_many_marketing_login_attempts" };
+  }
   const execute = async () => {
     const linkRequest = await readContent(MARKETING_BROWSER_LINK_REQUEST_KEY, {});
-    const valid = suppliedCode
+    const validLinkCode = suppliedCode
       && suppliedCode === String(linkRequest.code || "")
       && Date.parse(linkRequest.expiresAt || "") > Date.now();
-    if (!valid) {
+    const suppliedPasswordHash = suppliedPassword
+      ? createHash("sha256").update(suppliedPassword).digest("hex")
+      : "";
+    const validMainPassword = Boolean(
+      suppliedPasswordHash
+      && SUPERSUS_ACCESS_PASSWORD_HASH
+      && secureTextEqual(suppliedPasswordHash, SUPERSUS_ACCESS_PASSWORD_HASH),
+    );
+    if (!validLinkCode && !validMainPassword) {
+      marketingLoginAttempts.set(login.key, { ...login.attempt, count: login.attempt.count + 1 });
       return { ok: false, status: 401, error: "invalid_or_expired_marketing_access" };
     }
+    marketingLoginAttempts.delete(login.key);
 
     const token = randomBytes(32).toString("hex");
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(now.getTime() + MARKETING_SESSION_TTL_MS).toISOString();
     const state = await readContent(MARKETING_BROWSER_SESSIONS_KEY, { sessions: [] });
     const sessions = (Array.isArray(state.sessions) ? state.sessions : [])
       .filter((session) => Date.parse(session?.expiresAt || "") > now.getTime())
@@ -2899,9 +2943,11 @@ async function exchangeMarketingBrowserSession(request) {
       tokenHash: hashMarketingSession(token),
       createdAt: now.toISOString(),
       expiresAt,
-      createdBy: linkRequest.createdBy || null,
+      createdBy: validLinkCode ? linkRequest.createdBy || null : "supersus_access_gate",
     });
-    await writeInternalState(MARKETING_BROWSER_LINK_REQUEST_KEY, {});
+    if (validLinkCode) {
+      await writeInternalState(MARKETING_BROWSER_LINK_REQUEST_KEY, {});
+    }
     await writeInternalState(MARKETING_BROWSER_SESSIONS_KEY, { sessions });
 
     const host = String(request.headers.host || "").split(":")[0];
@@ -2910,7 +2956,7 @@ async function exchangeMarketingBrowserSession(request) {
       ok: true,
       status: 200,
       expiresAt,
-      cookie: `${MARKETING_SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly${secureAttribute}; SameSite=Strict; Path=/; Max-Age=${90 * 24 * 60 * 60}`,
+      cookie: `${MARKETING_SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly${secureAttribute}; SameSite=Strict; Path=/; Max-Age=${Math.floor(MARKETING_SESSION_TTL_MS / 1000)}`,
     };
   };
 

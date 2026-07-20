@@ -2,8 +2,9 @@ import lottie from "lottie-web";
 import { useEffect, useRef, useState } from "react";
 import matrixGateAnimation from "./assets/matrix-gate-lottie.json";
 import { AnalyticsPage, AnalyticsRestoredPage } from "./modules/analytics";
+import { getMarketingContentAccess, unlockMarketingContent } from "./modules/analytics/services/contentStore";
 
-const ACCESS_STORAGE_KEY = "supersus.access.v1";
+const ACCESS_STORAGE_KEY = "supersus.access.v2";
 const ACCESS_ATTEMPTS_STORAGE_KEY = "supersus.access.attempts.v1";
 const ACCESS_PASSWORD_HASH = "734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e";
 const ACCESS_MAX_FAILED_ATTEMPTS = 5;
@@ -112,6 +113,7 @@ function MatrixGateAnimation() {
 function AccessGate({ children }) {
   const isPublicRoute = isPublicAccessRoute();
   const [hasAccess, setHasAccess] = useState(getStoredAccess);
+  const [isRestoringAccess, setIsRestoringAccess] = useState(() => !isPublicRoute && getStoredAccess());
   const [attempts, setAttempts] = useState(readAccessAttempts);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -120,6 +122,32 @@ function AccessGate({ children }) {
   const lockRemainingMs = Math.max(0, attempts.lockedUntil - now);
   const isLocked = lockRemainingMs > 0;
   const attemptsLeft = Math.max(0, ACCESS_MAX_FAILED_ATTEMPTS - attempts.count);
+
+  useEffect(() => {
+    if (isPublicRoute || !hasAccess) {
+      setIsRestoringAccess(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+    getMarketingContentAccess().then((result) => {
+      if (!isMounted) return;
+      if (!result.authorized) {
+        window.localStorage.removeItem(ACCESS_STORAGE_KEY);
+        setHasAccess(false);
+        setError(
+          result.status === 0
+            ? "Сервер сохранения недоступен. Попробуй войти ещё раз через минуту."
+            : "Сессия истекла. Введи пароль ещё раз.",
+        );
+      }
+      setIsRestoringAccess(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasAccess, isPublicRoute]);
 
   useEffect(() => {
     if (!isLocked) {
@@ -165,6 +193,18 @@ function AccessGate({ children }) {
         return;
       }
 
+      const marketingSession = await unlockMarketingContent(password.trim());
+      if (!marketingSession.ok) {
+        setError(
+          marketingSession.status === 429
+            ? "Слишком много попыток. Попробуй снова через 10 минут."
+            : marketingSession.status === 0
+              ? "Сервер сохранения недоступен. Попробуй ещё раз через минуту."
+              : "Не удалось включить серверное сохранение. Проверь пароль и попробуй ещё раз.",
+        );
+        return;
+      }
+
       window.localStorage.setItem(ACCESS_STORAGE_KEY, ACCESS_PASSWORD_HASH);
       clearAccessAttempts();
       setHasAccess(true);
@@ -175,7 +215,7 @@ function AccessGate({ children }) {
     }
   }
 
-  if (isPublicRoute || hasAccess) {
+  if (isPublicRoute || (hasAccess && !isRestoringAccess)) {
     return children;
   }
 
