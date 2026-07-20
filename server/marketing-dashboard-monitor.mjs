@@ -10,7 +10,8 @@ const DIRECTION_TITLES = {
   web3Ads: "Web3-реклама",
   revshare: "RevShare",
   listings: "dApp-листинги",
-  creatives: "Креативы и SEO",
+  events: "Блокчейн-фесты и MLM-мероприятия",
+  vacancies: "База вакансий",
 };
 
 const TERMINAL_STATUSES = new Set(["Подключено", "Размещено", "Опубликовано", "Завершено", "Отказ"]);

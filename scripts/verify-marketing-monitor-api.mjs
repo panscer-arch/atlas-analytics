@@ -82,6 +82,12 @@ try {
     body: JSON.stringify({ value: { directions: {} } }),
   });
   assert(unauthorizedWrite.status === 401, "Marketing Dashboard writes must require a browser session");
+  const unauthorizedCreativeWrite = await fetch(`http://127.0.0.1:${port}/api/content/atlas.analytics.atlasCreatives.v1`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ value: [{ id: "attacker", title: "Overwrite" }] }),
+  });
+  assert(unauthorizedCreativeWrite.status === 401, "The retired creative library must remain write-protected");
 
   const accessCode = "test-browser-access-code";
   await writeFile(

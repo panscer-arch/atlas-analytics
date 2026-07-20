@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   REGIONAL_HIRING_COLUMNS,
@@ -8,7 +8,11 @@ import {
   defaultRegionalHiringPlatforms,
   regionalHiringPlaybook,
 } from "../data/regionalHiringData";
-import { loadServerContent, saveServerContent } from "../services/contentStore";
+import {
+  loadServerContent,
+  saveServerContent,
+  saveServerContentResult,
+} from "../services/contentStore";
 
 function hydrateRows(savedRows, seedRows) {
   if (!Array.isArray(savedRows) || !savedRows.length) return seedRows;
@@ -55,13 +59,15 @@ function statusTone(status) {
   return "accent";
 }
 
-export default function RegionalHiringPanel() {
+export default function RegionalHiringPanel({ onRowsChange } = {}) {
   const [rows, setRows] = useState(readStoredRows);
   const [activeRegion, setActiveRegion] = useState("all");
   const [query, setQuery] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveState, setSaveState] = useState("Локально");
+  const latestRowsRef = useRef(rows);
+  const isLoadedRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -69,6 +75,7 @@ export default function RegionalHiringPanel() {
       if (!isMounted) return;
       if (Array.isArray(savedRows) && savedRows.length) {
         const hydrated = hydrateRows(savedRows, defaultRegionalHiringPlatforms);
+        latestRowsRef.current = hydrated;
         setRows(hydrated);
         try {
           window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(hydrated));
@@ -77,6 +84,7 @@ export default function RegionalHiringPanel() {
         }
         setSaveState("Сохранено на сервере");
       }
+      isLoadedRef.current = true;
       setIsLoaded(true);
     });
     return () => {
@@ -86,19 +94,33 @@ export default function RegionalHiringPanel() {
 
   useEffect(() => {
     if (!isLoaded) return undefined;
+    latestRowsRef.current = rows;
+    try {
+      window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(rows));
+    } catch {
+      // Серверное сохранение ниже всё равно попробуем.
+    }
     const timer = window.setTimeout(() => {
       setSaveState("Сохраняю...");
-      try {
-        window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(rows));
-      } catch {
-        // Серверное сохранение ниже всё равно попробуем.
-      }
       saveServerContent(REGIONAL_HIRING_STORAGE_KEY, rows).then((ok) => {
         setSaveState(ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
       });
     }, 450);
     return () => window.clearTimeout(timer);
   }, [isLoaded, rows]);
+
+  useEffect(() => {
+    onRowsChange?.(rows);
+  }, [onRowsChange, rows]);
+
+  useEffect(() => () => {
+    if (!isLoadedRef.current) return;
+    void saveServerContentResult(
+      REGIONAL_HIRING_STORAGE_KEY,
+      latestRowsRef.current,
+      { keepalive: true },
+    );
+  }, []);
 
   const visibleRows = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -122,24 +144,42 @@ export default function RegionalHiringPanel() {
   }, [rows]);
 
   function updateRow(id, patch) {
-    setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+    setRows((current) => {
+      const nextRows = current.map((row) => (row.id === id ? { ...row, ...patch } : row));
+      latestRowsRef.current = nextRows;
+      try {
+        window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(nextRows));
+      } catch {
+        // Финальная отправка на сервер всё равно будет выполнена.
+      }
+      return nextRows;
+    });
   }
 
   function addRow() {
-    setRows((current) => [{
-      id: `regional-hiring-${Date.now()}`,
-      platform: "Новая площадка",
-      region: activeRegion === "all" ? "remote" : activeRegion,
-      type: "Job board",
-      url: "https://",
-      roleAngle: "Regional Web3 Community Partner",
-      candidateFit: "Описать нужный профиль кандидата.",
-      offer: "Partner role, webinars, community growth, performance rewards.",
-      riskNote: "Не обещать гарантированный доход или штатную зарплату без основания.",
-      price: "Проверить",
-      status: "Кандидат",
-      notes: "Проверить правила размещения, цену, модерацию и релевантность.",
-    }, ...current]);
+    setRows((current) => {
+      const nextRows = [{
+        id: `regional-hiring-${Date.now()}`,
+        platform: "Новая площадка",
+        region: activeRegion === "all" ? "remote" : activeRegion,
+        type: "Job board",
+        url: "https://",
+        roleAngle: "Regional Web3 Community Partner",
+        candidateFit: "Описать нужный профиль кандидата.",
+        offer: "Partner role, webinars, community growth, performance rewards.",
+        riskNote: "Не обещать гарантированный доход или штатную зарплату без основания.",
+        price: "Проверить",
+        status: "Кандидат",
+        notes: "Проверить правила размещения, цену, модерацию и релевантность.",
+      }, ...current];
+      latestRowsRef.current = nextRows;
+      try {
+        window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(nextRows));
+      } catch {
+        // Финальная отправка на сервер всё равно будет выполнена.
+      }
+      return nextRows;
+    });
   }
 
   return (

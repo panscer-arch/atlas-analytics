@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ArticlePlacementPanel from "./ArticlePlacementPanel";
 import AtlasCreativesPanel from "./AtlasCreativesPanel";
@@ -43,6 +43,10 @@ import {
   createDefaultMarketingDashboardState,
   hydrateMarketingDashboardState,
 } from "../data/marketingDashboardData";
+import {
+  REGIONAL_HIRING_STORAGE_KEY,
+  defaultRegionalHiringPlatforms,
+} from "../data/regionalHiringData";
 import {
   getServerJson,
   loadServerContent,
@@ -143,6 +147,9 @@ const PARSER_TAB_BOARD_IDS = {
 const BOARD_PARSER_TABS = Object.fromEntries(
   Object.entries(PARSER_TAB_BOARD_IDS).map(([tabId, boardId]) => [boardId, tabId]),
 );
+const LEGACY_MARKETING_BOARD_ALIASES = {
+  "marketing-creatives": "atlasCreatives",
+};
 const MARKETING_DASHBOARD_PENDING_STORAGE_KEY = `${MARKETING_DASHBOARD_STORAGE_KEY}.pending.v2`;
 const MARKETING_ACCESS_BOT_URL = "https://t.me/Supersussystembot?text=%2Fmarketing_access";
 
@@ -190,13 +197,33 @@ function defaultSourceStats() {
       candidates: defaultArticlePlacementResources.length,
       nextStep: "Добавить ссылки на AMBCrypto и BSC.News, затем выбрать следующую площадку",
     },
-    creatives: {
-      total: 8,
+    vacancies: {
+      total: defaultRegionalHiringPlatforms.length,
       connected: 0,
+      results: 0,
       negotiations: 0,
-      candidates: 8,
-      nextStep: "Собрать актуальные креативы и привязать их к каналам продвижения",
+      inProgress: 0,
+      candidates: defaultRegionalHiringPlatforms.length,
+      nextStep: "Выбрать первые площадки и подготовить прозрачные объявления по регионам",
     },
+  };
+}
+
+function vacancySourceStats(vacancyRows = []) {
+  const activeRows = vacancyRows.filter((row) => !row.deleted);
+  const results = activeRows.filter((row) => ["Разместили", "Есть отклики"].includes(row.status)).length;
+  const inProgress = activeRows.filter((row) => ["Проверить цену", "Готовить вакансию"].includes(row.status)).length;
+  const candidates = activeRows.filter((row) => row.status === "Кандидат").length;
+  return {
+    total: activeRows.length,
+    connected: results,
+    results,
+    negotiations: inProgress,
+    inProgress,
+    candidates,
+    nextStep: results
+      ? "Обработать отклики и обновить статусы кандидатов"
+      : "Выбрать первые площадки и подготовить прозрачные объявления по регионам",
   };
 }
 
@@ -209,6 +236,7 @@ function buildSourceStats({
   telegramLeads,
   telegramOutreach,
   articleRows,
+  vacancyRows,
 }) {
   const activeMlmRows = mlmRows.filter((row) => !row.deleted);
   const mlmResults = activeMlmRows.filter((row) => RESULT_OUTREACH_STATUSES.has(row.status)).length;
@@ -255,6 +283,7 @@ function buildSourceStats({
       candidates: Math.max(0, activeArticles.length - publishedArticles - articleInProgress),
       nextStep: "Добавить ссылки на AMBCrypto и BSC.News, затем выбрать следующую площадку",
     },
+    vacancies: vacancySourceStats(vacancyRows),
   };
 }
 
@@ -308,6 +337,22 @@ function mergeDashboardPatch(state, patch) {
       ]),
     ),
   };
+}
+
+function mergeArchivedDirections(serverArchive, localArchive, pendingPatch) {
+  const merged = {
+    ...(localArchive || {}),
+    ...(serverArchive || {}),
+  };
+  Object.entries(pendingPatch?.directions || {}).forEach(([directionId, patch]) => {
+    if (!Object.hasOwn(merged, directionId)) return;
+    merged[directionId] = { ...merged[directionId], ...patch };
+  });
+  return merged;
+}
+
+function normalizeParserBoard(board) {
+  return LEGACY_MARKETING_BOARD_ALIASES[board] || board;
 }
 
 function createLegacyOwnerPatch(localState, serverState) {
@@ -461,7 +506,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   const dashboardSaveRef = useRef(0);
   const dashboardPendingPatchRef = useRef(readPendingDashboardPatch());
   const dashboardDirtyRef = useRef(hasPendingDashboardPatch(dashboardPendingPatchRef.current));
-  const initialBoard = typeof window !== "undefined" ? new URL(window.location.href).searchParams.get("board") : "";
+  const initialRawBoard = typeof window !== "undefined" ? new URL(window.location.href).searchParams.get("board") : "";
+  const initialBoard = normalizeParserBoard(initialRawBoard);
   const initialDirectionId = initialBoard?.startsWith("marketing-") ? initialBoard.replace("marketing-", "") : "";
   const [selectedDirectionId, setSelectedDirectionId] = useState(
     MARKETING_DIRECTIONS.some((direction) => direction.id === initialDirectionId) ? initialDirectionId : "",
@@ -469,11 +515,18 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   const [activeTab, setActiveTab] = useState(() => {
     if (MARKETING_DIRECTIONS.some((direction) => direction.id === initialDirectionId)) return "direction";
     if (typeof window !== "undefined") {
-      const board = new URL(window.location.href).searchParams.get("board");
+      const board = normalizeParserBoard(new URL(window.location.href).searchParams.get("board"));
       if (BOARD_PARSER_TABS[board]) return BOARD_PARSER_TABS[board];
     }
     return PARSER_TAB_BOARD_IDS[initialTab] ? initialTab : "overview";
   });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || initialRawBoard === initialBoard) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("board", initialBoard);
+    window.history.replaceState({}, "", url);
+  }, [initialBoard, initialRawBoard]);
 
   useEffect(() => {
     let isMounted = true;
@@ -489,6 +542,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       loadServerContent(TELEGRAM_STORAGE_KEY),
       loadServerContent(TELEGRAM_OUTREACH_STORAGE_KEY),
       loadServerContent(ARTICLE_PLACEMENT_STORAGE_KEY),
+      loadServerContent(REGIONAL_HIRING_STORAGE_KEY),
       dashboardRequest.then(() => getServerJson("/api/marketing/browser-session")),
     ]).then(([
       dashboardResult,
@@ -500,6 +554,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       savedTelegramLeads,
       savedTelegramOutreach,
       savedArticleRows,
+      savedVacancyRows,
       marketingSession,
     ]) => {
       if (!isMounted) return;
@@ -518,7 +573,14 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       }
       const keepPendingLocalState = dashboardDirtyRef.current;
       const nextDashboard = hydratedDashboard
-        ? mergeDashboardPatch(hydratedDashboard, dashboardPendingPatchRef.current)
+        ? {
+            ...mergeDashboardPatch(hydratedDashboard, dashboardPendingPatchRef.current),
+            archivedDirections: mergeArchivedDirections(
+              hydratedDashboard.archivedDirections,
+              dashboardState.archivedDirections,
+              dashboardPendingPatchRef.current,
+            ),
+          }
         : dashboardState;
       if (hydratedDashboard) {
         setDashboardState(nextDashboard);
@@ -532,6 +594,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         telegramLeads: Array.isArray(savedTelegramLeads) ? savedTelegramLeads : defaultTelegramLeads,
         telegramOutreach: savedTelegramOutreach && typeof savedTelegramOutreach === "object" ? savedTelegramOutreach : {},
         articleRows: Array.isArray(savedArticleRows) ? savedArticleRows : defaultArticlePlacementResources,
+        vacancyRows: Array.isArray(savedVacancyRows) ? savedVacancyRows : defaultRegionalHiringPlatforms,
       }));
       if (hydratedDashboard) {
         try {
@@ -603,7 +666,13 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
 
   useEffect(() => {
     function handleHistoryChange() {
-      const board = new URL(window.location.href).searchParams.get("board") || "";
+      const rawBoard = new URL(window.location.href).searchParams.get("board") || "";
+      const board = normalizeParserBoard(rawBoard);
+      if (rawBoard !== board) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("board", board);
+        window.history.replaceState({}, "", url);
+      }
       const directionId = board.startsWith("marketing-") ? board.replace("marketing-", "") : "";
       if (MARKETING_DIRECTIONS.some((direction) => direction.id === directionId)) {
         setSelectedDirectionId(directionId);
@@ -668,6 +737,12 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
     () => MARKETING_DIRECTIONS.find((direction) => direction.id === selectedDirectionId),
     [selectedDirectionId],
   );
+  const handleVacancyRowsChange = useCallback((rows) => {
+    setSourceStats((current) => ({
+      ...current,
+      vacancies: vacancySourceStats(rows),
+    }));
+  }, []);
 
   function linkedPanelFor(direction) {
     if (!direction?.baseTab) return null;
@@ -676,7 +751,9 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
     if (direction.baseTab === "monitors") return <HyipParserPanel />;
     if (direction.baseTab === "telegram") return <TelegramChannelsParserPanel />;
     if (direction.baseTab === "articlePlacement") return <ArticlePlacementPanel />;
-    if (direction.baseTab === "creatives") return <AtlasCreativesPanel />;
+    if (direction.baseTab === "regionalHiring") {
+      return <RegionalHiringPanel onRowsChange={handleVacancyRowsChange} />;
+    }
     return null;
   }
 

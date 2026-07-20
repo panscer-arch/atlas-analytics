@@ -56,9 +56,8 @@ const MARKETING_SOURCE_CONFIGS = [
   { id: "monitors", directionId: "monitors", label: "HYIP-мониторы", key: "atlas.analytics.hyipParserLeads.v3", outreachKey: "atlas.analytics.hyipOutreach.queue.v1", nameFields: ["name"] },
   { id: "telega", directionId: "telega", label: "Telegram-каналы", key: "atlas.analytics.telegramParserLeads.v2", outreachKey: "atlas.analytics.telegramOutreach.queue.v2", nameFields: ["name"] },
   { id: "articles", directionId: "articles", label: "Статьи и PR", key: "atlas.analytics.articlePlacement.resources.v1", nameFields: ["name"] },
-  { id: "creatives", directionId: "creatives", label: "Креативы и SEO", key: "atlas.analytics.atlasCreatives.v1", nameFields: ["title", "name"] },
   { id: "market-segments", directionId: "segments", label: "Сегменты рынка", key: "atlas.analytics.marketSegments.v1", nameFields: ["direction", "name"] },
-  { id: "regional-hiring", directionId: "regional", label: "Региональные партнёры", key: "atlas.analytics.regionalHiring.platforms.v1", nameFields: ["platform", "name"] },
+  { id: "regional-hiring", directionId: "vacancies", label: "База вакансий", key: "atlas.analytics.regionalHiring.platforms.v1", nameFields: ["platform", "name"] },
   { id: "web3-segments", directionId: "web3", label: "Web3-сегменты", key: "atlas.analytics.web3Segments.v1", nameFields: ["segment", "name"] },
   { id: "segment-outreach", directionId: "segments", label: "Сегментный парсер", key: "atlas.analytics.segmentOutreach.v10", nameFields: ["name", "source"] },
 ];
@@ -69,6 +68,10 @@ const MARKETING_MONITORED_CONTENT_KEYS = new Set([
   SEGMENT_OUTREACH_KEY,
   BITNEST_YOUTUBE_KEY,
   ...MARKETING_SOURCE_CONFIGS.flatMap((config) => [config.key, config.outreachKey].filter(Boolean)),
+]);
+const MARKETING_WRITE_CONTENT_KEYS = new Set([
+  ...MARKETING_MONITORED_CONTENT_KEYS,
+  "atlas.analytics.atlasCreatives.v1",
 ]);
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
@@ -3004,7 +3007,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "PUT") {
-      if (MARKETING_MONITORED_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
+      if (MARKETING_WRITE_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
         sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
         return;
       }

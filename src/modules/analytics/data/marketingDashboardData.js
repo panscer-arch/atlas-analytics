@@ -30,6 +30,7 @@ const LEGACY_PIPELINE_STATUSES = {
   "Ответили": "Связались",
   "Договориться": "Переговоры",
 };
+const RETIRED_MARKETING_DIRECTION_IDS = ["creatives"];
 
 function hydrateRows(rows) {
   return rows.map((row) => ({
@@ -177,16 +178,27 @@ export const MARKETING_DIRECTIONS = [
     accent: "cyan",
   },
   {
-    id: "creatives",
+    id: "events",
     order: 12,
-    title: "Креативы и SEO",
-    shortTitle: "Креативы / SEO",
+    title: "Блокчейн-фесты и MLM-мероприятия",
+    shortTitle: "Фесты и мероприятия",
     owner: "Назначить",
-    phase: "Квалификация",
-    description: "Баннеры, link preview, SEO-тексты, рекламные форматы и готовые материалы Atlas.",
-    baseTab: "creatives",
-    sourceKey: "creatives",
+    phase: "Сбор базы",
+    description: "Конференции, блокчейн-фесты и мероприятия для сетевиков: календарь, контакты, участие и результаты.",
+    sourceKey: "generic",
     accent: "violet",
+  },
+  {
+    id: "vacancies",
+    order: 13,
+    title: "Работа с базой вакансий",
+    shortTitle: "База вакансий",
+    owner: "Назначить",
+    phase: "Сбор базы",
+    description: "Web3 и региональные job boards: публикации, кандидаты, отклики и поиск партнёров по странам.",
+    baseTab: "regionalHiring",
+    sourceKey: "vacancies",
+    accent: "rose",
   },
 ];
 
@@ -278,15 +290,27 @@ const defaultDirectionContent = {
       { id: "listings-sheet", title: "Таблица dApp-листингов", url: LISTINGS_SHEET, status: "Источник", note: "Список агентств и площадок для проверки." },
     ],
   },
-  creatives: {
-    notes: "",
+  events: {
+    notes: "Собирать отдельно блокчейн-конференции, Web3-фесты, direct-selling форумы и MLM-мероприятия. Для каждого события фиксировать сроки подачи, стоимость, формат участия и ответственного.",
     rows: [],
-    materials: [],
+    materials: [
+      { id: "events-calendar", title: "Календарь мероприятий", url: "", status: "Подготовить", note: "Даты, страны, дедлайны заявок, билеты, стенды и выступления." },
+      { id: "events-participation-brief", title: "Пакет участника Atlas", url: "", status: "Подготовить", note: "Презентация, спикерский профиль, материалы для стенда и follow-up." },
+    ],
+  },
+  vacancies: {
+    notes: "Использовать только прозрачные объявления: чётко разделять штатную вакансию, подряд и партнёрскую роль; не обещать фиксированную зарплату или гарантированный доход без основания.",
+    rows: [],
+    materials: [
+      { id: "vacancies-role-brief", title: "Шаблоны ролей и вакансий", url: "", status: "Подготовить", note: "Отдельные версии для Web3 community, региональных партнёров и локальных лидеров." },
+      { id: "vacancies-screening", title: "Сценарий проверки кандидатов", url: "", status: "Подготовить", note: "Опыт, GEO, языки, аудитория, каналы и условия сотрудничества." },
+    ],
   },
 };
 
 export function createDefaultMarketingDashboardState() {
   return {
+    archivedDirections: {},
     directions: Object.fromEntries(
       MARKETING_DIRECTIONS.map((direction) => [
         direction.id,
@@ -305,10 +329,22 @@ export function createDefaultMarketingDashboardState() {
 export function hydrateMarketingDashboardState(savedState) {
   const defaults = createDefaultMarketingDashboardState();
   if (!savedState || typeof savedState !== "object") return defaults;
+  const archivedDirections = {
+    ...(savedState.archivedDirections && typeof savedState.archivedDirections === "object"
+      ? savedState.archivedDirections
+      : {}),
+  };
+  RETIRED_MARKETING_DIRECTION_IDS.forEach((directionId) => {
+    const retiredDirection = savedState.directions?.[directionId];
+    if (retiredDirection && typeof retiredDirection === "object") {
+      archivedDirections[directionId] = retiredDirection;
+    }
+  });
 
   return {
     ...defaults,
     ...savedState,
+    archivedDirections,
     directions: Object.fromEntries(
       MARKETING_DIRECTIONS.map((direction) => {
         const defaultDirection = defaults.directions[direction.id];
