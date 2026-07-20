@@ -432,7 +432,16 @@ function cardMetrics(direction, stats, directionValue) {
   ];
 }
 
-function MarketingOverview({ dashboardState, sourceStats, onSelectDirection }) {
+function hasAssignedOwner(owner) {
+  return Boolean(owner && owner.trim() && owner.trim() !== "Назначить");
+}
+
+function MarketingOverview({
+  dashboardState,
+  sourceStats,
+  onSelectDirection,
+  onUpdateDirection,
+}) {
   return (
     <div className="analytics-marketing-hub">
       <section className="analytics-marketing-hub-hero analytics-surface">
@@ -446,7 +455,7 @@ function MarketingOverview({ dashboardState, sourceStats, onSelectDirection }) {
         <div className="analytics-marketing-hub-summary" aria-label="Сводка маркетинговых инструментов">
           <span>Направления</span>
           <strong>{MARKETING_DIRECTIONS.length}</strong>
-          <small>{MARKETING_DIRECTIONS.filter((direction) => dashboardState.directions[direction.id]?.owner !== "Назначить").length} с назначенным ответственным</small>
+          <small>{MARKETING_DIRECTIONS.filter((direction) => hasAssignedOwner(dashboardState.directions[direction.id]?.owner)).length} с назначенным ответственным</small>
         </div>
       </section>
 
@@ -457,7 +466,11 @@ function MarketingOverview({ dashboardState, sourceStats, onSelectDirection }) {
           const phase = operationalPhase(value, stats);
           return (
             <article key={direction.id} className={`analytics-marketing-tool-card analytics-surface is-${direction.accent}`}>
-              <button type="button" onClick={() => onSelectDirection(direction.id)}>
+              <button
+                type="button"
+                className="analytics-marketing-card-open"
+                onClick={() => onSelectDirection(direction.id)}
+              >
                 <div className="analytics-marketing-card-meta">
                   <span>{String(direction.order).padStart(2, "0")}</span>
                   <em>{phase}</em>
@@ -472,12 +485,26 @@ function MarketingOverview({ dashboardState, sourceStats, onSelectDirection }) {
                     </div>
                   ))}
                 </div>
-                <div className="analytics-marketing-card-owner">
-                  <span>Ответственный</span>
-                  <b className={value.owner === "Назначить" ? "is-empty" : ""}>{value.owner || "Назначить"}</b>
-                  <i aria-hidden="true">→</i>
-                </div>
               </button>
+              <div className="analytics-marketing-card-owner">
+                <label htmlFor={`marketing-owner-${direction.id}`}>
+                  <span>Ответственный</span>
+                  <input
+                    id={`marketing-owner-${direction.id}`}
+                    value={value.owner === "Назначить" ? "" : value.owner || ""}
+                    onChange={(event) => onUpdateDirection(direction.id, { owner: event.target.value })}
+                    placeholder="Назначить"
+                    aria-label={`Ответственный за направление ${direction.title}`}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => onSelectDirection(direction.id)}
+                  aria-label={`Открыть направление ${direction.title}`}
+                >
+                  →
+                </button>
+              </div>
             </article>
           );
         })}
@@ -780,6 +807,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
           dashboardState={dashboardState}
           sourceStats={sourceStats}
           onSelectDirection={selectDirection}
+          onUpdateDirection={updateDirection}
         />
       ) : activeTab === "direction" && selectedDirection ? (
         <MarketingDirectionWorkspace
