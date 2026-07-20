@@ -58,6 +58,16 @@ function statusTone(status) {
   return "accent";
 }
 
+let regionalHiringSaveQueue = Promise.resolve();
+
+function enqueueRegionalHiringServerSave(nextRows, options = {}) {
+  const operation = regionalHiringSaveQueue
+    .catch(() => undefined)
+    .then(() => saveServerContentResult(REGIONAL_HIRING_STORAGE_KEY, nextRows, options));
+  regionalHiringSaveQueue = operation.then(() => undefined, () => undefined);
+  return operation;
+}
+
 export default function RegionalHiringPanel({ onRowsChange } = {}) {
   const [rows, setRows] = useState(readStoredRows);
   const [activeRegion, setActiveRegion] = useState("all");
@@ -69,15 +79,6 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
   const isLoadedRef = useRef(false);
   const isDirtyRef = useRef(false);
   const changeRevisionRef = useRef(0);
-  const saveQueueRef = useRef(Promise.resolve());
-
-  function enqueueServerSave(nextRows, options = {}) {
-    const operation = saveQueueRef.current
-      .catch(() => undefined)
-      .then(() => saveServerContentResult(REGIONAL_HIRING_STORAGE_KEY, nextRows, options));
-    saveQueueRef.current = operation.then(() => undefined, () => undefined);
-    return operation;
-  }
 
   useEffect(() => {
     let isMounted = true;
@@ -114,7 +115,7 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
     const revision = changeRevisionRef.current;
     const timer = window.setTimeout(() => {
       setSaveState("Сохраняю...");
-      enqueueServerSave(rows).then((result) => {
+      enqueueRegionalHiringServerSave(rows).then((result) => {
         if (result.ok && changeRevisionRef.current === revision) {
           isDirtyRef.current = false;
         }
@@ -130,7 +131,7 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
 
   useEffect(() => () => {
     if (!isLoadedRef.current || !isDirtyRef.current) return;
-    void enqueueServerSave(latestRowsRef.current, { keepalive: true });
+    void enqueueRegionalHiringServerSave(latestRowsRef.current, { keepalive: true });
   }, []);
 
   const visibleRows = useMemo(() => {
