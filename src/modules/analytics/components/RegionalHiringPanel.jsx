@@ -10,7 +10,6 @@ import {
 } from "../data/regionalHiringData";
 import {
   loadServerContent,
-  saveServerContent,
   saveServerContentResult,
 } from "../services/contentStore";
 
@@ -70,6 +69,15 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
   const isLoadedRef = useRef(false);
   const isDirtyRef = useRef(false);
   const changeRevisionRef = useRef(0);
+  const saveQueueRef = useRef(Promise.resolve());
+
+  function enqueueServerSave(nextRows, options = {}) {
+    const operation = saveQueueRef.current
+      .catch(() => undefined)
+      .then(() => saveServerContentResult(REGIONAL_HIRING_STORAGE_KEY, nextRows, options));
+    saveQueueRef.current = operation.then(() => undefined, () => undefined);
+    return operation;
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -106,11 +114,11 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
     const revision = changeRevisionRef.current;
     const timer = window.setTimeout(() => {
       setSaveState("Сохраняю...");
-      saveServerContent(REGIONAL_HIRING_STORAGE_KEY, rows).then((ok) => {
-        if (ok && changeRevisionRef.current === revision) {
+      enqueueServerSave(rows).then((result) => {
+        if (result.ok && changeRevisionRef.current === revision) {
           isDirtyRef.current = false;
         }
-        setSaveState(ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
+        setSaveState(result.ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
       });
     }, 450);
     return () => window.clearTimeout(timer);
@@ -122,11 +130,7 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
 
   useEffect(() => () => {
     if (!isLoadedRef.current || !isDirtyRef.current) return;
-    void saveServerContentResult(
-      REGIONAL_HIRING_STORAGE_KEY,
-      latestRowsRef.current,
-      { keepalive: true },
-    );
+    void enqueueServerSave(latestRowsRef.current, { keepalive: true });
   }, []);
 
   const visibleRows = useMemo(() => {
