@@ -56,6 +56,15 @@ function finiteNonNegative(value, fallback = 0) {
   return Number.isFinite(number) ? Math.max(0, number) : fallback;
 }
 
+export function getEditableMoneyValue(value) {
+  if (value === "" || value === null || value === undefined || Number(value) === 0) return "";
+  return String(value);
+}
+
+export function readEditableMoneyValue(value) {
+  return value === "" ? "" : value;
+}
+
 export function getTodayInputDate(now = new Date()) {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");

@@ -9,6 +9,7 @@ import {
   createPaidExpenseUpdate,
   expandExpenseOccurrences,
   getEffectiveStatus,
+  getEditableMoneyValue,
   getExpenseAmountBase,
   getMonthExpenseSummary,
   getMonthlyRecurringRunRate,
@@ -16,6 +17,7 @@ import {
   nextRecurringDate,
   normalizeExpense,
   normalizeExpenseCenter,
+  readEditableMoneyValue,
 } from "../src/modules/analytics/utils/expensesUtils.js";
 
 assert.equal(defaultExpenseCenter.expenses.length, 0, "Expense center must not ship fake expenses");
@@ -71,6 +73,10 @@ const usd = createExpense({ title: "USD invoice", amount: 100, currency: "USD" }
 assert.equal(getExpenseAmountBase(usd), 0, "Foreign currencies must not be treated as USDT without an explicit equivalent");
 const usdt = createExpense({ title: "USDT invoice", amount: 100, currency: "USDT" });
 assert.equal(getExpenseAmountBase(usdt), 100);
+assert.equal(getEditableMoneyValue(0), "", "Zero-value money fields must render empty");
+assert.equal(getEditableMoneyValue("0"), "", "String zero must render empty");
+assert.equal(readEditableMoneyValue(""), "", "Cleared money fields must stay empty while editing");
+assert.equal(readEditableMoneyValue("12.50"), "12.50", "Money input must preserve the user's decimal text");
 
 assert.equal(nextRecurringDate("2026-01-31", "Ежемесячно", 31), "2026-02-28");
 assert.equal(nextRecurringDate("2026-02-28", "Ежемесячно", 31), "2026-03-31");
@@ -145,6 +151,8 @@ assert.match(expenseBoard, /unlockFinanceContent/);
 assert.match(expenseBoard, /lockFinanceContent/);
 assert.match(expenseBoard, /clearLocalExpenseBackup/);
 assert.match(expenseBoard, /Пароль доступа/);
+assert.match(expenseBoard, /aria-label="Сумма поступления"/);
+assert.doesNotMatch(expenseBoard, /Number\(event\.target\.value \|\| 0\)/);
 assert.doesNotMatch(expenseBoard, /marketing_access/);
 
 const contentApi = await readFile(

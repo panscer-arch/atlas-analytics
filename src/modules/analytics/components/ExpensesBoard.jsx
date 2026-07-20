@@ -31,6 +31,7 @@ import {
   formatDate,
   getDaysUntil,
   getEffectiveStatus,
+  getEditableMoneyValue,
   getExpenseAmountBase,
   getMonthExpenseSummary,
   getMonthKey,
@@ -44,6 +45,7 @@ import {
   normalizeExpense,
   normalizeExpenseCenter,
   normalizeFund,
+  readEditableMoneyValue,
   shiftMonth,
 } from "../utils/expensesUtils";
 
@@ -505,8 +507,14 @@ function ExpensesBoard() {
   }, [monthSummary.occurrences, selectedMonth]);
 
   const selectedDateExpenses = monthSummary.occurrences.filter((item) => item.dueDate === selectedDate);
-  const draftHasValidBaseAmount = draft.currency === "USDT" || Number(draft.baseAmount) > 0;
-  const fundHasValidBaseAmount = newFund.currency === "USDT" || Number(newFund.baseAmount) > 0;
+  const draftHasValidAmount = Number(draft.amount) > 0;
+  const draftHasValidBaseAmount = draft.currency === "USDT"
+    ? draftHasValidAmount
+    : Number(draft.baseAmount) > 0;
+  const fundHasValidAmount = Number(newFund.amount) > 0;
+  const fundHasValidBaseAmount = newFund.currency === "USDT"
+    ? fundHasValidAmount
+    : Number(newFund.baseAmount) > 0;
 
   function appendActivity(nextCenter, type, title, detail = "") {
     return {
@@ -538,7 +546,7 @@ function ExpensesBoard() {
   }
 
   function saveExpense() {
-    if (!draft.title.trim() || !draftHasValidBaseAmount) return;
+    if (!draft.title.trim() || !draftHasValidAmount || !draftHasValidBaseAmount) return;
     commitCenter((current) => {
       const normalized = normalizeExpense({ ...draft, title: draft.title.trim(), updatedAt: new Date().toISOString() });
       const expenses = editingId
@@ -600,7 +608,7 @@ function ExpensesBoard() {
   }
 
   function addFund() {
-    if (!newFund.title.trim() || !fundHasValidBaseAmount) return;
+    if (!newFund.title.trim() || !fundHasValidAmount || !fundHasValidBaseAmount) return;
     const fund = normalizeFund({ ...newFund, title: newFund.title.trim() });
     commitCenter((current) => appendActivity(
       { ...current, funds: [fund, ...current.funds] },
@@ -1086,7 +1094,15 @@ function ExpensesBoard() {
                     </div>
                     <label>
                       <span>Лимит USDT</span>
-                      <input type="number" min="0" step="10" value={item.limit} onChange={(event) => updateBudget(item.category, { monthlyLimit: Number(event.target.value || 0) })} />
+                      <input
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={getEditableMoneyValue(item.limit)}
+                        onChange={(event) => updateBudget(item.category, {
+                          monthlyLimit: event.target.value === "" ? 0 : Number(event.target.value),
+                        })}
+                      />
                     </label>
                     <div>
                       <progress max={Math.max(item.limit, item.total, 1)} value={item.total} />
@@ -1109,10 +1125,21 @@ function ExpensesBoard() {
             <div className="analytics-expenses-fund-form">
               <input value={newFund.title} onChange={(event) => setNewFund((current) => ({ ...current, title: event.target.value }))} placeholder="Название поступления" />
               <div>
-                <input type="number" min="0" step="0.01" value={newFund.amount} onChange={(event) => {
-                  const amount = Number(event.target.value || 0);
-                  setNewFund((current) => ({ ...current, amount, baseAmount: current.currency === "USDT" ? amount : current.baseAmount }));
-                }} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={getEditableMoneyValue(newFund.amount)}
+                  aria-label="Сумма поступления"
+                  onChange={(event) => {
+                    const amount = readEditableMoneyValue(event.target.value);
+                    setNewFund((current) => ({
+                      ...current,
+                      amount,
+                      baseAmount: current.currency === "USDT" ? amount : current.baseAmount,
+                    }));
+                  }}
+                />
                 <select value={newFund.currency} onChange={(event) => setNewFund((current) => ({
                   ...current,
                   currency: event.target.value,
@@ -1127,9 +1154,13 @@ function ExpensesBoard() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={newFund.baseAmount}
+                    value={getEditableMoneyValue(newFund.baseAmount)}
+                    aria-label="Эквивалент поступления в USDT"
                     aria-invalid={!fundHasValidBaseAmount}
-                    onChange={(event) => setNewFund((current) => ({ ...current, baseAmount: Number(event.target.value || 0) }))}
+                    onChange={(event) => setNewFund((current) => ({
+                      ...current,
+                      baseAmount: readEditableMoneyValue(event.target.value),
+                    }))}
                     placeholder="Эквивалент в USDT"
                   />
                   {!fundHasValidBaseAmount ? <small>Укажите эквивалент в USDT.</small> : null}
@@ -1140,7 +1171,7 @@ function ExpensesBoard() {
               <button
                 type="button"
                 className="analytics-expenses-add"
-                disabled={!newFund.title.trim() || !fundHasValidBaseAmount}
+                disabled={!newFund.title.trim() || !fundHasValidAmount || !fundHasValidBaseAmount}
                 onClick={addFund}
               >
                 Добавить
@@ -1199,8 +1230,8 @@ function ExpensesBoard() {
               </label>
               <label>
                 <span>Сумма</span>
-                <input type="number" min="0" step="0.01" value={draft.amount} onChange={(event) => {
-                  const amount = Number(event.target.value || 0);
+                <input type="number" min="0" step="0.01" value={getEditableMoneyValue(draft.amount)} onChange={(event) => {
+                  const amount = readEditableMoneyValue(event.target.value);
                   setDraft((current) => ({ ...current, amount, baseAmount: current.currency === "USDT" ? amount : current.baseAmount }));
                 }} />
               </label>
@@ -1221,9 +1252,12 @@ function ExpensesBoard() {
                     type="number"
                     min="0"
                     step="0.01"
-                    value={draft.baseAmount}
+                    value={getEditableMoneyValue(draft.baseAmount)}
                     aria-invalid={!draftHasValidBaseAmount}
-                    onChange={(event) => setDraft((current) => ({ ...current, baseAmount: Number(event.target.value || 0) }))}
+                    onChange={(event) => setDraft((current) => ({
+                      ...current,
+                      baseAmount: readEditableMoneyValue(event.target.value),
+                    }))}
                   />
                   {!draftHasValidBaseAmount ? <small>Укажите эквивалент в USDT для итогов.</small> : null}
                 </label>
@@ -1297,7 +1331,16 @@ function ExpensesBoard() {
               </label>
               <label>
                 <span>Напомнить за, дней</span>
-                <input type="number" min="0" max="90" value={draft.reminderDays} onChange={(event) => setDraft((current) => ({ ...current, reminderDays: Number(event.target.value || 0) }))} />
+                <input
+                  type="number"
+                  min="0"
+                  max="90"
+                  value={getEditableMoneyValue(draft.reminderDays)}
+                  onChange={(event) => setDraft((current) => ({
+                    ...current,
+                    reminderDays: readEditableMoneyValue(event.target.value),
+                  }))}
+                />
               </label>
               <label className="analytics-expenses-form-wide">
                 <span>Счёт / документ / ссылка</span>
@@ -1313,7 +1356,7 @@ function ExpensesBoard() {
               <button
                 type="button"
                 className="analytics-expenses-add"
-                disabled={!draft.title.trim() || !draftHasValidBaseAmount}
+                disabled={!draft.title.trim() || !draftHasValidAmount || !draftHasValidBaseAmount}
                 onClick={saveExpense}
               >
                 Сохранить
