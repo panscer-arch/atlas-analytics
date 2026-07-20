@@ -68,6 +68,8 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
   const [saveState, setSaveState] = useState("Локально");
   const latestRowsRef = useRef(rows);
   const isLoadedRef = useRef(false);
+  const isDirtyRef = useRef(false);
+  const changeRevisionRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,9 +102,14 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
     } catch {
       // Серверное сохранение ниже всё равно попробуем.
     }
+    if (!isDirtyRef.current) return undefined;
+    const revision = changeRevisionRef.current;
     const timer = window.setTimeout(() => {
       setSaveState("Сохраняю...");
       saveServerContent(REGIONAL_HIRING_STORAGE_KEY, rows).then((ok) => {
+        if (ok && changeRevisionRef.current === revision) {
+          isDirtyRef.current = false;
+        }
         setSaveState(ok ? "Сохранено на сервере" : "Локально, сервер недоступен");
       });
     }, 450);
@@ -114,7 +121,7 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
   }, [onRowsChange, rows]);
 
   useEffect(() => () => {
-    if (!isLoadedRef.current) return;
+    if (!isLoadedRef.current || !isDirtyRef.current) return;
     void saveServerContentResult(
       REGIONAL_HIRING_STORAGE_KEY,
       latestRowsRef.current,
@@ -146,6 +153,8 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
   function updateRow(id, patch) {
     setRows((current) => {
       const nextRows = current.map((row) => (row.id === id ? { ...row, ...patch } : row));
+      isDirtyRef.current = true;
+      changeRevisionRef.current += 1;
       latestRowsRef.current = nextRows;
       try {
         window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(nextRows));
@@ -172,6 +181,8 @@ export default function RegionalHiringPanel({ onRowsChange } = {}) {
         status: "Кандидат",
         notes: "Проверить правила размещения, цену, модерацию и релевантность.",
       }, ...current];
+      isDirtyRef.current = true;
+      changeRevisionRef.current += 1;
       latestRowsRef.current = nextRows;
       try {
         window.localStorage.setItem(REGIONAL_HIRING_STORAGE_KEY, JSON.stringify(nextRows));
