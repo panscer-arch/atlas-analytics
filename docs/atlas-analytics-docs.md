@@ -152,6 +152,7 @@ Endpoints:
 | `GET` | `/api/content/health` | healthcheck |
 | `GET` | `/api/content/:key` | загрузить JSON по ключу |
 | `PUT` | `/api/content/:key` | сохранить JSON по ключу |
+| `POST` | `/api/finance/browser-session` | проверить общий пароль Центра расходов и открыть доступ в браузере |
 | `POST` | `/api/outreach/send-email` | отправить outreach email через Resend после подтверждения в UI |
 | `POST` | `/api/telegram/verify-channel` | проверить Telegram-канал через Telemetr/TGStat и вернуть контакты, живость, просмотры и дату последнего поста |
 
@@ -169,6 +170,7 @@ OUTREACH_FROM_EMAIL=Atlas System <partners@atlas-system.io>
 OUTREACH_REPLY_TO_EMAIL=partners@atlas-system.io
 TELEMETR_API_KEY=...
 TGSTAT_TOKEN=...
+ATLAS_FINANCE_PASSWORD=...
 ```
 
 После изменения файла нужно перезапустить backend:
@@ -176,6 +178,10 @@ TGSTAT_TOKEN=...
 ```bash
 sudo systemctl restart atlas-content-api.service
 ```
+
+`ATLAS_FINANCE_PASSWORD` хранится только на сервере. После успешного ввода Центр расходов
+устанавливает защищённый HttpOnly cookie на 30 дней; смена пароля автоматически отменяет
+ранее выданный доступ. Кнопка `Выйти` отзывает доступ только в текущем браузере.
 
 ## Backup контента
 

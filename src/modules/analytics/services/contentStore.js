@@ -92,6 +92,38 @@ export async function saveServerContentResult(key, value, options = {}) {
   }
 }
 
+export async function unlockFinanceContent(password) {
+  try {
+    const response = await fetch(apiUrl("/api/finance/browser-session"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ password }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    return {
+      ok: response.ok && payload?.ok !== false,
+      status: response.status,
+      error: payload?.error || "",
+    };
+  } catch {
+    return { ok: false, status: 0, error: "network_error" };
+  }
+}
+
+export async function lockFinanceContent() {
+  try {
+    const response = await fetch(apiUrl("/api/finance/browser-session"), {
+      method: "DELETE",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    return { ok: response.ok, status: response.status };
+  } catch {
+    return { ok: false, status: 0 };
+  }
+}
+
 export async function postServerJson(path, value) {
   try {
     const response = await fetch(apiUrl(path), {

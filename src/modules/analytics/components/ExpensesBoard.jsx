@@ -1,5 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { loadServerContentResult, saveServerContentResult } from "../services/contentStore";
+import {
+  loadServerContentResult,
+  lockFinanceContent,
+  saveServerContentResult,
+  unlockFinanceContent,
+} from "../services/contentStore";
 
 import {
   EXPENSE_CENTER_STORAGE_KEY,
@@ -70,6 +75,14 @@ function writeLocalExpenseBackup(value, pending, baseRevision) {
     }));
   } catch {
     // Если localStorage недоступен, серверное сохранение всё равно продолжается.
+  }
+}
+
+function clearLocalExpenseBackup() {
+  try {
+    window.localStorage.removeItem(EXPENSE_CENTER_STORAGE_KEY);
+  } catch {
+    // Выход из финансов не должен ломаться, если localStorage недоступен.
   }
 }
 
@@ -181,12 +194,18 @@ function ExpensesBoard() {
   const [saveState, setSaveState] = useState("Загрузка...");
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [financeAccessRequired, setFinanceAccessRequired] = useState(false);
+  const [financePassword, setFinancePassword] = useState("");
+  const [financeAccessError, setFinanceAccessError] = useState("");
+  const [isUnlockingFinance, setIsUnlockingFinance] = useState(false);
+  const [isLockingFinance, setIsLockingFinance] = useState(false);
   const saveRef = useRef(0);
   const centerRef = useRef(center);
   const isLoadedRef = useRef(false);
   const isDirtyRef = useRef(false);
   const pendingCenterRef = useRef(null);
   const isSavingRef = useRef(false);
+  const financeLogoutRequestedRef = useRef(false);
   const serverRevisionRef = useRef(0);
   const editorTriggerRef = useRef(null);
 
@@ -204,7 +223,8 @@ function ExpensesBoard() {
       if (!hasCurrentCenter && !canMigrateLegacy) {
         const needsFinanceSession = [centerResult, expensesResult, fundsResult]
           .some((result) => result.status === 401);
-        setSaveState(needsFinanceSession ? "Требуется финансовая сессия" : "Ошибка загрузки — изменения заблокированы");
+        setFinanceAccessRequired(needsFinanceSession);
+        setSaveState(needsFinanceSession ? "Требуется пароль" : "Ошибка загрузки — изменения заблокированы");
         return;
       }
       let nextCenter = hasCurrentCenter
@@ -223,6 +243,8 @@ function ExpensesBoard() {
       centerRef.current = nextCenter;
       serverRevisionRef.current = Number(nextCenter.revision || 0);
       setIsLoaded(true);
+      setFinanceAccessRequired(false);
+      setFinanceAccessError("");
       isLoadedRef.current = true;
       isDirtyRef.current = false;
       if (shouldRecoverLocal) {
@@ -240,6 +262,74 @@ function ExpensesBoard() {
       isMounted = false;
     };
   }, [loadAttempt]);
+
+  async function handleFinanceAccess(event) {
+    event.preventDefault();
+    if (!financePassword.trim() || isUnlockingFinance) return;
+
+    setIsUnlockingFinance(true);
+    setFinanceAccessError("");
+    const result = await unlockFinanceContent(financePassword);
+    setIsUnlockingFinance(false);
+
+    if (result.ok) {
+      financeLogoutRequestedRef.current = false;
+      setFinancePassword("");
+      setFinanceAccessRequired(false);
+      setSaveState("Загрузка...");
+      setLoadAttempt((attempt) => attempt + 1);
+      return;
+    }
+
+    if (result.status === 401) {
+      setFinanceAccessError("Неверный пароль");
+      return;
+    }
+    if (result.status === 503) {
+      setFinanceAccessError("Пароль ещё не настроен на сервере");
+      return;
+    }
+    if (result.status === 429) {
+      setFinanceAccessError("Слишком много попыток. Повторите через 10 минут");
+      return;
+    }
+    setFinanceAccessError("Не удалось проверить пароль. Повторите попытку");
+  }
+
+  async function handleFinanceLogout() {
+    if (isLockingFinance) return;
+    financeLogoutRequestedRef.current = true;
+    setIsLockingFinance(true);
+    for (let attempt = 0; attempt < 200 && (isSavingRef.current || pendingCenterRef.current); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    if (isSavingRef.current || pendingCenterRef.current) {
+      financeLogoutRequestedRef.current = false;
+      setIsLockingFinance(false);
+      setSaveState("Ошибка выхода");
+      return;
+    }
+
+    const result = await lockFinanceContent();
+    setIsLockingFinance(false);
+    if (!result.ok) {
+      financeLogoutRequestedRef.current = false;
+      setSaveState("Ошибка выхода");
+      return;
+    }
+
+    const emptyCenter = normalizeExpenseCenter(defaultExpenseCenter);
+    setCenter(emptyCenter);
+    centerRef.current = emptyCenter;
+    setIsLoaded(false);
+    isLoadedRef.current = false;
+    isDirtyRef.current = false;
+    pendingCenterRef.current = null;
+    clearLocalExpenseBackup();
+    setFinanceAccessRequired(true);
+    setFinanceAccessError("");
+    setSaveState("Требуется пароль");
+  }
 
   useLayoutEffect(() => {
     centerRef.current = center;
@@ -289,6 +379,7 @@ function ExpensesBoard() {
   }
 
   function persistCenter(nextCenter) {
+    if (financeLogoutRequestedRef.current) return;
     const normalized = normalizeExpenseCenter(nextCenter);
     centerRef.current = normalized;
     isDirtyRef.current = true;
@@ -301,7 +392,7 @@ function ExpensesBoard() {
   }
 
   function commitCenter(updater) {
-    if (!isLoadedRef.current) return;
+    if (!isLoadedRef.current || financeLogoutRequestedRef.current) return;
     const nextCenter = typeof updater === "function" ? updater(centerRef.current) : updater;
     centerRef.current = nextCenter;
     setCenter(nextCenter);
@@ -595,6 +686,16 @@ function ExpensesBoard() {
               Повторить
             </button>
           ) : null}
+          {isLoaded ? (
+            <button
+              type="button"
+              className="analytics-expenses-secondary analytics-expenses-logout"
+              onClick={handleFinanceLogout}
+              disabled={isLockingFinance}
+            >
+              {isLockingFinance ? "Закрываю..." : "Выйти"}
+            </button>
+          ) : null}
           <button type="button" className="analytics-expenses-add" disabled={!isLoaded} onClick={() => openNewExpense()}>
             + Добавить расход
           </button>
@@ -613,20 +714,43 @@ function ExpensesBoard() {
         <section className="analytics-expenses-load-state analytics-surface">
           <span className="analytics-kicker">Данные расходов</span>
           <h3>
-            {saveState.includes("Требуется")
-              ? "Нужен доступ к финансовым данным"
+            {financeAccessRequired
+              ? "Введите пароль"
               : saveState.includes("Ошибка")
                 ? "Не удалось загрузить финансовый реестр"
                 : "Загружаю расходы..."}
           </h3>
           <p>
-            {saveState.includes("Требуется")
-              ? "Получите у SuperSUS-бота ссылку командой /marketing_access, откройте её один раз и вернитесь в раздел расходов."
+            {financeAccessRequired
+              ? "Общий пароль Центра расходов."
               : saveState.includes("Ошибка")
                 ? "Ничего не перезаписано. Проверьте соединение с сервером и повторите загрузку."
                 : "Получаю актуальные записи, бюджеты и календарь оплат."}
           </p>
-          {saveState.includes("Ошибка") || saveState.includes("Требуется") ? (
+          {financeAccessRequired ? (
+            <form className="analytics-expenses-access-form" onSubmit={handleFinanceAccess}>
+              <label htmlFor="finance-access-password">Пароль доступа</label>
+              <div>
+                <input
+                  id="finance-access-password"
+                  type="password"
+                  value={financePassword}
+                  onChange={(event) => setFinancePassword(event.target.value)}
+                  autoComplete="current-password"
+                  autoFocus
+                  aria-invalid={Boolean(financeAccessError)}
+                />
+                <button
+                  type="submit"
+                  className="analytics-expenses-add"
+                  disabled={!financePassword.trim() || isUnlockingFinance}
+                >
+                  {isUnlockingFinance ? "Проверяю..." : "Открыть"}
+                </button>
+              </div>
+              {financeAccessError ? <small role="alert">{financeAccessError}</small> : null}
+            </form>
+          ) : saveState.includes("Ошибка") ? (
             <button type="button" className="analytics-expenses-secondary" onClick={() => {
               setSaveState("Загрузка...");
               setLoadAttempt((attempt) => attempt + 1);

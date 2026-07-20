@@ -141,6 +141,11 @@ assert.doesNotMatch(
 );
 assert.match(expenseBoard, /supersus-expense-backup-v1/);
 assert.match(expenseBoard, /shouldRecoverLocal/);
+assert.match(expenseBoard, /unlockFinanceContent/);
+assert.match(expenseBoard, /lockFinanceContent/);
+assert.match(expenseBoard, /clearLocalExpenseBackup/);
+assert.match(expenseBoard, /Пароль доступа/);
+assert.doesNotMatch(expenseBoard, /marketing_access/);
 
 const contentApi = await readFile(
   new URL("../server/content-api.mjs", import.meta.url),
@@ -149,6 +154,8 @@ const contentApi = await readFile(
 assert.match(contentApi, /"atlas\.analytics\.expenseCenter\.v2"/);
 assert.match(contentApi, /expense_revision_conflict/);
 assert.match(contentApi, /finance_read_auth_required/);
+assert.match(contentApi, /ATLAS_FINANCE_PASSWORD/);
+assert.match(contentApi, /\/api\/finance\/browser-session/);
 assert.match(contentApi, /expenseCenterMutationQueue/);
 
-console.log("Expense center verified: data model, recurrence, summaries, routing, and Session preservation.");
+console.log("Expense center verified: data model, recurrence, summaries, routing, password access, and Session preservation.");

@@ -1,5 +1,5 @@
 import http from "node:http";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
@@ -35,6 +35,16 @@ const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLi
 const MARKETING_BROWSER_LINK_REQUEST_KEY = "atlas.analytics.marketingBrowserLinkRequest.v1";
 const MARKETING_BROWSER_SESSIONS_KEY = "atlas.analytics.marketingBrowserSessions.v1";
 const MARKETING_SESSION_COOKIE = "atlas_marketing_session";
+const FINANCE_BROWSER_SESSIONS_KEY = "atlas.analytics.financeBrowserSessions.v1";
+const FINANCE_SESSION_COOKIE = "atlas_finance_session";
+const FINANCE_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const FINANCE_LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const FINANCE_LOGIN_MAX_ATTEMPTS = 8;
+const FINANCE_LOGIN_MAX_BUCKETS = 1000;
+const FINANCE_PASSWORD = String(process.env.ATLAS_FINANCE_PASSWORD || "").trim();
+const FINANCE_PASSWORD_FINGERPRINT = FINANCE_PASSWORD
+  ? scryptSync(FINANCE_PASSWORD, "atlas-finance-session-v1", 32).toString("hex")
+  : "";
 const INTERNAL_CONTENT_KEYS = new Set([
   MARKETING_YOUTUBE_MONITOR_STATE_KEY,
   MARKETING_DASHBOARD_MONITOR_STATE_KEY,
@@ -42,6 +52,7 @@ const INTERNAL_CONTENT_KEYS = new Set([
   MARKETING_TELEGRAM_LINK_REQUEST_KEY,
   MARKETING_BROWSER_LINK_REQUEST_KEY,
   MARKETING_BROWSER_SESSIONS_KEY,
+  FINANCE_BROWSER_SESSIONS_KEY,
 ]);
 const MARKETING_YOUTUBE_BOARD_URL = process.env.ATLAS_MARKETING_YOUTUBE_BOARD_URL
   || "https://pupanel.cc/workspaces/cmp5aou0h0005l5b26ldwn59c/marketing/youtube";
@@ -199,7 +210,9 @@ let atlasFlowCache = null;
 
 let telegramEnvCache = null;
 let marketingSessionMutationQueue = Promise.resolve();
+let financeSessionMutationQueue = Promise.resolve();
 let expenseCenterMutationQueue = Promise.resolve();
+const financeLoginAttempts = new Map();
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
@@ -230,6 +243,38 @@ function parseCookies(request) {
 
 function hashMarketingSession(token = "") {
   return createHash("sha256").update(String(token)).digest("hex");
+}
+
+function secureTextEqual(supplied = "", expected = "") {
+  const suppliedHash = createHash("sha256").update(String(supplied)).digest();
+  const expectedHash = createHash("sha256").update(String(expected)).digest();
+  return timingSafeEqual(suppliedHash, expectedHash);
+}
+
+function getFinanceLoginKey(request) {
+  const realIp = String(request.headers["x-real-ip"] || "").trim();
+  const forwarded = String(request.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return realIp || forwarded || request.socket?.remoteAddress || "unknown";
+}
+
+function getFinanceLoginAttempt(request) {
+  let key = getFinanceLoginKey(request);
+  const now = Date.now();
+  if (financeLoginAttempts.size >= FINANCE_LOGIN_MAX_BUCKETS) {
+    for (const [storedKey, storedAttempt] of financeLoginAttempts) {
+      if (storedAttempt.resetAt <= now) financeLoginAttempts.delete(storedKey);
+    }
+  }
+  if (!financeLoginAttempts.has(key) && financeLoginAttempts.size >= FINANCE_LOGIN_MAX_BUCKETS) {
+    key = "overflow";
+  }
+  const current = financeLoginAttempts.get(key);
+  if (!current || current.resetAt <= now) {
+    const next = { count: 0, resetAt: now + FINANCE_LOGIN_WINDOW_MS };
+    financeLoginAttempts.set(key, next);
+    return { key, attempt: next };
+  }
+  return { key, attempt: current };
 }
 
 function hasInternalMonitorAccess(request) {
@@ -2741,6 +2786,95 @@ async function hasMarketingWriteSession(request) {
   ));
 }
 
+async function hasFinancePasswordSession(request) {
+  const token = parseCookies(request)[FINANCE_SESSION_COOKIE] || "";
+  if (!FINANCE_PASSWORD || !token) return false;
+
+  const now = Date.now();
+  const tokenHash = hashMarketingSession(token);
+  const state = await readContent(FINANCE_BROWSER_SESSIONS_KEY, { sessions: [] });
+  return (Array.isArray(state.sessions) ? state.sessions : []).some((session) => (
+    session?.tokenHash === tokenHash
+    && session?.passwordFingerprint === FINANCE_PASSWORD_FINGERPRINT
+    && Date.parse(session.expiresAt || "") > now
+  ));
+}
+
+async function hasFinanceContentAccess(request) {
+  return hasFinancePasswordSession(request);
+}
+
+async function exchangeFinanceBrowserSession(request) {
+  if (!FINANCE_PASSWORD) {
+    return { ok: false, status: 503, error: "finance_password_not_configured" };
+  }
+
+  const body = await readBody(request);
+  const parsed = JSON.parse(body || "{}");
+  const suppliedPassword = String(parsed.password || "").trim();
+  const { key: loginKey, attempt } = getFinanceLoginAttempt(request);
+  if (attempt.count >= FINANCE_LOGIN_MAX_ATTEMPTS) {
+    return { ok: false, status: 429, error: "finance_login_rate_limited" };
+  }
+  if (!suppliedPassword || !secureTextEqual(suppliedPassword, FINANCE_PASSWORD)) {
+    financeLoginAttempts.set(loginKey, { ...attempt, count: attempt.count + 1 });
+    return { ok: false, status: 401, error: "invalid_finance_password" };
+  }
+  financeLoginAttempts.delete(loginKey);
+
+  const execute = async () => {
+    const token = randomBytes(32).toString("hex");
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + FINANCE_SESSION_TTL_MS).toISOString();
+    const state = await readContent(FINANCE_BROWSER_SESSIONS_KEY, { sessions: [] });
+    const sessions = (Array.isArray(state.sessions) ? state.sessions : [])
+      .filter((session) => Date.parse(session?.expiresAt || "") > now.getTime())
+      .slice(-99);
+    sessions.push({
+      tokenHash: hashMarketingSession(token),
+      passwordFingerprint: FINANCE_PASSWORD_FINGERPRINT,
+      createdAt: now.toISOString(),
+      expiresAt,
+    });
+    await writeInternalState(FINANCE_BROWSER_SESSIONS_KEY, { sessions });
+
+    const host = String(request.headers.host || "").split(":")[0];
+    const secureAttribute = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) ? "" : "; Secure";
+    return {
+      ok: true,
+      status: 200,
+      expiresAt,
+      cookie: `${FINANCE_SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly${secureAttribute}; SameSite=Strict; Path=/; Max-Age=${FINANCE_SESSION_TTL_MS / 1000}`,
+    };
+  };
+
+  const result = financeSessionMutationQueue.then(execute, execute);
+  financeSessionMutationQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
+async function revokeFinanceBrowserSession(request) {
+  const token = parseCookies(request)[FINANCE_SESSION_COOKIE] || "";
+  const host = String(request.headers.host || "").split(":")[0];
+  const secureAttribute = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) ? "" : "; Secure";
+  const clearCookie = `${FINANCE_SESSION_COOKIE}=; HttpOnly${secureAttribute}; SameSite=Strict; Path=/; Max-Age=0`;
+  if (!token) return clearCookie;
+
+  const tokenHash = hashMarketingSession(token);
+  const execute = async () => {
+    const state = await readContent(FINANCE_BROWSER_SESSIONS_KEY, { sessions: [] });
+    const currentSessions = Array.isArray(state.sessions) ? state.sessions : [];
+    const sessions = currentSessions.filter((session) => session?.tokenHash !== tokenHash);
+    if (sessions.length === currentSessions.length) return clearCookie;
+    await writeInternalState(FINANCE_BROWSER_SESSIONS_KEY, { sessions });
+    return clearCookie;
+  };
+
+  const result = financeSessionMutationQueue.then(execute, execute);
+  financeSessionMutationQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
 async function exchangeMarketingBrowserSession(request) {
   const body = await readBody(request);
   const parsed = JSON.parse(body || "{}");
@@ -2822,6 +2956,28 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/marketing/browser-session" && request.method === "GET") {
       sendJson(response, 200, { ok: true, authorized: await hasMarketingWriteSession(request) });
+      return;
+    }
+
+    if (url.pathname === "/api/finance/browser-session" && request.method === "POST") {
+      const result = await exchangeFinanceBrowserSession(request);
+      sendJson(
+        response,
+        result.status,
+        result.ok ? { ok: true, expiresAt: result.expiresAt } : { ok: false, error: result.error },
+        result.cookie ? { "Set-Cookie": result.cookie } : {},
+      );
+      return;
+    }
+
+    if (url.pathname === "/api/finance/browser-session" && request.method === "GET") {
+      sendJson(response, 200, { ok: true, authorized: await hasFinanceContentAccess(request) });
+      return;
+    }
+
+    if (url.pathname === "/api/finance/browser-session" && request.method === "DELETE") {
+      const cookie = await revokeFinanceBrowserSession(request);
+      sendJson(response, 200, { ok: true }, { "Set-Cookie": cookie });
       return;
     }
 
@@ -2989,7 +3145,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "GET") {
-      if (FINANCE_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
+      if (FINANCE_CONTENT_KEYS.has(key) && !await hasFinanceContentAccess(request)) {
         sendJson(response, 401, { ok: false, error: "finance_read_auth_required" });
         return;
       }
@@ -3007,7 +3163,11 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (request.method === "PUT") {
-      if (MARKETING_WRITE_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
+      if (FINANCE_CONTENT_KEYS.has(key) && !await hasFinanceContentAccess(request)) {
+        sendJson(response, 401, { ok: false, error: "finance_write_auth_required" });
+        return;
+      }
+      if (!FINANCE_CONTENT_KEYS.has(key) && MARKETING_WRITE_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
         sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
         return;
       }
