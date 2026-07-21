@@ -127,14 +127,25 @@ npm run memory:telegram:sync
 
 ## Установка на сервере
 
-Перед настройкой в `/opt/hermes/.env` должен находиться `HINDSIGHT_LLM_API_KEY`. Затем:
+Hermes должен быть авторизован в Nous через OAuth. Установщик не создаёт и не
+перезаписывает токены, а только ставит компоненты, systemd-службы и закрывает
+права на конфигурационные файлы:
 
 ```bash
-sudo -u hermes -H /opt/hermes/configure-hermes-hindsight.sh
-sudo -u hermes -H /opt/hermes/.local/bin/hermes memory status
+sudo bash /tmp/atlas-memory-deploy/install-hermes-memory.sh /tmp/atlas-memory-deploy
+sudo -u hermes env HOME=/opt/hermes HERMES_HOME=/opt/hermes \
+  /opt/hermes/.hermes/hermes-agent/venv/bin/python \
+  /opt/hermes/prepare-hermes-hindsight-nous.py
 ```
 
-После тестового retain/recall выставляется `HERMES_LONG_TERM_MEMORY_READY=1` и запускается первая синхронизация.
+После успешного retain/recall выставляется `HERMES_LONG_TERM_MEMORY_READY=1`,
+запускается первая синхронизация и таймер:
+
+```bash
+sudo systemctl start atlas-hermes-hindsight-nous.service
+sudo systemctl enable --now atlas-telegram-memory-sync.timer
+sudo systemctl start atlas-telegram-memory-sync.service
+```
 
 ## Проверка
 
