@@ -6,11 +6,13 @@ HERMES_BIN="${HERMES_BIN:-$HERMES_HOME/.local/bin/hermes}"
 HERMES_PYTHON="${HERMES_PYTHON:-$HERMES_HOME/.hermes/hermes-agent/venv/bin/python}"
 MODE="${HINDSIGHT_MODE:-local_embedded}"
 BANK_ID="${HINDSIGHT_BANK_ID:-atlas-global}"
-LLM_PROVIDER="${HINDSIGHT_LLM_PROVIDER:-openai}"
-INFERENCE_PROVIDER="${HERMES_INFERENCE_PROVIDER:-custom}"
-INFERENCE_MODEL="${HERMES_INFERENCE_MODEL:-gpt-5-mini}"
-INFERENCE_BASE_URL="${HERMES_INFERENCE_BASE_URL:-https://api.openai.com/v1}"
-CONFIG_DIR="$HERMES_HOME/.hermes/hindsight"
+LLM_PROVIDER="${HINDSIGHT_LLM_PROVIDER:-nous}"
+LLM_MODEL="${HINDSIGHT_LLM_MODEL:-~openai/gpt-mini-latest}"
+LLM_BASE_URL="${HINDSIGHT_API_LLM_BASE_URL:-https://inference-api.nousresearch.com/v1}"
+INFERENCE_PROVIDER="${HERMES_INFERENCE_PROVIDER:-nous}"
+INFERENCE_MODEL="${HERMES_INFERENCE_MODEL:-~openai/gpt-mini-latest}"
+INFERENCE_BASE_URL="${HERMES_INFERENCE_BASE_URL:-https://inference-api.nousresearch.com/v1}"
+CONFIG_DIR="$HERMES_HOME/hindsight"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 ENV_FILE="$HERMES_HOME/.env"
 
@@ -25,9 +27,11 @@ if [ ! -x "$HERMES_PYTHON" ]; then
 fi
 
 if [ "$MODE" = "local_embedded" ]; then
-  if [ -z "${HINDSIGHT_LLM_API_KEY:-}" ] && ! grep -q '^HINDSIGHT_LLM_API_KEY=.' "$HERMES_HOME/.env" 2>/dev/null; then
-    echo "HINDSIGHT_LLM_API_KEY is required for local_embedded mode" >&2
-    exit 1
+  if [ "$LLM_PROVIDER" != "nous" ]; then
+    if [ -z "${HINDSIGHT_LLM_API_KEY:-}" ] && ! grep -q '^HINDSIGHT_LLM_API_KEY=.' "$HERMES_HOME/.env" 2>/dev/null; then
+      echo "HINDSIGHT_LLM_API_KEY is required for local_embedded mode" >&2
+      exit 1
+    fi
   fi
 elif [ "$MODE" = "local_external" ]; then
   if [ -z "${HINDSIGHT_API_URL:-}" ]; then
@@ -44,13 +48,17 @@ else
   exit 1
 fi
 
+export HINDSIGHT_LLM_PROVIDER="$LLM_PROVIDER"
+export HINDSIGHT_LLM_MODEL="$LLM_MODEL"
+export HINDSIGHT_API_LLM_BASE_URL="$LLM_BASE_URL"
+
 if [ "$MODE" = "local_embedded" ] && ! "$HERMES_PYTHON" -c 'import hindsight, hindsight_embed' >/dev/null 2>&1; then
   echo "Installing the free self-hosted Hindsight runtime into Hermes..."
   "$HERMES_PYTHON" -m pip install --quiet --upgrade hindsight-all
 fi
 
-# The same OpenAI key can power both local Hindsight extraction and Hermes
-# inference. Keep it in Hermes' private env file instead of the systemd unit.
+# A custom OpenAI-compatible provider still needs a private static key. Nous
+# uses the shared OAuth store and rotates its inference token automatically.
 if [ "$INFERENCE_PROVIDER" = "custom" ] && ! grep -q '^OPENAI_API_KEY=.' "$ENV_FILE" 2>/dev/null; then
   inference_key="${OPENAI_API_KEY:-${HINDSIGHT_LLM_API_KEY:-}}"
   if [ -z "$inference_key" ] && [ -f "$ENV_FILE" ]; then

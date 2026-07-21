@@ -69,6 +69,10 @@ HERMES_OWNER_TELEGRAM_IDS=<telegram-user-id>
 - embeddings и reranking выполняются локально;
 - daemon завершает работу после пяти минут бездействия.
 
+При подключённой подписке Nous Portal перед каждой синхронизацией служба
+`atlas-hermes-hindsight-nous.service` штатно обновляет OAuth credential и
+передаёт Hindsight временный inference key. Ключ не попадает в GitHub и логи.
+
 Конфигурация:
 
 ```text
