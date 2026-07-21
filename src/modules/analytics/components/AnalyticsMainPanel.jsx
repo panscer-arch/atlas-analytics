@@ -3,6 +3,7 @@ import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
 import CrmDashboardTab from "./CrmDashboardTab";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
+import HermesAssistantBoard from "./HermesAssistantBoard";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import LifeDiaryBoard from "./LifeDiaryBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
@@ -88,6 +89,7 @@ export default function AnalyticsMainPanel({
   }
 
   if (activeTab === "session") return <WorkSessionQueue />;
+  if (activeTab === "hermes") return <HermesAssistantBoard />;
   if (activeTab === "tasks") return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} />;
   if (activeTab === "taskMonitor") {
     return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} initialView="monitor" />;

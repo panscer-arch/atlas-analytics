@@ -66,6 +66,7 @@ const MAIN_TAB_BOARD_IDS = {
   expenses: "expenses",
   tasks: "launch",
   content: "materials",
+  hermes: "hermesAssistant",
   diary: "diary",
 };
 const ANALYTICS_TAB_BOARD_IDS = {
@@ -615,6 +616,7 @@ function AnalyticsPage() {
 
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
+    { id: "hermes", label: "Гермес" },
     { id: "session", label: "Сессия" },
     { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
@@ -701,7 +703,7 @@ function AnalyticsPage() {
         }}
         onParserOpen={() => handleMainTabChange("parser")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
-        hermesUrl="/hermes/"
+        onHermesOpen={() => handleMainTabChange("hermes")}
         crmUrl="https://crm.46.202.153.132.sslip.io"
         mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}

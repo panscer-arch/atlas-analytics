@@ -165,6 +165,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (!boardId) return "dashboard";
   if (boardId === "dashboard") return "dashboard";
   if (boardId === "sessionQueue") return "session";
+  if (boardId === "hermesAssistant") return "hermes";
   if (boardId === "expenses") return "expenses";
   if (boardId === "analytics" || boardId.startsWith("analytics-") || boardId === "contractBalances" || boardId === "contracts") return "analytics";
   if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "utmBuilder" || boardId === "telegramParser" || boardId === "influencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "segmentOutreach" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";

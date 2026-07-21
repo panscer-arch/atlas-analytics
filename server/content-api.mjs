@@ -39,6 +39,10 @@ const MARKETING_SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const MARKETING_LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const MARKETING_LOGIN_MAX_ATTEMPTS = 8;
 const MARKETING_LOGIN_MAX_BUCKETS = 1000;
+const HERMES_ASSISTANT_WINDOW_MS = 10 * 60 * 1000;
+const HERMES_ASSISTANT_MAX_REQUESTS = 30;
+const HERMES_ASSISTANT_MAX_PROMPT_LENGTH = 12000;
+const HERMES_ASSISTANT_TIMEOUT_MS = 180000;
 const SUPERSUS_ACCESS_PASSWORD_HASH = String(
   process.env.SUPERSUS_ACCESS_PASSWORD_HASH
   || "734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e",
@@ -222,6 +226,7 @@ let financeSessionMutationQueue = Promise.resolve();
 let expenseCenterMutationQueue = Promise.resolve();
 const financeLoginAttempts = new Map();
 const marketingLoginAttempts = new Map();
+const hermesAssistantRequests = new Map();
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
@@ -363,6 +368,74 @@ async function getTelegramConfig() {
     .filter(Boolean))];
 
   return { token, targetChatIds };
+}
+
+function getHermesAssistantRateLimit(request) {
+  const now = Date.now();
+  const key = String(request.headers["x-forwarded-for"] || request.socket?.remoteAddress || "unknown")
+    .split(",")[0]
+    .trim();
+  const current = hermesAssistantRequests.get(key);
+  if (!current || current.resetAt <= now) {
+    if (hermesAssistantRequests.size > 1000) {
+      for (const [storedKey, value] of hermesAssistantRequests) {
+        if (value.resetAt <= now) hermesAssistantRequests.delete(storedKey);
+      }
+    }
+    const next = { count: 1, resetAt: now + HERMES_ASSISTANT_WINDOW_MS };
+    hermesAssistantRequests.set(key, next);
+    return { allowed: true, retryAfter: 0 };
+  }
+
+  current.count += 1;
+  if (current.count > HERMES_ASSISTANT_MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+async function askHermesAssistant(prompt) {
+  const fileEnv = await readTelegramEnv();
+  const bridgeUrl = String(process.env.HERMES_BRIDGE_URL || fileEnv.HERMES_BRIDGE_URL || "").trim();
+  const bridgeToken = String(process.env.HERMES_BRIDGE_TOKEN || fileEnv.HERMES_BRIDGE_TOKEN || "").trim();
+  if (!bridgeUrl || !bridgeToken) {
+    return { ok: false, status: 503, error: "hermes_not_configured" };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), HERMES_ASSISTANT_TIMEOUT_MS);
+  try {
+    const response = await fetch(bridgeUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${bridgeToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        memoryScope: "global",
+        source: {
+          chatId: "supersus-hermes-assistant",
+          chatTitle: "SuperSUS — Личный помощник",
+          authorName: "Digitex",
+          rawText: prompt,
+          receivedAt: new Date().toISOString(),
+        },
+      }),
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error("Hermes assistant bridge error:", response.status, String(payload?.error || "hermes_failed").slice(-500));
+      return { ok: false, status: response.status || 502, error: response.status === 504 ? "hermes_timeout" : "hermes_failed" };
+    }
+    return { ok: true, answer: String(payload?.answer || "").trim() };
+  } catch (error) {
+    if (error?.name === "AbortError") return { ok: false, status: 504, error: "hermes_timeout" };
+    return { ok: false, status: 502, error: "hermes_unavailable" };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function getYouTrackTelegramChatId() {
@@ -3002,6 +3075,32 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/marketing/browser-session" && request.method === "GET") {
       sendJson(response, 200, { ok: true, authorized: await hasMarketingWriteSession(request) });
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/hermes-message" && request.method === "POST") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "assistant_auth_required" });
+        return;
+      }
+      const rateLimit = getHermesAssistantRateLimit(request);
+      if (!rateLimit.allowed) {
+        sendJson(response, 429, { ok: false, error: "assistant_rate_limit" }, { "Retry-After": String(rateLimit.retryAfter) });
+        return;
+      }
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const prompt = String(parsed?.prompt || "").trim();
+      if (!prompt || prompt.length > HERMES_ASSISTANT_MAX_PROMPT_LENGTH) {
+        sendJson(response, 400, { ok: false, error: prompt ? "prompt_too_long" : "empty_prompt" });
+        return;
+      }
+      const result = await askHermesAssistant(prompt);
+      sendJson(
+        response,
+        result.ok ? 200 : result.status || 502,
+        result.ok ? { ok: true, answer: result.answer } : { ok: false, error: result.error },
+      );
       return;
     }
 
