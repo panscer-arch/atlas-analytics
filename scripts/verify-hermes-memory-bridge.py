@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "server" / "hermes-telegram-bridge.py"
@@ -27,5 +28,30 @@ normal_prompt = MODULE.build_prompt({
 })
 assert "Ты отвечаешь Digitex" in normal_prompt
 assert "Что решили?" in normal_prompt
+
+calls = []
+
+
+def fake_run(command, **kwargs):
+    calls.append(command)
+    if len(calls) == 1:
+        return SimpleNamespace(returncode=1, stdout="", stderr="No session found matching 'chat-n100123'.")
+    if len(calls) == 2:
+        return SimpleNamespace(returncode=0, stdout="готово", stderr="session_id: test_session_1")
+    return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+
+real_run = MODULE.subprocess.run
+MODULE.subprocess.run = fake_run
+try:
+    created = MODULE.run_hermes("test", {"chatId": "-100123"}, "chat", {})
+finally:
+    MODULE.subprocess.run = real_run
+
+assert created.returncode == 0
+assert calls[0][1:3] == ["--continue", "chat-n100123"]
+assert calls[1][1:3] == ["chat", "--query"]
+assert calls[2][1:4] == ["sessions", "rename", "test_session_1"]
+assert calls[2][4] == "chat-n100123"
 
 print("Hermes memory bridge checks passed")

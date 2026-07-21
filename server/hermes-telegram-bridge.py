@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -12,6 +13,8 @@ TOKEN = os.environ.get("HERMES_TELEGRAM_BRIDGE_TOKEN", "")
 HERMES_HOME = os.environ.get("HERMES_HOME", "/opt/hermes")
 HERMES_BIN = os.environ.get("HERMES_BIN", f"{HERMES_HOME}/.local/bin/hermes")
 TIMEOUT_SECONDS = int(os.environ.get("HERMES_TELEGRAM_BRIDGE_TIMEOUT", "180"))
+SESSION_LOCKS = {}
+SESSION_LOCKS_GUARD = threading.Lock()
 
 
 def json_response(handler, status, payload):
@@ -65,6 +68,69 @@ def build_prompt(payload):
     return "\n".join(line for line in context if line != "")
 
 
+def get_session_lock(name):
+    with SESSION_LOCKS_GUARD:
+        return SESSION_LOCKS.setdefault(name, threading.Lock())
+
+
+def run_hermes(prompt, source, memory_scope, env):
+    name = session_name(source, memory_scope)
+    with get_session_lock(name):
+        continued = subprocess.run(
+            [
+                HERMES_BIN,
+                "--continue",
+                name,
+                "--accept-hooks",
+                "-z",
+                prompt,
+            ],
+            cwd=HERMES_HOME,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=TIMEOUT_SECONDS,
+            check=False,
+        )
+        combined = f"{continued.stdout}\n{continued.stderr}"
+        if continued.returncode == 0 or "No session found matching" not in combined:
+            return continued
+
+        created = subprocess.run(
+            [
+                HERMES_BIN,
+                "chat",
+                "--query",
+                prompt,
+                "--source",
+                "tool",
+                "--quiet",
+                "--accept-hooks",
+            ],
+            cwd=HERMES_HOME,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=TIMEOUT_SECONDS,
+            check=False,
+        )
+        session_match = re.search(r"session_id:\s*([A-Za-z0-9_.-]+)", f"{created.stdout}\n{created.stderr}")
+        if created.returncode == 0 and session_match:
+            subprocess.run(
+                [HERMES_BIN, "sessions", "rename", session_match.group(1), name],
+                cwd=HERMES_HOME,
+                env=env,
+                text=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=30,
+                check=False,
+            )
+        return created
+
+
 class BridgeHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"[hermes-telegram-bridge] {self.address_string()} {fmt % args}", flush=True)
@@ -107,22 +173,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
         env["HERMES_ACCEPT_HOOKS"] = "1"
 
         try:
-            result = subprocess.run(
-                [
-                    HERMES_BIN,
-                    "--continue",
-                    session_name(payload.get("source") or {}, payload.get("memoryScope") or "chat"),
-                    "--accept-hooks",
-                    "-z",
-                    build_prompt(payload),
-                ],
-                cwd=HERMES_HOME,
-                env=env,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=TIMEOUT_SECONDS,
-                check=False,
+            result = run_hermes(
+                build_prompt(payload),
+                payload.get("source") or {},
+                payload.get("memoryScope") or "chat",
+                env,
             )
         except subprocess.TimeoutExpired:
             json_response(self, 504, {"error": "hermes_timeout"})
