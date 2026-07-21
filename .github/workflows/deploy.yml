@@ -443,6 +443,37 @@ jobs:
             sudo journalctl -u atlas-content-api.service -n 40 --no-pager || true
             exit 1
           fi
+          REMOTE
+
+      - name: Configure content API routes
+        if: steps.server_changes.outputs.content_api == 'true'
+        shell: bash
+        timeout-minutes: 4
+        run: |
+          run_with_retry() {
+            local label="$1"
+            shift
+            for attempt in 1 2 3 4 5; do
+              if "$@"; then
+                return 0
+              else
+                local status=$?
+              fi
+              echo "$label attempt $attempt failed with status $status"
+              if [ "$attempt" -eq 5 ]; then
+                return "$status"
+              fi
+              sleep 15
+            done
+          }
+
+          run_with_retry "nginx routes ssh" ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=25 \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
 
           NGINX_FILES="$(sudo grep -rlE 'supersussystem.com|analytics.pupanel.cc|location /api/content/' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true)"
           if [ -z "$NGINX_FILES" ]; then
