@@ -12,6 +12,7 @@ import PoolMonitorPanel from "./PoolMonitorPanel";
 import RegionalHiringPanel from "./RegionalHiringPanel";
 import SegmentOutreachPanel from "./SegmentOutreachPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
+import UtmBuilderPanel from "./UtmBuilderPanel";
 import Web3SegmentsPanel from "./Web3SegmentsPanel";
 import YouTubeApiSearchPanel from "./YouTubeApiSearchPanel";
 import {
@@ -65,6 +66,11 @@ const PARSER_TABS = [
     id: "creatives",
     label: "Креативы / SEO",
     hint: "тексты и баннеры",
+  },
+  {
+    id: "utmBuilder",
+    label: "UTM-ссылки",
+    hint: "кампании",
   },
   {
     id: "monitors",
@@ -131,6 +137,7 @@ const PARSER_TABS = [
 const PARSER_TAB_BOARD_IDS = {
   overview: "parser",
   creatives: "atlasCreatives",
+  utmBuilder: "utmBuilder",
   monitors: "hyipParser",
   telegram: "telegramParser",
   influencers: "influencers",
@@ -832,6 +839,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         />
       ) : activeTab === "creatives" ? (
         <AtlasCreativesPanel />
+      ) : activeTab === "utmBuilder" ? (
+        <UtmBuilderPanel />
       ) : activeTab === "telegram" ? (
         <TelegramChannelsParserPanel />
       ) : activeTab === "influencers" ? (
