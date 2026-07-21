@@ -6,8 +6,12 @@ HERMES_BIN="${HERMES_BIN:-$HERMES_HOME/.local/bin/hermes}"
 HERMES_PYTHON="${HERMES_PYTHON:-$HERMES_HOME/.hermes/hermes-agent/venv/bin/python}"
 MODE="${HINDSIGHT_MODE:-local_embedded}"
 BANK_ID="${HINDSIGHT_BANK_ID:-atlas-global}"
+LLM_PROVIDER="${HINDSIGHT_LLM_PROVIDER:-openai}"
+INFERENCE_PROVIDER="${HERMES_INFERENCE_PROVIDER:-$LLM_PROVIDER}"
+INFERENCE_MODEL="${HERMES_INFERENCE_MODEL:-${HINDSIGHT_LLM_MODEL:-gpt-4o-mini}}"
 CONFIG_DIR="$HERMES_HOME/.hermes/hindsight"
 CONFIG_FILE="$CONFIG_DIR/config.json"
+ENV_FILE="$HERMES_HOME/.env"
 
 if [ ! -x "$HERMES_BIN" ]; then
   echo "Hermes executable not found: $HERMES_BIN" >&2
@@ -42,6 +46,21 @@ fi
 if [ "$MODE" = "local_embedded" ] && ! "$HERMES_PYTHON" -c 'import hindsight, hindsight_embed' >/dev/null 2>&1; then
   echo "Installing the free self-hosted Hindsight runtime into Hermes..."
   "$HERMES_PYTHON" -m pip install --quiet --upgrade hindsight-all
+fi
+
+# The same OpenAI key can power both local Hindsight extraction and Hermes
+# inference. Keep it in Hermes' private env file instead of the systemd unit.
+if [ "$INFERENCE_PROVIDER" = "openai" ] && ! grep -q '^OPENAI_API_KEY=.' "$ENV_FILE" 2>/dev/null; then
+  inference_key="${OPENAI_API_KEY:-${HINDSIGHT_LLM_API_KEY:-}}"
+  if [ -z "$inference_key" ] && [ -f "$ENV_FILE" ]; then
+    inference_key="$(sed -n 's/^HINDSIGHT_LLM_API_KEY=//p' "$ENV_FILE" | tail -n 1)"
+  fi
+  if [ -z "$inference_key" ]; then
+    echo "OPENAI_API_KEY or HINDSIGHT_LLM_API_KEY is required for Hermes inference" >&2
+    exit 1
+  fi
+  printf 'OPENAI_API_KEY=%s\n' "$inference_key" >> "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
 fi
 
 mkdir -p "$CONFIG_DIR"
@@ -96,6 +115,8 @@ temporary.replace(path)
 PY
 
 "$HERMES_BIN" config set memory.provider hindsight
+"$HERMES_BIN" config set model.provider "$INFERENCE_PROVIDER"
+"$HERMES_BIN" config set model.default "$INFERENCE_MODEL"
 "$HERMES_BIN" memory status
 
 echo "Hindsight configured: mode=$MODE bank=$BANK_ID config=$CONFIG_FILE"
