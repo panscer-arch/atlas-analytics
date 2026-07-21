@@ -10,10 +10,12 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { prepareHermesSpeechText, resolveRecognizedSpeech } from "../utils/hermesVoice.js";
 import "./HermesAssistantBoard.css";
 
 const HISTORY_STORAGE_KEY = "atlas.hermes.assistantHistory.v1";
 const MAX_HISTORY_MESSAGES = 40;
+const MAX_SPEECH_TEXT_LENGTH = 3500;
 
 const QUICK_PROMPTS = [
   "Что сегодня решили по Atlas?",
@@ -60,40 +62,29 @@ function getRecognitionConstructor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-function getRussianVoice() {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  return voices.find((voice) => /^ru[-_]/i.test(voice.lang)) || voices[0] || null;
-}
-
-function prepareSpeechText(value) {
-  return String(value || "")
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/https?:\/\/\S+/g, " ")
-    .replace(/[*#_>~-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 export default function HermesAssistantBoard() {
   const [messages, setMessages] = useState(readHistory);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceError, setVoiceError] = useState("");
   const [connection, setConnection] = useState("checking");
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
   const recognitionRef = useRef(null);
+  const recognitionErrorRef = useRef(false);
   const transcriptEndRef = useRef(null);
   const pendingVoiceTextRef = useRef("");
+  const latestVoiceTextRef = useRef("");
   const requestInFlightRef = useRef(false);
   const requestControllerRef = useRef(null);
+  const speechControllerRef = useRef(null);
+  const audioRef = useRef(null);
+  const audioUrlRef = useRef("");
 
   const recognitionSupported = useMemo(() => Boolean(getRecognitionConstructor()), []);
-  const speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+  const speechSupported = typeof window !== "undefined" && typeof window.Audio === "function";
   const statusCopy = STATUS_COPY[status] || STATUS_COPY.idle;
   const lastAssistantMessage = useMemo(
     () => [...messages].reverse().find((message) => message.role === "assistant") || null,
@@ -136,31 +127,66 @@ export default function HermesAssistantBoard() {
   useEffect(() => () => {
     recognitionRef.current?.abort?.();
     requestControllerRef.current?.abort?.();
-    window.speechSynthesis?.cancel?.();
+    speechControllerRef.current?.abort?.();
+    audioRef.current?.pause?.();
+    if (audioUrlRef.current) window.URL.revokeObjectURL(audioUrlRef.current);
   }, []);
 
   function stopSpeaking() {
-    window.speechSynthesis?.cancel?.();
+    speechControllerRef.current?.abort?.();
+    speechControllerRef.current = null;
+    audioRef.current?.pause?.();
+    audioRef.current = null;
+    if (audioUrlRef.current) {
+      window.URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = "";
+    }
     setStatus("idle");
   }
 
-  function speakAnswer(text) {
+  async function speakAnswer(text) {
     if (!voiceEnabled || !speechSupported || !text.trim()) {
       setStatus("idle");
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(prepareSpeechText(text));
-    utterance.lang = "ru-RU";
-    utterance.rate = 1;
-    utterance.pitch = 0.95;
-    const voice = getRussianVoice();
-    if (voice) utterance.voice = voice;
-    utterance.onstart = () => setStatus("speaking");
-    utterance.onend = () => setStatus("idle");
-    utterance.onerror = () => setStatus("idle");
-    window.speechSynthesis.speak(utterance);
+    stopSpeaking();
+    setVoiceError("");
+    setStatus("speaking");
+
+    try {
+      const controller = new AbortController();
+      speechControllerRef.current = controller;
+      const speechText = prepareHermesSpeechText(text).slice(0, MAX_SPEECH_TEXT_LENGTH);
+      const response = await fetch("/api/marketing/hermes-speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "audio/wav" },
+        credentials: "include",
+        body: JSON.stringify({ text: speechText }),
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error("speech_unavailable");
+
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("empty_speech");
+      const audioUrl = window.URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audioUrlRef.current = audioUrl;
+      audio.onended = () => stopSpeaking();
+      audio.onerror = () => {
+        setVoiceError("Не удалось воспроизвести голос. Текстовый ответ сохранён.");
+        stopSpeaking();
+      };
+      await audio.play();
+    } catch (speechError) {
+      if (speechError?.name !== "AbortError") {
+        setVoiceError("Голос Гермеса сейчас недоступен. Текстовый ответ сохранён.");
+      }
+      stopSpeaking();
+    } finally {
+      speechControllerRef.current = null;
+    }
   }
 
   async function sendMessage(rawText) {
@@ -231,6 +257,8 @@ export default function HermesAssistantBoard() {
     recognition.continuous = false;
     recognition.interimResults = true;
     pendingVoiceTextRef.current = "";
+    latestVoiceTextRef.current = "";
+    recognitionErrorRef.current = false;
 
     recognition.onstart = () => {
       setError("");
@@ -246,9 +274,12 @@ export default function HermesAssistantBoard() {
         else interimText += part;
       }
       if (finalText.trim()) pendingVoiceTextRef.current = `${pendingVoiceTextRef.current} ${finalText}`.trim();
-      setInput(`${pendingVoiceTextRef.current} ${interimText}`.trim());
+      const latestText = `${pendingVoiceTextRef.current} ${interimText}`.trim();
+      latestVoiceTextRef.current = latestText;
+      setInput(latestText);
     };
     recognition.onerror = (event) => {
+      recognitionErrorRef.current = true;
       const denied = event.error === "not-allowed" || event.error === "service-not-allowed";
       setMicPermissionDenied(denied);
       setError(denied ? "Микрофон заблокирован браузером." : "Не удалось распознать речь. Попробуйте ещё раз.");
@@ -256,7 +287,8 @@ export default function HermesAssistantBoard() {
     };
     recognition.onend = () => {
       recognitionRef.current = null;
-      const spokenText = pendingVoiceTextRef.current.trim();
+      const spokenText = resolveRecognizedSpeech(pendingVoiceTextRef.current, latestVoiceTextRef.current);
+      if (recognitionErrorRef.current) return;
       if (spokenText) sendMessage(spokenText);
       else setStatus((current) => current === "listening" ? "idle" : current);
     };
@@ -376,7 +408,7 @@ export default function HermesAssistantBoard() {
           <div className="hermes-assistant__voice-setting">
             <div>
               {voiceEnabled ? <Volume2 size={20} aria-hidden="true" /> : <VolumeX size={20} aria-hidden="true" />}
-              <span><strong>Голосовой ответ</strong><small>Озвучивать ответы Гермеса</small></span>
+              <span><strong>Спокойный голос</strong><small>Локальный голос Дмитрий · без передачи текста наружу</small></span>
             </div>
             <button type="button" role="switch" aria-checked={voiceEnabled} onClick={() => {
               if (voiceEnabled) stopSpeaking();
@@ -419,6 +451,7 @@ export default function HermesAssistantBoard() {
           </button>
         </div>
         {error ? <p className="hermes-assistant__error" role="alert">{error}</p> : null}
+        {voiceError ? <p className="hermes-assistant__voice-error" role="status">{voiceError}</p> : null}
       </form>
     </section>
   );

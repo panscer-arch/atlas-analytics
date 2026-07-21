@@ -6,6 +6,7 @@
   "scripts": {
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",
     "test:telegram-memory": "node scripts/verify-telegram-memory-archive.mjs && python3 scripts/verify-hermes-memory-bridge.py",
+    "test:hermes-voice": "node scripts/verify-hermes-assistant-voice.mjs",
     "memory:telegram:sync": "node server/telegram-memory-sync.mjs",
     "memory:telegram:import": "node scripts/import-telegram-history.mjs",
     "refresh:direct-sales-directory": "node scripts/refresh-direct-sales-directory.mjs",

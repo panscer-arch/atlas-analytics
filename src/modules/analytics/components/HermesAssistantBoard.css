@@ -616,6 +616,13 @@
   font-weight: 750;
 }
 
+.hermes-assistant__voice-error {
+  margin: 0;
+  color: #ffd28b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 @keyframes hermes-rotate { to { transform: rotate(360deg); } }
 @keyframes hermes-rotate-reverse { to { transform: rotate(-360deg); } }
 @keyframes hermes-pulse { 50% { transform: scale(1.06); box-shadow: 0 0 54px rgba(104, 220, 255, 0.28); } }

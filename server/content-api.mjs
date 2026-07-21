@@ -2,6 +2,7 @@ import http from "node:http";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { prepareHermesSpeechText, synthesizeHermesSpeech } from "./hermes-speech.mjs";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
 import {
   collectMarketingDashboardEvents,
@@ -43,6 +44,11 @@ const HERMES_ASSISTANT_WINDOW_MS = 10 * 60 * 1000;
 const HERMES_ASSISTANT_MAX_REQUESTS = 30;
 const HERMES_ASSISTANT_MAX_PROMPT_LENGTH = 12000;
 const HERMES_ASSISTANT_TIMEOUT_MS = 180000;
+const HERMES_SPEECH_MAX_REQUESTS = 60;
+const HERMES_SPEECH_MAX_TEXT_LENGTH = 3500;
+const HERMES_SPEECH_TIMEOUT_MS = 60000;
+const HERMES_SPEECH_MAX_AUDIO_BYTES = 12 * 1024 * 1024;
+const PIPER_TTS_URL = String(process.env.PIPER_TTS_URL || "http://127.0.0.1:7466/synthesize").trim();
 const SUPERSUS_ACCESS_PASSWORD_HASH = String(
   process.env.SUPERSUS_ACCESS_PASSWORD_HASH
   || "734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e",
@@ -227,6 +233,7 @@ let expenseCenterMutationQueue = Promise.resolve();
 const financeLoginAttempts = new Map();
 const marketingLoginAttempts = new Map();
 const hermesAssistantRequests = new Map();
+const hermesSpeechRequests = new Map();
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
@@ -235,6 +242,16 @@ function sendJson(response, statusCode, payload, extraHeaders = {}) {
     ...extraHeaders,
   });
   response.end(JSON.stringify(payload));
+}
+
+function sendAudio(response, audio) {
+  response.writeHead(200, {
+    "Content-Type": "audio/wav",
+    "Content-Length": audio.length,
+    "Cache-Control": "private, max-age=300",
+    "X-Content-Type-Options": "nosniff",
+  });
+  response.end(audio);
 }
 
 function parseCookies(request) {
@@ -389,6 +406,29 @@ function getHermesAssistantRateLimit(request) {
 
   current.count += 1;
   if (current.count > HERMES_ASSISTANT_MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+function getHermesSpeechRateLimit(request) {
+  const now = Date.now();
+  const key = String(request.headers["x-forwarded-for"] || request.socket?.remoteAddress || "unknown")
+    .split(",")[0]
+    .trim();
+  const current = hermesSpeechRequests.get(key);
+  if (!current || current.resetAt <= now) {
+    if (hermesSpeechRequests.size > 1000) {
+      for (const [storedKey, value] of hermesSpeechRequests) {
+        if (value.resetAt <= now) hermesSpeechRequests.delete(storedKey);
+      }
+    }
+    hermesSpeechRequests.set(key, { count: 1, resetAt: now + HERMES_ASSISTANT_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+
+  current.count += 1;
+  if (current.count > HERMES_SPEECH_MAX_REQUESTS) {
     return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
   }
   return { allowed: true, retryAfter: 0 };
@@ -3147,6 +3187,36 @@ const server = http.createServer(async (request, response) => {
       }
       const health = await checkHermesAssistantHealth();
       sendJson(response, health.online ? 200 : 503, { ok: health.online, ...health });
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/hermes-speech" && request.method === "POST") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "assistant_auth_required" });
+        return;
+      }
+      const rateLimit = getHermesSpeechRateLimit(request);
+      if (!rateLimit.allowed) {
+        sendJson(response, 429, { ok: false, error: "speech_rate_limit" }, { "Retry-After": String(rateLimit.retryAfter) });
+        return;
+      }
+      const body = await readBody(request);
+      const parsed = JSON.parse(body || "{}");
+      const text = prepareHermesSpeechText(parsed?.text);
+      if (!text || text.length > HERMES_SPEECH_MAX_TEXT_LENGTH) {
+        sendJson(response, 400, { ok: false, error: text ? "speech_text_too_long" : "empty_speech_text" });
+        return;
+      }
+      const speech = await synthesizeHermesSpeech(text, {
+        url: PIPER_TTS_URL,
+        timeoutMs: HERMES_SPEECH_TIMEOUT_MS,
+        maxAudioBytes: HERMES_SPEECH_MAX_AUDIO_BYTES,
+      });
+      if (!speech.ok) {
+        sendJson(response, speech.status || 503, { ok: false, error: speech.error });
+        return;
+      }
+      sendAudio(response, speech.audio);
       return;
     }
 

@@ -42,6 +42,7 @@ jobs:
           npm run test:marketing-monitor
           npm run test:expenses
           npm run test:telegram-memory
+          npm run test:hermes-voice
           npm run build
 
       - name: Detect server changes
@@ -145,6 +146,7 @@ jobs:
           }
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/hermes-speech.mjs /tmp/atlas-hermes-speech.mjs
           scp_to_vps server/marketing-dashboard-monitor.mjs /tmp/atlas-marketing-dashboard-monitor.mjs
           scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
@@ -165,6 +167,7 @@ jobs:
 
           sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content/telegram-memory-archive /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs
           sudo mv /tmp/atlas-marketing-dashboard-monitor.mjs /opt/atlas-content-api/marketing-dashboard-monitor.mjs
           sudo mv /tmp/atlas-telegram-task-store.mjs /opt/atlas-content-api/telegram-task-store.mjs
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
@@ -181,6 +184,26 @@ jobs:
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
           sudo chown -R root:root /var/backups/atlas-analytics-content
           sudo chmod 750 /var/backups/atlas-analytics-content
+
+          PIPER_DIR=/opt/atlas-hermes-tts
+          PIPER_VENV="$PIPER_DIR/venv"
+          PIPER_VOICES="$PIPER_DIR/voices"
+          sudo mkdir -p "$PIPER_VOICES"
+          if [ ! -x "$PIPER_VENV/bin/python" ]; then
+            if ! sudo python3 -m venv "$PIPER_VENV"; then
+              sudo apt-get update
+              sudo apt-get install -y python3-venv
+              sudo python3 -m venv "$PIPER_VENV"
+            fi
+          fi
+          sudo "$PIPER_VENV/bin/pip" install --disable-pip-version-check --quiet 'piper-tts[http]==1.5.0'
+          if [ ! -f "$PIPER_VOICES/ru_RU-dmitri-medium.onnx" ] || [ ! -f "$PIPER_VOICES/ru_RU-dmitri-medium.onnx.json" ]; then
+            sudo "$PIPER_VENV/bin/python" -m piper.download_voices \
+              --download-dir "$PIPER_VOICES" \
+              ru_RU-dmitri-medium
+          fi
+          sudo chown -R root:root "$PIPER_DIR"
+          sudo chmod -R a+rX "$PIPER_DIR"
           sudo tee /etc/atlas-outreach.env >/dev/null <<'ENV'
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           OUTREACH_FROM_EMAIL=${{ secrets.OUTREACH_FROM_EMAIL }}
@@ -210,11 +233,31 @@ jobs:
           EnvironmentFile=-/etc/atlas-outreach.env
           Environment=ATLAS_CONTENT_API_PORT=8787
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
+          Environment=PIPER_TTS_URL=http://127.0.0.1:7466/synthesize
           ExecStart=/usr/bin/node /opt/atlas-content-api/content-api.mjs
           Restart=always
           RestartSec=3
           User=www-data
           Group=www-data
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-hermes-tts.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Atlas Hermes local Russian text-to-speech
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/opt/atlas-hermes-tts/venv/bin/python -m piper.http_server --host 127.0.0.1 --port 7466 --model ru_RU-dmitri-medium --data-dir /opt/atlas-hermes-tts/voices --length-scale 1.12 --sentence-silence 0.25
+          Restart=always
+          RestartSec=3
+          User=www-data
+          Group=www-data
+          NoNewPrivileges=true
+          PrivateTmp=true
 
           [Install]
           WantedBy=multi-user.target
@@ -422,6 +465,19 @@ jobs:
           TIMER
 
           timeout 45s sudo systemctl daemon-reload
+          timeout 45s sudo systemctl enable --now atlas-hermes-tts.service
+          timeout 45s sudo systemctl restart atlas-hermes-tts.service
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:7466/info >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              sudo systemctl status atlas-hermes-tts.service --no-pager || true
+              sudo journalctl -u atlas-hermes-tts.service -n 60 --no-pager || true
+              exit 1
+            fi
+            sleep 2
+          done
           timeout 45s sudo systemctl enable --now atlas-content-api.service
           timeout 45s sudo systemctl restart atlas-content-api.service
           timeout 45s sudo systemctl enable --now atlas-telegram-bot.service
