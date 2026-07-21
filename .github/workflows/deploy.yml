@@ -524,7 +524,8 @@ jobs:
             -F 'audio_file=@/tmp/atlas-hermes-stt-check.wav;type=audio/wav' \
             'http://127.0.0.1:7467/asr?task=transcribe&language=ru&output=json&encode=true&vad_filter=true')"
           rm -f /tmp/atlas-hermes-stt-check.wav
-          if ! printf '%s' "$STT_CHECK" | grep -Eq '"text"[[:space:]]*:[[:space:]]*"[^[:space:]]'; then
+          if ! printf '%s' "$STT_CHECK" | python3 -c \
+            'import json, sys; assert str(json.load(sys.stdin).get("text", "")).strip()'; then
             echo "Whisper returned no transcription: $STT_CHECK"
             sudo docker logs --tail 80 atlas-hermes-stt || true
             exit 1
