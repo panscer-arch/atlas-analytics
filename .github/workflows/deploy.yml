@@ -41,6 +41,7 @@ jobs:
           npm ci
           npm run test:marketing-monitor
           npm run test:expenses
+          npm run test:telegram-memory
           npm run build
 
       - name: Detect server changes
@@ -147,6 +148,10 @@ jobs:
           scp_to_vps server/marketing-dashboard-monitor.mjs /tmp/atlas-marketing-dashboard-monitor.mjs
           scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
+          scp_to_vps server/telegram-memory-archive.mjs /tmp/atlas-telegram-memory-archive.mjs
+          scp_to_vps server/telegram-memory-sync.mjs /tmp/atlas-telegram-memory-sync.mjs
+          scp_to_vps server/hermes-telegram-bridge.py /tmp/hermes-telegram-bridge.py
+          scp_to_vps server/configure-hermes-hindsight.sh /tmp/configure-hermes-hindsight.sh
           scp_to_vps server/backup-content.sh /tmp/atlas-content-backup.sh
 
           run_with_retry "content-api ssh" ssh -i ~/.ssh/deploy_key \
@@ -157,12 +162,18 @@ jobs:
             'bash -s' <<'REMOTE'
           set -euo pipefail
 
-          sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content /var/backups/atlas-analytics-content
+          sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content/telegram-memory-archive /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-marketing-dashboard-monitor.mjs /opt/atlas-content-api/marketing-dashboard-monitor.mjs
           sudo mv /tmp/atlas-telegram-task-store.mjs /opt/atlas-content-api/telegram-task-store.mjs
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
+          sudo mv /tmp/atlas-telegram-memory-archive.mjs /opt/atlas-content-api/telegram-memory-archive.mjs
+          sudo mv /tmp/atlas-telegram-memory-sync.mjs /opt/atlas-content-api/telegram-memory-sync.mjs
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
+          if id hermes >/dev/null 2>&1 && [ -d /opt/hermes ]; then
+            sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
+            sudo install -m 750 -o hermes -g hermes /tmp/configure-hermes-hindsight.sh /opt/hermes/configure-hermes-hindsight.sh
+          fi
           sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
@@ -350,6 +361,7 @@ jobs:
           Type=simple
           EnvironmentFile=-/etc/atlas-telegram-bot.env
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
+          Environment=TELEGRAM_MEMORY_ARCHIVE_DIR=/var/lib/atlas-analytics-content/telegram-memory-archive
           ExecStart=/usr/bin/node /opt/atlas-content-api/telegram-bot.mjs
           Restart=always
           RestartSec=5
@@ -360,11 +372,44 @@ jobs:
           WantedBy=multi-user.target
           SERVICE
 
+          sudo tee /etc/systemd/system/atlas-telegram-memory-sync.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Sync the durable Atlas Telegram archive into Hermes long-term memory
+          After=network.target hermes-telegram-bridge.service atlas-telegram-bot.service
+
+          [Service]
+          Type=oneshot
+          EnvironmentFile=-/etc/atlas-telegram-bot.env
+          Environment=TELEGRAM_MEMORY_ARCHIVE_DIR=/var/lib/atlas-analytics-content/telegram-memory-archive
+          ExecCondition=/bin/sh -c 'case "$HERMES_LONG_TERM_MEMORY_READY" in 1|true|yes|on) exit 0;; *) exit 1;; esac'
+          ExecStart=/usr/bin/node /opt/atlas-content-api/telegram-memory-sync.mjs
+          User=www-data
+          Group=www-data
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-telegram-memory-sync.timer >/dev/null <<'TIMER'
+          [Unit]
+          Description=Sync Atlas Telegram memory twice daily
+
+          [Timer]
+          OnCalendar=*-*-* 05,17:00:00 UTC
+          Persistent=true
+          RandomizedDelaySec=5m
+          Unit=atlas-telegram-memory-sync.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
           timeout 45s sudo systemctl daemon-reload
           timeout 45s sudo systemctl enable --now atlas-content-api.service
           timeout 45s sudo systemctl restart atlas-content-api.service
           timeout 45s sudo systemctl enable --now atlas-telegram-bot.service
           timeout 45s sudo systemctl restart atlas-telegram-bot.service
+          if systemctl list-unit-files | grep -q '^hermes-telegram-bridge.service'; then
+            timeout 45s sudo systemctl restart hermes-telegram-bridge.service
+          fi
+          timeout 45s sudo systemctl enable --now atlas-telegram-memory-sync.timer
           timeout 45s sudo systemctl enable --now atlas-content-backup.timer
           timeout 90s sudo systemctl start atlas-content-backup.service || true
           timeout 45s sudo systemctl enable --now atlas-youtrack-monitor.timer

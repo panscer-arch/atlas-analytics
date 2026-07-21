@@ -10,6 +10,11 @@ import {
   updateTelegramTaskBySource,
   writeContent,
 } from "./telegram-task-store.mjs";
+import {
+  archiveTelegramMessage,
+  readTelegramArchive,
+  TELEGRAM_MEMORY_ARCHIVE_DIR,
+} from "./telegram-memory-archive.mjs";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
@@ -25,6 +30,15 @@ const ALLOWED_CHAT_IDS = new Set(
     .map((item) => item.trim())
     .filter(Boolean),
 );
+const HERMES_OWNER_TELEGRAM_IDS = new Set(
+  String(process.env.HERMES_OWNER_TELEGRAM_IDS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+);
+const HERMES_LONG_TERM_MEMORY_READY = /^(1|true|yes|on)$/i.test(
+  process.env.HERMES_LONG_TERM_MEMORY_READY || "",
+);
 const POLL_TIMEOUT_SECONDS = 25;
 const TASK_TRIGGER_EMOJI = "💋";
 const TASK_DONE_EMOJI = "✅";
@@ -33,6 +47,7 @@ const MARKETING_TELEGRAM_BINDING_KEY = "atlas.analytics.marketingTelegramBinding
 const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLinkRequest.v1";
 const MARKETING_BROWSER_LINK_REQUEST_KEY = "atlas.analytics.marketingBrowserLinkRequest.v1";
 const MARKETING_BROWSER_SESSIONS_KEY = "atlas.analytics.marketingBrowserSessions.v1";
+const TELEGRAM_MEMORY_BINDINGS_KEY = "atlas.analytics.telegramMemoryBindings.v1";
 const MARKETING_DASHBOARD_URL = process.env.ATLAS_MARKETING_DASHBOARD_URL
   || "https://supersussystem.com/?board=parser";
 const CATEGORY_BUTTONS = [
@@ -58,7 +73,7 @@ if (!BOT_TOKEN) {
   log(`disabled: TELEGRAM_BOT_TOKEN is not set. STORE_DIR=${STORE_DIR}`);
   setInterval(() => {}, 60_000);
 } else {
-  log(`started. STORE_DIR=${STORE_DIR}`);
+  log(`started. STORE_DIR=${STORE_DIR}; MEMORY_ARCHIVE_DIR=${TELEGRAM_MEMORY_ARCHIVE_DIR}`);
   pollLoop();
 }
 
@@ -78,13 +93,17 @@ function isAllowedChat(chatId) {
   return ALLOWED_CHAT_IDS.has(String(chatId));
 }
 
+function isHermesOwner(message) {
+  return HERMES_OWNER_TELEGRAM_IDS.has(String(message?.from?.id || ""));
+}
+
 async function pollLoop() {
   while (true) {
     try {
       const updates = await telegram("getUpdates", {
         offset,
         timeout: POLL_TIMEOUT_SECONDS,
-        allowed_updates: ["message", "message_reaction", "callback_query"],
+        allowed_updates: ["message", "edited_message", "message_reaction", "callback_query"],
       });
 
       for (const update of updates) {
@@ -113,9 +132,25 @@ async function handleUpdate(update) {
     return;
   }
 
-  const message = update.message;
+  const message = update.message || update.edited_message;
   if (!message?.chat?.id) return;
   const rawText = String(message.text || message.caption || "").trim();
+  if (rawText.startsWith("/userid")) {
+    await handleUserIdCommand(message);
+    return;
+  }
+  if (rawText.startsWith("/memory_here")) {
+    await handleMemoryHereCommand(message, rawText);
+    return;
+  }
+  if (rawText.startsWith("/memory_off")) {
+    await handleMemoryOffCommand(message);
+    return;
+  }
+  if (rawText.startsWith("/memory_status")) {
+    await handleMemoryStatusCommand(message);
+    return;
+  }
   if (rawText.startsWith("/marketing_here")) {
     await handleMarketingHereCommand(message);
     return;
@@ -124,13 +159,23 @@ async function handleUpdate(update) {
     await handleMarketingOffCommand(message);
     return;
   }
-  if (!isAllowedChat(message.chat.id)) return;
+  const memoryBound = await isMemoryChatBound(message.chat.id);
+  const operationalChat = isAllowedChat(message.chat.id);
+  if (!operationalChat && !memoryBound) return;
 
   let text = "";
   try {
     text = (await getMessageText(message)).trim();
   } catch (error) {
     log("transcription error:", error?.message || String(error));
+    if (memoryBound) {
+      await archiveTelegramMessage({
+        message,
+        text: message.text || message.caption || "",
+        source: buildSource(message, message.text || message.caption || ""),
+        transcriptionError: error?.message || String(error),
+      }).catch((archiveError) => log("telegram archive error:", archiveError?.message || String(archiveError)));
+    }
     if (hasAudioMessage(message)) {
       await telegram("sendMessage", {
         chat_id: message.chat.id,
@@ -140,6 +185,14 @@ async function handleUpdate(update) {
     }
     return;
   }
+  if (memoryBound) {
+    await archiveTelegramMessage({
+      message,
+      text,
+      source: buildSource(message, text),
+    }).catch((error) => log("telegram archive error:", error?.message || String(error)));
+  }
+
   if (!text) {
     if (hasAudioMessage(message)) {
       await telegram("sendMessage", {
@@ -152,6 +205,9 @@ async function handleUpdate(update) {
   }
 
   storeRecentMessage(message, text);
+
+  if (isHermesCommand(text)) return handleHermesCommand(message, text);
+  if (!operationalChat) return;
 
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
@@ -170,7 +226,6 @@ async function handleUpdate(update) {
   if (text.startsWith("/question")) return handleOperationCommand(message, text, "questions", "Вопрос сохранён");
   if (text.startsWith("/report")) return handleOperationCommand(message, text, "reports", "Отчёт сохранён");
   if (text.startsWith("/remind")) return handleOperationCommand(message, text, "reminders", "Напоминание сохранено");
-  if (isHermesCommand(text)) return handleHermesCommand(message, text);
   if (text.startsWith("/help")) return sendHelp(message.chat.id);
 
   if (text.includes(TASK_TRIGGER_EMOJI)) {
@@ -572,6 +627,134 @@ async function handleChatIdCommand(message) {
   });
 }
 
+async function handleUserIdCommand(message) {
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: `Ваш Telegram User ID: ${message.from?.id || "не определён"}`,
+  });
+}
+
+async function readMemoryBindings() {
+  const bindings = await readContent(TELEGRAM_MEMORY_BINDINGS_KEY, { version: 1, chats: {} });
+  return {
+    version: 1,
+    chats: bindings?.chats && typeof bindings.chats === "object" ? bindings.chats : {},
+  };
+}
+
+async function isMemoryChatBound(chatId) {
+  const bindings = await readMemoryBindings();
+  return Boolean(bindings.chats[String(chatId)]?.active);
+}
+
+async function handleMemoryHereCommand(message, rawText = "") {
+  if (!HERMES_OWNER_TELEGRAM_IDS.size) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Владелец памяти ещё не настроен. Отправьте /userid и добавьте этот ID в HERMES_OWNER_TELEGRAM_IDS на сервере.",
+    });
+    return;
+  }
+  if (!isHermesOwner(message)) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Подключать чат к общей памяти может только владелец Hermes.",
+    });
+    return;
+  }
+
+  const purpose = stripBotMention(rawText).replace(/^\/memory_here(?:\s+|$)/i, "").trim();
+  const bindings = await readMemoryBindings();
+  const chatId = String(message.chat.id);
+  const now = new Date().toISOString();
+  await writeContent(TELEGRAM_MEMORY_BINDINGS_KEY, {
+    ...bindings,
+    updatedAt: now,
+    chats: {
+      ...bindings.chats,
+      [chatId]: {
+        active: true,
+        chatId,
+        title: message.chat.title || message.chat.username || "",
+        purpose,
+        boundAt: bindings.chats[chatId]?.boundAt || now,
+        updatedAt: now,
+        boundBy: {
+          id: String(message.from?.id || ""),
+          username: message.from?.username || "",
+          name: [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" "),
+        },
+      },
+    },
+  });
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: [
+      "Чат подключён к постоянной памяти Hermes.",
+      purpose ? `Назначение: ${purpose}` : "Назначение можно добавить после команды: /memory_here работа по ...",
+      "Новые сообщения будут храниться на сервере SuperSUS и дважды в день попадать в смысловую память.",
+    ].join("\n"),
+  });
+}
+
+async function handleMemoryOffCommand(message) {
+  if (!isHermesOwner(message)) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Отключать память чата может только владелец Hermes.",
+    });
+    return;
+  }
+  const bindings = await readMemoryBindings();
+  const chatId = String(message.chat.id);
+  const current = bindings.chats[chatId] || {};
+  await writeContent(TELEGRAM_MEMORY_BINDINGS_KEY, {
+    ...bindings,
+    updatedAt: new Date().toISOString(),
+    chats: {
+      ...bindings.chats,
+      [chatId]: {
+        ...current,
+        chatId,
+        title: current.title || message.chat.title || "",
+        active: false,
+        disabledAt: new Date().toISOString(),
+      },
+    },
+  });
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: "Сохранение новых сообщений из этого чата отключено. Уже сохранённый архив не удалён.",
+  });
+}
+
+async function handleMemoryStatusCommand(message) {
+  const bindings = await readMemoryBindings();
+  const chatId = String(message.chat.id);
+  const binding = bindings.chats[chatId] || {};
+  const archived = await readTelegramArchive({ chatId }).catch((error) => {
+    log("telegram archive status error:", error?.message || String(error));
+    return [];
+  });
+  await telegram("sendMessage", {
+    chat_id: message.chat.id,
+    reply_to_message_id: message.message_id,
+    text: [
+      `Постоянная память: ${binding.active ? "включена" : "выключена"}`,
+      binding.purpose ? `Назначение чата: ${binding.purpose}` : "",
+      `Сообщений в локальном архиве: ${archived.length}`,
+      `Hindsight: ${HERMES_LONG_TERM_MEMORY_READY ? "подключён" : "ожидает проверки"}`,
+      isHermesOwner(message) ? "Вам доступен общий поиск по всем подключённым чатам." : "Поиск по другим чатам недоступен.",
+    ].filter(Boolean).join("\n"),
+  });
+}
+
 async function isControlChatAdmin(message) {
   if (!message.from?.id || !ALLOWED_CHAT_IDS.size || !isAllowedChat(message.chat.id)) return false;
   const membership = await telegram("getChatMember", {
@@ -825,6 +1008,7 @@ async function handleHermesCommand(message, text) {
   try {
     const result = await askHermesBridge({
       prompt,
+      memoryScope: isHermesOwner(message) ? "global" : "chat",
       source: buildSource(message, prompt),
     });
     await sendLongMessage({
@@ -890,6 +1074,10 @@ async function sendHelp(chatId) {
       "Reply + /deadline 05.06 — поменять дедлайн",
       "✅ на исходном сообщении задачи — закрыть задачу",
       "/chatid — показать ID текущего Telegram-чата для Push",
+      "/userid — показать ваш Telegram User ID",
+      "/memory_here описание — включить постоянную память в этом чате",
+      "/memory_status — показать состояние и размер архива чата",
+      "/memory_off — остановить сохранение новых сообщений",
       "/marketing_link — привязать отдельный чат маркетинговых отчётов",
       "/marketing_access — выдать одноразовый доступ к редактированию Marketing Dashboard",
       "/decision текст — зафиксировать решение",

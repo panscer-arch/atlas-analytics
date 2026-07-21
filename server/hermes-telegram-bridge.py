@@ -23,10 +23,13 @@ def json_response(handler, status, payload):
     handler.wfile.write(data)
 
 
-def session_name(source):
+def session_name(source, memory_scope="chat"):
+    if str(memory_scope or "").lower() == "global":
+        return "global"
     chat_id = str(source.get("chatId") or "unknown")
-    safe = re.sub(r"[^a-zA-Z0-9_.-]+", "-", chat_id).strip("-") or "unknown"
-    return f"telegram-{safe}"
+    sign = "n" if chat_id.startswith("-") else "p" if chat_id[:1].isdigit() else ""
+    safe = re.sub(r"[^a-zA-Z0-9_.-]+", "-", chat_id.lstrip("-")).strip("-") or "unknown"
+    return f"chat-{sign}{safe}"
 
 
 def build_prompt(payload):
@@ -35,6 +38,21 @@ def build_prompt(payload):
     author = source.get("authorName") or "unknown"
     chat = source.get("chatTitle") or source.get("chatId") or "telegram"
     message_url = source.get("messageUrl") or ""
+    if payload.get("memoryOnly"):
+        context = [
+            "Это внутренняя запись долговременной памяти Telegram-чатов Atlas.",
+            "Это не вопрос пользователя. Ничего не отправляй в Telegram.",
+            "Сохрани факты, решения, задачи, идеи, участников, даты и ссылки на источники.",
+            "Не превращай шутки, предположения и спорные реплики в подтверждённые решения.",
+            f"Источник памяти: chat={chat}, author={author}",
+            "",
+            "Запись памяти:",
+            prompt,
+            "",
+            "Ответь одной строкой только для технического лога: что принято в память.",
+        ]
+        return "\n".join(line for line in context if line != "")
+
     context = [
         "Ты отвечаешь Digitex из Telegram через SuperSUS-бота.",
         "Отвечай по-русски, коротко и практически. Если нужно запомнить решение или задачу, явно скажи, что зафиксировал.",
@@ -93,7 +111,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 [
                     HERMES_BIN,
                     "--continue",
-                    session_name(payload.get("source") or {}),
+                    session_name(payload.get("source") or {}, payload.get("memoryScope") or "chat"),
                     "--accept-hooks",
                     "-z",
                     build_prompt(payload),
