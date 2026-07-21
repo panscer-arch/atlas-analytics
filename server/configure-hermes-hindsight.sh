@@ -7,8 +7,9 @@ HERMES_PYTHON="${HERMES_PYTHON:-$HERMES_HOME/.hermes/hermes-agent/venv/bin/pytho
 MODE="${HINDSIGHT_MODE:-local_embedded}"
 BANK_ID="${HINDSIGHT_BANK_ID:-atlas-global}"
 LLM_PROVIDER="${HINDSIGHT_LLM_PROVIDER:-openai}"
-INFERENCE_PROVIDER="${HERMES_INFERENCE_PROVIDER:-$LLM_PROVIDER}"
-INFERENCE_MODEL="${HERMES_INFERENCE_MODEL:-${HINDSIGHT_LLM_MODEL:-gpt-4o-mini}}"
+INFERENCE_PROVIDER="${HERMES_INFERENCE_PROVIDER:-custom}"
+INFERENCE_MODEL="${HERMES_INFERENCE_MODEL:-gpt-5-mini}"
+INFERENCE_BASE_URL="${HERMES_INFERENCE_BASE_URL:-https://api.openai.com/v1}"
 CONFIG_DIR="$HERMES_HOME/.hermes/hindsight"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 ENV_FILE="$HERMES_HOME/.env"
@@ -50,7 +51,7 @@ fi
 
 # The same OpenAI key can power both local Hindsight extraction and Hermes
 # inference. Keep it in Hermes' private env file instead of the systemd unit.
-if [ "$INFERENCE_PROVIDER" = "openai" ] && ! grep -q '^OPENAI_API_KEY=.' "$ENV_FILE" 2>/dev/null; then
+if [ "$INFERENCE_PROVIDER" = "custom" ] && ! grep -q '^OPENAI_API_KEY=.' "$ENV_FILE" 2>/dev/null; then
   inference_key="${OPENAI_API_KEY:-${HINDSIGHT_LLM_API_KEY:-}}"
   if [ -z "$inference_key" ] && [ -f "$ENV_FILE" ]; then
     inference_key="$(sed -n 's/^HINDSIGHT_LLM_API_KEY=//p' "$ENV_FILE" | tail -n 1)"
@@ -117,6 +118,7 @@ PY
 "$HERMES_BIN" config set memory.provider hindsight
 "$HERMES_BIN" config set model.provider "$INFERENCE_PROVIDER"
 "$HERMES_BIN" config set model.default "$INFERENCE_MODEL"
+"$HERMES_BIN" config set model.base_url "$INFERENCE_BASE_URL"
 "$HERMES_BIN" memory status
 
 echo "Hindsight configured: mode=$MODE bank=$BANK_ID config=$CONFIG_FILE"
