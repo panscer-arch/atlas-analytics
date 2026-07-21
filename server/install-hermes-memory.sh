@@ -35,7 +35,7 @@ if ! id hermes >/dev/null 2>&1 || [[ ! -d "$HERMES_DIR" ]]; then
 fi
 
 install -d -m 755 "$CONTENT_DIR"
-install -d -m 755 -o www-data -g www-data "$ARCHIVE_DIR"
+install -d -m 700 -o www-data -g www-data "$ARCHIVE_DIR"
 
 install -m 644 -o root -g root "$SOURCE_DIR/content-api.mjs" "$CONTENT_DIR/content-api.mjs"
 install -m 644 -o root -g root "$SOURCE_DIR/marketing-dashboard-monitor.mjs" "$CONTENT_DIR/marketing-dashboard-monitor.mjs"
