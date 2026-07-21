@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
+import { writeFile } from "node:fs/promises";
 import { synthesizeHermesSpeech } from "../server/hermes-speech.mjs";
 import { transcribeHermesAudio } from "../server/hermes-transcription.mjs";
 import { prepareHermesSpeechText, resolveRecognizedSpeech } from "../src/modules/analytics/utils/hermesVoice.js";
@@ -42,6 +43,25 @@ const result = await synthesizeHermesSpeech("Спокойный ответ", {
 assert.equal(result.ok, true);
 assert.deepEqual(result.audio, wavFixture);
 assert.deepEqual(receivedBody, { text: "Спокойный ответ", length_scale: 1.12 });
+
+const mp3Fixture = Buffer.from("ID3-hermes-edge-voice", "ascii");
+const edgeResult = await synthesizeHermesSpeech("Мягкий голос", {
+  url: `http://127.0.0.1:${address.port}/synthesize`,
+  edgeTtsBin: "/opt/edge-tts",
+  timeoutMs: 2000,
+  maxAudioBytes: 1024,
+  execFileImpl: async (command, args) => {
+    assert.equal(command, "/opt/edge-tts");
+    assert.ok(args.includes("en-US-AndrewMultilingualNeural"));
+    const outputPath = args[args.indexOf("--write-media") + 1];
+    await writeFile(outputPath, mp3Fixture);
+  },
+});
+
+assert.equal(edgeResult.ok, true);
+assert.equal(edgeResult.contentType, "audio/mpeg");
+assert.equal(edgeResult.provider, "edge-tts");
+assert.deepEqual(edgeResult.audio, mp3Fixture);
 
 mockPiper.close();
 await once(mockPiper, "close");

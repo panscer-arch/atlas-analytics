@@ -201,7 +201,7 @@ jobs:
               sudo python3 -m venv "$PIPER_VENV"
             fi
           fi
-          sudo "$PIPER_VENV/bin/pip" install --disable-pip-version-check --quiet 'piper-tts[http]==1.5.0'
+          sudo "$PIPER_VENV/bin/pip" install --disable-pip-version-check --quiet 'piper-tts[http]==1.5.0' 'edge-tts==7.2.8'
           if [ ! -f "$PIPER_VOICES/ru_RU-dmitri-medium.onnx" ] || [ ! -f "$PIPER_VOICES/ru_RU-dmitri-medium.onnx.json" ]; then
             sudo "$PIPER_VENV/bin/python" -m piper.download_voices \
               --download-dir "$PIPER_VOICES" \
@@ -260,6 +260,8 @@ jobs:
           Environment=ATLAS_CONTENT_API_PORT=8787
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
           Environment=PIPER_TTS_URL=http://127.0.0.1:7466/synthesize
+          Environment=EDGE_TTS_BIN=/opt/atlas-hermes-tts/venv/bin/edge-tts
+          Environment=EDGE_TTS_VOICE=en-US-AndrewMultilingualNeural
           Environment=WHISPER_ASR_URL=http://127.0.0.1:7467/asr
           ExecStart=/usr/bin/node /opt/atlas-content-api/content-api.mjs
           Restart=always

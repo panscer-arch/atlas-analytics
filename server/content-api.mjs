@@ -50,6 +50,8 @@ const HERMES_SPEECH_MAX_TEXT_LENGTH = 3500;
 const HERMES_SPEECH_TIMEOUT_MS = 60000;
 const HERMES_SPEECH_MAX_AUDIO_BYTES = 12 * 1024 * 1024;
 const PIPER_TTS_URL = String(process.env.PIPER_TTS_URL || "http://127.0.0.1:7466/synthesize").trim();
+const EDGE_TTS_BIN = String(process.env.EDGE_TTS_BIN || "/opt/atlas-hermes-tts/venv/bin/edge-tts").trim();
+const EDGE_TTS_VOICE = String(process.env.EDGE_TTS_VOICE || "en-US-AndrewMultilingualNeural").trim();
 const HERMES_TRANSCRIPTION_MAX_REQUESTS = 30;
 const HERMES_TRANSCRIPTION_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const HERMES_TRANSCRIPTION_TIMEOUT_MS = 90000;
@@ -250,9 +252,9 @@ function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.end(JSON.stringify(payload));
 }
 
-function sendAudio(response, audio) {
+function sendAudio(response, audio, contentType = "audio/wav") {
   response.writeHead(200, {
-    "Content-Type": "audio/wav",
+    "Content-Type": contentType,
     "Content-Length": audio.length,
     "Cache-Control": "private, max-age=300",
     "X-Content-Type-Options": "nosniff",
@@ -3251,6 +3253,8 @@ const server = http.createServer(async (request, response) => {
       }
       const speech = await synthesizeHermesSpeech(text, {
         url: PIPER_TTS_URL,
+        edgeTtsBin: EDGE_TTS_BIN,
+        edgeVoice: EDGE_TTS_VOICE,
         timeoutMs: HERMES_SPEECH_TIMEOUT_MS,
         maxAudioBytes: HERMES_SPEECH_MAX_AUDIO_BYTES,
       });
@@ -3258,7 +3262,7 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, speech.status || 503, { ok: false, error: speech.error });
         return;
       }
-      sendAudio(response, speech.audio);
+      sendAudio(response, speech.audio, speech.contentType);
       return;
     }
 

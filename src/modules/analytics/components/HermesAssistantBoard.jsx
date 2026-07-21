@@ -165,7 +165,7 @@ export default function HermesAssistantBoard() {
       const speechText = prepareHermesSpeechText(text).slice(0, MAX_SPEECH_TEXT_LENGTH);
       const response = await fetch("/api/marketing/hermes-speech", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "audio/wav" },
+        headers: { "Content-Type": "application/json", Accept: "audio/*" },
         credentials: "include",
         body: JSON.stringify({ text: speechText }),
         signal: controller.signal,
