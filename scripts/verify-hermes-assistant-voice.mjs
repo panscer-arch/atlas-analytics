@@ -55,8 +55,8 @@ const mockWhisper = http.createServer(async (request, response) => {
     contentType: request.headers["content-type"],
     body: Buffer.concat(chunks),
   };
-  const payload = JSON.stringify({ text: "Какие задачи сейчас самые важные?" });
-  response.writeHead(200, { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) });
+  const payload = '{"language":"ru","segments":[{"text":" \\u041a\\u0430\\u043a\\u0438\\u0435"}],"text":" \\u041a\\u0430\\u043a\\u0438\\u0435 \\u0437\\u0430\\u0434\\u0430\\u0447\\u0438 \\u0441\\u0435\\u0439\\u0447\\u0430\\u0441 \\u0441\\u0430\\u043c\\u044b\\u0435 \\u0432\\u0430\\u0436\\u043d\\u044b\\u0435?"}';
+  response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
   response.end(payload);
 });
 

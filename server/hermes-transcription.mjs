@@ -1,5 +1,13 @@
 function normalizeTranscriptionPayload(payload) {
-  if (typeof payload === "string") return payload.trim();
+  if (typeof payload === "string") {
+    const value = payload.trim();
+    if (!value) return "";
+    try {
+      return normalizeTranscriptionPayload(JSON.parse(value));
+    } catch {
+      return value;
+    }
+  }
   return String(payload?.text || payload?.transcript || "").trim();
 }
 
@@ -49,4 +57,3 @@ export async function transcribeHermesAudio(audio, {
     clearTimeout(timeout);
   }
 }
-
