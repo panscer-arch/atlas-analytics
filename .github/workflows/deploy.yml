@@ -512,6 +512,20 @@ jobs:
             fi
             sleep 2
           done
+          curl -fsS \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"Гермес проверяет распознавание голоса","length_scale":1.12}' \
+            http://127.0.0.1:7466/synthesize \
+            -o /tmp/atlas-hermes-stt-check.wav
+          STT_CHECK="$(curl -fsS --max-time 180 \
+            -F 'audio_file=@/tmp/atlas-hermes-stt-check.wav;type=audio/wav' \
+            'http://127.0.0.1:7467/asr?task=transcribe&language=ru&output=json&encode=true&vad_filter=true')"
+          rm -f /tmp/atlas-hermes-stt-check.wav
+          if ! printf '%s' "$STT_CHECK" | grep -Eq '"text"[[:space:]]*:[[:space:]]*"[^[:space:]]'; then
+            echo "Whisper returned no transcription: $STT_CHECK"
+            sudo docker logs --tail 80 atlas-hermes-stt || true
+            exit 1
+          fi
           timeout 45s sudo systemctl enable --now atlas-content-api.service
           timeout 45s sudo systemctl restart atlas-content-api.service
           timeout 45s sudo systemctl enable --now atlas-telegram-bot.service
