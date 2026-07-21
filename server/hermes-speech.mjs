@@ -1,10 +1,42 @@
 import { execFile as execFileCallback } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFileCallback);
+
+export const HERMES_VOICE_PROFILES = Object.freeze({
+  "local-private": Object.freeze({
+    provider: "piper",
+  }),
+  brian: Object.freeze({
+    provider: "edge-tts",
+    voice: "en-US-BrianMultilingualNeural",
+    rate: "-9%",
+    pitch: "-5Hz",
+    volume: "-2%",
+  }),
+  andrew: Object.freeze({
+    provider: "edge-tts",
+    voice: "en-US-AndrewMultilingualNeural",
+    rate: "-8%",
+    pitch: "-6Hz",
+    volume: "-2%",
+  }),
+  ava: Object.freeze({
+    provider: "edge-tts",
+    voice: "en-US-AvaMultilingualNeural",
+    rate: "-8%",
+    pitch: "-3Hz",
+    volume: "-2%",
+  }),
+});
+
+export function resolveHermesVoiceProfile(value) {
+  const profileId = String(value || "local-private").trim();
+  return HERMES_VOICE_PROFILES[profileId] || null;
+}
 
 export function prepareHermesSpeechText(value) {
   return String(value || "")
@@ -20,9 +52,9 @@ export function prepareHermesSpeechText(value) {
 export async function synthesizeHermesSpeech(text, {
   url,
   edgeTtsBin = "",
-  edgeVoice = "en-US-AndrewMultilingualNeural",
-  edgeRate = "-8%",
-  edgePitch = "-6Hz",
+  edgeVoice = "en-US-BrianMultilingualNeural",
+  edgeRate = "-9%",
+  edgePitch = "-5Hz",
   edgeVolume = "-2%",
   timeoutMs = 60000,
   maxAudioBytes = 12 * 1024 * 1024,
@@ -34,14 +66,24 @@ export async function synthesizeHermesSpeech(text, {
     try {
       workDir = await mkdtemp(path.join(tmpdir(), "atlas-hermes-tts-"));
       const outputPath = path.join(workDir, "speech.mp3");
+      const inputPath = path.join(workDir, "speech.txt");
+      await writeFile(inputPath, text, { encoding: "utf8", mode: 0o600 });
       await execFileImpl(edgeTtsBin, [
         "--voice", edgeVoice,
         `--rate=${edgeRate}`,
         `--pitch=${edgePitch}`,
         `--volume=${edgeVolume}`,
-        "--text", text,
+        "--file", inputPath,
         "--write-media", outputPath,
-      ], { timeout: timeoutMs, maxBuffer: 1024 * 1024 });
+      ], {
+        timeout: timeoutMs,
+        maxBuffer: 1024 * 1024,
+        env: {
+          HOME: workDir,
+          LANG: "C.UTF-8",
+          PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
+        },
+      });
       const audio = await readFile(outputPath);
       if (audio.length && audio.length <= maxAudioBytes) {
         return { ok: true, audio, contentType: "audio/mpeg", provider: "edge-tts" };
