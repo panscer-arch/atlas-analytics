@@ -2,6 +2,7 @@ import {
   BrainCircuit,
   History,
   Mic,
+  Play,
   RotateCcw,
   Send,
   Square,
@@ -14,9 +15,20 @@ import { prepareHermesSpeechText } from "../utils/hermesVoice.js";
 import "./HermesAssistantBoard.css";
 
 const HISTORY_STORAGE_KEY = "atlas.hermes.assistantHistory.v1";
+const VOICE_STORAGE_KEY = "atlas.hermes.assistantVoice.v1";
+const VOICE_ENABLED_STORAGE_KEY = "atlas.hermes.assistantVoiceEnabled.v1";
+const ONLINE_VOICE_CONSENT_STORAGE_KEY = "atlas.hermes.onlineVoiceConsent.v1";
 const MAX_HISTORY_MESSAGES = 40;
 const MAX_SPEECH_TEXT_LENGTH = 3500;
 const MAX_RECORDING_MS = 45_000;
+const VOICE_PREVIEW_TEXT = "Я Гермес. Спокойно разберём задачи Atlas и выберем следующий шаг.";
+
+const VOICE_OPTIONS = [
+  { id: "local-private", label: "Дмитрий", description: "локальный и приватный", provider: "local" },
+  { id: "brian", label: "Брайан", description: "мягкий нейросетевой", provider: "online" },
+  { id: "andrew", label: "Эндрю", description: "уверенный нейросетевой", provider: "online" },
+  { id: "ava", label: "Ава", description: "спокойный нейросетевой", provider: "online" },
+];
 
 const QUICK_PROMPTS = [
   "Что сегодня решили по Atlas?",
@@ -44,6 +56,22 @@ function readHistory() {
   }
 }
 
+function readVoiceId() {
+  if (typeof window === "undefined") return "local-private";
+  const stored = window.localStorage.getItem(VOICE_STORAGE_KEY);
+  const storedVoice = VOICE_OPTIONS.find((voice) => voice.id === stored);
+  if (!storedVoice) return "local-private";
+  if (storedVoice.provider === "online" && window.localStorage.getItem(ONLINE_VOICE_CONSENT_STORAGE_KEY) !== "true") {
+    return "local-private";
+  }
+  return storedVoice.id;
+}
+
+function readVoiceEnabled() {
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(VOICE_ENABLED_STORAGE_KEY) !== "false";
+}
+
 function createMessage(role, text) {
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -64,7 +92,8 @@ export default function HermesAssistantBoard() {
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(readVoiceEnabled);
+  const [voiceId, setVoiceId] = useState(readVoiceId);
   const [voiceError, setVoiceError] = useState("");
   const [connection, setConnection] = useState("checking");
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
@@ -92,6 +121,10 @@ export default function HermesAssistantBoard() {
     () => [...messages].reverse().find((message) => message.role === "assistant") || null,
     [messages],
   );
+  const selectedVoice = VOICE_OPTIONS.find((voice) => voice.id === voiceId) || VOICE_OPTIONS[0];
+  const effectiveStatusCopy = connection === "offline" && status === "idle"
+    ? { label: "Нет связи", helper: "Проверьте соединение с Гермесом" }
+    : statusCopy;
 
   async function checkConnection() {
     setConnection("checking");
@@ -111,6 +144,14 @@ export default function HermesAssistantBoard() {
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(messages.slice(-MAX_HISTORY_MESSAGES)));
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
+
+  useEffect(() => {
+    window.localStorage.setItem(VOICE_STORAGE_KEY, voiceId);
+  }, [voiceId]);
+
+  useEffect(() => {
+    window.localStorage.setItem(VOICE_ENABLED_STORAGE_KEY, String(voiceEnabled));
+  }, [voiceEnabled]);
 
   useEffect(() => {
     checkConnection();
@@ -149,6 +190,18 @@ export default function HermesAssistantBoard() {
     setStatus("idle");
   }
 
+  function selectVoice(nextVoiceId) {
+    const nextVoice = VOICE_OPTIONS.find((voice) => voice.id === nextVoiceId);
+    if (!nextVoice) return;
+    if (nextVoice.provider === "online" && window.localStorage.getItem(ONLINE_VOICE_CONSENT_STORAGE_KEY) !== "true") {
+      const confirmed = window.confirm("Нейросетевой голос обрабатывает текст ответа во внешнем сервисе синтеза речи. Включить этот голос?");
+      if (!confirmed) return;
+      window.localStorage.setItem(ONLINE_VOICE_CONSENT_STORAGE_KEY, "true");
+    }
+    if (status === "speaking") stopSpeaking();
+    setVoiceId(nextVoice.id);
+  }
+
   async function speakAnswer(text) {
     if (!voiceEnabled || !speechSupported || !text.trim()) {
       setStatus("idle");
@@ -167,7 +220,7 @@ export default function HermesAssistantBoard() {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "audio/*" },
         credentials: "include",
-        body: JSON.stringify({ text: speechText }),
+        body: JSON.stringify({ text: speechText, voiceId }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error("speech_unavailable");
@@ -422,8 +475,8 @@ export default function HermesAssistantBoard() {
             <span className="hermes-assistant__core-mark"><BrainCircuit size={54} /></span>
           </div>
           <div className="hermes-assistant__status">
-            <span>{statusCopy.label}</span>
-            <strong>{status === "thinking" ? `${statusCopy.helper} · ${thinkingSeconds} сек` : statusCopy.helper}</strong>
+            <span>{effectiveStatusCopy.label}</span>
+            <strong>{status === "thinking" ? `${effectiveStatusCopy.helper} · ${thinkingSeconds} сек` : effectiveStatusCopy.helper}</strong>
           </div>
           <button
             type="button"
@@ -458,7 +511,7 @@ export default function HermesAssistantBoard() {
           <div className="hermes-assistant__voice-setting">
             <div>
               {voiceEnabled ? <Volume2 size={20} aria-hidden="true" /> : <VolumeX size={20} aria-hidden="true" />}
-              <span><strong>Спокойный голос</strong><small>Локальный голос Дмитрий · без передачи текста наружу</small></span>
+              <span><strong>Голос Гермеса</strong><small>{selectedVoice.label} · {selectedVoice.description}</small></span>
             </div>
             <button type="button" role="switch" aria-checked={voiceEnabled} onClick={() => {
               if (voiceEnabled) stopSpeaking();
@@ -466,6 +519,31 @@ export default function HermesAssistantBoard() {
             }} className={voiceEnabled ? "is-active" : ""} title="Переключить голосовой ответ">
               <span />
             </button>
+          </div>
+          <div className="hermes-assistant__voice-picker">
+            <label htmlFor="hermes-assistant-voice">Выбрать голос</label>
+            <div>
+              <select
+                id="hermes-assistant-voice"
+                value={voiceId}
+                onChange={(event) => selectVoice(event.target.value)}
+                disabled={status === "thinking" || status === "transcribing"}
+              >
+                {VOICE_OPTIONS.map((voice) => (
+                  <option key={voice.id} value={voice.id}>{voice.label} · {voice.description}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => status === "speaking" ? stopSpeaking() : speakAnswer(VOICE_PREVIEW_TEXT)}
+                disabled={!voiceEnabled || !speechSupported || status === "thinking" || status === "transcribing"}
+                title={status === "speaking" ? "Остановить голос" : "Прослушать выбранный голос"}
+                aria-label={status === "speaking" ? "Остановить голос" : "Прослушать выбранный голос"}
+              >
+                {status === "speaking" ? <Square size={15} fill="currentColor" aria-hidden="true" /> : <Play size={17} fill="currentColor" aria-hidden="true" />}
+              </button>
+            </div>
+            <small>{selectedVoice.provider === "online" ? "Онлайн: текст ответа обрабатывается сервисом синтеза" : "Локально: текст ответа не покидает сервер Hermes"}</small>
           </div>
           <button
             type="button"

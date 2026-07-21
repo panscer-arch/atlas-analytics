@@ -2,7 +2,7 @@ import http from "node:http";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { prepareHermesSpeechText, synthesizeHermesSpeech } from "./hermes-speech.mjs";
+import { prepareHermesSpeechText, resolveHermesVoiceProfile, synthesizeHermesSpeech } from "./hermes-speech.mjs";
 import { transcribeHermesAudio } from "./hermes-transcription.mjs";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
 import {
@@ -51,7 +51,6 @@ const HERMES_SPEECH_TIMEOUT_MS = 60000;
 const HERMES_SPEECH_MAX_AUDIO_BYTES = 12 * 1024 * 1024;
 const PIPER_TTS_URL = String(process.env.PIPER_TTS_URL || "http://127.0.0.1:7466/synthesize").trim();
 const EDGE_TTS_BIN = String(process.env.EDGE_TTS_BIN || "/opt/atlas-hermes-tts/venv/bin/edge-tts").trim();
-const EDGE_TTS_VOICE = String(process.env.EDGE_TTS_VOICE || "en-US-AndrewMultilingualNeural").trim();
 const HERMES_TRANSCRIPTION_MAX_REQUESTS = 30;
 const HERMES_TRANSCRIPTION_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const HERMES_TRANSCRIPTION_TIMEOUT_MS = 90000;
@@ -3251,10 +3250,18 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 400, { ok: false, error: text ? "speech_text_too_long" : "empty_speech_text" });
         return;
       }
+      const voiceProfile = resolveHermesVoiceProfile(parsed?.voiceId);
+      if (!voiceProfile) {
+        sendJson(response, 400, { ok: false, error: "unknown_voice_profile" });
+        return;
+      }
       const speech = await synthesizeHermesSpeech(text, {
         url: PIPER_TTS_URL,
-        edgeTtsBin: EDGE_TTS_BIN,
-        edgeVoice: EDGE_TTS_VOICE,
+        edgeTtsBin: voiceProfile.provider === "edge-tts" ? EDGE_TTS_BIN : "",
+        edgeVoice: voiceProfile.voice,
+        edgeRate: voiceProfile.rate,
+        edgePitch: voiceProfile.pitch,
+        edgeVolume: voiceProfile.volume,
         timeoutMs: HERMES_SPEECH_TIMEOUT_MS,
         maxAudioBytes: HERMES_SPEECH_MAX_AUDIO_BYTES,
       });

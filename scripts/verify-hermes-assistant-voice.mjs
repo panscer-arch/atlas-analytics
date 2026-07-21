@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
 import { writeFile } from "node:fs/promises";
-import { synthesizeHermesSpeech } from "../server/hermes-speech.mjs";
+import { resolveHermesVoiceProfile, synthesizeHermesSpeech } from "../server/hermes-speech.mjs";
 import { transcribeHermesAudio } from "../server/hermes-transcription.mjs";
 import { prepareHermesSpeechText, resolveRecognizedSpeech } from "../src/modules/analytics/utils/hermesVoice.js";
 
@@ -11,6 +11,9 @@ assert.equal(
   "Голосовой вопрос ещё промежуточный",
   "interim speech must be sent when the browser never marks it final",
 );
+assert.equal(resolveHermesVoiceProfile("brian").voice, "en-US-BrianMultilingualNeural");
+assert.equal(resolveHermesVoiceProfile("local-private").provider, "piper");
+assert.equal(resolveHermesVoiceProfile("../../bin/sh"), null);
 assert.equal(resolveRecognizedSpeech("Финальный вопрос", ""), "Финальный вопрос");
 assert.equal(
   resolveRecognizedSpeech("Уже финальная часть", "Уже финальная часть и последний промежуточный фрагмент"),
@@ -52,7 +55,9 @@ const edgeResult = await synthesizeHermesSpeech("Мягкий голос", {
   maxAudioBytes: 1024,
   execFileImpl: async (command, args) => {
     assert.equal(command, "/opt/edge-tts");
-    assert.ok(args.includes("en-US-AndrewMultilingualNeural"));
+    assert.ok(args.includes("en-US-BrianMultilingualNeural"));
+    assert.ok(args.includes("--file"));
+    assert.ok(!args.includes("Мягкий голос"));
     const outputPath = args[args.indexOf("--write-media") + 1];
     await writeFile(outputPath, mp3Fixture);
   },
