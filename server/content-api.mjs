@@ -394,10 +394,46 @@ function getHermesAssistantRateLimit(request) {
   return { allowed: true, retryAfter: 0 };
 }
 
-async function askHermesAssistant(prompt) {
+async function getHermesAssistantConfig() {
   const fileEnv = await readTelegramEnv();
   const bridgeUrl = String(process.env.HERMES_BRIDGE_URL || fileEnv.HERMES_BRIDGE_URL || "").trim();
   const bridgeToken = String(process.env.HERMES_BRIDGE_TOKEN || fileEnv.HERMES_BRIDGE_TOKEN || "").trim();
+  return { bridgeUrl, bridgeToken };
+}
+
+function getHermesHealthUrl(bridgeUrl) {
+  try {
+    const value = new URL(bridgeUrl);
+    value.pathname = value.pathname.replace(/\/message\/?$/, "/health");
+    return value.toString();
+  } catch {
+    return "";
+  }
+}
+
+async function checkHermesAssistantHealth() {
+  const { bridgeUrl, bridgeToken } = await getHermesAssistantConfig();
+  const healthUrl = getHermesHealthUrl(bridgeUrl);
+  if (!healthUrl || !bridgeToken) return { online: false };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(healthUrl, {
+      headers: { Authorization: `Bearer ${bridgeToken}`, Accept: "application/json" },
+      signal: controller.signal,
+    });
+    return { online: response.ok, latencyMs: Date.now() - startedAt };
+  } catch {
+    return { online: false };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function askHermesAssistant(prompt) {
+  const { bridgeUrl, bridgeToken } = await getHermesAssistantConfig();
   if (!bridgeUrl || !bridgeToken) {
     return { ok: false, status: 503, error: "hermes_not_configured" };
   }
@@ -3101,6 +3137,16 @@ const server = http.createServer(async (request, response) => {
         result.ok ? 200 : result.status || 502,
         result.ok ? { ok: true, answer: result.answer } : { ok: false, error: result.error },
       );
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/hermes-health" && request.method === "GET") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "assistant_auth_required" });
+        return;
+      }
+      const health = await checkHermesAssistantHealth();
+      sendJson(response, health.online ? 200 : 503, { ok: health.online, ...health });
       return;
     }
 

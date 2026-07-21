@@ -2,6 +2,7 @@ import {
   BrainCircuit,
   History,
   Mic,
+  RotateCcw,
   Send,
   Square,
   Trash2,
@@ -65,28 +66,76 @@ function getRussianVoice() {
   return voices.find((voice) => /^ru[-_]/i.test(voice.lang)) || voices[0] || null;
 }
 
+function prepareSpeechText(value) {
+  return String(value || "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/[*#_>~-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function HermesAssistantBoard() {
   const [messages, setMessages] = useState(readHistory);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [connection, setConnection] = useState("checking");
+  const [thinkingSeconds, setThinkingSeconds] = useState(0);
+  const [micPermissionDenied, setMicPermissionDenied] = useState(false);
   const recognitionRef = useRef(null);
   const transcriptEndRef = useRef(null);
   const pendingVoiceTextRef = useRef("");
   const requestInFlightRef = useRef(false);
+  const requestControllerRef = useRef(null);
 
   const recognitionSupported = useMemo(() => Boolean(getRecognitionConstructor()), []);
   const speechSupported = typeof window !== "undefined" && "speechSynthesis" in window;
   const statusCopy = STATUS_COPY[status] || STATUS_COPY.idle;
+  const lastAssistantMessage = useMemo(
+    () => [...messages].reverse().find((message) => message.role === "assistant") || null,
+    [messages],
+  );
+
+  async function checkConnection() {
+    setConnection("checking");
+    try {
+      const response = await fetch("/api/marketing/hermes-health", {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json().catch(() => ({}));
+      setConnection(response.ok && payload?.online ? "online" : "offline");
+    } catch {
+      setConnection("offline");
+    }
+  }
 
   useEffect(() => {
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(messages.slice(-MAX_HISTORY_MESSAGES)));
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
+  useEffect(() => {
+    checkConnection();
+  }, []);
+
+  useEffect(() => {
+    if (status !== "thinking") return undefined;
+    const startedAt = Date.now();
+    setThinkingSeconds(0);
+    const interval = window.setInterval(() => {
+      setThinkingSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [status]);
+
   useEffect(() => () => {
     recognitionRef.current?.abort?.();
+    requestControllerRef.current?.abort?.();
     window.speechSynthesis?.cancel?.();
   }, []);
 
@@ -102,7 +151,7 @@ export default function HermesAssistantBoard() {
     }
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(prepareSpeechText(text));
     utterance.lang = "ru-RU";
     utterance.rate = 1;
     utterance.pitch = 0.95;
@@ -125,11 +174,14 @@ export default function HermesAssistantBoard() {
     setMessages((current) => [...current, createMessage("user", prompt)].slice(-MAX_HISTORY_MESSAGES));
 
     try {
+      const controller = new AbortController();
+      requestControllerRef.current = controller;
       const response = await fetch("/api/marketing/hermes-message", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         credentials: "include",
         body: JSON.stringify({ prompt }),
+        signal: controller.signal,
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || payload?.ok === false) {
@@ -143,13 +195,26 @@ export default function HermesAssistantBoard() {
 
       const answer = String(payload?.answer || "").trim() || "Я не получил готовый ответ. Попробуйте уточнить вопрос.";
       setMessages((current) => [...current, createMessage("assistant", answer)].slice(-MAX_HISTORY_MESSAGES));
+      setConnection("online");
       speakAnswer(answer);
     } catch (requestError) {
+      if (requestError?.name === "AbortError") {
+        setStatus("idle");
+        return;
+      }
       setError(requestError?.message || "Не удалось связаться с Гермесом.");
+      setConnection("offline");
       setStatus("error");
     } finally {
       requestInFlightRef.current = false;
+      requestControllerRef.current = null;
     }
+  }
+
+  function cancelRequest() {
+    requestControllerRef.current?.abort?.();
+    setStatus("idle");
+    setError("");
   }
 
   function startListening() {
@@ -169,6 +234,7 @@ export default function HermesAssistantBoard() {
 
     recognition.onstart = () => {
       setError("");
+      setMicPermissionDenied(false);
       setStatus("listening");
     };
     recognition.onresult = (event) => {
@@ -184,7 +250,8 @@ export default function HermesAssistantBoard() {
     };
     recognition.onerror = (event) => {
       const denied = event.error === "not-allowed" || event.error === "service-not-allowed";
-      setError(denied ? "Разрешите доступ к микрофону в настройках браузера." : "Не удалось распознать речь. Попробуйте ещё раз.");
+      setMicPermissionDenied(denied);
+      setError(denied ? "Микрофон заблокирован браузером." : "Не удалось распознать речь. Попробуйте ещё раз.");
       setStatus("error");
     };
     recognition.onend = () => {
@@ -217,10 +284,17 @@ export default function HermesAssistantBoard() {
           <h2 id="hermes-assistant-title">Личный помощник Atlas</h2>
           <p>Голосовой доступ к задачам, решениям и общей памяти проекта.</p>
         </div>
-        <div className="hermes-assistant__connection" aria-label="Гермес подключён к памяти Atlas">
+        <button
+          type="button"
+          className={`hermes-assistant__connection hermes-assistant__connection--${connection}`}
+          aria-label="Проверить связь Гермеса с памятью Atlas"
+          onClick={checkConnection}
+          title="Проверить соединение"
+        >
           <span aria-hidden="true" />
-          Память Atlas подключена
-        </div>
+          {connection === "online" ? "Память Atlas подключена" : connection === "offline" ? "Гермес недоступен" : "Проверяю связь"}
+          <RotateCcw size={14} aria-hidden="true" />
+        </button>
       </header>
 
       <div className="hermes-assistant__workspace">
@@ -251,7 +325,7 @@ export default function HermesAssistantBoard() {
             {status === "thinking" ? (
               <div className="hermes-assistant__thinking" role="status">
                 <span /><span /><span />
-                Гермес ищет ответ в памяти
+                Гермес ищет ответ в памяти · {thinkingSeconds} сек
               </div>
             ) : null}
             <div ref={transcriptEndRef} />
@@ -267,18 +341,25 @@ export default function HermesAssistantBoard() {
           </div>
           <div className="hermes-assistant__status">
             <span>{statusCopy.label}</span>
-            <strong>{statusCopy.helper}</strong>
+            <strong>{status === "thinking" ? `${statusCopy.helper} · ${thinkingSeconds} сек` : statusCopy.helper}</strong>
           </div>
           <button
             type="button"
             className="hermes-assistant__voice-button"
-            onClick={status === "speaking" ? stopSpeaking : startListening}
-            disabled={status === "thinking" || (!recognitionSupported && status !== "speaking")}
+            onClick={status === "thinking" ? cancelRequest : status === "speaking" ? stopSpeaking : startListening}
+            disabled={!recognitionSupported && status !== "speaking" && status !== "thinking"}
           >
-            {status === "listening" ? <Square size={22} fill="currentColor" aria-hidden="true" /> : status === "speaking" ? <VolumeX size={24} aria-hidden="true" /> : <Mic size={25} aria-hidden="true" />}
-            <span>{status === "listening" ? "Остановить" : status === "speaking" ? "Остановить ответ" : "Говорить с Гермесом"}</span>
+            {status === "thinking" || status === "listening" ? <Square size={22} fill="currentColor" aria-hidden="true" /> : status === "speaking" ? <VolumeX size={24} aria-hidden="true" /> : <Mic size={25} aria-hidden="true" />}
+            <span>{status === "thinking" ? "Остановить запрос" : status === "listening" ? "Остановить" : status === "speaking" ? "Остановить ответ" : "Говорить с Гермесом"}</span>
           </button>
           <small>{recognitionSupported ? "Микрофон включается только после нажатия" : "В этом браузере доступен текстовый режим"}</small>
+          {micPermissionDenied ? (
+            <div className="hermes-assistant__mic-help" role="alert">
+              <strong>Разрешите микрофон для этого сайта</strong>
+              <span>Откройте настройки сайта рядом с адресной строкой, включите микрофон и нажмите «Проверить снова».</span>
+              <button type="button" onClick={startListening}>Проверить снова</button>
+            </div>
+          ) : null}
         </section>
 
         <aside className="hermes-assistant__actions" aria-label="Быстрые запросы">
@@ -304,6 +385,15 @@ export default function HermesAssistantBoard() {
               <span />
             </button>
           </div>
+          <button
+            type="button"
+            className="hermes-assistant__replay-button"
+            onClick={() => lastAssistantMessage && speakAnswer(lastAssistantMessage.text)}
+            disabled={!lastAssistantMessage || !speechSupported || status === "thinking"}
+          >
+            <RotateCcw size={17} aria-hidden="true" />
+            Повторить последний ответ
+          </button>
         </aside>
       </div>
 
