@@ -3,6 +3,7 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prepareHermesSpeechText, synthesizeHermesSpeech } from "./hermes-speech.mjs";
+import { transcribeHermesAudio } from "./hermes-transcription.mjs";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
 import {
   collectMarketingDashboardEvents,
@@ -49,6 +50,10 @@ const HERMES_SPEECH_MAX_TEXT_LENGTH = 3500;
 const HERMES_SPEECH_TIMEOUT_MS = 60000;
 const HERMES_SPEECH_MAX_AUDIO_BYTES = 12 * 1024 * 1024;
 const PIPER_TTS_URL = String(process.env.PIPER_TTS_URL || "http://127.0.0.1:7466/synthesize").trim();
+const HERMES_TRANSCRIPTION_MAX_REQUESTS = 30;
+const HERMES_TRANSCRIPTION_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
+const HERMES_TRANSCRIPTION_TIMEOUT_MS = 90000;
+const WHISPER_ASR_URL = String(process.env.WHISPER_ASR_URL || "http://127.0.0.1:7467/asr").trim();
 const SUPERSUS_ACCESS_PASSWORD_HASH = String(
   process.env.SUPERSUS_ACCESS_PASSWORD_HASH
   || "734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e",
@@ -234,6 +239,7 @@ const financeLoginAttempts = new Map();
 const marketingLoginAttempts = new Map();
 const hermesAssistantRequests = new Map();
 const hermesSpeechRequests = new Map();
+const hermesTranscriptionRequests = new Map();
 
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
@@ -429,6 +435,29 @@ function getHermesSpeechRateLimit(request) {
 
   current.count += 1;
   if (current.count > HERMES_SPEECH_MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+function getHermesTranscriptionRateLimit(request) {
+  const now = Date.now();
+  const key = String(request.headers["x-forwarded-for"] || request.socket?.remoteAddress || "unknown")
+    .split(",")[0]
+    .trim();
+  const current = hermesTranscriptionRequests.get(key);
+  if (!current || current.resetAt <= now) {
+    if (hermesTranscriptionRequests.size > 1000) {
+      for (const [storedKey, value] of hermesTranscriptionRequests) {
+        if (value.resetAt <= now) hermesTranscriptionRequests.delete(storedKey);
+      }
+    }
+    hermesTranscriptionRequests.set(key, { count: 1, resetAt: now + HERMES_ASSISTANT_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+
+  current.count += 1;
+  if (current.count > HERMES_TRANSCRIPTION_MAX_REQUESTS) {
     return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
   }
   return { allowed: true, retryAfter: 0 };
@@ -2940,6 +2969,19 @@ async function readBody(request) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+async function readBinaryBody(request, maxBytes = MAX_BODY_BYTES) {
+  const chunks = [];
+  let size = 0;
+
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBytes) throw new Error("request_body_too_large");
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
+
 function filePathForKey(key) {
   return path.join(STORE_DIR, `${key}.json`);
 }
@@ -3217,6 +3259,37 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       sendAudio(response, speech.audio);
+      return;
+    }
+
+    if (url.pathname === "/api/marketing/hermes-transcription" && request.method === "POST") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "assistant_auth_required" });
+        return;
+      }
+      const rateLimit = getHermesTranscriptionRateLimit(request);
+      if (!rateLimit.allowed) {
+        sendJson(response, 429, { ok: false, error: "transcription_rate_limit" }, { "Retry-After": String(rateLimit.retryAfter) });
+        return;
+      }
+      const contentType = String(request.headers["content-type"] || "audio/webm").split(";")[0].trim();
+      if (!contentType.startsWith("audio/")) {
+        sendJson(response, 415, { ok: false, error: "unsupported_audio_type" });
+        return;
+      }
+      const audio = await readBinaryBody(request, HERMES_TRANSCRIPTION_MAX_AUDIO_BYTES);
+      const extension = contentType.includes("ogg") ? "ogg" : contentType.includes("mp4") ? "m4a" : "webm";
+      const transcription = await transcribeHermesAudio(audio, {
+        url: WHISPER_ASR_URL,
+        contentType,
+        filename: `hermes-voice.${extension}`,
+        timeoutMs: HERMES_TRANSCRIPTION_TIMEOUT_MS,
+      });
+      sendJson(
+        response,
+        transcription.ok ? 200 : transcription.status || 503,
+        transcription.ok ? { ok: true, text: transcription.text } : { ok: false, error: transcription.error },
+      );
       return;
     }
 

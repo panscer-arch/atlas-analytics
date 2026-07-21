@@ -10,12 +10,13 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { prepareHermesSpeechText, resolveRecognizedSpeech } from "../utils/hermesVoice.js";
+import { prepareHermesSpeechText } from "../utils/hermesVoice.js";
 import "./HermesAssistantBoard.css";
 
 const HISTORY_STORAGE_KEY = "atlas.hermes.assistantHistory.v1";
 const MAX_HISTORY_MESSAGES = 40;
 const MAX_SPEECH_TEXT_LENGTH = 3500;
+const MAX_RECORDING_MS = 45_000;
 
 const QUICK_PROMPTS = [
   "Что сегодня решили по Atlas?",
@@ -26,7 +27,8 @@ const QUICK_PROMPTS = [
 
 const STATUS_COPY = {
   idle: { label: "Готов", helper: "Нажмите на микрофон и говорите" },
-  listening: { label: "Слушаю", helper: "Говорите. Повторное нажатие остановит запись" },
+  listening: { label: "Слушаю", helper: "Говорите, затем нажмите ещё раз для отправки" },
+  transcribing: { label: "Распознаю", helper: "Whisper переводит голос в текст" },
   thinking: { label: "Думаю", helper: "Ищу ответ в памяти Atlas" },
   speaking: { label: "Отвечаю", helper: "Гермес озвучивает ответ" },
   error: { label: "Нужна помощь", helper: "Попробуйте ещё раз или напишите сообщение" },
@@ -57,11 +59,6 @@ function formatMessageTime(value) {
   return new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-function getRecognitionConstructor() {
-  if (typeof window === "undefined") return null;
-  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-}
-
 export default function HermesAssistantBoard() {
   const [messages, setMessages] = useState(readHistory);
   const [input, setInput] = useState("");
@@ -72,18 +69,23 @@ export default function HermesAssistantBoard() {
   const [connection, setConnection] = useState("checking");
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
-  const recognitionRef = useRef(null);
-  const recognitionErrorRef = useRef(false);
   const transcriptEndRef = useRef(null);
-  const pendingVoiceTextRef = useRef("");
-  const latestVoiceTextRef = useRef("");
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const mediaChunksRef = useRef([]);
+  const recordingTimeoutRef = useRef(null);
+  const transcriptionControllerRef = useRef(null);
   const requestInFlightRef = useRef(false);
   const requestControllerRef = useRef(null);
   const speechControllerRef = useRef(null);
   const audioRef = useRef(null);
   const audioUrlRef = useRef("");
 
-  const recognitionSupported = useMemo(() => Boolean(getRecognitionConstructor()), []);
+  const recognitionSupported = useMemo(() => Boolean(
+    typeof window !== "undefined"
+    && typeof window.MediaRecorder === "function"
+    && window.navigator?.mediaDevices?.getUserMedia,
+  ), []);
   const speechSupported = typeof window !== "undefined" && typeof window.Audio === "function";
   const statusCopy = STATUS_COPY[status] || STATUS_COPY.idle;
   const lastAssistantMessage = useMemo(
@@ -125,7 +127,10 @@ export default function HermesAssistantBoard() {
   }, [status]);
 
   useEffect(() => () => {
-    recognitionRef.current?.abort?.();
+    window.clearTimeout(recordingTimeoutRef.current);
+    mediaRecorderRef.current?.stop?.();
+    mediaStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+    transcriptionControllerRef.current?.abort?.();
     requestControllerRef.current?.abort?.();
     speechControllerRef.current?.abort?.();
     audioRef.current?.pause?.();
@@ -243,58 +248,103 @@ export default function HermesAssistantBoard() {
     setError("");
   }
 
-  function startListening() {
-    if (status === "listening") {
-      recognitionRef.current?.stop?.();
+  function stopRecording() {
+    window.clearTimeout(recordingTimeoutRef.current);
+    recordingTimeoutRef.current = null;
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+  }
+
+  function cancelTranscription() {
+    transcriptionControllerRef.current?.abort?.();
+    transcriptionControllerRef.current = null;
+    setStatus("idle");
+  }
+
+  async function transcribeRecording(blob) {
+    if (!blob?.size) {
+      setError("Запись получилась пустой. Попробуйте ещё раз.");
+      setStatus("error");
       return;
     }
-    if (!recognitionSupported || status === "thinking") return;
+
+    setStatus("transcribing");
+    try {
+      const controller = new AbortController();
+      transcriptionControllerRef.current = controller;
+      const response = await fetch("/api/marketing/hermes-transcription", {
+        method: "POST",
+        headers: { "Content-Type": blob.type || "audio/webm", Accept: "application/json" },
+        credentials: "include",
+        body: blob,
+        signal: controller.signal,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !String(payload?.text || "").trim()) {
+        const message = payload?.error === "speech_not_recognized"
+          ? "Не удалось разобрать речь. Произнесите вопрос чуть ближе к микрофону."
+          : "Сервис распознавания голоса сейчас не ответил. Попробуйте ещё раз.";
+        throw new Error(message);
+      }
+      const transcript = String(payload.text).trim();
+      setInput(transcript);
+      await sendMessage(transcript);
+    } catch (transcriptionError) {
+      if (transcriptionError?.name === "AbortError") {
+        setStatus("idle");
+        return;
+      }
+      setError(transcriptionError?.message || "Не удалось распознать голос.");
+      setStatus("error");
+    } finally {
+      transcriptionControllerRef.current = null;
+    }
+  }
+
+  async function startListening() {
+    if (status === "listening") return stopRecording();
+    if (!recognitionSupported || status === "thinking" || status === "transcribing") return;
     if (status === "speaking") stopSpeaking();
 
-    const Recognition = getRecognitionConstructor();
-    const recognition = new Recognition();
-    recognition.lang = "ru-RU";
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    pendingVoiceTextRef.current = "";
-    latestVoiceTextRef.current = "";
-    recognitionErrorRef.current = false;
+    try {
+      const stream = await window.navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      const preferredType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]
+        .find((type) => window.MediaRecorder.isTypeSupported?.(type));
+      const recorder = preferredType
+        ? new window.MediaRecorder(stream, { mimeType: preferredType })
+        : new window.MediaRecorder(stream);
 
-    recognition.onstart = () => {
+      mediaStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      mediaChunksRef.current = [];
       setError("");
       setMicPermissionDenied(false);
       setStatus("listening");
-    };
-    recognition.onresult = (event) => {
-      let finalText = "";
-      let interimText = "";
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const part = event.results[index][0]?.transcript || "";
-        if (event.results[index].isFinal) finalText += part;
-        else interimText += part;
-      }
-      if (finalText.trim()) pendingVoiceTextRef.current = `${pendingVoiceTextRef.current} ${finalText}`.trim();
-      const latestText = `${pendingVoiceTextRef.current} ${interimText}`.trim();
-      latestVoiceTextRef.current = latestText;
-      setInput(latestText);
-    };
-    recognition.onerror = (event) => {
-      recognitionErrorRef.current = true;
-      const denied = event.error === "not-allowed" || event.error === "service-not-allowed";
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size) mediaChunksRef.current.push(event.data);
+      };
+      recorder.onerror = () => {
+        setError("Не удалось записать голос. Попробуйте ещё раз.");
+        setStatus("error");
+      };
+      recorder.onstop = () => {
+        const recordedType = recorder.mimeType || preferredType || "audio/webm";
+        const blob = new Blob(mediaChunksRef.current, { type: recordedType });
+        mediaChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        mediaStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+        transcribeRecording(blob);
+      };
+      recorder.start(250);
+      recordingTimeoutRef.current = window.setTimeout(stopRecording, MAX_RECORDING_MS);
+    } catch (recordingError) {
+      const denied = recordingError?.name === "NotAllowedError" || recordingError?.name === "SecurityError";
       setMicPermissionDenied(denied);
-      setError(denied ? "Микрофон заблокирован браузером." : "Не удалось распознать речь. Попробуйте ещё раз.");
+      setError(denied ? "Микрофон заблокирован браузером." : "Не удалось включить микрофон.");
       setStatus("error");
-    };
-    recognition.onend = () => {
-      recognitionRef.current = null;
-      const spokenText = resolveRecognizedSpeech(pendingVoiceTextRef.current, latestVoiceTextRef.current);
-      if (recognitionErrorRef.current) return;
-      if (spokenText) sendMessage(spokenText);
-      else setStatus((current) => current === "listening" ? "idle" : current);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
+    }
   }
 
   function clearHistory() {
@@ -378,11 +428,11 @@ export default function HermesAssistantBoard() {
           <button
             type="button"
             className="hermes-assistant__voice-button"
-            onClick={status === "thinking" ? cancelRequest : status === "speaking" ? stopSpeaking : startListening}
-            disabled={!recognitionSupported && status !== "speaking" && status !== "thinking"}
+            onClick={status === "thinking" ? cancelRequest : status === "transcribing" ? cancelTranscription : status === "speaking" ? stopSpeaking : startListening}
+            disabled={!recognitionSupported && status !== "speaking" && status !== "thinking" && status !== "transcribing"}
           >
-            {status === "thinking" || status === "listening" ? <Square size={22} fill="currentColor" aria-hidden="true" /> : status === "speaking" ? <VolumeX size={24} aria-hidden="true" /> : <Mic size={25} aria-hidden="true" />}
-            <span>{status === "thinking" ? "Остановить запрос" : status === "listening" ? "Остановить" : status === "speaking" ? "Остановить ответ" : "Говорить с Гермесом"}</span>
+            {status === "thinking" || status === "listening" || status === "transcribing" ? <Square size={22} fill="currentColor" aria-hidden="true" /> : status === "speaking" ? <VolumeX size={24} aria-hidden="true" /> : <Mic size={25} aria-hidden="true" />}
+            <span>{status === "thinking" ? "Остановить запрос" : status === "transcribing" ? "Отменить распознавание" : status === "listening" ? "Остановить и отправить" : status === "speaking" ? "Остановить ответ" : "Говорить с Гермесом"}</span>
           </button>
           <small>{recognitionSupported ? "Микрофон включается только после нажатия" : "В этом браузере доступен текстовый режим"}</small>
           {micPermissionDenied ? (
@@ -400,7 +450,7 @@ export default function HermesAssistantBoard() {
           </div>
           <div className="hermes-assistant__quick-list">
             {QUICK_PROMPTS.map((prompt) => (
-              <button key={prompt} type="button" onClick={() => sendMessage(prompt)} disabled={status === "thinking"}>
+              <button key={prompt} type="button" onClick={() => sendMessage(prompt)} disabled={status === "thinking" || status === "transcribing"}>
                 {prompt}
               </button>
             ))}
@@ -421,7 +471,7 @@ export default function HermesAssistantBoard() {
             type="button"
             className="hermes-assistant__replay-button"
             onClick={() => lastAssistantMessage && speakAnswer(lastAssistantMessage.text)}
-            disabled={!lastAssistantMessage || !speechSupported || status === "thinking"}
+            disabled={!lastAssistantMessage || !speechSupported || status === "thinking" || status === "transcribing"}
           >
             <RotateCcw size={17} aria-hidden="true" />
             Повторить последний ответ
@@ -446,7 +496,7 @@ export default function HermesAssistantBoard() {
             rows={2}
             maxLength={12000}
           />
-          <button type="submit" disabled={!input.trim() || status === "thinking"} aria-label="Отправить сообщение">
+          <button type="submit" disabled={!input.trim() || status === "thinking" || status === "transcribing"} aria-label="Отправить сообщение">
             <Send size={22} aria-hidden="true" />
           </button>
         </div>

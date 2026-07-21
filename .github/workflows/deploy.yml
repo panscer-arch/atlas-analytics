@@ -117,7 +117,7 @@ jobs:
       - name: Deploy content API
         if: steps.server_changes.outputs.content_api == 'true'
         shell: bash
-        timeout-minutes: 6
+        timeout-minutes: 15
         run: |
           run_with_retry() {
             local label="$1"
@@ -147,6 +147,7 @@ jobs:
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
           scp_to_vps server/hermes-speech.mjs /tmp/atlas-hermes-speech.mjs
+          scp_to_vps server/hermes-transcription.mjs /tmp/atlas-hermes-transcription.mjs
           scp_to_vps server/marketing-dashboard-monitor.mjs /tmp/atlas-marketing-dashboard-monitor.mjs
           scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
@@ -168,6 +169,7 @@ jobs:
           sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content/telegram-memory-archive /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs
+          sudo mv /tmp/atlas-hermes-transcription.mjs /opt/atlas-content-api/hermes-transcription.mjs
           sudo mv /tmp/atlas-marketing-dashboard-monitor.mjs /opt/atlas-content-api/marketing-dashboard-monitor.mjs
           sudo mv /tmp/atlas-telegram-task-store.mjs /opt/atlas-content-api/telegram-task-store.mjs
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
@@ -204,6 +206,27 @@ jobs:
           fi
           sudo chown -R root:root "$PIPER_DIR"
           sudo chmod -R a+rX "$PIPER_DIR"
+
+          if ! command -v docker >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+          fi
+          timeout 45s sudo systemctl enable --now docker.service
+          sudo mkdir -p /opt/atlas-hermes-stt/cache
+          sudo docker pull onerahmet/openai-whisper-asr-webservice:latest
+          sudo docker rm -f atlas-hermes-stt >/dev/null 2>&1 || true
+          sudo docker run -d \
+            --name atlas-hermes-stt \
+            --restart unless-stopped \
+            --memory 2g \
+            --cpus 2 \
+            -p 127.0.0.1:7467:9000 \
+            -e ASR_ENGINE=faster_whisper \
+            -e ASR_MODEL=base \
+            -e ASR_DEVICE=cpu \
+            -e MODEL_IDLE_TIMEOUT=600 \
+            -v /opt/atlas-hermes-stt/cache:/root/.cache \
+            onerahmet/openai-whisper-asr-webservice:latest
           sudo tee /etc/atlas-outreach.env >/dev/null <<'ENV'
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           OUTREACH_FROM_EMAIL=${{ secrets.OUTREACH_FROM_EMAIL }}
@@ -234,6 +257,7 @@ jobs:
           Environment=ATLAS_CONTENT_API_PORT=8787
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
           Environment=PIPER_TTS_URL=http://127.0.0.1:7466/synthesize
+          Environment=WHISPER_ASR_URL=http://127.0.0.1:7467/asr
           ExecStart=/usr/bin/node /opt/atlas-content-api/content-api.mjs
           Restart=always
           RestartSec=3
@@ -474,6 +498,16 @@ jobs:
             if [ "$attempt" -eq 20 ]; then
               sudo systemctl status atlas-hermes-tts.service --no-pager || true
               sudo journalctl -u atlas-hermes-tts.service -n 60 --no-pager || true
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:7467/docs >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 45 ]; then
+              sudo docker logs --tail 80 atlas-hermes-stt || true
               exit 1
             fi
             sleep 2

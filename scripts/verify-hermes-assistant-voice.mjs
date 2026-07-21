@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
 import { synthesizeHermesSpeech } from "../server/hermes-speech.mjs";
+import { transcribeHermesAudio } from "../server/hermes-transcription.mjs";
 import { prepareHermesSpeechText, resolveRecognizedSpeech } from "../src/modules/analytics/utils/hermesVoice.js";
 
 assert.equal(
@@ -44,5 +45,39 @@ assert.deepEqual(receivedBody, { text: "Спокойный ответ", length_s
 
 mockPiper.close();
 await once(mockPiper, "close");
+
+let transcriptionRequest = null;
+const mockWhisper = http.createServer(async (request, response) => {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  transcriptionRequest = {
+    url: request.url,
+    contentType: request.headers["content-type"],
+    body: Buffer.concat(chunks),
+  };
+  const payload = JSON.stringify({ text: "Какие задачи сейчас самые важные?" });
+  response.writeHead(200, { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) });
+  response.end(payload);
+});
+
+mockWhisper.listen(0, "127.0.0.1");
+await once(mockWhisper, "listening");
+const whisperAddress = mockWhisper.address();
+const transcription = await transcribeHermesAudio(Buffer.from("voice-fixture"), {
+  url: `http://127.0.0.1:${whisperAddress.port}/asr`,
+  contentType: "audio/webm",
+  filename: "voice.webm",
+  timeoutMs: 2000,
+});
+
+assert.equal(transcription.ok, true);
+assert.equal(transcription.text, "Какие задачи сейчас самые важные?");
+assert.match(transcriptionRequest.url, /language=ru/);
+assert.match(transcriptionRequest.url, /vad_filter=true/);
+assert.match(transcriptionRequest.contentType, /^multipart\/form-data; boundary=/);
+assert.ok(transcriptionRequest.body.length > Buffer.byteLength("voice-fixture"));
+
+mockWhisper.close();
+await once(mockWhisper, "close");
 
 console.log("Hermes voice verification passed.");
