@@ -6,7 +6,7 @@ HERMES_BIN="${HERMES_BIN:-$HERMES_HOME/.local/bin/hermes}"
 HERMES_PYTHON="${HERMES_PYTHON:-$HERMES_HOME/.hermes/hermes-agent/venv/bin/python}"
 MODE="${HINDSIGHT_MODE:-local_embedded}"
 BANK_ID="${HINDSIGHT_BANK_ID:-atlas-global}"
-CONFIG_DIR="$HERMES_HOME/hindsight"
+CONFIG_DIR="$HERMES_HOME/.hermes/hindsight"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 
 if [ ! -x "$HERMES_BIN" ]; then
