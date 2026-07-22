@@ -498,6 +498,11 @@ export default function ContractBalancesPanel() {
                   <td>
                     <strong>{contract.name}</strong>
                     <span>{contract.type}</span>
+                    {contract.statusLabel ? (
+                      <small className={`analytics-contract-status analytics-contract-status-${contract.status || "default"}`}>
+                        {contract.statusLabel}
+                      </small>
+                    ) : null}
                   </td>
                   <td>{contract.description}</td>
                   <td>

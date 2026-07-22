@@ -153,9 +153,20 @@ const ATLAS_CONTRACT_ADDRESSES = [
   },
   {
     id: "daily-flow",
-    name: "Daily Flow",
+    name: "Daily Flow V2",
     type: "Smart Cycle contract",
-    description: "Smart Cycle contract with a daily payout cycle",
+    description: "Current Daily Flow contract; platform fee is charged only on the delta portion",
+    status: "pending-activation",
+    statusLabel: "Ожидает активации",
+    address: "0x8e61483d45a822cCB59482c47e1b6D28465605EC",
+  },
+  {
+    id: "daily-flow-legacy",
+    name: "Daily Flow V1 Legacy",
+    type: "Legacy Smart Cycle contract",
+    description: "Previous Daily Flow deployment; retained for existing cycles and on-chain history",
+    status: "legacy",
+    statusLabel: "Legacy / действующие старые циклы",
     address: "0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3",
   },
   {
@@ -196,7 +207,18 @@ const ATLAS_FLOW_EVENT_CONFIG = {
     claimedParts: [1],
     feeParts: [2],
   },
+  "daily-flow-legacy": {
+    lockedTopic: "0xb487eb29fe0f7991a6856ef7823cffab7461b3d1b9436c6df2f82a56491dd41f",
+    claimedTopic: "0xf0f69f9e2ee7cb1d092c923008e795077ffd8228496080084f26fb6802e20829",
+    lockedParts: [0],
+    claimedParts: [1],
+    feeParts: [2],
+  },
 };
+
+function isDailyFlowContractId(contractId = "") {
+  return contractId === "daily-flow" || contractId === "daily-flow-legacy";
+}
 const ATLAS_PARTNER_STATUS_TABLE = [
   { status: "Start", personal: 10, firstLine: 0, structure: 0, rewardPermille: 150, matchingPermille: 0 },
   { status: "Builder 1", personal: 50, firstLine: 100, structure: 0, rewardPermille: 180, matchingPermille: 0 },
@@ -1401,7 +1423,7 @@ function getAtlasLockedCycleDetails(contractId = "", data = "0x") {
     };
   }
 
-  if (contractId === "daily-flow") {
+  if (isDailyFlowContractId(contractId)) {
     const lockTime = Number(hexToBigInt(getDataWord(data, 2)));
     const tier = Number(hexToBigInt(getDataWord(data, 1)));
     return {
@@ -1493,7 +1515,7 @@ function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
       remainingLoadRaw = closed ? 0n : event.expectedLoadRaw;
       if (!closed && !termEnded && event.unlockTime <= now + 7 * ATLAS_DAY_SECONDS) next7DaysLoadRaw = event.expectedLoadRaw;
       if (!closed && !termEnded && event.unlockTime <= now + 30 * ATLAS_DAY_SECONDS) next30DaysLoadRaw = event.expectedLoadRaw;
-    } else if (event.contractId === "daily-flow") {
+    } else if (isDailyFlowContractId(event.contractId)) {
       const claimedDays = Math.min(Number(ATLAS_DAILY_REWARD_DAYS), claim.claimedDays || 0);
       const elapsedDays = Math.max(0, Math.min(Number(ATLAS_DAILY_REWARD_DAYS), Math.floor((now - event.lockTime) / ATLAS_DAY_SECONDS)));
       const dailyRewardRaw = event.expectedLoadRaw / ATLAS_DAILY_REWARD_DAYS;
@@ -1583,7 +1605,7 @@ function getAtlasPartnerDeltaRaw(contractId = "", data = "0x") {
     return amountEarnedRaw > amountLockedRaw ? amountEarnedRaw - amountLockedRaw : 0n;
   }
 
-  if (contractId === "daily-flow") {
+  if (isDailyFlowContractId(contractId)) {
     const amountLockedRaw = hexToBigInt(getDataWord(data, 0));
     const tier = Number(hexToBigInt(getDataWord(data, 1)));
     const rewardRateBps = BigInt(ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER[tier] || 0);
@@ -1839,7 +1861,7 @@ async function getAtlasContractFlowSnapshot() {
             providedRaw += amountRaw;
             partnerDeltaRaw += eventPartnerDeltaRaw;
             if (contract.id === "lockup-flow") lockupDeltaRaw += eventPartnerDeltaRaw;
-            if (contract.id === "daily-flow") dailyDeltaRaw += eventPartnerDeltaRaw;
+            if (isDailyFlowContractId(contract.id)) dailyDeltaRaw += eventPartnerDeltaRaw;
             lockedEvents += 1;
             eventRows.push({
               contractId: contract.id,
@@ -1853,7 +1875,7 @@ async function getAtlasContractFlowSnapshot() {
               feeRaw: 0n,
               partnerDeltaRaw: eventPartnerDeltaRaw,
               lockupDeltaRaw: contract.id === "lockup-flow" ? eventPartnerDeltaRaw : 0n,
-              dailyDeltaRaw: contract.id === "daily-flow" ? eventPartnerDeltaRaw : 0n,
+              dailyDeltaRaw: isDailyFlowContractId(contract.id) ? eventPartnerDeltaRaw : 0n,
               ...cycleDetails,
             });
           }
@@ -1871,7 +1893,7 @@ async function getAtlasContractFlowSnapshot() {
               contractName: contract.name,
               type: "claimed",
               orderId: getEventOrderId(log),
-              claimedDays: contract.id === "daily-flow" ? Number(hexToBigInt(getDataWord(log.data, 0))) : 0,
+              claimedDays: isDailyFlowContractId(contract.id) ? Number(hexToBigInt(getDataWord(log.data, 0))) : 0,
               blockNumber,
               hash,
               providedRaw: 0n,

@@ -875,6 +875,31 @@
   display: block;
 }
 
+.analytics-contract-balances-table-grid td:first-child .analytics-contract-status {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.45rem;
+  border: 1px solid rgba(185, 204, 225, 0.2);
+  border-radius: 999px;
+  padding: 0.22rem 0.48rem;
+  color: rgba(220, 231, 255, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.analytics-contract-status-pending-activation {
+  border-color: rgba(255, 199, 102, 0.34) !important;
+  background: rgba(255, 199, 102, 0.08);
+  color: #ffc766 !important;
+}
+
+.analytics-contract-status-legacy {
+  border-color: rgba(79, 134, 255, 0.3) !important;
+  background: rgba(79, 134, 255, 0.08);
+  color: #a9c3ff !important;
+}
+
 .analytics-contract-address {
   border: 1px solid rgba(79, 134, 255, 0.24);
   border-radius: 0.55rem;
