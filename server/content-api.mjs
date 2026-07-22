@@ -153,21 +153,10 @@ const ATLAS_CONTRACT_ADDRESSES = [
   },
   {
     id: "daily-flow",
-    name: "Daily Flow V2",
+    name: "Daily Flow",
     type: "Smart Cycle contract",
-    description: "Current Daily Flow contract; platform fee is charged only on the delta portion",
-    status: "pending-activation",
-    statusLabel: "Ожидает активации",
+    description: "Smart Cycle contract with daily accruals; platform fee is charged only on the delta portion",
     address: "0x8e61483d45a822cCB59482c47e1b6D28465605EC",
-  },
-  {
-    id: "daily-flow-legacy",
-    name: "Daily Flow V1 Legacy",
-    type: "Legacy Smart Cycle contract",
-    description: "Previous Daily Flow deployment; retained for existing cycles and on-chain history",
-    status: "legacy",
-    statusLabel: "Legacy / действующие старые циклы",
-    address: "0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3",
   },
   {
     id: "transport",
@@ -207,17 +196,10 @@ const ATLAS_FLOW_EVENT_CONFIG = {
     claimedParts: [1],
     feeParts: [2],
   },
-  "daily-flow-legacy": {
-    lockedTopic: "0xb487eb29fe0f7991a6856ef7823cffab7461b3d1b9436c6df2f82a56491dd41f",
-    claimedTopic: "0xf0f69f9e2ee7cb1d092c923008e795077ffd8228496080084f26fb6802e20829",
-    lockedParts: [0],
-    claimedParts: [1],
-    feeParts: [2],
-  },
 };
 
 function isDailyFlowContractId(contractId = "") {
-  return contractId === "daily-flow" || contractId === "daily-flow-legacy";
+  return contractId === "daily-flow";
 }
 const ATLAS_PARTNER_STATUS_TABLE = [
   { status: "Start", personal: 10, firstLine: 0, structure: 0, rewardPermille: 150, matchingPermille: 0 },
