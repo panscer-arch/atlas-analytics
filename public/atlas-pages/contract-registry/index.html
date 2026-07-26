@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Официальный реестр смарт-контрактов и инфраструктуры Atlas System в BNB Smart Chain.">
+  <title>Atlas System — Официальный реестр смарт-контрактов</title>
+  <link rel="icon" href="atlas-logo-brand.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+  <a class="skip-link" href="#document">Перейти к содержанию</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="https://atlas-system.io/" aria-label="Atlas System — главная">
+        <img src="atlas-logo-brand.svg" alt="ATLAS SYSTEM">
+      </a>
+
+      <nav class="site-navigation" aria-label="Основная навигация">
+        <a href="https://atlas-system.io/smartcycle-1/">Циклы помощи</a>
+        <a href="https://atlas-system.io/invite-and-earn/">Партнерская программа</a>
+        <a href="https://atlas-system.io/documents">Документация</a>
+        <a href="https://atlas-system.io/contacts/">Контакты</a>
+      </nav>
+
+      <div class="site-actions">
+        <a class="language-link" href="https://atlas-system.io/ru/" aria-label="Русская версия сайта">RU</a>
+        <a class="dashboard-link" href="https://app.atlas-system.io/">Dashboard <span aria-hidden="true">↗</span></a>
+        <button class="site-menu-trigger" type="button" aria-label="Открыть меню сайта" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-site-menu" hidden>
+      <a href="https://atlas-system.io/smartcycle-1/">Циклы помощи</a>
+      <a href="https://atlas-system.io/invite-and-earn/">Партнерская программа</a>
+      <a href="https://atlas-system.io/documents">Документация</a>
+      <a href="https://atlas-system.io/contacts/">Контакты</a>
+    </div>
+  </header>
+
+  <div class="document-toolbar">
+    <div class="document-toolbar__inner">
+      <a class="back-link" href="https://atlas-system.io/">
+        <span aria-hidden="true">←</span>
+        <span>Atlas System</span>
+      </a>
+      <span class="toolbar-divider" aria-hidden="true"></span>
+      <span class="document-name">Реестр смарт-контрактов</span>
+
+      <div class="toolbar-actions">
+        <button class="toolbar-button toc-trigger" type="button" aria-controls="section-nav" aria-expanded="false">
+          <span class="toolbar-icon" aria-hidden="true">☷</span>
+          <span>Содержание</span>
+        </button>
+        <button class="toolbar-button search-trigger" type="button" aria-haspopup="dialog">
+          <span class="toolbar-icon" aria-hidden="true">⌕</span>
+          <span>Поиск</span>
+          <kbd>⌘ K</kbd>
+        </button>
+      </div>
+    </div>
+    <div class="reading-progress" aria-hidden="true"><i></i></div>
+  </div>
+
+  <main id="document" class="document" tabindex="-1">
+    <div class="loading-state" role="status">
+      <span></span>
+      <p>Загружаем документ…</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <a class="footer-brand" href="https://atlas-system.io/">
+        <img src="atlas-logo-brand.svg" alt="ATLAS SYSTEM">
+      </a>
+      <p>Техническая документация Atlas System</p>
+      <a href="#scope">Наверх <span aria-hidden="true">↑</span></a>
+    </div>
+  </footer>
+
+  <aside class="toc-drawer" id="section-nav" aria-label="Содержание документа" aria-hidden="true">
+    <div class="toc-head">
+      <div>
+        <span>Навигация</span>
+        <strong>Содержание документа</strong>
+      </div>
+      <button class="toc-close" type="button" aria-label="Закрыть содержание">×</button>
+    </div>
+    <nav class="toc-nav"></nav>
+  </aside>
+  <button class="toc-backdrop" type="button" aria-label="Закрыть содержание" hidden></button>
+
+  <dialog class="search-dialog" aria-labelledby="search-title">
+    <div class="search-head">
+      <label id="search-title" for="document-search">Поиск по документу</label>
+      <button type="button" class="search-close" aria-label="Закрыть поиск">×</button>
+    </div>
+    <input id="document-search" type="search" autocomplete="off" placeholder="Адрес, контракт, функция или раздел">
+    <div class="search-hint">Например: <button type="button">Daily Flow</button> <button type="button">ownerOf</button> <button type="button">6928212</button></div>
+    <div class="search-results" aria-live="polite"></div>
+  </dialog>
+
+  <div class="copy-status" aria-live="polite"></div>
+
+  <noscript>
+    <p class="noscript">Для отображения интерактивного документа необходимо включить JavaScript.</p>
+  </noscript>
+
+  <script src="portal.js"></script>
+</body>
+</html>

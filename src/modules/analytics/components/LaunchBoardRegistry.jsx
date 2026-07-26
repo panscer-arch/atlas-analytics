@@ -1,4 +1,5 @@
 import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
+import AtlasPagesBoard from "./AtlasPagesBoard";
 import AtlasPresentationBoard from "./AtlasPresentationBoard";
 import CodexSystemBoard from "./CodexSystemBoard";
 import ContentPlanBoard from "./ContentPlanBoard";
@@ -106,6 +107,7 @@ export const TASK_BOARD_TABS = [
 
 export const CONTENT_BOARD_TABS = [
   { id: "contentPlan", label: "Контент-план" },
+  { id: "atlasPages", label: "Страницы Atlas" },
   { id: "landings", label: "Лендинги" },
   { id: "images", label: "Images" },
   { id: "materials", label: "Материалы" },
@@ -127,6 +129,7 @@ export const CONTENT_BOARD_TABS = [
 export const STATIC_CONTENT_BOARD_IDS = [
   "dailyTasks",
   "contentPlan",
+  "atlasPages",
   "landings",
   "images",
   "videoScripts",
@@ -197,6 +200,10 @@ export const STATIC_BOARD_META = {
   contentPlan: {
     title: "Контент-план",
     description: "SMM-план Atlas по соцсетям, датам, форматам, статусам, текстам и комментариям для правок.",
+  },
+  atlasPages: {
+    title: "Страницы Atlas",
+    description: "Готовые интерактивные HTML-страницы Atlas для публикации, проверки и передачи команде.",
   },
   landings: {
     title: "Лендинги",
@@ -295,6 +302,7 @@ export const STATIC_BOARD_META = {
 const STATIC_BOARD_RENDERERS = {
   materials: () => <MaterialsLinksBoard />,
   contentPlan: () => <ContentPlanBoard />,
+  atlasPages: () => <AtlasPagesBoard />,
   landings: () => <LandingContentBoard />,
   images: () => <ImageContentBoard />,
   presentation: () => <PresentationContentTab />,
