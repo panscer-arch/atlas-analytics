@@ -102,6 +102,7 @@ function AtlasFunnelBoard() {
   const [simulatorEvents, setSimulatorEvents] = useState([]);
   const saveRequestRef = useRef(0);
   const saveQueueRef = useRef(Promise.resolve(true));
+  const skipInitialAutoSaveRef = useRef(true);
 
   useEffect(() => {
     let mounted = true;
@@ -119,6 +120,10 @@ function AtlasFunnelBoard() {
 
   useEffect(() => {
     if (!isLoaded) return undefined;
+    if (skipInitialAutoSaveRef.current) {
+      skipInitialAutoSaveRef.current = false;
+      return undefined;
+    }
     const timer = window.setTimeout(async () => {
       const requestId = saveRequestRef.current + 1;
       saveRequestRef.current = requestId;
