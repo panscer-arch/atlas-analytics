@@ -318,6 +318,7 @@ function extractInstagramCandidates(html, request) {
 function normalizeWebDiscoveryItem(item, request, index) {
   const lead = normalizeApifyItem(item, request, index);
   if (!lead) return null;
+  if (!lead.username && item.rawProvider !== "manual-url") return null;
   return {
     ...lead,
     country: item.country || lead.country,
@@ -360,9 +361,9 @@ async function searchInstagramViaPublicWeb(request = {}) {
     if (uniqueLeads(candidates.map((item, index) => normalizeWebDiscoveryItem(item, request, index)).filter(Boolean)).length >= limit) break;
   }
 
-  const items = uniqueLeads(candidates.map((item, index) => normalizeWebDiscoveryItem(item, request, index)).filter(Boolean)).slice(0, limit);
-  const seedItems = items.length ? [] : buildSeedCandidates(request).map((item, index) => normalizeWebDiscoveryItem(item, request, index)).filter(Boolean);
-  const finalItems = items.length ? items : uniqueLeads(seedItems).slice(0, limit);
+  const items = uniqueLeads(candidates.map((item, index) => normalizeWebDiscoveryItem(item, request, index)).filter(Boolean));
+  const seedItems = buildSeedCandidates(request).map((item, index) => normalizeWebDiscoveryItem(item, request, index)).filter(Boolean);
+  const finalItems = uniqueLeads([...items, ...seedItems]).slice(0, limit);
   await appendLeads(finalItems);
 
   const run = {
