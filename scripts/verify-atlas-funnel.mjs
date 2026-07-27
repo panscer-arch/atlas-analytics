@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { defaultAtlasFunnel } from "../src/modules/analytics/data/atlasFunnelData.js";
 import {
   buildAtlasFunnelMarkdown,
@@ -37,5 +38,12 @@ assert.match(markdown, /# Atlas Web3 Start/);
 assert.match(markdown, /## Карта воронки/);
 assert.match(markdown, /## Launch gate/);
 assert.doesNotMatch(markdown, /гарантированный доход/i);
+
+const contentApiSource = readFileSync(new URL("../server/content-api.mjs", import.meta.url), "utf8");
+assert.match(
+  contentApiSource,
+  /MARKETING_WRITE_CONTENT_KEYS[\s\S]*atlas\.analytics\.firstFunnel\.v1/,
+  "Серверная запись воронки должна требовать маркетинговую сессию",
+);
 
 console.log("Atlas funnel verification passed");

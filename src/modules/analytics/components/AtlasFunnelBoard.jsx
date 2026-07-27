@@ -228,7 +228,7 @@ function AtlasFunnelBoard() {
   }
 
   return (
-    <section className="atlas-funnel-board">
+    <section className="atlas-funnel-board" aria-busy={!isLoaded}>
       <header className="atlas-funnel-header">
         <div className="atlas-funnel-header-copy">
           <span className="analytics-kicker">Первая воронка Atlas</span>
@@ -258,10 +258,14 @@ function AtlasFunnelBoard() {
         </div>
         <div className="atlas-funnel-header-actions">
           <StatusSelect value={funnel.meta.status} onChange={(value) => updateMeta("status", value)} editMode={editMode} options={funnelStatusOptions} />
-          <AnalyticsActionButton variant={editMode ? "warning" : "primary"} onClick={() => setEditMode((current) => !current)}>
+          <AnalyticsActionButton
+            variant={editMode ? "warning" : "primary"}
+            onClick={() => setEditMode((current) => !current)}
+            disabled={!isLoaded}
+          >
             {editMode ? "Закончить редактирование" : "Редактировать"}
           </AnalyticsActionButton>
-          <AnalyticsActionButton onClick={forceSave}>Сохранить</AnalyticsActionButton>
+          <AnalyticsActionButton onClick={forceSave} disabled={!isLoaded}>Сохранить</AnalyticsActionButton>
           <AnalyticsActionButton onClick={copyMarkdown}>
             {copyState === "copied" ? "Скопировано" : copyState === "error" ? "Не скопировано" : "Копировать ТЗ"}
           </AnalyticsActionButton>
