@@ -74,11 +74,11 @@ jobs:
             if ! printf '%s' "$secret_value" | grep -q '[^[:space:]]'; then
               return
             fi
+            if sudo test -s "$target_path"; then
+              return
+            fi
 
             sudo install -d -m 700 -o "$HERMES_USER" -g "$HERMES_USER" "$(dirname "$target_path")"
-            if sudo test -s "$target_path"; then
-              sudo cp -p "$target_path" "${target_path}.before-reconnect"
-            fi
             printf '%s' "$secret_value" | base64 -d | sudo tee "$target_path" >/dev/null
             sudo chown "$HERMES_USER:$HERMES_USER" "$target_path"
             sudo chmod 600 "$target_path"
