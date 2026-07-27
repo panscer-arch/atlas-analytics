@@ -10,8 +10,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HOST = os.environ.get("HERMES_TELEGRAM_BRIDGE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("HERMES_TELEGRAM_BRIDGE_PORT", "9120"))
 TOKEN = os.environ.get("HERMES_TELEGRAM_BRIDGE_TOKEN", "")
-HERMES_HOME = os.environ.get("HERMES_HOME", "/opt/hermes")
-HERMES_BIN = os.environ.get("HERMES_BIN", f"{HERMES_HOME}/.local/bin/hermes")
+HERMES_WORKDIR = os.environ.get("HERMES_WORKDIR", "/opt/hermes")
+HERMES_STATE_HOME = os.environ.get("HERMES_HOME", f"{HERMES_WORKDIR}/.hermes")
+HERMES_BIN = os.environ.get("HERMES_BIN", f"{HERMES_WORKDIR}/.local/bin/hermes")
 TIMEOUT_SECONDS = int(os.environ.get("HERMES_TELEGRAM_BRIDGE_TIMEOUT", "180"))
 SESSION_GENERATION = os.environ.get("HERMES_TELEGRAM_SESSION_GENERATION", "v1")
 SESSION_LOCKS = {}
@@ -90,7 +91,7 @@ def run_hermes(prompt, source, memory_scope, env):
                 "-z",
                 prompt,
             ],
-            cwd=HERMES_HOME,
+            cwd=HERMES_WORKDIR,
             env=env,
             text=True,
             stdout=subprocess.PIPE,
@@ -113,7 +114,7 @@ def run_hermes(prompt, source, memory_scope, env):
                 "--quiet",
                 "--accept-hooks",
             ],
-            cwd=HERMES_HOME,
+            cwd=HERMES_WORKDIR,
             env=env,
             text=True,
             stdout=subprocess.PIPE,
@@ -125,7 +126,7 @@ def run_hermes(prompt, source, memory_scope, env):
         if created.returncode == 0 and session_match:
             subprocess.run(
                 [HERMES_BIN, "sessions", "rename", session_match.group(1), name],
-                cwd=HERMES_HOME,
+                cwd=HERMES_WORKDIR,
                 env=env,
                 text=True,
                 stdout=subprocess.DEVNULL,
@@ -173,8 +174,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         env = os.environ.copy()
-        env["HOME"] = HERMES_HOME
-        env["HERMES_HOME"] = HERMES_HOME
+        env["HOME"] = HERMES_WORKDIR
+        env["HERMES_HOME"] = HERMES_STATE_HOME
         env["HERMES_ACCEPT_HOOKS"] = "1"
 
         try:
