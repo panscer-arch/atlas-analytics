@@ -6,8 +6,10 @@ import {
   ExternalLink,
   FileCheck2,
   LockKeyhole,
+  MessageCircle,
   RefreshCcw,
   Route,
+  Send,
   ShieldCheck,
   WalletCards,
 } from "lucide-react";
@@ -33,6 +35,15 @@ import {
 import "./AtlasFunnelPilotPage.css";
 
 const OFFICIAL_ATLAS_URL = "https://atlas-system.io";
+const EMPTY_LEAD = {
+  name: "",
+  contactMethod: "telegram",
+  contact: "",
+  country: "",
+  message: "",
+  consent: false,
+  website: "",
+};
 
 function createInitialPilotState() {
   const saved = readAtlasFunnelSession();
@@ -73,6 +84,10 @@ function AtlasLogo() {
 function AtlasFunnelPilotPage() {
   const [pilot, setPilot] = useState(createInitialPilotState);
   const [eventState, setEventState] = useState("ready");
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [lead, setLead] = useState(EMPTY_LEAD);
+  const [leadState, setLeadState] = useState("idle");
+  const [leadError, setLeadError] = useState("");
   const attribution = useMemo(
     () => buildAtlasFunnelAttribution(typeof window === "undefined" ? "" : window.location.search),
     [],
@@ -89,6 +104,7 @@ function AtlasFunnelPilotPage() {
   const flushRequestRef = useRef(null);
   const generationRef = useRef(0);
   const routeStepRefs = useRef([]);
+  const leadFormRef = useRef(null);
   const segment = atlasFunnelPilotSegments[pilot.segmentId] || atlasFunnelPilotSegments["web3-new"];
   const question = atlasFunnelPilotQuestions[pilot.questionIndex];
   const message = atlasFunnelPilotSteps[pilot.stepIndex];
@@ -294,8 +310,66 @@ function AtlasFunnelPilotPage() {
     void trackEvent("proof_opened", { stepId: message.id });
   }
 
-  function completeAction() {
-    void trackEvent("qualified_action", { stepId: "official-site", keepalive: true });
+  function completeAction(stepId = "official-site") {
+    void trackEvent("qualified_action", { stepId, keepalive: true });
+  }
+
+  function openLeadForm() {
+    setLeadOpen(true);
+    setLeadError("");
+    completeAction("lead-form");
+    window.requestAnimationFrame(() => leadFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  function updateLead(field, value) {
+    setLead((current) => ({ ...current, [field]: value }));
+    if (leadError) setLeadError("");
+  }
+
+  async function submitLead(event) {
+    event.preventDefault();
+    if (!lead.contact.trim()) {
+      setLeadError(lead.contactMethod === "telegram" ? "Укажите Telegram username." : "Укажите email.");
+      return;
+    }
+    if (!lead.consent) {
+      setLeadError("Подтвердите согласие на связь по этой заявке.");
+      return;
+    }
+    setLeadState("sending");
+    setLeadError("");
+    const delivered = await flushEventOutbox();
+    const credentials = await ensureFunnelSession();
+    if (!delivered || !credentials) {
+      setLeadState("idle");
+      setLeadError("Нет связи с сервером. Заявка сохранена в форме, попробуйте отправить ещё раз.");
+      return;
+    }
+    const result = await postServerJson("/api/funnel/leads", {
+      ...credentials,
+      segmentId: pilot.segmentId,
+      source: pilot.answers.source || "",
+      attribution,
+      leadType: segment.leadType,
+      name: lead.name,
+      contactMethod: lead.contactMethod,
+      contact: lead.contact,
+      country: lead.country,
+      message: lead.message,
+      consent: lead.consent,
+      website: lead.website,
+    });
+    if (result.ok) {
+      setLeadState("sent");
+      return;
+    }
+    setLeadState("idle");
+    const errorMessages = {
+      invalid_funnel_lead_contact: "Проверьте формат контакта.",
+      funnel_route_not_completed: "Сначала завершите маршрут, затем отправьте заявку.",
+      funnel_lead_rate_limit: "Заявка уже принята. Повторная отправка временно ограничена.",
+    };
+    setLeadError(errorMessages[result.payload?.error] || "Не удалось отправить заявку. Попробуйте ещё раз.");
   }
 
   function restartPilot() {
@@ -316,6 +390,10 @@ function AtlasFunnelPilotPage() {
     sessionRequestRef.current = null;
     outboxRef.current = [];
     saveAtlasFunnelOutbox([]);
+    setLeadOpen(false);
+    setLead(EMPTY_LEAD);
+    setLeadState("idle");
+    setLeadError("");
     setPilot(next);
   }
 
@@ -478,15 +556,131 @@ function AtlasFunnelPilotPage() {
           <div className="atlas-pilot-complete-summary">
             <div><b>5</b><span>ответов сформировали маршрут</span></div>
             <div><b>6</b><span>шагов пройдено</span></div>
-            <div><b>0</b><span>персональных данных запрошено</span></div>
+            <div><b>0</b><span>данных потребовалось для маршрута</span></div>
           </div>
           <div className="atlas-pilot-complete-actions">
-            <a href={OFFICIAL_ATLAS_URL} target="_blank" rel="noreferrer" onClick={completeAction}>
-              {segment.cta} <ExternalLink size={17} />
+            <button type="button" className="atlas-pilot-lead-trigger" onClick={openLeadForm}>
+              {segment.cta} <MessageCircle size={17} />
+            </button>
+            <a href={OFFICIAL_ATLAS_URL} target="_blank" rel="noreferrer" onClick={() => completeAction("official-site")}>
+              Официальные материалы <ExternalLink size={17} />
             </a>
             <button type="button" onClick={restartPilot}><RefreshCcw size={16} /> Пройти заново</button>
           </div>
           <small>Переход не означает согласие на участие. Сначала изучите актуальные условия и риски на официальном сайте.</small>
+
+          {leadOpen ? (
+            <section className="atlas-pilot-lead" ref={leadFormRef}>
+              {leadState === "sent" ? (
+                <div className="atlas-pilot-lead-success">
+                  <CheckCircle2 size={32} />
+                  <span>
+                    <b>Заявка принята</b>
+                    <small>Команда получила ваш контакт и тему обращения. Повторно отправлять форму не нужно.</small>
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <header>
+                    <span className="atlas-pilot-kicker">{segment.label}</span>
+                    <h2>{segment.leadTitle}</h2>
+                    <p>{segment.leadText}</p>
+                  </header>
+                  <form onSubmit={submitLead}>
+                    <label>
+                      <span>Как к вам обращаться <small>необязательно</small></span>
+                      <input
+                        type="text"
+                        value={lead.name}
+                        onChange={(event) => updateLead("name", event.target.value)}
+                        maxLength={80}
+                        autoComplete="name"
+                        placeholder="Имя"
+                      />
+                    </label>
+                    <fieldset>
+                      <legend>Удобный способ связи</legend>
+                      <div className="atlas-pilot-contact-method">
+                        <button
+                          type="button"
+                          className={lead.contactMethod === "telegram" ? "is-active" : ""}
+                          onClick={() => updateLead("contactMethod", "telegram")}
+                        >
+                          Telegram
+                        </button>
+                        <button
+                          type="button"
+                          className={lead.contactMethod === "email" ? "is-active" : ""}
+                          onClick={() => updateLead("contactMethod", "email")}
+                        >
+                          Email
+                        </button>
+                      </div>
+                    </fieldset>
+                    <label>
+                      <span>{lead.contactMethod === "telegram" ? "Telegram username" : "Email"}</span>
+                      <input
+                        type={lead.contactMethod === "email" ? "email" : "text"}
+                        value={lead.contact}
+                        onChange={(event) => updateLead("contact", event.target.value)}
+                        maxLength={160}
+                        autoComplete={lead.contactMethod === "email" ? "email" : "off"}
+                        placeholder={lead.contactMethod === "telegram" ? "@username" : "name@example.com"}
+                        required
+                      />
+                    </label>
+                    <label>
+                      <span>Страна или регион <small>необязательно</small></span>
+                      <input
+                        type="text"
+                        value={lead.country}
+                        onChange={(event) => updateLead("country", event.target.value)}
+                        maxLength={80}
+                        autoComplete="country-name"
+                        placeholder="Например, Турция"
+                      />
+                    </label>
+                    <label className="atlas-pilot-lead-message">
+                      <span>Что вы хотите обсудить <small>необязательно</small></span>
+                      <textarea
+                        value={lead.message}
+                        onChange={(event) => updateLead("message", event.target.value)}
+                        maxLength={700}
+                        rows={5}
+                        placeholder="Коротко опишите вопрос, опыт или задачу"
+                      />
+                    </label>
+                    <label className="atlas-pilot-lead-honeypot" aria-hidden="true">
+                      <span>Website</span>
+                      <input
+                        type="text"
+                        value={lead.website}
+                        onChange={(event) => updateLead("website", event.target.value)}
+                        tabIndex={-1}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="atlas-pilot-lead-consent">
+                      <input
+                        type="checkbox"
+                        checked={lead.consent}
+                        onChange={(event) => updateLead("consent", event.target.checked)}
+                      />
+                      <span>Согласен, чтобы команда Atlas связалась со мной по этой заявке. Контакт используется только для ответа и хранится не более 180 дней.</span>
+                    </label>
+                    <div className="atlas-pilot-lead-warning">
+                      <ShieldCheck size={18} />
+                      <span>Не отправляйте seed-фразу, приватный ключ, пароли, документы или платёжные данные.</span>
+                    </div>
+                    {leadError ? <p className="atlas-pilot-lead-error" role="alert">{leadError}</p> : null}
+                    <button className="atlas-pilot-lead-submit" type="submit" disabled={leadState === "sending"}>
+                      {leadState === "sending" ? "Отправляем..." : "Отправить заявку"} <Send size={17} />
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
+          ) : null}
         </section>
       ) : null}
     </main>

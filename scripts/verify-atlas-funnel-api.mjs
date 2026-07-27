@@ -20,6 +20,8 @@ const child = spawn(process.execPath, ["server/content-api.mjs"], {
     ATLAS_CONTENT_STORE_DIR: storeDir,
     SUPERSUS_ACCESS_PASSWORD_HASH: passwordHash,
     ATLAS_FUNNEL_SIGNING_SECRET: signingSecret,
+    ATLAS_TELEGRAM_ENV_FILE: path.join(storeDir, "missing-telegram.env"),
+    ATLAS_OUTREACH_ENV_FILE: path.join(storeDir, "missing-outreach.env"),
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -142,6 +144,38 @@ try {
   });
   assert.equal(started.status, 201);
 
+  const incompleteLead = await post("/api/funnel/leads", {
+    sessionId: session.sessionId,
+    sessionToken: session.sessionToken,
+    segmentId: "crypto-user",
+    leadType: "technical",
+    contactMethod: "telegram",
+    contact: "@atlas_test_user",
+    consent: true,
+  });
+  assert.equal(incompleteLead.status, 409);
+  assert.equal((await incompleteLead.json()).error, "funnel_route_not_completed");
+
+  const invalidLeadContact = await post("/api/funnel/leads", {
+    sessionId: session.sessionId,
+    sessionToken: session.sessionToken,
+    segmentId: "crypto-user",
+    leadType: "technical",
+    contactMethod: "telegram",
+    contact: "bad",
+    consent: true,
+  });
+  assert.equal(invalidLeadContact.status, 400);
+
+  const crossOriginLead = await post("/api/funnel/leads", {}, { origin: "https://example.invalid" });
+  assert.equal(crossOriginLead.status, 403);
+  const wrongLeadContentType = await post("/api/funnel/leads", {}, { contentType: "text/plain" });
+  assert.equal(wrongLeadContentType.status, 415);
+  const oversizedLead = await post("/api/funnel/leads", null, {
+    rawBody: JSON.stringify({ padding: "x".repeat(5000) }),
+  });
+  assert.equal(oversizedLead.status, 413);
+
   const invalidQuestion = await post("/api/funnel/events", {
     ...baseEvent,
     clientEventId: "event-question-invalid",
@@ -198,7 +232,7 @@ try {
       ...(index === 0 ? { segmentId: "crypto-user", source: "youtube" } : {}),
     })),
     { event: "route_completed", stepId: "safe-start", source: "youtube" },
-    { event: "qualified_action", stepId: "official-site", source: "youtube" },
+    { event: "qualified_action", stepId: "lead-form", source: "youtube" },
   ];
   for (const [index, event] of completedEvents.entries()) {
     const response = await post("/api/funnel/events", {
@@ -217,8 +251,39 @@ try {
   });
   assert.equal(qualifiedReplay.status, 200);
 
+  const leadResponse = await post("/api/funnel/leads", {
+    ...completedSession,
+    segmentId: "crypto-user",
+    leadType: "technical",
+    contactMethod: "telegram",
+    contact: "https://t.me/atlas_test_user",
+    name: "Test Lead",
+    country: "Turkey",
+    message: "Please send the technical materials.",
+    source: "youtube",
+    attribution: { utm_source: "youtube" },
+    consent: true,
+  });
+  assert.equal(leadResponse.status, 201);
+  const createdLead = await leadResponse.json();
+  assert.ok(createdLead.leadId);
+  assert.equal(createdLead.deduplicated, false);
+
+  const duplicateLeadResponse = await post("/api/funnel/leads", {
+    ...completedSession,
+    segmentId: "crypto-user",
+    leadType: "technical",
+    contactMethod: "email",
+    contact: "second@example.com",
+    consent: true,
+  });
+  assert.equal(duplicateLeadResponse.status, 200);
+  assert.equal((await duplicateLeadResponse.json()).deduplicated, true);
+
   const unauthSummary = await fetch(`${origin}/api/funnel/summary`);
   assert.equal(unauthSummary.status, 401);
+  const unauthLeadStatus = await post("/api/funnel/leads/status", { leadId: createdLead.leadId, status: "contacted" });
+  assert.equal(unauthLeadStatus.status, 401);
 
   const login = await post("/api/marketing/browser-session", { password });
   assert.equal(login.status, 200);
@@ -237,6 +302,21 @@ try {
   assert.equal(summary.segmentCounts["crypto-user"], 1);
   assert.equal(summary.sourceCounts.youtube, 1);
   assert.equal(summary.recentSessions[0]?.sessionId, undefined);
+  assert.equal(summary.leads.total, 1);
+  assert.equal(summary.leads.statusCounts.new, 1);
+  assert.equal(summary.leads.recent[0].contact, "@atlas_test_user");
+  assert.equal(summary.leads.recent[0].sessionId, undefined);
+
+  const updateLeadStatus = await post("/api/funnel/leads/status", {
+    leadId: createdLead.leadId,
+    status: "contacted",
+  }, { headers: { Cookie: cookie } });
+  assert.equal(updateLeadStatus.status, 200);
+  const updatedSummaryResponse = await fetch(`${origin}/api/funnel/summary`, { headers: { Cookie: cookie } });
+  const updatedSummary = await updatedSummaryResponse.json();
+  assert.equal(updatedSummary.leads.statusCounts.new, 0);
+  assert.equal(updatedSummary.leads.statusCounts.contacted, 1);
+  assert.equal(updatedSummary.leads.recent[0].status, "contacted");
 
   const unconfiguredPort = port + 1001;
   const unconfiguredOrigin = `http://127.0.0.1:${unconfiguredPort}`;

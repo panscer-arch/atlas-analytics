@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
-import { getServerJson, loadServerContent, saveServerContent } from "../services/contentStore";
+import { getServerJson, loadServerContent, postServerJson, saveServerContent } from "../services/contentStore";
 import {
   ATLAS_FUNNEL_STORAGE_KEY,
   defaultAtlasFunnel,
@@ -30,6 +30,13 @@ const WORKSPACE_TABS = [
 ];
 
 const EXPERIMENT_STATUS_OPTIONS = ["Очередь", "Готов к тесту", "Запущен", "Победитель найден", "Остановлен"];
+const PILOT_LEAD_STATUS_OPTIONS = [
+  { id: "new", label: "Новая" },
+  { id: "contacted", label: "Связались" },
+  { id: "qualified", label: "Подтверждена" },
+  { id: "closed", label: "Завершена" },
+  { id: "rejected", label: "Отклонена" },
+];
 const PILOT_SOURCE_LABELS = Object.fromEntries(
   atlasFunnelPilotQuestions.find((question) => question.id === "source")?.options
     .map((option) => [option.id, option.label]) || [],
@@ -111,6 +118,7 @@ function AtlasFunnelBoard() {
   const [simulatorEvents, setSimulatorEvents] = useState([]);
   const [pilotSummary, setPilotSummary] = useState(null);
   const [pilotSummaryState, setPilotSummaryState] = useState("idle");
+  const [pilotLeadUpdateId, setPilotLeadUpdateId] = useState("");
   const saveRequestRef = useRef(0);
   const saveQueueRef = useRef(Promise.resolve(true));
   const skipInitialAutoSaveRef = useRef(true);
@@ -214,6 +222,24 @@ function AtlasFunnelBoard() {
       return;
     }
     setPilotSummaryState("unavailable");
+  }
+
+  async function updatePilotLeadStatus(leadId, status) {
+    setPilotLeadUpdateId(leadId);
+    const result = await postServerJson("/api/funnel/leads/status", { leadId, status });
+    if (result.ok) {
+      setPilotSummary((current) => ({
+        ...current,
+        leads: {
+          ...current?.leads,
+          recent: (current?.leads?.recent || []).map((lead) => (
+            lead.id === leadId ? { ...lead, status } : lead
+          )),
+        },
+      }));
+      await refreshPilotSummary();
+    }
+    setPilotLeadUpdateId("");
   }
 
   async function copyMarkdown() {
@@ -631,6 +657,7 @@ function AtlasFunnelBoard() {
                   <div><span>Начали</span><strong>{pilotSummary.uniqueSessionCounts?.funnel_started || 0}</strong><small>уникальных сессий</small></div>
                   <div><span>Завершили</span><strong>{pilotSummary.uniqueSessionCounts?.route_completed || 0}</strong><small>прошли 6 шагов</small></div>
                   <div><span>Целевое действие</span><strong>{pilotSummary.uniqueSessionCounts?.qualified_action || 0}</strong><small>перешли дальше</small></div>
+                  <div><span>Заявки</span><strong>{pilotSummary.leads?.total || 0}</strong><small>переданы команде</small></div>
                 </div>
                 <div className="atlas-funnel-live-segments">
                   {Object.entries(atlasFunnelPilotSegments).map(([segmentId, item]) => (
@@ -653,6 +680,72 @@ function AtlasFunnelBoard() {
                     </div>
                   </div>
                 ) : null}
+                <div className="atlas-funnel-lead-queue">
+                  <div className="atlas-funnel-lead-queue-head">
+                    <div>
+                      <span>Очередь заявок</span>
+                      <strong>Контакты после прохождения маршрута</strong>
+                    </div>
+                    <small>Хранятся 180 дней · доступны только внутри SuperSUS</small>
+                  </div>
+                  {pilotSummary.leads?.recent?.length ? (
+                    <div className="atlas-funnel-lead-table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Получена</th>
+                            <th>Сегмент</th>
+                            <th>Контакт</th>
+                            <th>Страна</th>
+                            <th>Сообщение</th>
+                            <th>Статус</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pilotSummary.leads.recent.map((lead) => {
+                            const contactHref = lead.contactMethod === "email"
+                              ? `mailto:${lead.contact}`
+                              : `https://t.me/${String(lead.contact || "").replace(/^@/, "")}`;
+                            return (
+                              <tr key={lead.id}>
+                                <td>
+                                  <b>{new Date(lead.createdAt).toLocaleDateString("ru-RU")}</b>
+                                  <small>{new Date(lead.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</small>
+                                </td>
+                                <td>
+                                  <b>{atlasFunnelPilotSegments[lead.segmentId]?.label || lead.segmentId}</b>
+                                  <small>{lead.leadType}</small>
+                                </td>
+                                <td>
+                                  {lead.name ? <b>{lead.name}</b> : null}
+                                  <a href={contactHref} target="_blank" rel="noreferrer">{lead.contact}</a>
+                                </td>
+                                <td>{lead.country || "—"}</td>
+                                <td className="atlas-funnel-lead-message-cell">{lead.message || "Без сообщения"}</td>
+                                <td>
+                                  <select
+                                    value={lead.status}
+                                    onChange={(event) => void updatePilotLeadStatus(lead.id, event.target.value)}
+                                    disabled={pilotLeadUpdateId === lead.id}
+                                  >
+                                    {PILOT_LEAD_STATUS_OPTIONS.map((status) => (
+                                      <option key={status.id} value={status.id}>{status.label}</option>
+                                    ))}
+                                  </select>
+                                  <small className={`atlas-funnel-lead-notify is-${lead.notificationStatus || "pending"}`}>
+                                    {lead.notificationStatus === "sent" ? "Telegram отправлен" : "Telegram ожидает"}
+                                  </small>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p>Заявок пока нет. После отправки формы они появятся здесь автоматически.</p>
+                  )}
+                </div>
               </>
             ) : (
               <p className="atlas-funnel-live-empty">

@@ -16,6 +16,9 @@ import {
 
 assert.equal(atlasFunnelPilotQuestions.length, 5);
 assert.equal(Object.keys(atlasFunnelPilotSegments).length, 4);
+assert.ok(Object.values(atlasFunnelPilotSegments).every((segment) => (
+  segment.leadType && segment.leadTitle && segment.leadText && segment.cta
+)));
 assert.equal(atlasFunnelPilotSteps.length, 6);
 assert.ok(atlasFunnelPilotSteps.every((step) => step.title && step.hook && step.body && step.proof && step.cta));
 assert.ok(atlasFunnelPilotEvents.includes("qualified_action"));
@@ -61,8 +64,11 @@ assert.equal(normalizeAtlasFunnelEvent({ event: "funnel_visit" }), null);
 
 const serverSource = readFileSync(new URL("../server/content-api.mjs", import.meta.url), "utf8");
 assert.match(serverSource, /url\.pathname === "\/api\/funnel\/events"/);
+assert.match(serverSource, /url\.pathname === "\/api\/funnel\/leads"/);
+assert.match(serverSource, /url\.pathname === "\/api\/funnel\/leads\/status"/);
 assert.match(serverSource, /url\.pathname === "\/api\/funnel\/summary"/);
 assert.match(serverSource, /ATLAS_FUNNEL_EVENTS_KEY/);
+assert.match(serverSource, /ATLAS_FUNNEL_LEADS_KEY/);
 assert.match(serverSource, /hasMarketingWriteSession\(request\)/);
 
 console.log("Atlas funnel pilot verification passed");

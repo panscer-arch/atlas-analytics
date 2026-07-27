@@ -155,7 +155,9 @@ Endpoints:
 | `POST` | `/api/content/finance-browser-session` | проверить общий пароль Центра расходов и открыть доступ в браузере |
 | `POST` | `/api/funnel/session` | выдать или продлить подписанную анонимную сессию пилотной воронки |
 | `POST` | `/api/funnel/events` | принять валидированное событие пилотной воронки |
-| `GET` | `/api/funnel/summary` | вернуть защищённую сводку по уникальным сессиям |
+| `POST` | `/api/funnel/leads` | принять заявку после завершённого маршрута |
+| `POST` | `/api/funnel/leads/status` | изменить статус заявки из защищённой вкладки SuperSUS |
+| `GET` | `/api/funnel/summary` | вернуть защищённую сводку по уникальным сессиям и заявкам |
 | `POST` | `/api/outreach/send-email` | отправить outreach email через Resend после подтверждения в UI |
 | `POST` | `/api/telegram/verify-channel` | проверить Telegram-канал через Telemetr/TGStat и вернуть контакты, живость, просмотры и дату последнего поста |
 
@@ -177,6 +179,12 @@ ATLAS_FINANCE_PASSWORD=...
 ```
 
 `ATLAS_FUNNEL_SIGNING_SECRET` обязателен для `/api/funnel/session`. Его нужно создать отдельно, например командой `openssl rand -hex 32`, хранить только в `/etc/atlas-funnel.env` и подключать к `atlas-content-api.service` отдельным systemd drop-in. Секрет нельзя добавлять во frontend, общий outreach-конфиг или Git.
+
+Публичная форма воронки принимает только имя, один контакт, страну и сообщение. Заявка
+разрешена после события `route_completed`, привязана к подписанной анонимной сессии,
+защищена honeypot-полем и rate limit. Контакты хранятся до 180 дней в закрытом ключе
+`atlas.analytics.firstFunnelLeads.v1`; получить их через общий `/api/content/:key`
+нельзя. Новая заявка дополнительно отправляется в настроенный маркетинговый Telegram-чат.
 
 После изменения файла нужно перезапустить backend:
 
