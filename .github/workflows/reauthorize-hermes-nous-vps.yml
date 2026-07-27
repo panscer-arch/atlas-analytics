@@ -70,7 +70,7 @@ jobs:
           SERVICE
 
           sudo systemctl daemon-reload
-          if ! sudo systemctl is-active --quiet hermes-nous-login.service; then
+          if ! sudo systemctl is-active --quiet hermes-nous-login.service && ! sudo test -s "$LOGIN_LOG"; then
             sudo rm -f "$LOGIN_LOG"
             sudo systemctl start hermes-nous-login.service
           fi
