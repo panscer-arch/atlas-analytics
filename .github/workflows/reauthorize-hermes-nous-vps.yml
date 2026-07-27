@@ -45,8 +45,6 @@ jobs:
             exit 1
           fi
 
-          sudo systemctl stop hermes-nous-login.service 2>/dev/null || true
-          sudo rm -f "$LOGIN_LOG"
           sudo install -d -m 750 -o hermes -g hermes "$HERMES_HOME/files"
 
           sudo tee "$LOGIN_SERVICE" >/dev/null <<SERVICE
@@ -72,10 +70,14 @@ jobs:
           SERVICE
 
           sudo systemctl daemon-reload
-          sudo systemctl start hermes-nous-login.service
+          if ! sudo systemctl is-active --quiet hermes-nous-login.service; then
+            sudo rm -f "$LOGIN_LOG"
+            sudo systemctl start hermes-nous-login.service
+          fi
 
-          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-            if sudo test -s "$LOGIN_LOG"; then
+          sleep 10
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+            if sudo grep -Eq 'verification|user.code|device.code|authorize' "$LOGIN_LOG" 2>/dev/null; then
               break
             fi
             sleep 1
