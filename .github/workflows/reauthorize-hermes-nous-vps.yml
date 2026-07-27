@@ -54,10 +54,11 @@ jobs:
           Group=hermes
           Environment=HOME=$HERMES_HOME
           Environment=HERMES_HOME=$HERMES_HOME
+          Environment=PYTHONUNBUFFERED=1
           WorkingDirectory=$HERMES_HOME
-          ExecStart=$HERMES_BIN auth add nous --type oauth --no-browser
-          StandardOutput=append:$LOGIN_LOG
-          StandardError=append:$LOGIN_LOG
+          ExecStart=/usr/bin/script -qefc "$HERMES_BIN auth add nous --type oauth --no-browser" $LOGIN_LOG
+          StandardOutput=null
+          StandardError=journal
           TimeoutStartSec=12min
 
           [Install]
@@ -67,7 +68,7 @@ jobs:
           sudo systemctl daemon-reload
           sudo systemctl start hermes-nous-login.service
 
-          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
             if sudo test -s "$LOGIN_LOG"; then
               break
             fi
@@ -76,4 +77,8 @@ jobs:
 
           echo "Open the URL below and complete the one-time Nous Portal login:"
           sudo sed -n '1,120p' "$LOGIN_LOG"
+          if ! sudo test -s "$LOGIN_LOG"; then
+            sudo systemctl --no-pager --full status hermes-nous-login.service || true
+            exit 1
+          fi
           REMOTE
