@@ -130,13 +130,25 @@ jobs:
           systemctl is-active --quiet atlas-telegram-bot.service
           curl -fsS http://127.0.0.1:${BRIDGE_PORT}/health >/dev/null
 
-          SMOKE_RESPONSE="$(curl -fsS --max-time 190 \
+          SMOKE_BODY="$(mktemp)"
+          SMOKE_STATUS="$(curl -sS --max-time 190 \
+            -o "$SMOKE_BODY" \
+            -w '%{http_code}' \
             -X POST "http://127.0.0.1:${BRIDGE_PORT}/message" \
             -H "Authorization: Bearer ${BRIDGE_TOKEN}" \
             -H 'Content-Type: application/json' \
-            --data '{"prompt":"Ответь одним словом: готов","source":{"chat":{"id":"supersus-health-check","title":"SuperSUS health check"},"author":{"id":"system","username":"system"}},"memoryScope":"chat"}')"
-          printf '%s' "$SMOKE_RESPONSE" | python3 -c \
-            'import json, sys; answer = str(json.load(sys.stdin).get("answer", "")).strip(); assert answer, "Hermes returned an empty answer"'
+            --data '{"prompt":"Ответь одним словом: готов","source":{"chatId":"supersus-health-check","chatTitle":"SuperSUS health check","authorName":"system"},"memoryScope":"chat"}')"
+          if [ "$SMOKE_STATUS" != "200" ]; then
+            echo "Hermes model smoke test failed with HTTP $SMOKE_STATUS." >&2
+            python3 -c \
+              'import json, sys; data = json.load(open(sys.argv[1])); print(str(data.get("error", "unknown_error"))[-1200:], file=sys.stderr)' \
+              "$SMOKE_BODY"
+            exit 1
+          fi
+          python3 -c \
+            'import json, sys; answer = str(json.load(sys.stdin).get("answer", "")).strip(); assert answer, "Hermes returned an empty answer"' \
+            < "$SMOKE_BODY"
+          rm -f "$SMOKE_BODY"
 
           echo "Hermes bridge, Telegram bot, and model response verified."
           REMOTE
