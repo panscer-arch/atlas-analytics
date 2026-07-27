@@ -67,6 +67,26 @@ jobs:
           sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
           sudo mkdir -p "$HERMES_HOME/.hermes"
 
+          restore_auth_secret() {
+            local secret_value="$1"
+            local target_path="$2"
+
+            if ! printf '%s' "$secret_value" | grep -q '[^[:space:]]'; then
+              return
+            fi
+
+            sudo install -d -m 700 -o "$HERMES_USER" -g "$HERMES_USER" "$(dirname "$target_path")"
+            if sudo test -s "$target_path"; then
+              sudo cp -p "$target_path" "${target_path}.before-reconnect"
+            fi
+            printf '%s' "$secret_value" | base64 -d | sudo tee "$target_path" >/dev/null
+            sudo chown "$HERMES_USER:$HERMES_USER" "$target_path"
+            sudo chmod 600 "$target_path"
+          }
+
+          restore_auth_secret '${{ secrets.HERMES_AUTH_B64 }}' "$HERMES_HOME/.hermes/auth.json"
+          restore_auth_secret '${{ secrets.HERMES_NOUS_AUTH_B64 }}' "$HERMES_HOME/.hermes/shared/nous_auth.json"
+
           if sudo test -f "$BRIDGE_ENV" && sudo grep -q '^HERMES_TELEGRAM_BRIDGE_TOKEN=' "$BRIDGE_ENV"; then
             BRIDGE_TOKEN="$(sudo sed -n 's/^HERMES_TELEGRAM_BRIDGE_TOKEN=//p' "$BRIDGE_ENV" | tail -n 1)"
           else
