@@ -1012,6 +1012,26 @@
   font-size: 12px;
 }
 
+.atlas-funnel-lead-telegram-setup {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  border: 1px solid #e5bd78;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: #fff7e8;
+  color: #6f4a0d;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.atlas-funnel-lead-telegram-setup code {
+  border-radius: 3px;
+  padding: 2px 4px;
+  background: #ffffff;
+  color: #8a4c00;
+}
+
 .atlas-funnel-lead-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--funnel-line);

@@ -306,6 +306,7 @@ try {
   assert.equal(summary.leads.statusCounts.new, 1);
   assert.equal(summary.leads.recent[0].contact, "@atlas_test_user");
   assert.equal(summary.leads.recent[0].sessionId, undefined);
+  assert.equal(summary.leadNotificationsConfigured, false);
 
   const updateLeadStatus = await post("/api/funnel/leads/status", {
     leadId: createdLead.leadId,

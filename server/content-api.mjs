@@ -4022,9 +4022,10 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
         return;
       }
-      const [state, leadState] = await Promise.all([
+      const [state, leadState, marketingChatId] = await Promise.all([
         readContent(ATLAS_FUNNEL_EVENTS_KEY, { version: 1, events: [] }),
         readContent(ATLAS_FUNNEL_LEADS_KEY, { version: 1, leads: [] }),
+        getMarketingTelegramChatId(),
       ]);
       const events = getActiveAtlasFunnelEvents(state.events);
       sendJson(response, 200, {
@@ -4032,6 +4033,7 @@ const server = http.createServer(async (request, response) => {
         updatedAt: state.updatedAt || "",
         ...buildAtlasFunnelSummary(events),
         leads: buildAtlasFunnelLeadSummary(leadState.leads),
+        leadNotificationsConfigured: Boolean(marketingChatId),
       });
       return;
     }

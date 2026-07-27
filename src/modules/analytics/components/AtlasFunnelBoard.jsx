@@ -688,6 +688,12 @@ function AtlasFunnelBoard() {
                     </div>
                     <small>Хранятся 180 дней · доступны только внутри SuperSUS</small>
                   </div>
+                  {pilotSummary.leadNotificationsConfigured === false ? (
+                    <div className="atlas-funnel-lead-telegram-setup">
+                      <b>Telegram-уведомления ещё не привязаны</b>
+                      <span>В основной командной группе выполните <code>/marketing_link</code>, затем добавьте бота в нужный маркетинговый чат и отправьте там <code>/marketing_here КОД</code>.</span>
+                    </div>
+                  ) : null}
                   {pilotSummary.leads?.recent?.length ? (
                     <div className="atlas-funnel-lead-table-wrap">
                       <table>
