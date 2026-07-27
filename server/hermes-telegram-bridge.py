@@ -13,6 +13,7 @@ TOKEN = os.environ.get("HERMES_TELEGRAM_BRIDGE_TOKEN", "")
 HERMES_HOME = os.environ.get("HERMES_HOME", "/opt/hermes")
 HERMES_BIN = os.environ.get("HERMES_BIN", f"{HERMES_HOME}/.local/bin/hermes")
 TIMEOUT_SECONDS = int(os.environ.get("HERMES_TELEGRAM_BRIDGE_TIMEOUT", "180"))
+SESSION_GENERATION = os.environ.get("HERMES_TELEGRAM_SESSION_GENERATION", "v1")
 SESSION_LOCKS = {}
 SESSION_LOCKS_GUARD = threading.Lock()
 
@@ -28,11 +29,15 @@ def json_response(handler, status, payload):
 
 def session_name(source, memory_scope="chat"):
     if str(memory_scope or "").lower() == "global":
-        return "global"
+        return f"global-{safe_session_part(SESSION_GENERATION)}"
     chat_id = str(source.get("chatId") or "unknown")
     sign = "n" if chat_id.startswith("-") else "p" if chat_id[:1].isdigit() else ""
     safe = re.sub(r"[^a-zA-Z0-9_.-]+", "-", chat_id.lstrip("-")).strip("-") or "unknown"
-    return f"chat-{sign}{safe}"
+    return f"chat-{safe_session_part(SESSION_GENERATION)}-{sign}{safe}"
+
+
+def safe_session_part(value):
+    return re.sub(r"[^a-zA-Z0-9_.-]+", "-", str(value or "")).strip("-") or "v1"
 
 
 def build_prompt(payload):

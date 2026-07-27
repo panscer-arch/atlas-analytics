@@ -100,6 +100,7 @@ jobs:
           HERMES_HOME=$HERMES_HOME
           HERMES_BIN=$HERMES_HOME/.local/bin/hermes
           HERMES_TELEGRAM_BRIDGE_TIMEOUT=180
+          HERMES_TELEGRAM_SESSION_GENERATION=v2
           ENV
           sudo chown "$HERMES_USER:$HERMES_USER" "$BRIDGE_ENV"
           sudo chmod 600 "$BRIDGE_ENV"
