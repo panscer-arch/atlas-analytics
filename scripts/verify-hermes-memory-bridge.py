@@ -10,9 +10,9 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-assert MODULE.session_name({"chatId": "-100123"}, "chat") == "chat-n100123"
-assert MODULE.session_name({"chatId": "100123"}, "chat") == "chat-p100123"
-assert MODULE.session_name({"chatId": "-100123"}, "global") == "global"
+assert MODULE.session_name({"chatId": "-100123"}, "chat") == "chat-v1-n100123"
+assert MODULE.session_name({"chatId": "100123"}, "chat") == "chat-v1-p100123"
+assert MODULE.session_name({"chatId": "-100123"}, "global") == "global-v1"
 
 memory_prompt = MODULE.build_prompt({
     "memoryOnly": True,
@@ -35,7 +35,7 @@ calls = []
 def fake_run(command, **kwargs):
     calls.append(command)
     if len(calls) == 1:
-        return SimpleNamespace(returncode=1, stdout="", stderr="No session found matching 'chat-n100123'.")
+        return SimpleNamespace(returncode=1, stdout="", stderr="No session found matching 'chat-v1-n100123'.")
     if len(calls) == 2:
         return SimpleNamespace(returncode=0, stdout="готово", stderr="session_id: test_session_1")
     return SimpleNamespace(returncode=0, stdout="", stderr="")
@@ -49,9 +49,9 @@ finally:
     MODULE.subprocess.run = real_run
 
 assert created.returncode == 0
-assert calls[0][1:3] == ["--continue", "chat-n100123"]
+assert calls[0][1:3] == ["--continue", "chat-v1-n100123"]
 assert calls[1][1:3] == ["chat", "--query"]
 assert calls[2][1:4] == ["sessions", "rename", "test_session_1"]
-assert calls[2][4] == "chat-n100123"
+assert calls[2][4] == "chat-v1-n100123"
 
 print("Hermes memory bridge checks passed")
