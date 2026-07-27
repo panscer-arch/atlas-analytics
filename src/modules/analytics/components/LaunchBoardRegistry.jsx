@@ -1,4 +1,5 @@
 import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
+import AtlasFunnelBoard from "./AtlasFunnelBoard";
 import AtlasPagesBoard from "./AtlasPagesBoard";
 import AtlasPresentationBoard from "./AtlasPresentationBoard";
 import CodexSystemBoard from "./CodexSystemBoard";
@@ -107,6 +108,7 @@ export const TASK_BOARD_TABS = [
 
 export const CONTENT_BOARD_TABS = [
   { id: "contentPlan", label: "Контент-план" },
+  { id: "funnel", label: "Воронка" },
   { id: "atlasPages", label: "Страницы Atlas" },
   { id: "landings", label: "Лендинги" },
   { id: "images", label: "Images" },
@@ -129,6 +131,7 @@ export const CONTENT_BOARD_TABS = [
 export const STATIC_CONTENT_BOARD_IDS = [
   "dailyTasks",
   "contentPlan",
+  "funnel",
   "atlasPages",
   "landings",
   "images",
@@ -200,6 +203,10 @@ export const STATIC_BOARD_META = {
   contentPlan: {
     title: "Контент-план",
     description: "SMM-план Atlas по соцсетям, датам, форматам, статусам, текстам и комментариям для правок.",
+  },
+  funnel: {
+    title: "Воронка",
+    description: "Первая рабочая воронка Atlas: карта пути, сегменты, серия сообщений, материалы, launch gate, метрики и тестовый прогон.",
   },
   atlasPages: {
     title: "Страницы Atlas",
@@ -302,6 +309,7 @@ export const STATIC_BOARD_META = {
 const STATIC_BOARD_RENDERERS = {
   materials: () => <MaterialsLinksBoard />,
   contentPlan: () => <ContentPlanBoard />,
+  funnel: () => <AtlasFunnelBoard />,
   atlasPages: () => <AtlasPagesBoard />,
   landings: () => <LandingContentBoard />,
   images: () => <ImageContentBoard />,

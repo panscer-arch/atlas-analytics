@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:funnel": "node scripts/verify-atlas-funnel.mjs",
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",
     "test:telegram-memory": "node scripts/verify-telegram-memory-archive.mjs && python3 scripts/verify-hermes-memory-bridge.py",
     "test:hermes-voice": "node scripts/verify-hermes-assistant-voice.mjs",
