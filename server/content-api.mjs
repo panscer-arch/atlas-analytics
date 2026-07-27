@@ -5,6 +5,7 @@ import path from "node:path";
 import { prepareHermesSpeechText, synthesizeHermesSpeech } from "./hermes-speech.mjs";
 import { transcribeHermesAudio } from "./hermes-transcription.mjs";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
+import { searchInstagramApi } from "./instagram-parser.mjs";
 import {
   collectMarketingDashboardEvents,
   collectMarketingDueEvents,
@@ -3819,6 +3820,20 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/content/youtube-search" && request.method === "GET") {
       const result = await searchYoutubeApi(url);
+      sendJson(response, result.ok ? 200 : result.status || 400, result);
+      return;
+    }
+
+    if (url.pathname === "/api/content/instagram-search" && request.method === "POST") {
+      const body = await readBody(request);
+      let parsed = {};
+      try {
+        parsed = body ? JSON.parse(body) : {};
+      } catch {
+        sendJson(response, 400, { ok: false, error: "invalid_json_body", message: "Request body must be valid JSON." });
+        return;
+      }
+      const result = await searchInstagramApi(parsed);
       sendJson(response, result.ok ? 200 : result.status || 400, result);
       return;
     }
