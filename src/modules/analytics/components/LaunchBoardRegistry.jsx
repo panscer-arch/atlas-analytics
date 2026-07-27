@@ -113,6 +113,7 @@ export const CONTENT_BOARD_TABS = [
   { id: "contentPlan", label: "Контент-план" },
   { id: "funnel", label: "Воронка" },
   { id: "atlasPages", label: "Страницы Atlas" },
+  { id: "atlasSupport", label: "Atlas Support" },
   { id: "landings", label: "Лендинги" },
   { id: "images", label: "Images" },
   { id: "materials", label: "Материалы" },
@@ -138,6 +139,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "contentPlan",
   "funnel",
   "atlasPages",
+  "atlasSupport",
   "landings",
   "images",
   "videoScripts",
@@ -218,6 +220,10 @@ export const STATIC_BOARD_META = {
   atlasPages: {
     title: "Страницы Atlas",
     description: "Готовые интерактивные HTML-страницы Atlas для публикации, проверки и передачи команде.",
+  },
+  atlasSupport: {
+    title: "Atlas Support",
+    description: "Тестовый экран AI-поддержки Atlas и передачи обращений оператору через Chatwoot.",
   },
   landings: {
     title: "Лендинги",
@@ -330,6 +336,20 @@ const STATIC_BOARD_RENDERERS = {
   contentPlan: () => <ContentPlanBoard />,
   funnel: () => <AtlasFunnelBoard />,
   atlasPages: () => <AtlasPagesBoard />,
+  atlasSupport: () => (
+    <AnalyticsBoardEmbed
+      boardUrl="https://support-stage.supersussystem.com/?locale=ru"
+      frameTitle="Тестовый виджет Atlas Support"
+      kicker="Бета-тест"
+      panelId="atlas-support-test"
+      primaryLabel="Открыть виджет"
+      secondaryLabel="Операторская админка"
+      secondaryUrl="https://support-admin-stage.supersussystem.com/app/accounts/2/dashboard"
+      subtitle="Проверяйте ответы AI, форму обращения, историю диалога и передачу заявки оператору."
+      title="Atlas Support"
+      variant="inline"
+    />
+  ),
   landings: () => <LandingContentBoard />,
   images: () => <ImageContentBoard />,
   presentation: () => <PresentationContentTab />,

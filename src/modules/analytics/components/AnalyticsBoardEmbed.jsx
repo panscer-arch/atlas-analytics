@@ -7,6 +7,9 @@ function AnalyticsBoardEmbed({
   subtitle = "Backlog, статусы, входящие идеи и рабочие карточки в формате доски.",
   frameTitle = "Доска аналитики",
   panelId = "analytics-crm-board",
+  primaryLabel = "Открыть отдельно",
+  secondaryLabel,
+  secondaryUrl,
 }) {
   const isOverlay = variant === "overlay";
   const titleId = isOverlay ? "analytics-board-title" : "analytics-board-tab-title";
@@ -30,8 +33,13 @@ function AnalyticsBoardEmbed({
           </div>
           <div className="analytics-board-embed-actions">
             <a className="analytics-board-btn" href={boardUrl} target="_blank" rel="noreferrer">
-              Открыть отдельно
+              {primaryLabel}
             </a>
+            {secondaryUrl && secondaryLabel ? (
+              <a className="analytics-board-btn" href={secondaryUrl} target="_blank" rel="noreferrer">
+                {secondaryLabel}
+              </a>
+            ) : null}
             {isOverlay ? (
               <button type="button" className="analytics-board-close-btn" onClick={onClose}>
                 Закрыть
