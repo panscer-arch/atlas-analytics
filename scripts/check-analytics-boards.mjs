@@ -28,6 +28,7 @@ const checks = [
   { id: "diary", path: "/?board=diary", text: "Код доступа" },
 
   { id: "tasks-launch", path: "/?board=launch", text: "Задачи запуска" },
+  { id: "tasks-launch-calendar", path: "/?board=launchCalendar", text: "Календарь запуска" },
   { id: "tasks-inbox", path: "/?board=inboxTasks", text: "Входящие задачи" },
   { id: "tasks-marketing", path: "/?board=marketing", text: "Задачи по маркетингу" },
   { id: "tasks-knowledge", path: "/?board=knowledgeBase", text: "Задачи базы знаний" },

@@ -14,6 +14,7 @@ import ImageContentBoard from "./ImageContentBoard";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import LandingContentBoard from "./LandingContentBoard";
 import LegalDocumentsBoard from "./LegalDocumentsBoard";
+import LaunchCalendarBoard from "./LaunchCalendarBoard";
 import LocalizationBibleBoard from "./LocalizationBibleBoard";
 import MaterialsLinksBoard from "./MaterialsLinksBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
@@ -97,6 +98,7 @@ export const TASK_CATEGORY_BOARDS = [
 export const TASK_BOARD_TABS = [
   { id: "inboxTasks", label: "Входящие" },
   { id: "launch", label: "Задачи запуска" },
+  { id: "launchCalendar", label: "Календарь запуска" },
   { id: "marketing", label: "Маркетинг" },
   { id: "knowledgeBase", label: "Задачи по базе знаний" },
   { id: "ideas", label: "Идеи" },
@@ -131,6 +133,7 @@ export const CONTENT_BOARD_TABS = [
 ];
 
 export const STATIC_CONTENT_BOARD_IDS = [
+  "launchCalendar",
   "dailyTasks",
   "contentPlan",
   "funnel",
@@ -316,6 +319,10 @@ export const STATIC_BOARD_META = {
     title: "Ближайшие задачи",
     description: "Оперативная доска команды: карточки задач, исполнители, дедлайны, материалы и чат по каждой задаче.",
   },
+  launchCalendar: {
+    title: "Календарь запуска",
+    description: "Единый календарь запуска Atlas: оперативка, поддержка, маркетинг, развитие сайта и аналитика с владельцами и статусами.",
+  },
 };
 
 const STATIC_BOARD_RENDERERS = {
@@ -348,6 +355,7 @@ const STATIC_BOARD_RENDERERS = {
   securityReview: () => <SecurityReviewBoard />,
   codexSystem: () => <CodexSystemBoard />,
   dailyTasks: () => <DailyTasksBoard />,
+  launchCalendar: () => <LaunchCalendarBoard />,
 };
 
 function StaticLaunchBoard({ boardId, analyticsBoardUrl }) {
