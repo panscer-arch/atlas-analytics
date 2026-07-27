@@ -174,10 +174,9 @@ OUTREACH_REPLY_TO_EMAIL=partners@atlas-system.io
 TELEMETR_API_KEY=...
 TGSTAT_TOKEN=...
 ATLAS_FINANCE_PASSWORD=...
-ATLAS_FUNNEL_SIGNING_SECRET=<случайная строка не короче 32 символов>
 ```
 
-`ATLAS_FUNNEL_SIGNING_SECRET` обязателен для `/api/funnel/session`. Его нужно создать отдельно, например командой `openssl rand -hex 32`, хранить только в серверном env-файле и не добавлять во frontend или Git.
+`ATLAS_FUNNEL_SIGNING_SECRET` обязателен для `/api/funnel/session`. Его нужно создать отдельно, например командой `openssl rand -hex 32`, хранить только в `/etc/atlas-funnel.env` и подключать к `atlas-content-api.service` отдельным systemd drop-in. Секрет нельзя добавлять во frontend, общий outreach-конфиг или Git.
 
 После изменения файла нужно перезапустить backend:
 
