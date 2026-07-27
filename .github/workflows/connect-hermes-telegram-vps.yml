@@ -129,5 +129,14 @@ jobs:
           systemctl is-active --quiet hermes-telegram-bridge.service
           systemctl is-active --quiet atlas-telegram-bot.service
           curl -fsS http://127.0.0.1:${BRIDGE_PORT}/health >/dev/null
-          echo "Hermes Telegram bridge connected. Use /hermes in the existing Telegram bot."
+
+          SMOKE_RESPONSE="$(curl -fsS --max-time 190 \
+            -X POST "http://127.0.0.1:${BRIDGE_PORT}/message" \
+            -H "Authorization: Bearer ${BRIDGE_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"prompt":"Ответь одним словом: готов","source":{"chat":{"id":"supersus-health-check","title":"SuperSUS health check"},"author":{"id":"system","username":"system"}},"memoryScope":"chat"}')"
+          printf '%s' "$SMOKE_RESPONSE" | python3 -c \
+            'import json, sys; answer = str(json.load(sys.stdin).get("answer", "")).strip(); assert answer, "Hermes returned an empty answer"'
+
+          echo "Hermes bridge, Telegram bot, and model response verified."
           REMOTE
