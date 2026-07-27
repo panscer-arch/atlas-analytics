@@ -1,0 +1,79 @@
+name: Reauthorize Hermes Nous Portal on VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reauthorize-hermes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/deploy_key
+          ${{ secrets.VPS_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Start Nous Portal device login
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          HERMES_HOME=/opt/hermes
+          HERMES_BIN="$HERMES_HOME/.local/bin/hermes"
+          LOGIN_LOG="$HERMES_HOME/files/nous-device-login.log"
+          LOGIN_SERVICE=/etc/systemd/system/hermes-nous-login.service
+
+          if [ ! -x "$HERMES_BIN" ]; then
+            echo "Hermes binary is missing." >&2
+            exit 1
+          fi
+
+          sudo systemctl stop hermes-nous-login.service 2>/dev/null || true
+          sudo rm -f "$LOGIN_LOG"
+          sudo install -d -m 750 -o hermes -g hermes "$HERMES_HOME/files"
+
+          sudo tee "$LOGIN_SERVICE" >/dev/null <<SERVICE
+          [Unit]
+          Description=One-time Hermes Nous Portal device login
+          After=network-online.target
+
+          [Service]
+          Type=simple
+          User=hermes
+          Group=hermes
+          Environment=HOME=$HERMES_HOME
+          Environment=HERMES_HOME=$HERMES_HOME
+          WorkingDirectory=$HERMES_HOME
+          ExecStart=$HERMES_BIN auth add nous --type oauth --no-browser
+          StandardOutput=append:$LOGIN_LOG
+          StandardError=append:$LOGIN_LOG
+          TimeoutStartSec=12min
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+          sudo systemctl daemon-reload
+          sudo systemctl start hermes-nous-login.service
+
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if sudo test -s "$LOGIN_LOG"; then
+              break
+            fi
+            sleep 1
+          done
+
+          echo "Open the URL below and complete the one-time Nous Portal login:"
+          sudo sed -n '1,120p' "$LOGIN_LOG"
+          REMOTE
