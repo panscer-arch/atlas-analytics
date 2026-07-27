@@ -552,7 +552,7 @@ jobs:
             sudo journalctl -u atlas-marketing-dashboard-monitor.service -n 40 --no-pager || true
             sudo journalctl -u atlas-content-api.service -n 40 --no-pager || true
             if sudo journalctl -u atlas-marketing-dashboard-monitor.service -n 40 --no-pager \
-              | grep -q 'marketing_telegram_chat_not_configured'; then
+              | grep -F 'marketing_telegram_chat_not_configured' >/dev/null; then
               echo "::warning::Marketing Telegram chat is not linked; dashboard and funnel leads remain available in SuperSUS."
             else
               exit 1
