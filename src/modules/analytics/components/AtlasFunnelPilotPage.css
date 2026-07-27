@@ -10,6 +10,7 @@
   --pilot-green: #168b5c;
   min-height: 100svh;
   overflow-x: hidden;
+  overflow-anchor: none;
   background: var(--pilot-bg);
   color: var(--pilot-ink);
   font-family: Inter, Manrope, Arial, sans-serif;

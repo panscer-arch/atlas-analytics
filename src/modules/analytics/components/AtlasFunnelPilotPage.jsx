@@ -99,7 +99,10 @@ function AtlasFunnelPilotPage() {
   }, [pilot]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "auto" });
+    if (typeof window === "undefined") return undefined;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    const frame = window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
+    return () => window.cancelAnimationFrame(frame);
   }, [pilot.screen, pilot.questionIndex, pilot.stepIndex]);
 
   useEffect(() => {
