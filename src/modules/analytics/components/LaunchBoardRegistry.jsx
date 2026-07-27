@@ -145,6 +145,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "parser",
   "telegramParser",
   "influencers",
+  "socialParser",
   "agentTasks",
   "agentDataset",
   "agentFaq",
@@ -174,7 +175,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "hermesAssistant") return "hermes";
   if (boardId === "expenses") return "expenses";
   if (boardId === "analytics" || boardId.startsWith("analytics-") || boardId === "contractBalances" || boardId === "contracts") return "analytics";
-  if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "utmBuilder" || boardId === "telegramParser" || boardId === "influencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "segmentOutreach" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";
+  if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "utmBuilder" || boardId === "telegramParser" || boardId === "influencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "segmentOutreach" || boardId === "socialParser" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";
   if (boardId === "taskMonitor") return "taskMonitor";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";
@@ -252,6 +253,10 @@ export const STATIC_BOARD_META = {
     title: "Инфлюенсеры",
     description: "Рабочий список потенциальных инфлюенсеров и сообществ из YouTube, Facebook, X и Telegram для Atlas outreach.",
   },
+  socialParser: {
+    title: "Универсальный парсер соцсетей",
+    description: "Архитектура и карта коннекторов для поиска сетевиков, лидеров мнений, Web3-аудиторий и региональных партнёров по Instagram, Facebook, LinkedIn, VK, Discord и другим соцсетям.",
+  },
   agentTasks: {
     title: "Параметры",
     description: "Параметры и факты проекта для AI-агента: Web3, циклы, партнерка, DAO, риски и ссылки.",
@@ -321,6 +326,7 @@ const STATIC_BOARD_RENDERERS = {
   parser: () => <ParserWorkspacePanel />,
   telegramParser: () => <ParserWorkspacePanel initialTab="telegram" />,
   influencers: () => <ParserWorkspacePanel initialTab="influencers" />,
+  socialParser: () => <ParserWorkspacePanel initialTab="socialUniversal" />,
   videoScripts: () => <VideoScriptsBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
   agentDataset: () => <AgentTrainingDataset />,

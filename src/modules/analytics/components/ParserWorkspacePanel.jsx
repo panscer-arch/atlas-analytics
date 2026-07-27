@@ -12,6 +12,7 @@ import PoolMonitorPanel from "./PoolMonitorPanel";
 import RegionalHiringPanel from "./RegionalHiringPanel";
 import SegmentOutreachPanel from "./SegmentOutreachPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
+import UniversalSocialParserPanel from "./UniversalSocialParserPanel";
 import UtmBuilderPanel from "./UtmBuilderPanel";
 import Web3SegmentsPanel from "./Web3SegmentsPanel";
 import YouTubeApiSearchPanel from "./YouTubeApiSearchPanel";
@@ -123,6 +124,11 @@ const PARSER_TABS = [
     hint: "7 x соцсети",
   },
   {
+    id: "socialUniversal",
+    label: "Соцсети Universal",
+    hint: "Instagram+",
+  },
+  {
     id: "web3Segments",
     label: "Web3 сегменты",
     hint: "12 аудиторий",
@@ -148,6 +154,7 @@ const PARSER_TAB_BOARD_IDS = {
   regionalHiring: "regionalHiring",
   mlmLeaders: "mlmLeaders",
   segmentOutreach: "segmentOutreach",
+  socialUniversal: "socialParser",
   web3Segments: "web3Segments",
   poolMonitor: "poolMonitor",
 };
@@ -859,6 +866,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         <MlmLeaderOutreachPanel />
       ) : activeTab === "segmentOutreach" ? (
         <SegmentOutreachPanel />
+      ) : activeTab === "socialUniversal" ? (
+        <UniversalSocialParserPanel />
       ) : activeTab === "web3Segments" ? (
         <Web3SegmentsPanel />
       ) : activeTab === "poolMonitor" ? (
