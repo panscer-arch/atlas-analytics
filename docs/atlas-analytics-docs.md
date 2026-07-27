@@ -153,6 +153,9 @@ Endpoints:
 | `GET` | `/api/content/:key` | загрузить JSON по ключу |
 | `PUT` | `/api/content/:key` | сохранить JSON по ключу |
 | `POST` | `/api/content/finance-browser-session` | проверить общий пароль Центра расходов и открыть доступ в браузере |
+| `POST` | `/api/funnel/session` | выдать или продлить подписанную анонимную сессию пилотной воронки |
+| `POST` | `/api/funnel/events` | принять валидированное событие пилотной воронки |
+| `GET` | `/api/funnel/summary` | вернуть защищённую сводку по уникальным сессиям |
 | `POST` | `/api/outreach/send-email` | отправить outreach email через Resend после подтверждения в UI |
 | `POST` | `/api/telegram/verify-channel` | проверить Telegram-канал через Telemetr/TGStat и вернуть контакты, живость, просмотры и дату последнего поста |
 
@@ -171,7 +174,10 @@ OUTREACH_REPLY_TO_EMAIL=partners@atlas-system.io
 TELEMETR_API_KEY=...
 TGSTAT_TOKEN=...
 ATLAS_FINANCE_PASSWORD=...
+ATLAS_FUNNEL_SIGNING_SECRET=<случайная строка не короче 32 символов>
 ```
+
+`ATLAS_FUNNEL_SIGNING_SECRET` обязателен для `/api/funnel/session`. Его нужно создать отдельно, например командой `openssl rand -hex 32`, хранить только в серверном env-файле и не добавлять во frontend или Git.
 
 После изменения файла нужно перезапустить backend:
 

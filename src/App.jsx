@@ -2,6 +2,8 @@ import lottie from "lottie-web";
 import { useEffect, useRef, useState } from "react";
 import matrixGateAnimation from "./assets/matrix-gate-lottie.json";
 import { AnalyticsPage, AnalyticsRestoredPage } from "./modules/analytics";
+import AtlasFunnelPilotPage from "./modules/analytics/components/AtlasFunnelPilotPage";
+import { ATLAS_FUNNEL_PILOT_VIEW } from "./modules/analytics/data/atlasFunnelPilotData";
 import { getMarketingContentAccess, unlockMarketingContent } from "./modules/analytics/services/contentStore";
 
 const ACCESS_STORAGE_KEY = "supersus.access.v2";
@@ -10,6 +12,7 @@ const ACCESS_PASSWORD_HASH = "734c3a7459ad629c114c70863427e1a5bb9161ae6340796368
 const ACCESS_MAX_FAILED_ATTEMPTS = 5;
 const ACCESS_LOCKOUT_MS = 10 * 60 * 1000;
 const PUBLIC_BOARD_IDS = new Set(["localization"]);
+const PUBLIC_VIEW_IDS = new Set([ATLAS_FUNNEL_PILOT_VIEW]);
 
 async function sha256Hex(value) {
   const bytes = new TextEncoder().encode(value);
@@ -40,7 +43,7 @@ function isPublicAccessRoute() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    return PUBLIC_BOARD_IDS.has(params.get("board"));
+    return PUBLIC_BOARD_IDS.has(params.get("board")) || PUBLIC_VIEW_IDS.has(params.get("view"));
   } catch {
     return false;
   }
@@ -272,7 +275,12 @@ function AccessGate({ children }) {
 
 function App() {
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
-  const page = pathname === "/legacy" || pathname === "/analytics" ? <AnalyticsRestoredPage /> : <AnalyticsPage />;
+  const view = typeof window !== "undefined" ? new URL(window.location.href).searchParams.get("view") : "";
+  const page = view === ATLAS_FUNNEL_PILOT_VIEW
+    ? <AtlasFunnelPilotPage />
+    : pathname === "/legacy" || pathname === "/analytics"
+      ? <AnalyticsRestoredPage />
+      : <AnalyticsPage />;
 
   return <AccessGate>{page}</AccessGate>;
 }

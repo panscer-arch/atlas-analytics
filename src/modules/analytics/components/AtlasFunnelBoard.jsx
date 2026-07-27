@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AnalyticsActionButton from "./AnalyticsActionButton";
-import { loadServerContent, saveServerContent } from "../services/contentStore";
+import { getServerJson, loadServerContent, saveServerContent } from "../services/contentStore";
 import {
   ATLAS_FUNNEL_STORAGE_KEY,
   defaultAtlasFunnel,
   funnelStatusOptions,
   itemStatusOptions,
 } from "../data/atlasFunnelData";
+import {
+  ATLAS_FUNNEL_PILOT_URL,
+  atlasFunnelPilotQuestions,
+  atlasFunnelPilotSegments,
+} from "../data/atlasFunnelPilotData";
 import {
   buildAtlasFunnelMarkdown,
   calculateFunnelStats,
@@ -25,6 +30,10 @@ const WORKSPACE_TABS = [
 ];
 
 const EXPERIMENT_STATUS_OPTIONS = ["Очередь", "Готов к тесту", "Запущен", "Победитель найден", "Остановлен"];
+const PILOT_SOURCE_LABELS = Object.fromEntries(
+  atlasFunnelPilotQuestions.find((question) => question.id === "source")?.options
+    .map((option) => [option.id, option.label]) || [],
+);
 
 function readStoredFunnel() {
   if (typeof window === "undefined") return hydrateAtlasFunnel(defaultAtlasFunnel);
@@ -100,6 +109,8 @@ function AtlasFunnelBoard() {
   const [simulatorSegmentId, setSimulatorSegmentId] = useState("web3-new");
   const [simulatorStep, setSimulatorStep] = useState(0);
   const [simulatorEvents, setSimulatorEvents] = useState([]);
+  const [pilotSummary, setPilotSummary] = useState(null);
+  const [pilotSummaryState, setPilotSummaryState] = useState("idle");
   const saveRequestRef = useRef(0);
   const saveQueueRef = useRef(Promise.resolve(true));
   const skipInitialAutoSaveRef = useRef(true);
@@ -151,6 +162,11 @@ function AtlasFunnelBoard() {
     window.history.replaceState({}, "", url.toString());
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab !== "metrics" || pilotSummaryState !== "idle") return;
+    void refreshPilotSummary();
+  }, [activeTab, pilotSummaryState]);
+
   const stats = useMemo(() => calculateFunnelStats(funnel), [funnel]);
   const metricRows = useMemo(() => calculateMetricRows(funnel.metrics), [funnel.metrics]);
   const markdown = useMemo(() => buildAtlasFunnelMarkdown(funnel), [funnel]);
@@ -187,6 +203,17 @@ function AtlasFunnelBoard() {
     }
     const ok = await enqueueServerSave(next);
     if (saveRequestRef.current === requestId) setSaveState(ok ? "Сохранено на сервере" : "Сохранено локально, сервер недоступен");
+  }
+
+  async function refreshPilotSummary() {
+    setPilotSummaryState("loading");
+    const result = await getServerJson("/api/funnel/summary");
+    if (result.ok) {
+      setPilotSummary(result.payload);
+      setPilotSummaryState("ready");
+      return;
+    }
+    setPilotSummaryState("unavailable");
   }
 
   async function copyMarkdown() {
@@ -271,6 +298,12 @@ function AtlasFunnelBoard() {
             {editMode ? "Закончить редактирование" : "Редактировать"}
           </AnalyticsActionButton>
           <AnalyticsActionButton onClick={forceSave} disabled={!isLoaded}>Сохранить</AnalyticsActionButton>
+          <AnalyticsActionButton
+            variant="primary"
+            onClick={() => window.open(ATLAS_FUNNEL_PILOT_URL, "_blank", "noopener,noreferrer")}
+          >
+            Открыть пилот
+          </AnalyticsActionButton>
           <AnalyticsActionButton onClick={copyMarkdown}>
             {copyState === "copied" ? "Скопировано" : copyState === "error" ? "Не скопировано" : "Копировать ТЗ"}
           </AnalyticsActionButton>
@@ -581,6 +614,54 @@ function AtlasFunnelBoard() {
 
       {activeTab === "metrics" ? (
         <div className="atlas-funnel-workspace">
+          <section className="atlas-funnel-live-pilot">
+            <div className="atlas-funnel-section-head">
+              <div>
+                <span>Live pilot</span>
+                <h3>Реальные прохождения Atlas Web3 Start</h3>
+              </div>
+              <AnalyticsActionButton onClick={refreshPilotSummary} disabled={pilotSummaryState === "loading"}>
+                {pilotSummaryState === "loading" ? "Обновляю..." : "Обновить"}
+              </AnalyticsActionButton>
+            </div>
+            {pilotSummary ? (
+              <>
+                <div className="atlas-funnel-live-kpis">
+                  <div><span>Сессии</span><strong>{pilotSummary.totalSessions || 0}</strong><small>анонимных маршрутов</small></div>
+                  <div><span>Начали</span><strong>{pilotSummary.uniqueSessionCounts?.funnel_started || 0}</strong><small>уникальных сессий</small></div>
+                  <div><span>Завершили</span><strong>{pilotSummary.uniqueSessionCounts?.route_completed || 0}</strong><small>прошли 6 шагов</small></div>
+                  <div><span>Целевое действие</span><strong>{pilotSummary.uniqueSessionCounts?.qualified_action || 0}</strong><small>перешли дальше</small></div>
+                </div>
+                <div className="atlas-funnel-live-segments">
+                  {Object.entries(atlasFunnelPilotSegments).map(([segmentId, item]) => (
+                    <div key={segmentId}>
+                      <span>{item.label}</span>
+                      <strong>{pilotSummary.segmentCounts?.[segmentId] || 0}</strong>
+                    </div>
+                  ))}
+                </div>
+                {Object.keys(pilotSummary.sourceCounts || {}).length ? (
+                  <div className="atlas-funnel-live-sources">
+                    <span>Источники сессий</span>
+                    <div>
+                      {Object.entries(pilotSummary.sourceCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 8)
+                        .map(([source, count]) => (
+                          <b key={source}>{PILOT_SOURCE_LABELS[source] || source}<strong>{count}</strong></b>
+                        ))}
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="atlas-funnel-live-empty">
+                {pilotSummaryState === "unavailable"
+                  ? "Сводка доступна после входа в SuperSUS с активной серверной сессией."
+                  : "Загружаю события пилота..."}
+              </p>
+            )}
+          </section>
           <section className="atlas-funnel-metrics-section">
             <div className="atlas-funnel-section-head">
               <div>

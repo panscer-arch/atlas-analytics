@@ -26,6 +26,7 @@
 .atlas-funnel-sequence-intro,
 .atlas-funnel-build-section,
 .atlas-funnel-gates,
+.atlas-funnel-live-pilot,
 .atlas-funnel-metrics-section,
 .atlas-funnel-experiments,
 .atlas-funnel-section-head-standalone,
@@ -866,6 +867,112 @@
   font-size: 12px;
 }
 
+.atlas-funnel-live-pilot {
+  padding: 22px;
+  border: 1px solid var(--funnel-line);
+  border-top: 4px solid var(--funnel-green);
+  border-radius: 8px;
+  background: var(--funnel-surface);
+}
+
+.atlas-funnel-live-pilot .atlas-funnel-section-head {
+  align-items: center;
+}
+
+.atlas-funnel-live-kpis,
+.atlas-funnel-live-segments {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--funnel-line);
+  background: var(--funnel-line);
+}
+
+.atlas-funnel-live-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.atlas-funnel-live-kpis > div,
+.atlas-funnel-live-segments > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.atlas-funnel-live-kpis span,
+.atlas-funnel-live-segments span {
+  color: var(--funnel-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.atlas-funnel-live-kpis strong {
+  color: var(--funnel-green);
+  font-size: 28px;
+}
+
+.atlas-funnel-live-kpis small {
+  color: var(--funnel-muted);
+  font-size: 10px;
+}
+
+.atlas-funnel-live-segments {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 10px;
+}
+
+.atlas-funnel-live-segments > div {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.atlas-funnel-live-segments strong {
+  color: var(--funnel-ink);
+  font-size: 18px;
+}
+
+.atlas-funnel-live-empty {
+  margin: 0;
+  border-top: 1px solid var(--funnel-line);
+  padding-top: 16px;
+  color: var(--funnel-muted);
+}
+
+.atlas-funnel-live-sources {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.atlas-funnel-live-sources > span {
+  color: var(--funnel-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.atlas-funnel-live-sources > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.atlas-funnel-live-sources b {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--funnel-line);
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.atlas-funnel-live-sources strong {
+  color: var(--funnel-green);
+  font-size: 14px;
+}
+
 .atlas-funnel-metric-bars {
   display: grid;
   border-top: 1px solid var(--funnel-line);
@@ -1192,6 +1299,7 @@
   .atlas-funnel-sequence-intro,
   .atlas-funnel-build-section,
   .atlas-funnel-gates,
+  .atlas-funnel-live-pilot,
   .atlas-funnel-metrics-section,
   .atlas-funnel-experiments,
   .atlas-funnel-section-head-standalone,
@@ -1203,6 +1311,8 @@
   .atlas-funnel-strategy-grid,
   .atlas-funnel-sequence-grid,
   .atlas-funnel-segments,
+  .atlas-funnel-live-kpis,
+  .atlas-funnel-live-segments,
   .atlas-funnel-kpis {
     grid-template-columns: 1fr;
   }

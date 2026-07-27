@@ -1,5 +1,5 @@
 import http from "node:http";
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prepareHermesSpeechText, synthesizeHermesSpeech } from "./hermes-speech.mjs";
@@ -36,6 +36,37 @@ const MARKETING_TELEGRAM_BINDING_KEY = "atlas.analytics.marketingTelegramBinding
 const MARKETING_TELEGRAM_LINK_REQUEST_KEY = "atlas.analytics.marketingTelegramLinkRequest.v1";
 const MARKETING_BROWSER_LINK_REQUEST_KEY = "atlas.analytics.marketingBrowserLinkRequest.v1";
 const MARKETING_BROWSER_SESSIONS_KEY = "atlas.analytics.marketingBrowserSessions.v1";
+const ATLAS_FUNNEL_EVENTS_KEY = "atlas.analytics.firstFunnelEvents.v1";
+const ATLAS_FUNNEL_EVENT_WINDOW_MS = 10 * 60 * 1000;
+const ATLAS_FUNNEL_EVENT_MAX_REQUESTS = 600;
+const ATLAS_FUNNEL_EVENT_MAX_BUCKETS = 2000;
+const ATLAS_FUNNEL_SESSION_MAX_REQUESTS = 40;
+const ATLAS_FUNNEL_EVENT_MAX_RECORDS = 5000;
+const ATLAS_FUNNEL_EVENT_MAX_BODY_BYTES = 8192;
+const ATLAS_FUNNEL_EVENT_MAX_PENDING_WRITES = 64;
+const ATLAS_FUNNEL_EVENT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const ATLAS_FUNNEL_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+const ATLAS_FUNNEL_SESSION_RENEWAL_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const ATLAS_FUNNEL_EVENT_NAMES = new Set([
+  "funnel_visit",
+  "funnel_started",
+  "question_answered",
+  "segment_selected",
+  "step_opened",
+  "proof_opened",
+  "route_completed",
+  "qualified_action",
+]);
+const ATLAS_FUNNEL_SEGMENT_IDS = new Set(["web3-new", "crypto-user", "mlm-leader", "regional-leader"]);
+const ATLAS_FUNNEL_STEP_IDS = ["foundation", "definition", "smart-cycle", "risks", "verification", "safe-start"];
+const ATLAS_FUNNEL_QUESTION_ANSWERS = new Map([
+  ["experience", new Set(["new", "wallet", "advanced"])],
+  ["interest", new Set(["product", "technical", "partner", "regional"])],
+  ["wallet", new Set(["no", "yes", "unsure"])],
+  ["proof", new Set(["simple", "risks", "contracts", "support"])],
+  ["source", new Set(["telegram", "leader", "youtube", "x", "other"])],
+]);
+const ATLAS_FUNNEL_ATTRIBUTION_FIELDS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]);
 const MARKETING_SESSION_COOKIE = "atlas_marketing_session";
 const MARKETING_SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const MARKETING_LOGIN_WINDOW_MS = 10 * 60 * 1000;
@@ -77,6 +108,7 @@ const INTERNAL_CONTENT_KEYS = new Set([
   MARKETING_TELEGRAM_LINK_REQUEST_KEY,
   MARKETING_BROWSER_LINK_REQUEST_KEY,
   MARKETING_BROWSER_SESSIONS_KEY,
+  ATLAS_FUNNEL_EVENTS_KEY,
   FINANCE_BROWSER_SESSIONS_KEY,
 ]);
 const MARKETING_YOUTUBE_BOARD_URL = process.env.ATLAS_MARKETING_YOUTUBE_BOARD_URL
@@ -242,8 +274,12 @@ let telegramEnvCache = null;
 let marketingSessionMutationQueue = Promise.resolve();
 let financeSessionMutationQueue = Promise.resolve();
 let expenseCenterMutationQueue = Promise.resolve();
+let atlasFunnelEventMutationQueue = Promise.resolve();
+let atlasFunnelPendingWrites = 0;
 const financeLoginAttempts = new Map();
 const marketingLoginAttempts = new Map();
+const atlasFunnelEventRequests = new Map();
+const atlasFunnelSessionRequests = new Map();
 const hermesAssistantRequests = new Map();
 const hermesSpeechRequests = new Map();
 const hermesTranscriptionRequests = new Map();
@@ -339,6 +375,338 @@ function getMarketingLoginAttempt(request) {
     return { key, attempt: next };
   }
   return { key, attempt: current };
+}
+
+function getAtlasFunnelEventRateLimit(request) {
+  const now = Date.now();
+  let key = getFinanceLoginKey(request);
+  if (atlasFunnelEventRequests.size >= ATLAS_FUNNEL_EVENT_MAX_BUCKETS) {
+    for (const [storedKey, value] of atlasFunnelEventRequests) {
+      if (value.resetAt <= now) atlasFunnelEventRequests.delete(storedKey);
+    }
+  }
+  if (!atlasFunnelEventRequests.has(key) && atlasFunnelEventRequests.size >= ATLAS_FUNNEL_EVENT_MAX_BUCKETS) {
+    key = "overflow";
+  }
+  const current = atlasFunnelEventRequests.get(key);
+  if (!current || current.resetAt <= now) {
+    atlasFunnelEventRequests.set(key, { count: 1, resetAt: now + ATLAS_FUNNEL_EVENT_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+
+  current.count += 1;
+  if (current.count > ATLAS_FUNNEL_EVENT_MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+function getAtlasFunnelSessionRateLimit(sessionId) {
+  const now = Date.now();
+  let key = createHash("sha256").update(String(sessionId)).digest("hex").slice(0, 24);
+  if (atlasFunnelSessionRequests.size >= ATLAS_FUNNEL_EVENT_MAX_BUCKETS) {
+    for (const [storedKey, value] of atlasFunnelSessionRequests) {
+      if (value.resetAt <= now) atlasFunnelSessionRequests.delete(storedKey);
+    }
+  }
+  if (!atlasFunnelSessionRequests.has(key) && atlasFunnelSessionRequests.size >= ATLAS_FUNNEL_EVENT_MAX_BUCKETS) {
+    key = "overflow";
+  }
+  const current = atlasFunnelSessionRequests.get(key);
+  if (!current || current.resetAt <= now) {
+    atlasFunnelSessionRequests.set(key, { count: 1, resetAt: now + ATLAS_FUNNEL_EVENT_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+  current.count += 1;
+  if (current.count > ATLAS_FUNNEL_SESSION_MAX_REQUESTS) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  return { allowed: true, retryAfter: 0 };
+}
+
+function isTrustedAtlasFunnelOrigin(request) {
+  const origin = String(request.headers.origin || "").trim();
+  if (!origin) return false;
+  try {
+    const parsed = new URL(origin);
+    const requestHostname = new URL(`http://${String(request.headers.host || "invalid")}`).hostname;
+    const configured = String(process.env.ATLAS_FUNNEL_ALLOWED_ORIGINS || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (configured.includes(parsed.origin)) return true;
+    if (parsed.origin === "https://supersussystem.com" || parsed.origin === "https://www.supersussystem.com") return true;
+    const localHosts = ["localhost", "127.0.0.1", "::1"];
+    return localHosts.includes(parsed.hostname) && localHosts.includes(requestHostname);
+  } catch {
+    return false;
+  }
+}
+
+function isAtlasFunnelJsonRequest(request) {
+  return String(request.headers["content-type"] || "").split(";")[0].trim().toLowerCase() === "application/json";
+}
+
+function getAtlasFunnelSigningSecret() {
+  const secret = String(process.env.ATLAS_FUNNEL_SIGNING_SECRET || "").trim();
+  return secret.length >= 32 ? secret : "";
+}
+
+function createAtlasFunnelBrowserSession(existingSessionId = "") {
+  const signingSecret = getAtlasFunnelSigningSecret();
+  if (!signingSecret) return null;
+  const sessionId = existingSessionId || randomBytes(16).toString("hex");
+  const issuedAt = Date.now();
+  const payload = `${sessionId}.${issuedAt}`;
+  const signature = createHmac("sha256", signingSecret).update(payload).digest("hex");
+  return {
+    sessionId,
+    sessionToken: `${payload}.${signature}`,
+    expiresAt: new Date(issuedAt + ATLAS_FUNNEL_SESSION_TTL_MS).toISOString(),
+  };
+}
+
+function verifyAtlasFunnelSession(sessionId, sessionToken, maxAgeMs = ATLAS_FUNNEL_SESSION_TTL_MS) {
+  const signingSecret = getAtlasFunnelSigningSecret();
+  if (!signingSecret) return null;
+  const parts = String(sessionToken || "").split(".");
+  if (parts.length !== 3 || parts[0] !== sessionId) return null;
+  const issuedAt = Number(parts[1]);
+  if (!Number.isFinite(issuedAt) || issuedAt > Date.now() + 60_000 || Date.now() - issuedAt > maxAgeMs) {
+    return null;
+  }
+  const payload = `${parts[0]}.${parts[1]}`;
+  const expected = createHmac("sha256", signingSecret).update(payload).digest("hex");
+  return secureTextEqual(parts[2], expected) ? { sessionId, issuedAt } : null;
+}
+
+function hasValidAtlasFunnelSession(sessionId, sessionToken) {
+  return Boolean(verifyAtlasFunnelSession(sessionId, sessionToken));
+}
+
+function normalizeAtlasFunnelAttributionValue(value) {
+  const normalized = String(value || "").trim().slice(0, 80);
+  return /^[a-zA-Z0-9._~-]{1,80}$/.test(normalized) ? normalized : "";
+}
+
+function normalizeAtlasFunnelEventPayload(payload = {}) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const event = String(payload.event || "").trim();
+  const sessionId = String(payload.sessionId || "").trim().slice(0, 80);
+  const sessionToken = String(payload.sessionToken || "").trim().slice(0, 220);
+  const clientEventId = String(payload.clientEventId || "").trim().slice(0, 80);
+  if (
+    !ATLAS_FUNNEL_EVENT_NAMES.has(event)
+    || !/^[a-zA-Z0-9-]{8,80}$/.test(sessionId)
+    || !/^[a-zA-Z0-9-]{8,80}$/.test(clientEventId)
+    || !hasValidAtlasFunnelSession(sessionId, sessionToken)
+  ) return null;
+
+  const segmentId = String(payload.segmentId || "").trim().slice(0, 40);
+  if (segmentId && !ATLAS_FUNNEL_SEGMENT_IDS.has(segmentId)) return null;
+  const questionId = String(payload.questionId || "").trim().slice(0, 40);
+  const answerId = String(payload.answerId || "").trim().slice(0, 40);
+  const stepId = String(payload.stepId || "").trim().slice(0, 40);
+  const source = String(payload.source || "").trim().slice(0, 40);
+
+  if (event === "question_answered" && !ATLAS_FUNNEL_QUESTION_ANSWERS.get(questionId)?.has(answerId)) return null;
+  if (event !== "question_answered" && (questionId || answerId)) return null;
+  if (event === "segment_selected" && !segmentId) return null;
+  if (["step_opened", "proof_opened"].includes(event) && !ATLAS_FUNNEL_STEP_IDS.includes(stepId)) return null;
+  if (event === "route_completed" && stepId !== ATLAS_FUNNEL_STEP_IDS.at(-1)) return null;
+  if (event === "qualified_action" && stepId !== "official-site") return null;
+  if (!["step_opened", "segment_selected"].includes(event) && segmentId) return null;
+  if (source && !ATLAS_FUNNEL_QUESTION_ANSWERS.get("source").has(source)) return null;
+
+  const attribution = Object.fromEntries(
+    Object.entries(payload.attribution || {})
+      .filter(([key]) => ATLAS_FUNNEL_ATTRIBUTION_FIELDS.has(key))
+      .map(([key, value]) => [key, normalizeAtlasFunnelAttributionValue(value)])
+      .filter(([, value]) => value),
+  );
+
+  return {
+    id: randomBytes(10).toString("hex"),
+    clientEventId,
+    recordedAt: new Date().toISOString(),
+    sessionId: createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
+    event,
+    segmentId,
+    questionId,
+    answerId,
+    stepId,
+    source,
+    attribution,
+  };
+}
+
+function getAtlasFunnelEventIdentity(event) {
+  if (event.event === "question_answered") return `${event.event}:${event.questionId}`;
+  if (event.event === "step_opened" || event.event === "proof_opened") return `${event.event}:${event.stepId}`;
+  return event.event;
+}
+
+function validateAtlasFunnelEventSequence(sessionEvents, event) {
+  const hasEvent = (eventName) => sessionEvents.some((item) => item.event === eventName);
+  if (event.event === "funnel_visit") return true;
+  if (event.event === "proof_opened") return hasEvent("funnel_visit");
+  if (!hasEvent("funnel_visit")) return false;
+  if (event.event === "funnel_started") return true;
+  if (!hasEvent("funnel_started")) return false;
+  if (event.event === "question_answered") return true;
+  if (event.event === "segment_selected") {
+    const answered = new Set(sessionEvents.filter((item) => item.event === "question_answered").map((item) => item.questionId));
+    return [...ATLAS_FUNNEL_QUESTION_ANSWERS.keys()].every((questionId) => answered.has(questionId));
+  }
+  if (!hasEvent("segment_selected")) return false;
+  if (event.event === "step_opened") {
+    const stepIndex = ATLAS_FUNNEL_STEP_IDS.indexOf(event.stepId);
+    if (stepIndex <= 0) return stepIndex === 0;
+    return sessionEvents.some((item) => item.event === "step_opened" && item.stepId === ATLAS_FUNNEL_STEP_IDS[stepIndex - 1]);
+  }
+  if (event.event === "route_completed") {
+    return ATLAS_FUNNEL_STEP_IDS.every(
+      (stepId) => sessionEvents.some((item) => item.event === "step_opened" && item.stepId === stepId),
+    );
+  }
+  if (event.event === "qualified_action") return hasEvent("route_completed");
+  return false;
+}
+
+function getActiveAtlasFunnelEvents(events = []) {
+  const cutoff = Date.now() - ATLAS_FUNNEL_EVENT_RETENTION_MS;
+  return (Array.isArray(events) ? events : []).filter(
+    (item) => Date.parse(item?.recordedAt || "") >= cutoff,
+  );
+}
+
+async function appendAtlasFunnelEvent(event) {
+  if (atlasFunnelPendingWrites >= ATLAS_FUNNEL_EVENT_MAX_PENDING_WRITES) {
+    return { ok: false, status: 503, error: "funnel_event_busy" };
+  }
+  atlasFunnelPendingWrites += 1;
+  const persist = async () => {
+    const state = await readContent(ATLAS_FUNNEL_EVENTS_KEY, { version: 1, events: [] });
+    const currentEvents = getActiveAtlasFunnelEvents(state.events);
+    const sessionEvents = currentEvents.filter((item) => item.sessionId === event.sessionId);
+    if (!validateAtlasFunnelEventSequence(sessionEvents, event)) {
+      return { ok: false, status: 409, error: "funnel_event_out_of_sequence" };
+    }
+
+    const identity = getAtlasFunnelEventIdentity(event);
+    const duplicateIndex = currentEvents.findIndex(
+      (item) => item.sessionId === event.sessionId && getAtlasFunnelEventIdentity(item) === identity,
+    );
+    if (duplicateIndex >= 0) {
+      const existing = currentEvents[duplicateIndex];
+      if (
+        event.event !== "question_answered"
+        && event.event !== "segment_selected"
+      ) return { ok: true, status: 200, event: existing, deduplicated: true };
+      currentEvents.splice(duplicateIndex, 1);
+    }
+
+    const events = [...currentEvents, event].slice(-ATLAS_FUNNEL_EVENT_MAX_RECORDS);
+    await writeInternalState(ATLAS_FUNNEL_EVENTS_KEY, {
+      version: 1,
+      updatedAt: event.recordedAt,
+      events,
+    });
+    return { ok: true, status: 201, event, deduplicated: false };
+  };
+  const operation = atlasFunnelEventMutationQueue.then(persist, persist);
+  atlasFunnelEventMutationQueue = operation.then(() => undefined, () => undefined);
+  try {
+    return await operation;
+  } finally {
+    atlasFunnelPendingWrites = Math.max(0, atlasFunnelPendingWrites - 1);
+  }
+}
+
+async function purgeExpiredAtlasFunnelEvents() {
+  const persist = async () => {
+    const state = await readContent(ATLAS_FUNNEL_EVENTS_KEY, { version: 1, events: [] });
+    const currentEvents = Array.isArray(state.events) ? state.events : [];
+    const events = getActiveAtlasFunnelEvents(currentEvents);
+    if (events.length === currentEvents.length) return;
+    await writeInternalState(ATLAS_FUNNEL_EVENTS_KEY, {
+      version: 1,
+      updatedAt: state.updatedAt || new Date().toISOString(),
+      events,
+    });
+  };
+  const operation = atlasFunnelEventMutationQueue.then(persist, persist);
+  atlasFunnelEventMutationQueue = operation.then(() => undefined, () => undefined);
+  return operation;
+}
+
+function buildAtlasFunnelSummary(events = []) {
+  const eventSessions = Object.fromEntries([...ATLAS_FUNNEL_EVENT_NAMES].map((event) => [event, new Set()]));
+  const uniqueSessionsByEvent = Object.fromEntries([...ATLAS_FUNNEL_EVENT_NAMES].map((event) => [event, new Set()]));
+  const segmentSessions = Object.fromEntries([...ATLAS_FUNNEL_SEGMENT_IDS].map((segment) => [segment, new Set()]));
+  const sessions = new Map();
+
+  events.forEach((item) => {
+    if (ATLAS_FUNNEL_EVENT_NAMES.has(item?.event) && item?.sessionId) {
+      eventSessions[item.event].add(`${item.sessionId}:${getAtlasFunnelEventIdentity(item)}`);
+      uniqueSessionsByEvent[item.event].add(item.sessionId);
+    }
+    if (item?.event === "segment_selected" && ATLAS_FUNNEL_SEGMENT_IDS.has(item.segmentId)) {
+      segmentSessions[item.segmentId].add(item.sessionId);
+    }
+    if (item?.sessionId) {
+      const session = sessions.get(item.sessionId) || {
+        sessionId: item.sessionId,
+        firstSeenAt: item.recordedAt,
+        lastSeenAt: item.recordedAt,
+        segmentId: "",
+        lastEvent: "",
+        source: "",
+        attributionSource: "",
+      };
+      session.lastSeenAt = item.recordedAt || session.lastSeenAt;
+      session.lastEvent = item.event || session.lastEvent;
+      if (item.segmentId) session.segmentId = item.segmentId;
+      const source = String(item?.source || "").trim();
+      const attributionSource = String(item?.attribution?.utm_source || "").trim();
+      if (source) session.source = source;
+      if (attributionSource) session.attributionSource = attributionSource;
+      sessions.set(item.sessionId, session);
+    }
+  });
+
+  const sourceCounts = {};
+  const attributionSourceCounts = {};
+  sessions.forEach((session) => {
+    const source = session.source || session.attributionSource;
+    if (source) sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+    if (session.attributionSource) {
+      attributionSourceCounts[session.attributionSource] = (attributionSourceCounts[session.attributionSource] || 0) + 1;
+    }
+  });
+
+  const eventCounts = Object.fromEntries(
+    Object.entries(eventSessions).map(([event, sessionIds]) => [event, sessionIds.size]),
+  );
+  const segmentCounts = Object.fromEntries(
+    Object.entries(segmentSessions).map(([segment, sessionIds]) => [segment, sessionIds.size]),
+  );
+  const uniqueSessionCounts = Object.fromEntries(
+    Object.entries(uniqueSessionsByEvent).map(([event, sessionIds]) => [event, sessionIds.size]),
+  );
+
+  return {
+    totalSessions: sessions.size,
+    eventCounts,
+    uniqueSessionCounts,
+    segmentCounts,
+    sourceCounts,
+    attributionSourceCounts,
+    recentSessions: [...sessions.values()]
+      .sort((a, b) => String(b.lastSeenAt).localeCompare(String(a.lastSeenAt)))
+      .slice(0, 12)
+      .map(({ sessionId: _sessionId, ...session }) => session),
+  };
 }
 
 function hasInternalMonitorAccess(request) {
@@ -2961,13 +3329,17 @@ async function getMarketingDashboardMonitorStatus() {
   };
 }
 
-async function readBody(request) {
+async function readBody(request, maxBytes = MAX_BODY_BYTES) {
+  const contentLength = Number(request.headers["content-length"] || 0);
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new Error("request_body_too_large");
+  }
   const chunks = [];
   let size = 0;
 
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
+    if (size > maxBytes) {
       throw new Error("request_body_too_large");
     }
     chunks.push(chunk);
@@ -3200,6 +3572,124 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/marketing/browser-session" && request.method === "GET") {
       sendJson(response, 200, { ok: true, authorized: await hasMarketingWriteSession(request) });
+      return;
+    }
+
+    if (url.pathname === "/api/funnel/session" && request.method === "POST") {
+      if (!isTrustedAtlasFunnelOrigin(request)) {
+        sendJson(response, 403, { ok: false, error: "funnel_origin_not_allowed" });
+        return;
+      }
+      if (!isAtlasFunnelJsonRequest(request)) {
+        sendJson(response, 415, { ok: false, error: "funnel_json_required" });
+        return;
+      }
+      if (!getAtlasFunnelSigningSecret()) {
+        sendJson(response, 503, { ok: false, error: "funnel_session_unavailable" });
+        return;
+      }
+      const rateLimit = getAtlasFunnelEventRateLimit(request);
+      if (!rateLimit.allowed) {
+        sendJson(response, 429, { ok: false, error: "funnel_event_rate_limit" }, { "Retry-After": String(rateLimit.retryAfter) });
+        return;
+      }
+      const body = await readBody(request, 512);
+      let payload;
+      try {
+        payload = JSON.parse(body || "{}");
+      } catch {
+        sendJson(response, 400, { ok: false, error: "invalid_funnel_session_request" });
+        return;
+      }
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        sendJson(response, 400, { ok: false, error: "invalid_funnel_session_request" });
+        return;
+      }
+      const existingSessionId = String(payload.sessionId || "").trim().slice(0, 80);
+      const existingSessionToken = String(payload.sessionToken || "").trim().slice(0, 220);
+      if (existingSessionId || existingSessionToken) {
+        if (!verifyAtlasFunnelSession(
+          existingSessionId,
+          existingSessionToken,
+          ATLAS_FUNNEL_SESSION_RENEWAL_MAX_AGE_MS,
+        )) {
+          sendJson(response, 401, { ok: false, error: "invalid_funnel_session_renewal" });
+          return;
+        }
+      }
+      const session = createAtlasFunnelBrowserSession(existingSessionId);
+      sendJson(response, 201, { ok: true, ...session });
+      return;
+    }
+
+    if (url.pathname === "/api/funnel/events" && request.method === "POST") {
+      if (!isTrustedAtlasFunnelOrigin(request)) {
+        sendJson(response, 403, { ok: false, error: "funnel_origin_not_allowed" });
+        return;
+      }
+      if (!isAtlasFunnelJsonRequest(request)) {
+        sendJson(response, 415, { ok: false, error: "funnel_json_required" });
+        return;
+      }
+      const rateLimit = getAtlasFunnelEventRateLimit(request);
+      if (!rateLimit.allowed) {
+        sendJson(response, 429, { ok: false, error: "funnel_event_rate_limit" }, { "Retry-After": String(rateLimit.retryAfter) });
+        return;
+      }
+      const body = await readBody(request, ATLAS_FUNNEL_EVENT_MAX_BODY_BYTES);
+      let payload;
+      try {
+        payload = JSON.parse(body || "{}");
+      } catch {
+        sendJson(response, 400, { ok: false, error: "invalid_funnel_event" });
+        return;
+      }
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        sendJson(response, 400, { ok: false, error: "invalid_funnel_event" });
+        return;
+      }
+      const sessionId = String(payload?.sessionId || "").trim().slice(0, 80);
+      const sessionToken = String(payload?.sessionToken || "").trim().slice(0, 220);
+      if (!hasValidAtlasFunnelSession(sessionId, sessionToken)) {
+        sendJson(response, 401, { ok: false, error: "invalid_funnel_session" });
+        return;
+      }
+      const sessionRateLimit = getAtlasFunnelSessionRateLimit(sessionId);
+      if (!sessionRateLimit.allowed) {
+        sendJson(response, 429, { ok: false, error: "funnel_session_rate_limit" }, { "Retry-After": String(sessionRateLimit.retryAfter) });
+        return;
+      }
+      const event = normalizeAtlasFunnelEventPayload(payload);
+      if (!event) {
+        sendJson(response, 400, { ok: false, error: "invalid_funnel_event" });
+        return;
+      }
+      const result = await appendAtlasFunnelEvent(event);
+      if (!result.ok) {
+        sendJson(response, result.status, { ok: false, error: result.error });
+        return;
+      }
+      sendJson(response, result.status, {
+        ok: true,
+        eventId: result.event.id,
+        recordedAt: result.event.recordedAt,
+        deduplicated: result.deduplicated,
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/funnel/summary" && request.method === "GET") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
+        return;
+      }
+      const state = await readContent(ATLAS_FUNNEL_EVENTS_KEY, { version: 1, events: [] });
+      const events = getActiveAtlasFunnelEvents(state.events);
+      sendJson(response, 200, {
+        ok: true,
+        updatedAt: state.updatedAt || "",
+        ...buildAtlasFunnelSummary(events),
+      });
       return;
     }
 
@@ -3573,4 +4063,10 @@ const server = http.createServer(async (request, response) => {
 
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Atlas content API listening on 127.0.0.1:${PORT}`);
+  void purgeExpiredAtlasFunnelEvents().catch(() => {});
 });
+
+const atlasFunnelRetentionTimer = setInterval(() => {
+  void purgeExpiredAtlasFunnelEvents().catch(() => {});
+}, 6 * 60 * 60 * 1000);
+atlasFunnelRetentionTimer.unref();

@@ -162,13 +162,14 @@ export async function lockFinanceContent() {
   }
 }
 
-export async function postServerJson(path, value) {
+export async function postServerJson(path, value, options = {}) {
   try {
     const response = await fetch(apiUrl(path), {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       credentials: "include",
       body: JSON.stringify(value),
+      keepalive: Boolean(options.keepalive),
     });
     const payload = await response.json().catch(() => ({}));
     return { ok: response.ok && payload?.ok !== false, status: response.status, payload };
