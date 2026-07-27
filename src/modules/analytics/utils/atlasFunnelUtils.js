@@ -19,12 +19,15 @@ export function hydrateAtlasFunnel(saved) {
   return {
     ...defaults,
     ...saved,
+    version: defaults.version,
     meta: {
       ...defaults.meta,
       ...(saved.meta || {}),
       status: funnelStatusOptions.includes(saved?.meta?.status) ? saved.meta.status : defaults.meta.status,
     },
     stages: mergeCollection(defaults.stages, saved.stages),
+    acquisitionSegments: mergeCollection(defaults.acquisitionSegments, saved.acquisitionSegments),
+    audienceRoles: mergeCollection(defaults.audienceRoles, saved.audienceRoles),
     segments: mergeCollection(defaults.segments, saved.segments),
     sequence: mergeCollection(defaults.sequence, saved.sequence),
     assets: mergeCollection(defaults.assets, saved.assets),
@@ -103,9 +106,19 @@ export function buildAtlasFunnelMarkdown(funnel) {
     lines.push(`### ${stage.order}. ${stage.title}`, "", stage.description || "", `CTA: ${stage.action || ""}`, `Событие: \`${stage.event || ""}\``, "");
   });
 
-  lines.push("## Сегменты", "");
+  lines.push("## Источники для парсера", "");
+  (funnel.acquisitionSegments || []).forEach((segment) => {
+    lines.push(`### ${segment.title}`, "", `Где искать: ${segment.examples || ""}`, `Кого искать: ${segment.targets || ""}`, `Маршрут: ${segment.route || ""}`, `Приоритет: ${segment.priority || ""}`, "");
+  });
+
+  lines.push("## Роли", "");
+  (funnel.audienceRoles || []).forEach((role) => {
+    lines.push(`- **${role.title}:** ${role.signal || ""} → ${role.route || ""}`);
+  });
+
+  lines.push("", "## Маршруты", "");
   (funnel.segments || []).forEach((segment) => {
-    lines.push(`### ${segment.title}`, "", `Задача: ${segment.job || ""}`, `Барьер: ${segment.barrier || ""}`, `Маршрут: ${segment.route || ""}`, `CTA: ${segment.cta || ""}`, "");
+    lines.push(`### ${segment.title}`, "", `Подсегменты: ${segment.subsegments || ""}`, `Задача: ${segment.job || ""}`, `Барьер: ${segment.barrier || ""}`, `Маршрут: ${segment.route || ""}`, `CTA: ${segment.cta || ""}`, "");
   });
 
   lines.push("## Серия сообщений", "");

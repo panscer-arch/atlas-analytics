@@ -16,9 +16,11 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   atlasFunnelPilotProofs,
+  atlasFunnelPilotProfiles,
   atlasFunnelPilotQuestions,
+  atlasFunnelReadiness,
   atlasFunnelPilotSegments,
-  atlasFunnelPilotSteps,
+  getAtlasFunnelPilotSteps,
 } from "../data/atlasFunnelPilotData";
 import { postServerJson } from "../services/contentStore";
 import {
@@ -26,6 +28,8 @@ import {
   calculateAtlasFunnelProgress,
   createAtlasFunnelEventId,
   createAtlasFunnelSessionId,
+  determineAtlasFunnelProfile,
+  determineAtlasFunnelReadiness,
   determineAtlasFunnelSegment,
   readAtlasFunnelOutbox,
   readAtlasFunnelSession,
@@ -40,8 +44,11 @@ const EMPTY_LEAD = {
   contactMethod: "telegram",
   contact: "",
   country: "",
+  audienceSize: "",
+  languages: "",
   message: "",
   consent: false,
+  communicationAccepted: false,
   website: "",
 };
 
@@ -54,9 +61,11 @@ function createInitialPilotState() {
       sessionExpiresAt: String(saved.sessionExpiresAt || ""),
       screen: ["intro", "quiz", "route", "complete"].includes(saved.screen) ? saved.screen : "intro",
       questionIndex: Math.max(0, Math.min(Number(saved.questionIndex) || 0, atlasFunnelPilotQuestions.length - 1)),
-      stepIndex: Math.max(0, Math.min(Number(saved.stepIndex) || 0, atlasFunnelPilotSteps.length - 1)),
+      stepIndex: Math.max(0, Math.min(Number(saved.stepIndex) || 0, 5)),
       answers: saved.answers && typeof saved.answers === "object" ? saved.answers : {},
       segmentId: atlasFunnelPilotSegments[saved.segmentId] ? saved.segmentId : "",
+      profileId: atlasFunnelPilotProfiles[saved.profileId] ? saved.profileId : "",
+      readiness: ["R1", "R2"].includes(saved.readiness) ? saved.readiness : "R1",
       visitTracked: Boolean(saved.visitTracked),
     };
   }
@@ -69,6 +78,8 @@ function createInitialPilotState() {
     stepIndex: 0,
     answers: {},
     segmentId: "",
+    profileId: "",
+    readiness: "R1",
     visitTracked: false,
   };
 }
@@ -106,8 +117,12 @@ function AtlasFunnelPilotPage() {
   const routeStepRefs = useRef([]);
   const leadFormRef = useRef(null);
   const segment = atlasFunnelPilotSegments[pilot.segmentId] || atlasFunnelPilotSegments["web3-new"];
+  const profile = atlasFunnelPilotProfiles[pilot.profileId] || atlasFunnelPilotProfiles["beginner-no-wallet"];
+  const readiness = atlasFunnelReadiness[pilot.readiness] || atlasFunnelReadiness.R1;
+  const routeSteps = useMemo(() => getAtlasFunnelPilotSteps(pilot.segmentId), [pilot.segmentId]);
+  const isLeaderRoute = ["mlm-leader", "regional-leader"].includes(pilot.segmentId);
   const question = atlasFunnelPilotQuestions[pilot.questionIndex];
-  const message = atlasFunnelPilotSteps[pilot.stepIndex];
+  const message = routeSteps[pilot.stepIndex] || routeSteps[0];
 
   useEffect(() => {
     pilotRef.current = pilot;
@@ -237,6 +252,9 @@ function AtlasFunnelPilotPage() {
       payload: {
         event,
         segmentId: details.segmentId || "",
+        profileId: details.profileId || "",
+        roleId: details.roleId || "",
+        readiness: details.readiness || "",
         questionId: details.questionId || "",
         answerId: details.answerId || "",
         stepId: details.stepId || "",
@@ -271,15 +289,26 @@ function AtlasFunnelPilotPage() {
     }
 
     const segmentId = determineAtlasFunnelSegment(nextAnswers);
+    const profileId = determineAtlasFunnelProfile(nextAnswers, segmentId);
+    const readiness = determineAtlasFunnelReadiness(nextAnswers, segmentId);
+    const nextSteps = getAtlasFunnelPilotSteps(segmentId);
     setPilot((current) => ({
       ...current,
       answers: nextAnswers,
       segmentId,
+      profileId,
+      readiness,
       screen: "route",
       stepIndex: 0,
     }));
-    void trackEvent("segment_selected", { segmentId, source: nextAnswers.source });
-    void trackEvent("step_opened", { segmentId, stepId: atlasFunnelPilotSteps[0].id, source: nextAnswers.source });
+    void trackEvent("segment_selected", {
+      segmentId,
+      profileId,
+      roleId: nextAnswers.role,
+      readiness,
+      source: nextAnswers.source,
+    });
+    void trackEvent("step_opened", { segmentId, stepId: nextSteps[0].id, source: nextAnswers.source });
   }
 
   function previousQuestion() {
@@ -291,15 +320,15 @@ function AtlasFunnelPilotPage() {
   }
 
   function nextStep() {
-    if (pilot.stepIndex >= atlasFunnelPilotSteps.length - 1) {
+    if (pilot.stepIndex >= routeSteps.length - 1) {
       setPilot((current) => ({ ...current, screen: "complete" }));
       void trackEvent("route_completed", { stepId: message.id });
       return;
     }
     const nextIndex = pilot.stepIndex + 1;
-    const nextMessage = atlasFunnelPilotSteps[nextIndex];
+    const nextMessage = routeSteps[nextIndex];
     setPilot((current) => ({ ...current, stepIndex: nextIndex }));
-    void trackEvent("step_opened", { stepId: nextMessage.id });
+    void trackEvent("step_opened", { segmentId: pilot.segmentId, stepId: nextMessage.id });
   }
 
   function previousStep() {
@@ -336,6 +365,10 @@ function AtlasFunnelPilotPage() {
       setLeadError("Подтвердите согласие на связь по этой заявке.");
       return;
     }
+    if (isLeaderRoute && !lead.communicationAccepted) {
+      setLeadError("Подтвердите готовность соблюдать правила коммуникации Atlas.");
+      return;
+    }
     setLeadState("sending");
     setLeadError("");
     const delivered = await flushEventOutbox();
@@ -348,6 +381,9 @@ function AtlasFunnelPilotPage() {
     const result = await postServerJson("/api/funnel/leads", {
       ...credentials,
       segmentId: pilot.segmentId,
+      profileId: pilot.profileId,
+      roleId: pilot.answers.role || "",
+      readiness: pilot.readiness,
       source: pilot.answers.source || "",
       attribution,
       leadType: segment.leadType,
@@ -355,8 +391,11 @@ function AtlasFunnelPilotPage() {
       contactMethod: lead.contactMethod,
       contact: lead.contact,
       country: lead.country,
+      audienceSize: lead.audienceSize,
+      languages: lead.languages,
       message: lead.message,
       consent: lead.consent,
+      communicationAccepted: lead.communicationAccepted,
       website: lead.website,
     });
     if (result.ok) {
@@ -367,6 +406,7 @@ function AtlasFunnelPilotPage() {
     const errorMessages = {
       invalid_funnel_lead_contact: "Проверьте формат контакта.",
       funnel_route_not_completed: "Сначала завершите маршрут, затем отправьте заявку.",
+      funnel_lead_route_mismatch: "Маршрут изменился. Пройдите его заново перед отправкой заявки.",
       funnel_lead_rate_limit: "Заявка уже принята. Повторная отправка временно ограничена.",
     };
     setLeadError(errorMessages[result.payload?.error] || "Не удалось отправить заявку. Попробуйте ещё раз.");
@@ -382,6 +422,8 @@ function AtlasFunnelPilotPage() {
       stepIndex: 0,
       answers: {},
       segmentId: "",
+      profileId: "",
+      readiness: "R1",
       visitTracked: false,
     };
     generationRef.current += 1;
@@ -413,7 +455,7 @@ function AtlasFunnelPilotPage() {
         <>
           <section className="atlas-pilot-hero">
             <div className="atlas-pilot-hero-inner">
-              <span className="atlas-pilot-kicker">Atlas Web3 Start · 7 минут</span>
+              <span className="atlas-pilot-kicker">Atlas Web3 Start · короткий маршрут</span>
               <h1>Разберитесь в Atlas.<br />Проверьте ключевые факты.<br /><strong>Решите самостоятельно.</strong></h1>
               <p>
                 Короткий маршрут объяснит Smart Cycle, покажет риски и подберёт порядок материалов под ваш опыт и интерес.
@@ -421,7 +463,7 @@ function AtlasFunnelPilotPage() {
               </p>
               <div className="atlas-pilot-hero-actions">
                 <button type="button" onClick={startQuiz}>Начать маршрут <ArrowRight size={18} /></button>
-                <a href={OFFICIAL_ATLAS_URL} target="_blank" rel="noreferrer" onClick={openProof}>
+                <a href={OFFICIAL_ATLAS_URL} target="_blank" rel="noreferrer">
                   Официальный сайт <ExternalLink size={16} />
                 </a>
               </div>
@@ -478,10 +520,10 @@ function AtlasFunnelPilotPage() {
             <p>{segment.intro}</p>
             <div className="atlas-pilot-route-persona">
               <CheckCircle2 size={19} />
-              <span><small>Определённый профиль</small><b>{segment.label}</b></span>
+              <span><small>{readiness.label} · {pilot.readiness}</small><b>{profile.label}</b></span>
             </div>
             <ol>
-              {atlasFunnelPilotSteps.map((item, index) => (
+              {routeSteps.map((item, index) => (
                 <li
                   key={item.id}
                   ref={(node) => { routeStepRefs.current[index] = node; }}
@@ -496,9 +538,9 @@ function AtlasFunnelPilotPage() {
 
           <article className="atlas-pilot-route-content">
             <div className="atlas-pilot-route-progress">
-              <span>Шаг {pilot.stepIndex + 1} из {atlasFunnelPilotSteps.length}</span>
-              <b>{calculateAtlasFunnelProgress(pilot.stepIndex, atlasFunnelPilotSteps.length)}%</b>
-              <i><em style={{ width: `${calculateAtlasFunnelProgress(pilot.stepIndex, atlasFunnelPilotSteps.length)}%` }} /></i>
+              <span>Шаг {pilot.stepIndex + 1} из {routeSteps.length}</span>
+              <b>{calculateAtlasFunnelProgress(pilot.stepIndex, routeSteps.length)}%</b>
+              <i><em style={{ width: `${calculateAtlasFunnelProgress(pilot.stepIndex, routeSteps.length)}%` }} /></i>
             </div>
             <span className="atlas-pilot-kicker">{message.eyebrow}</span>
             <h1>{message.title}</h1>
@@ -509,7 +551,7 @@ function AtlasFunnelPilotPage() {
               <span><small>Что проверить</small><b>{message.proof}</b></span>
             </div>
 
-            {pilot.stepIndex === 4 ? (
+            {message.showProofs ? (
               <div className="atlas-pilot-proof-list">
                 {atlasFunnelPilotProofs.map((proof) => (
                   <div key={proof.id}>
@@ -519,12 +561,12 @@ function AtlasFunnelPilotPage() {
                   </div>
                 ))}
                 <a href={OFFICIAL_ATLAS_URL} target="_blank" rel="noreferrer" onClick={openProof}>
-                  Открыть материалы Atlas <ExternalLink size={16} />
+                  Открыть официальные материалы Atlas <ExternalLink size={16} />
                 </a>
               </div>
             ) : null}
 
-            {pilot.stepIndex === 5 ? (
+            {message.showWalletCheck ? (
               <div className="atlas-pilot-wallet-check">
                 <WalletCards size={24} />
                 <div>
@@ -539,7 +581,7 @@ function AtlasFunnelPilotPage() {
                 <ArrowLeft size={17} /> Назад
               </button>
               <button type="button" className="atlas-pilot-primary" onClick={nextStep}>
-                {pilot.stepIndex === atlasFunnelPilotSteps.length - 1 ? "Завершить маршрут" : message.cta}
+                {pilot.stepIndex === routeSteps.length - 1 ? "Завершить маршрут" : message.cta}
                 <ArrowRight size={17} />
               </button>
             </footer>
@@ -553,10 +595,15 @@ function AtlasFunnelPilotPage() {
           <span className="atlas-pilot-kicker">{segment.label}</span>
           <h1>{segment.finalTitle}</h1>
           <p>{segment.finalText}</p>
+          <div className="atlas-pilot-complete-profile">
+            <span><small>Подсегмент</small><b>{profile.label}</b></span>
+            <span><small>Готовность</small><b>{pilot.readiness} · {readiness.label}</b></span>
+            <p>{readiness.text}</p>
+          </div>
           <div className="atlas-pilot-complete-summary">
-            <div><b>5</b><span>ответов сформировали маршрут</span></div>
-            <div><b>6</b><span>шагов пройдено</span></div>
-            <div><b>0</b><span>данных потребовалось для маршрута</span></div>
+            <div><b>{atlasFunnelPilotQuestions.length}</b><span>ответов сформировали маршрут</span></div>
+            <div><b>{routeSteps.length}</b><span>шагов пройдено</span></div>
+            <div><b>0</b><span>контактов потребовалось для маршрута</span></div>
           </div>
           <div className="atlas-pilot-complete-actions">
             <button type="button" className="atlas-pilot-lead-trigger" onClick={openLeadForm}>
@@ -640,6 +687,33 @@ function AtlasFunnelPilotPage() {
                         placeholder="Например, Турция"
                       />
                     </label>
+                    {isLeaderRoute ? (
+                      <>
+                        <label>
+                          <span>Активная аудитория или команда</span>
+                          <select
+                            value={lead.audienceSize}
+                            onChange={(event) => updateLead("audienceSize", event.target.value)}
+                          >
+                            <option value="">Выберите диапазон</option>
+                            <option value="under-100">До 100 активных участников</option>
+                            <option value="100-1000">100–1 000 активных участников</option>
+                            <option value="1000-10000">1 000–10 000 активных участников</option>
+                            <option value="over-10000">Более 10 000 активных участников</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>Языки аудитории <small>необязательно</small></span>
+                          <input
+                            type="text"
+                            value={lead.languages}
+                            onChange={(event) => updateLead("languages", event.target.value)}
+                            maxLength={120}
+                            placeholder="Например, русский, турецкий"
+                          />
+                        </label>
+                      </>
+                    ) : null}
                     <label className="atlas-pilot-lead-message">
                       <span>Что вы хотите обсудить <small>необязательно</small></span>
                       <textarea
@@ -666,8 +740,18 @@ function AtlasFunnelPilotPage() {
                         checked={lead.consent}
                         onChange={(event) => updateLead("consent", event.target.checked)}
                       />
-                      <span>Согласен, чтобы команда Atlas связалась со мной по этой заявке. Контакт используется только для ответа и хранится не более 180 дней.</span>
+                      <span>Согласен, чтобы команда Atlas связалась со мной по этой заявке. В базе воронки контакт используется только для ответа и хранится не более 180 дней; уведомление оператору хранится по правилам рабочего канала.</span>
                     </label>
+                    {isLeaderRoute ? (
+                      <label className="atlas-pilot-lead-consent atlas-pilot-lead-rules">
+                        <input
+                          type="checkbox"
+                          checked={lead.communicationAccepted}
+                          onChange={(event) => updateLead("communicationAccepted", event.target.checked)}
+                        />
+                        <span>Готов использовать только утверждённые материалы, не обещать доход, возврат, Claim или отсутствие риска и открыто сообщать существенные ограничения.</span>
+                      </label>
+                    ) : null}
                     <div className="atlas-pilot-lead-warning">
                       <ShieldCheck size={18} />
                       <span>Не отправляйте seed-фразу, приватный ключ, пароли, документы или платёжные данные.</span>

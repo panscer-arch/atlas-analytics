@@ -2,6 +2,7 @@ import {
   ATLAS_FUNNEL_PILOT_OUTBOX_KEY,
   ATLAS_FUNNEL_PILOT_SESSION_KEY,
   atlasFunnelPilotEvents,
+  atlasFunnelPilotProfiles,
   atlasFunnelPilotQuestions,
 } from "../data/atlasFunnelPilotData.js";
 
@@ -12,6 +13,39 @@ export function determineAtlasFunnelSegment(answers = {}) {
   if (answers.interest === "partner") return "mlm-leader";
   if (answers.interest === "technical" || answers.experience === "advanced") return "crypto-user";
   return "web3-new";
+}
+
+export function determineAtlasFunnelProfile(answers = {}, segmentId = determineAtlasFunnelSegment(answers)) {
+  if (segmentId === "regional-leader") {
+    if (answers.role === "regional") return "regional-operator";
+    if (answers.role === "creator") return "community-owner";
+    return "regional-interest";
+  }
+
+  if (segmentId === "mlm-leader") {
+    if (answers.role === "mlm") return "active-mlm-leader";
+    if (answers.role === "creator" || answers.role === "affiliate") return "creator-affiliate";
+    return "solo-partner";
+  }
+
+  if (segmentId === "crypto-user") {
+    if (answers.interest === "technical" && answers.proof === "contracts") return "technical-evaluator";
+    if (answers.experience === "advanced") return "defi-user";
+    return "wallet-crypto-user";
+  }
+
+  return answers.wallet === "no" ? "beginner-no-wallet" : "wallet-starter";
+}
+
+export function determineAtlasFunnelReadiness(answers = {}, segmentId = determineAtlasFunnelSegment(answers)) {
+  if (segmentId === "regional-leader" && answers.role === "regional") return "R2";
+  if (segmentId === "mlm-leader" && ["mlm", "creator", "affiliate"].includes(answers.role)) return "R2";
+  if (
+    segmentId === "crypto-user" &&
+    (answers.experience === "advanced" ||
+      (answers.interest === "technical" && answers.proof === "contracts"))
+  ) return "R2";
+  return "R1";
 }
 
 export function isAtlasFunnelQuizComplete(answers = {}) {
@@ -88,6 +122,9 @@ export function normalizeAtlasFunnelEvent(payload = {}) {
     sessionId,
     event,
     segmentId: String(payload.segmentId || "").trim().slice(0, 40),
+    profileId: atlasFunnelPilotProfiles[payload.profileId] ? payload.profileId : "",
+    roleId: String(payload.roleId || "").trim().slice(0, 40),
+    readiness: ["R1", "R2"].includes(payload.readiness) ? payload.readiness : "",
     questionId: String(payload.questionId || "").trim().slice(0, 40),
     answerId: String(payload.answerId || "").trim().slice(0, 40),
     stepId: String(payload.stepId || "").trim().slice(0, 40),

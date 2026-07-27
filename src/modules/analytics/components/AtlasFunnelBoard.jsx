@@ -9,8 +9,10 @@ import {
 } from "../data/atlasFunnelData";
 import {
   ATLAS_FUNNEL_PILOT_URL,
+  atlasFunnelPilotProfiles,
   atlasFunnelPilotQuestions,
   atlasFunnelPilotSegments,
+  getAtlasFunnelPilotSteps,
 } from "../data/atlasFunnelPilotData";
 import {
   buildAtlasFunnelMarkdown,
@@ -179,7 +181,8 @@ function AtlasFunnelBoard() {
   const metricRows = useMemo(() => calculateMetricRows(funnel.metrics), [funnel.metrics]);
   const markdown = useMemo(() => buildAtlasFunnelMarkdown(funnel), [funnel]);
   const simulatorSegment = funnel.segments.find((item) => item.id === simulatorSegmentId) || funnel.segments[0];
-  const simulatorMessage = funnel.sequence[simulatorStep] || funnel.sequence[0];
+  const simulatorRouteSteps = useMemo(() => getAtlasFunnelPilotSteps(simulatorSegmentId), [simulatorSegmentId]);
+  const simulatorMessage = simulatorRouteSteps[simulatorStep] || simulatorRouteSteps[0];
 
   function updateMeta(field, value) {
     setFunnel((current) => ({ ...current, meta: { ...current.meta, [field]: value } }));
@@ -271,14 +274,14 @@ function AtlasFunnelBoard() {
   }
 
   function nextSimulatorStep() {
-    const nextIndex = Math.min(simulatorStep + 1, funnel.sequence.length - 1);
+    const nextIndex = Math.min(simulatorStep + 1, simulatorRouteSteps.length - 1);
     setSimulatorStep(nextIndex);
-    const nextMessage = funnel.sequence[nextIndex];
-    addSimulatorEvent(nextIndex === funnel.sequence.length - 1 ? "route_completed" : `step_${nextIndex}_opened`, nextMessage?.title || "Следующий шаг");
+    const nextMessage = simulatorRouteSteps[nextIndex];
+    addSimulatorEvent(nextIndex === simulatorRouteSteps.length - 1 ? "route_completed" : "step_opened", nextMessage?.title || "Следующий шаг");
   }
 
   function handleSimulatorPrimaryAction() {
-    if (simulatorStep === funnel.sequence.length - 1) {
+    if (simulatorStep === simulatorRouteSteps.length - 1) {
       addSimulatorEvent("qualified_action", simulatorSegment.cta);
       return;
     }
@@ -535,11 +538,72 @@ function AtlasFunnelBoard() {
         <div className="atlas-funnel-workspace">
           <section className="atlas-funnel-section-head atlas-funnel-section-head-standalone">
             <div>
-              <span>Ветка определяется в начале</span>
-              <h3>Один вход, четыре разных маршрута</h3>
+              <span>Модель сегментации v2</span>
+              <h3>Источник, роль и маршрут больше не смешиваются</h3>
             </div>
-            <p>Человек видит общий фундамент Atlas, но порядок доказательств, язык и финальная кнопка соответствуют его задаче.</p>
+            <p>Парсер отвечает, где найден контакт. Анкета определяет его роль и намерение. Готовность показывает, кому нужен контент, консультант или ручная квалификация.</p>
           </section>
+
+          <section className="atlas-funnel-segmentation-model">
+            {[
+              ["01", "Источник", "Где найден контакт"],
+              ["02", "Роль", "Кто этот человек"],
+              ["03", "Намерение", "Что он хочет сделать"],
+              ["04", "Маршрут", "Какой контент показать"],
+              ["05", "Готовность", "Кому передать дальше"],
+            ].map(([number, title, text]) => (
+              <div key={number}><span>{number}</span><b>{title}</b><small>{text}</small></div>
+            ))}
+          </section>
+
+          <section className="atlas-funnel-audience-layer">
+            <div className="atlas-funnel-section-head">
+              <div>
+                <span>Слой 1 · Парсер</span>
+                <h3>Семь пулов привлечения</h3>
+              </div>
+              <p>Это семь аудиторных пулов для поиска. Фактический источник фиксируется отдельно: канал, UTM и ответ анкеты.</p>
+            </div>
+            <div className="atlas-funnel-source-grid">
+              {funnel.acquisitionSegments.map((item) => (
+                <article key={item.id}>
+                  <header><span>{item.priority}</span><h4>{item.title}</h4></header>
+                  <div><b>Где искать</b><Field value={item.examples} onChange={(value) => updateCollection("acquisitionSegments", item.id, "examples", value)} editMode={editMode} multiline /></div>
+                  <div><b>Кого искать</b><Field value={item.targets} onChange={(value) => updateCollection("acquisitionSegments", item.id, "targets", value)} editMode={editMode} multiline /></div>
+                  <footer><span>{item.route}</span><Field value={item.note} onChange={(value) => updateCollection("acquisitionSegments", item.id, "note", value)} editMode={editMode} multiline /></footer>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="atlas-funnel-audience-layer">
+            <div className="atlas-funnel-section-head">
+              <div>
+                <span>Слой 2 · Роль</span>
+                <h3>Десять типов контактов</h3>
+              </div>
+              <p>Один человек может прийти из любого источника, поэтому роль хранится отдельно.</p>
+            </div>
+            <div className="atlas-funnel-role-list">
+              {funnel.audienceRoles.map((role, index) => (
+                <div key={role.id}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <b>{role.title}</b>
+                  <Field value={role.signal} onChange={(value) => updateCollection("audienceRoles", role.id, "signal", value)} editMode={editMode} />
+                  <em>{role.route}</em>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="atlas-funnel-audience-layer">
+            <div className="atlas-funnel-section-head">
+              <div>
+                <span>Слой 3 · Контент</span>
+                <h3>Две общие основы и четыре самостоятельных маршрута</h3>
+              </div>
+              <p>Для всех обязательны правильная рамка Atlas и риски. После них содержание, доказательства и CTA расходятся.</p>
+            </div>
           <div className="atlas-funnel-segments">
             {funnel.segments.map((segment) => (
               <article key={segment.id}>
@@ -551,6 +615,10 @@ function AtlasFunnelBoard() {
                 <div>
                   <b>Сигнал</b>
                   <Field value={segment.signal} onChange={(value) => updateCollection("segments", segment.id, "signal", value)} editMode={editMode} multiline />
+                </div>
+                <div>
+                  <b>Подсегменты</b>
+                  <Field value={segment.subsegments} onChange={(value) => updateCollection("segments", segment.id, "subsegments", value)} editMode={editMode} multiline />
                 </div>
                 <div>
                   <b>Задача человека</b>
@@ -575,6 +643,22 @@ function AtlasFunnelBoard() {
               </article>
             ))}
           </div>
+          </section>
+
+          <section className="atlas-funnel-readiness-layer">
+            <div>
+              <span>R0</span><b>Интерес</b><small>Нет конкретного следующего шага</small><em>Контент</em>
+            </div>
+            <div>
+              <span>R1</span><b>Изучение</b><small>Проходит материалы и формулирует вопросы</small><em>Самообучение</em>
+            </div>
+            <div>
+              <span>R2</span><b>Кандидат на ручную квалификацию</b><small>Самоописание указывает на релевантную цель или опыт; аудитория и полномочия ещё не подтверждены</small><em>Консультант / партнёрский менеджер</em>
+            </div>
+            <div>
+              <span>R3</span><b>Масштабирование</b><small>Подтверждены аудитория, команда, план и правила</small><em>Региональный директор</em>
+            </div>
+          </section>
         </div>
       ) : null}
 
@@ -667,6 +751,13 @@ function AtlasFunnelBoard() {
                     </div>
                   ))}
                 </div>
+                <div className="atlas-funnel-live-readiness">
+                  <span>Предварительная готовность</span>
+                  <div>
+                    <b>R1 · Изучение<strong>{pilotSummary.readinessCounts?.R1 || 0}</strong></b>
+                    <b>R2 · Квалифицирован<strong>{pilotSummary.readinessCounts?.R2 || 0}</strong></b>
+                  </div>
+                </div>
                 {Object.keys(pilotSummary.sourceCounts || {}).length ? (
                   <div className="atlas-funnel-live-sources">
                     <span>Источники сессий</span>
@@ -720,7 +811,8 @@ function AtlasFunnelBoard() {
                                 </td>
                                 <td>
                                   <b>{atlasFunnelPilotSegments[lead.segmentId]?.label || lead.segmentId}</b>
-                                  <small>{lead.leadType}</small>
+                                  <small>{atlasFunnelPilotProfiles[lead.profileId]?.label || lead.profileId || lead.leadType}</small>
+                                  {lead.readiness ? <small>{lead.readiness}</small> : null}
                                 </td>
                                 <td>
                                   {lead.name ? <b>{lead.name}</b> : null}
@@ -827,7 +919,7 @@ function AtlasFunnelBoard() {
               <h3>Пройдите маршрут как пользователь</h3>
               <p>Этот прогон проверяет логику ветки и события до подключения внешней автоматизации.</p>
               <label>
-                <span>Роль пользователя</span>
+                <span>Маршрут пользователя</span>
                 <select value={simulatorSegmentId} onChange={(event) => {
                   setSimulatorSegmentId(event.target.value);
                   setSimulatorStep(0);
@@ -846,20 +938,20 @@ function AtlasFunnelBoard() {
             <div className="atlas-funnel-test-phone">
               <div className="atlas-funnel-phone-top">
                 <span>Atlas Web3 Start</span>
-                <b>{simulatorMessage.day}</b>
+                <b>Шаг {simulatorStep + 1}</b>
               </div>
               <div className="atlas-funnel-phone-progress">
-                <i style={{ width: `${((simulatorStep + 1) / funnel.sequence.length) * 100}%` }} />
+                <i style={{ width: `${((simulatorStep + 1) / simulatorRouteSteps.length) * 100}%` }} />
               </div>
               <div className="atlas-funnel-phone-message">
-                <small>{simulatorMessage.purpose}</small>
+                <small>{simulatorMessage.eyebrow}</small>
                 <h4>{simulatorMessage.title}</h4>
                 <strong>{simulatorMessage.hook}</strong>
                 <p>{simulatorMessage.body}</p>
                 <div><b>Проверка</b><span>{simulatorMessage.proof}</span></div>
               </div>
               <button type="button" onClick={handleSimulatorPrimaryAction}>
-                {simulatorStep === funnel.sequence.length - 1 ? simulatorSegment.cta : simulatorMessage.cta}
+                {simulatorStep === simulatorRouteSteps.length - 1 ? simulatorSegment.cta : simulatorMessage.cta}
               </button>
             </div>
             <div className="atlas-funnel-test-log">

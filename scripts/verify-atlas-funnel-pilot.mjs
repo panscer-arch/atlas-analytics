@@ -2,25 +2,33 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   atlasFunnelPilotEvents,
+  atlasFunnelPilotProfiles,
   atlasFunnelPilotQuestions,
+  atlasFunnelPilotRouteSteps,
   atlasFunnelPilotSegments,
-  atlasFunnelPilotSteps,
+  getAtlasFunnelPilotSteps,
 } from "../src/modules/analytics/data/atlasFunnelPilotData.js";
 import {
   buildAtlasFunnelAttribution,
   calculateAtlasFunnelProgress,
+  determineAtlasFunnelProfile,
+  determineAtlasFunnelReadiness,
   determineAtlasFunnelSegment,
   isAtlasFunnelQuizComplete,
   normalizeAtlasFunnelEvent,
 } from "../src/modules/analytics/utils/atlasFunnelPilotUtils.js";
 
-assert.equal(atlasFunnelPilotQuestions.length, 5);
+assert.equal(atlasFunnelPilotQuestions.length, 6);
 assert.equal(Object.keys(atlasFunnelPilotSegments).length, 4);
+assert.equal(Object.keys(atlasFunnelPilotProfiles).length, 11);
 assert.ok(Object.values(atlasFunnelPilotSegments).every((segment) => (
   segment.leadType && segment.leadTitle && segment.leadText && segment.cta
 )));
-assert.equal(atlasFunnelPilotSteps.length, 6);
-assert.ok(atlasFunnelPilotSteps.every((step) => step.title && step.hook && step.body && step.proof && step.cta));
+assert.ok(Object.values(atlasFunnelPilotRouteSteps).every((steps) => steps.length === 4));
+assert.ok(Object.keys(atlasFunnelPilotSegments).every((segmentId) => (
+  getAtlasFunnelPilotSteps(segmentId).length === 6
+  && getAtlasFunnelPilotSteps(segmentId).every((step) => step.title && step.hook && step.body && step.proof && step.cta)
+)));
 assert.ok(atlasFunnelPilotEvents.includes("qualified_action"));
 
 assert.equal(determineAtlasFunnelSegment({ interest: "regional", experience: "new" }), "regional-leader");
@@ -28,6 +36,13 @@ assert.equal(determineAtlasFunnelSegment({ interest: "partner", experience: "new
 assert.equal(determineAtlasFunnelSegment({ interest: "technical", experience: "wallet" }), "crypto-user");
 assert.equal(determineAtlasFunnelSegment({ interest: "product", experience: "advanced" }), "crypto-user");
 assert.equal(determineAtlasFunnelSegment({ interest: "product", experience: "new" }), "web3-new");
+assert.equal(determineAtlasFunnelProfile({ interest: "product", experience: "new", wallet: "no" }), "beginner-no-wallet");
+assert.equal(determineAtlasFunnelProfile({ interest: "technical", experience: "advanced", proof: "contracts" }), "technical-evaluator");
+assert.equal(determineAtlasFunnelProfile({ interest: "partner", role: "mlm" }), "active-mlm-leader");
+assert.equal(determineAtlasFunnelProfile({ interest: "regional", role: "regional" }), "regional-operator");
+assert.equal(determineAtlasFunnelReadiness({ interest: "partner", role: "mlm" }), "R2");
+assert.equal(determineAtlasFunnelReadiness({ interest: "technical", experience: "wallet", proof: "contracts" }), "R2");
+assert.equal(determineAtlasFunnelReadiness({ interest: "product", role: "individual" }), "R1");
 
 const completeAnswers = Object.fromEntries(atlasFunnelPilotQuestions.map((question) => [question.id, question.options[0].id]));
 assert.equal(isAtlasFunnelQuizComplete(completeAnswers), true);
@@ -52,6 +67,9 @@ assert.deepEqual(
     sessionId: "session-1",
     event: "question_answered",
     segmentId: "",
+    profileId: "",
+    roleId: "",
+    readiness: "",
     questionId: "interest",
     answerId: "technical",
     stepId: "",

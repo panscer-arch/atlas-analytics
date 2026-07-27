@@ -677,6 +677,154 @@
   font-size: 12px;
 }
 
+.atlas-funnel-segmentation-model {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--funnel-line);
+  border-radius: 8px;
+  background: var(--funnel-line);
+  gap: 1px;
+}
+
+.atlas-funnel-segmentation-model > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 16px;
+  background: #fbfaf7;
+}
+
+.atlas-funnel-segmentation-model span {
+  color: var(--funnel-orange);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.atlas-funnel-segmentation-model b {
+  color: var(--funnel-ink);
+  font-size: 16px;
+}
+
+.atlas-funnel-segmentation-model small {
+  color: var(--funnel-muted);
+  line-height: 1.35;
+}
+
+.atlas-funnel-audience-layer {
+  padding: 20px;
+  border: 1px solid var(--funnel-line);
+  border-radius: 8px;
+  background: var(--funnel-surface);
+}
+
+.atlas-funnel-source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.atlas-funnel-source-grid article {
+  display: grid;
+  min-width: 0;
+  border: 1px solid var(--funnel-line);
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.atlas-funnel-source-grid article header,
+.atlas-funnel-source-grid article > div,
+.atlas-funnel-source-grid article footer {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--funnel-line);
+}
+
+.atlas-funnel-source-grid article header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fbfaf7;
+}
+
+.atlas-funnel-source-grid article header span {
+  flex: 0 0 auto;
+  border: 1px solid #f0c99f;
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: var(--funnel-orange);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.atlas-funnel-source-grid article h4 {
+  order: -1;
+  margin: 0;
+  color: var(--funnel-ink);
+  font-size: 16px;
+}
+
+.atlas-funnel-source-grid article > div > b {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--funnel-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.atlas-funnel-source-grid article footer {
+  display: grid;
+  gap: 8px;
+  border-bottom: 0;
+  background: #fff7ec;
+}
+
+.atlas-funnel-source-grid article footer > span {
+  color: var(--funnel-orange);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.atlas-funnel-role-list {
+  display: grid;
+  border: 1px solid var(--funnel-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.atlas-funnel-role-list > div {
+  display: grid;
+  grid-template-columns: 42px minmax(180px, 0.8fr) minmax(240px, 1.6fr) minmax(140px, 0.7fr);
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--funnel-line);
+}
+
+.atlas-funnel-role-list > div:last-child {
+  border-bottom: 0;
+}
+
+.atlas-funnel-role-list > div:nth-child(2n) {
+  background: #fbfaf7;
+}
+
+.atlas-funnel-role-list span {
+  color: var(--funnel-orange);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.atlas-funnel-role-list b {
+  color: var(--funnel-ink);
+}
+
+.atlas-funnel-role-list em {
+  color: var(--funnel-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .atlas-funnel-segments {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -730,7 +878,8 @@
   border-right: 0;
 }
 
-.atlas-funnel-segments article > div:nth-of-type(5) {
+.atlas-funnel-segments article > div:nth-of-type(5),
+.atlas-funnel-segments article > div:nth-of-type(6) {
   grid-column: 1 / -1;
   border-right: 0;
 }
@@ -748,6 +897,47 @@
   color: var(--funnel-orange);
   font-size: 11px;
   font-weight: 900;
+}
+
+.atlas-funnel-readiness-layer {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--funnel-line);
+  border-radius: 8px;
+  background: var(--funnel-line);
+  gap: 1px;
+}
+
+.atlas-funnel-readiness-layer > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.atlas-funnel-readiness-layer span {
+  color: var(--funnel-orange);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.atlas-funnel-readiness-layer b {
+  color: var(--funnel-ink);
+  font-size: 16px;
+}
+
+.atlas-funnel-readiness-layer small {
+  min-height: 34px;
+  color: var(--funnel-muted);
+  line-height: 1.4;
+}
+
+.atlas-funnel-readiness-layer em {
+  color: var(--funnel-orange-dark);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .atlas-funnel-table-wrap {
@@ -939,25 +1129,29 @@
   color: var(--funnel-muted);
 }
 
-.atlas-funnel-live-sources {
+.atlas-funnel-live-sources,
+.atlas-funnel-live-readiness {
   display: grid;
   gap: 8px;
   margin-top: 14px;
 }
 
-.atlas-funnel-live-sources > span {
+.atlas-funnel-live-sources > span,
+.atlas-funnel-live-readiness > span {
   color: var(--funnel-muted);
   font-size: 11px;
   font-weight: 800;
 }
 
-.atlas-funnel-live-sources > div {
+.atlas-funnel-live-sources > div,
+.atlas-funnel-live-readiness > div {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
 }
 
-.atlas-funnel-live-sources b {
+.atlas-funnel-live-sources b,
+.atlas-funnel-live-readiness b {
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -968,7 +1162,8 @@
   font-size: 11px;
 }
 
-.atlas-funnel-live-sources strong {
+.atlas-funnel-live-sources strong,
+.atlas-funnel-live-readiness strong {
   color: var(--funnel-green);
   font-size: 14px;
 }
@@ -1462,6 +1657,9 @@
   }
 
   .atlas-funnel-section-head,
+  .atlas-funnel-segmentation-model,
+  .atlas-funnel-source-grid,
+  .atlas-funnel-readiness-layer,
   .atlas-funnel-strategy-grid,
   .atlas-funnel-sequence-grid,
   .atlas-funnel-segments,
@@ -1516,8 +1714,23 @@
 
   .atlas-funnel-segments article > header,
   .atlas-funnel-segments article > footer,
-  .atlas-funnel-segments article > div:nth-of-type(5) {
+  .atlas-funnel-segments article > div:nth-of-type(5),
+  .atlas-funnel-segments article > div:nth-of-type(6) {
     grid-column: auto;
+  }
+
+  .atlas-funnel-audience-layer {
+    padding: 16px;
+  }
+
+  .atlas-funnel-role-list > div {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .atlas-funnel-role-list > div > .atlas-funnel-read-value,
+  .atlas-funnel-role-list > div > .atlas-funnel-field,
+  .atlas-funnel-role-list > div > em {
+    grid-column: 2;
   }
 
   .atlas-funnel-segments article > div {

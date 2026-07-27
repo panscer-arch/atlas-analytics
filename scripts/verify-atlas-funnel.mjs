@@ -13,6 +13,8 @@ const funnel = hydrateAtlasFunnel(defaultAtlasFunnel);
 assert.equal(funnel.stages.length, 6, "В карте должно быть 6 этапов");
 assert.equal(funnel.sequence.length, 6, "В серии должно быть 6 сообщений");
 assert.equal(funnel.segments.length, 4, "Должно быть 4 пользовательских маршрута");
+assert.equal(funnel.acquisitionSegments.length, 7, "Парсер должен различать 7 источников аудитории");
+assert.equal(funnel.audienceRoles.length, 10, "Воронка должна различать 10 ролей контактов");
 assert.ok(funnel.stages.every((stage) => stage.event), "У каждого этапа должно быть событие аналитики");
 assert.ok(funnel.sequence.every((item) => item.hook && item.body && item.cta), "Каждое сообщение должно иметь hook, содержание и CTA");
 assert.ok(funnel.checklist.some((item) => item.gate === "Compliance"), "Launch gate должен содержать compliance-проверку");
@@ -36,6 +38,8 @@ assert.equal(metrics[2].conversion, 50);
 const markdown = buildAtlasFunnelMarkdown(funnel);
 assert.match(markdown, /# Atlas Web3 Start/);
 assert.match(markdown, /## Карта воронки/);
+assert.match(markdown, /## Источники для парсера/);
+assert.match(markdown, /## Роли/);
 assert.match(markdown, /## Launch gate/);
 assert.doesNotMatch(markdown, /гарантированный доход/i);
 

@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 const port = 19000 + Math.floor(Math.random() * 1000);
 const origin = `http://127.0.0.1:${port}`;
-const funnelStepIds = ["foundation", "definition", "smart-cycle", "risks", "verification", "safe-start"];
+const funnelStepIds = ["foundation", "risks", "technical-cycle", "contract-map", "technical-verification", "technical-next-step"];
 const storeDir = await mkdtemp(path.join(tmpdir(), "atlas-funnel-api-"));
 const password = "atlas-funnel-api-test";
 const passwordHash = createHash("sha256").update(password).digest("hex");
@@ -148,6 +148,9 @@ try {
     sessionId: session.sessionId,
     sessionToken: session.sessionToken,
     segmentId: "crypto-user",
+    profileId: "technical-evaluator",
+    roleId: "individual",
+    readiness: "R2",
     leadType: "technical",
     contactMethod: "telegram",
     contact: "@atlas_test_user",
@@ -160,6 +163,9 @@ try {
     sessionId: session.sessionId,
     sessionToken: session.sessionToken,
     segmentId: "crypto-user",
+    profileId: "technical-evaluator",
+    roleId: "individual",
+    readiness: "R2",
     leadType: "technical",
     contactMethod: "telegram",
     contact: "bad",
@@ -190,7 +196,7 @@ try {
     ...baseEvent,
     clientEventId: "event-complete-01",
     event: "route_completed",
-    stepId: "safe-start",
+    stepId: "technical-next-step",
     attribution: {},
   });
   assert.equal(outOfSequence.status, 409);
@@ -222,19 +228,47 @@ try {
     { event: "funnel_started" },
     { event: "question_answered", questionId: "experience", answerId: "wallet" },
     { event: "question_answered", questionId: "interest", answerId: "technical" },
+    { event: "question_answered", questionId: "role", answerId: "individual" },
     { event: "question_answered", questionId: "wallet", answerId: "yes" },
     { event: "question_answered", questionId: "proof", answerId: "contracts" },
     { event: "question_answered", questionId: "source", answerId: "youtube", source: "youtube" },
-    { event: "segment_selected", segmentId: "crypto-user", source: "youtube" },
+    {
+      event: "segment_selected",
+      segmentId: "crypto-user",
+      profileId: "technical-evaluator",
+      roleId: "individual",
+      readiness: "R2",
+      source: "youtube",
+    },
     ...funnelStepIds.map((stepId, index) => ({
       event: "step_opened",
       stepId,
-      ...(index === 0 ? { segmentId: "crypto-user", source: "youtube" } : {}),
+      segmentId: "crypto-user",
+      ...(index === 0 ? { source: "youtube" } : {}),
     })),
-    { event: "route_completed", stepId: "safe-start", source: "youtube" },
+    { event: "route_completed", stepId: "technical-next-step", source: "youtube" },
     { event: "qualified_action", stepId: "lead-form", source: "youtube" },
   ];
   for (const [index, event] of completedEvents.entries()) {
+    if (event.event === "segment_selected") {
+      const forgedClassification = await post("/api/funnel/events", {
+        ...completedBase,
+        ...event,
+        readiness: "R1",
+        clientEventId: "event-forged-classification",
+      });
+      assert.equal(forgedClassification.status, 409);
+      assert.equal((await forgedClassification.json()).error, "funnel_classification_mismatch");
+    }
+    if (event.event === "step_opened" && event.stepId === "foundation") {
+      const forgedRouteStep = await post("/api/funnel/events", {
+        ...completedBase,
+        ...event,
+        segmentId: "regional-leader",
+        clientEventId: "event-forged-route-step",
+      });
+      assert.equal(forgedRouteStep.status, 409);
+    }
     const response = await post("/api/funnel/events", {
       ...completedBase,
       ...event,
@@ -251,9 +285,27 @@ try {
   });
   assert.equal(qualifiedReplay.status, 200);
 
+  const mismatchedLead = await post("/api/funnel/leads", {
+    ...completedSession,
+    segmentId: "regional-leader",
+    profileId: "regional-operator",
+    roleId: "regional",
+    readiness: "R2",
+    leadType: "regional",
+    contactMethod: "telegram",
+    contact: "https://t.me/atlas_test_user",
+    consent: true,
+    communicationAccepted: true,
+  });
+  assert.equal(mismatchedLead.status, 409);
+  assert.equal((await mismatchedLead.json()).error, "funnel_lead_route_mismatch");
+
   const leadResponse = await post("/api/funnel/leads", {
     ...completedSession,
     segmentId: "crypto-user",
+    profileId: "technical-evaluator",
+    roleId: "individual",
+    readiness: "R2",
     leadType: "technical",
     contactMethod: "telegram",
     contact: "https://t.me/atlas_test_user",
@@ -272,6 +324,9 @@ try {
   const duplicateLeadResponse = await post("/api/funnel/leads", {
     ...completedSession,
     segmentId: "crypto-user",
+    profileId: "technical-evaluator",
+    roleId: "individual",
+    readiness: "R2",
     leadType: "technical",
     contactMethod: "email",
     contact: "second@example.com",
@@ -300,11 +355,16 @@ try {
   assert.equal(summary.uniqueSessionCounts.question_answered, 1);
   assert.equal(summary.uniqueSessionCounts.step_opened, 1);
   assert.equal(summary.segmentCounts["crypto-user"], 1);
+  assert.equal(summary.profileCounts["technical-evaluator"], 1);
+  assert.equal(summary.roleCounts.individual, 1);
+  assert.equal(summary.readinessCounts.R2, 1);
   assert.equal(summary.sourceCounts.youtube, 1);
   assert.equal(summary.recentSessions[0]?.sessionId, undefined);
   assert.equal(summary.leads.total, 1);
   assert.equal(summary.leads.statusCounts.new, 1);
   assert.equal(summary.leads.recent[0].contact, "@atlas_test_user");
+  assert.equal(summary.leads.recent[0].profileId, "technical-evaluator");
+  assert.equal(summary.leads.recent[0].readiness, "R2");
   assert.equal(summary.leads.recent[0].sessionId, undefined);
   assert.equal(summary.leadNotificationsConfigured, false);
 
@@ -323,12 +383,23 @@ try {
   const unconfiguredOrigin = `http://127.0.0.1:${unconfiguredPort}`;
   const unconfiguredStore = await mkdtemp(path.join(tmpdir(), "atlas-funnel-api-unconfigured-"));
   const expiredAt = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString();
+  const expiredLeadAt = new Date(Date.now() - 181 * 24 * 60 * 60 * 1000).toISOString();
   await writeFile(
     path.join(unconfiguredStore, "atlas.analytics.firstFunnelEvents.v1.json"),
     JSON.stringify({
       version: 1,
       updatedAt: expiredAt,
       events: [{ sessionId: "expired-session", event: "funnel_visit", recordedAt: expiredAt }],
+    }),
+    "utf8",
+  );
+  const expiredLeadPath = path.join(unconfiguredStore, "atlas.analytics.firstFunnelLeads.v1.json");
+  await writeFile(
+    expiredLeadPath,
+    JSON.stringify({
+      version: 1,
+      updatedAt: expiredLeadAt,
+      leads: [{ id: "expired-lead", sessionId: "expired-session", contact: "@expired", createdAt: expiredLeadAt }],
     }),
     "utf8",
   );
@@ -367,6 +438,13 @@ try {
     });
     const expiredSummary = await expiredSummaryResponse.json();
     assert.equal(expiredSummary.totalSessions, 0);
+    let physicallyPurgedLeads = null;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      physicallyPurgedLeads = JSON.parse(await readFile(expiredLeadPath, "utf8")).leads;
+      if (physicallyPurgedLeads.length === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    assert.deepEqual(physicallyPurgedLeads, []);
   } finally {
     unconfiguredChild.kill("SIGTERM");
     await new Promise((resolve) => {
