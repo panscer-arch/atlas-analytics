@@ -99,6 +99,10 @@ function AtlasFunnelPilotPage() {
   }, [pilot]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "auto" });
+  }, [pilot.screen, pilot.questionIndex, pilot.stepIndex]);
+
+  useEffect(() => {
     if (pilot.visitTracked || visitRequestRef.current) return;
     visitRequestRef.current = true;
     const generation = generationRef.current;
