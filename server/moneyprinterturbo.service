@@ -1,0 +1,30 @@
+[Unit]
+Description=SuperSUS MoneyPrinterTurbo video generator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/supersus-video-generator/app
+Environment=HOME=/var/lib/supersus-video-generator
+Environment=PYTHONPATH=/opt/supersus-video-generator/app
+ExecStart=/opt/supersus-video-generator/app/.venv/bin/python -m streamlit run /opt/supersus-video-generator/app/webui/Main.py --server.address=127.0.0.1 --server.port=8501 --server.baseUrlPath=video-generator --browser.serverAddress=supersussystem.com --browser.serverPort=443 --server.enableCORS=true --browser.gatherUsageStats=false --client.toolbarMode=minimal --logger.hideWelcomeMessage=true --server.showEmailPrompt=false
+Restart=always
+RestartSec=5
+TimeoutStartSec=180
+User=moneyprinter
+Group=moneyprinter
+UMask=0027
+Nice=10
+CPUQuota=80%
+MemoryHigh=1200M
+MemoryMax=1500M
+TasksMax=256
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/supersus-video-generator /opt/supersus-video-generator/app/storage
+
+[Install]
+WantedBy=multi-user.target

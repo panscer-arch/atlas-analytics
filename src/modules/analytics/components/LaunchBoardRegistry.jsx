@@ -21,6 +21,7 @@ import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
+import VideoGeneratorBoard from "./VideoGeneratorBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
@@ -121,6 +122,7 @@ export const CONTENT_BOARD_TABS = [
   { id: "whitePaper", label: "White Paper" },
   { id: "atlasInstructions", label: "Инструкции" },
   { id: "legalDocs", label: "Документы" },
+  { id: "videoGenerator", label: "Генерация видео" },
   { id: "videoScripts", label: "Ролики" },
   { id: "terminology", label: "Терминология" },
   { id: "localization", label: "Локализация" },
@@ -153,6 +155,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "whitePaper",
   "atlasInstructions",
   "legalDocs",
+  "videoGenerator",
   "terminology",
   "localization",
   "securityReview",
@@ -285,6 +288,10 @@ export const STATIC_BOARD_META = {
     title: "Документы",
     description: "Международный пакет документов для smart-contract проекта: правила протокола, риски, интерфейс, privacy, партнерка и безопасность.",
   },
+  videoGenerator: {
+    title: "Генерация видео",
+    description: "Рабочий генератор коротких роликов: сценарий, озвучка, видеоряд, субтитры и итоговый MP4.",
+  },
   terminology: {
     title: "Терминология",
     description: "Глоссарий Atlas System: термины, понятные описания, категории и комментарии для вычитки.",
@@ -335,6 +342,7 @@ const STATIC_BOARD_RENDERERS = {
   whitePaper: () => <WhitePaperBoard />,
   atlasInstructions: () => <WhitePaperBoard initialView="atlasInstructions" boardId="atlasInstructions" />,
   legalDocs: () => <LegalDocumentsBoard />,
+  videoGenerator: () => <VideoGeneratorBoard />,
   terminology: () => <AgentTerminologyTemplate />,
   localization: () => <LocalizationBibleBoard />,
   securityReview: () => <SecurityReviewBoard />,

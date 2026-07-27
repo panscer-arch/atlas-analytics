@@ -1,0 +1,21 @@
+[Unit]
+Description=SuperSUS video generator authentication
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/supersus-video-generator-auth.env
+ExecStart=/usr/bin/node /opt/supersus-video-generator/auth/video-generator-auth.mjs
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+MemoryMax=96M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
