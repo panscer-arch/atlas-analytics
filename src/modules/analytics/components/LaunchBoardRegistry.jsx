@@ -338,7 +338,7 @@ const STATIC_BOARD_RENDERERS = {
   atlasPages: () => <AtlasPagesBoard />,
   atlasSupport: () => (
     <AnalyticsBoardEmbed
-      boardUrl="https://support-stage.supersussystem.com/?locale=ru"
+      boardUrl="https://atlas-system.space/widget/?locale=ru"
       frameTitle="Тестовый виджет Atlas Support"
       kicker="Бета-тест"
       panelId="atlas-support-test"
