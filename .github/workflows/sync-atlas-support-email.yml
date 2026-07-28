@@ -35,10 +35,7 @@ jobs:
             printf 'SUPPORT_EMAIL_REPLY_TO=%s\n' 'partners@atlas-system.io'
             printf 'MAILER_SENDER_EMAIL=%s\n' '"Atlas Support <partners@atlas-system.io>"'
           } > /tmp/atlas-support-email.env
-          scp -q -i ~/.ssh/atlas_support /tmp/atlas-support-email.env \
-            "$SUPPORT_USER@$SUPPORT_HOST:/tmp/atlas-support-email.env"
-          ssh -i ~/.ssh/atlas_support "$SUPPORT_USER@$SUPPORT_HOST" \
-            'python3 - <<'"'"'PY'"'"'
+          cat > /tmp/merge-atlas-support-email.py <<'PY'
           from pathlib import Path
 
           target = Path("/opt/atlas-support/infra/.env")
@@ -59,4 +56,9 @@ jobs:
           target.chmod(0o600)
           incoming.unlink()
           PY
-          rm -f /tmp/atlas-support-email.env
+          scp -q -i ~/.ssh/atlas_support \
+            /tmp/atlas-support-email.env /tmp/merge-atlas-support-email.py \
+            "$SUPPORT_USER@$SUPPORT_HOST:/tmp/"
+          ssh -i ~/.ssh/atlas_support "$SUPPORT_USER@$SUPPORT_HOST" \
+            'python3 /tmp/merge-atlas-support-email.py && rm -f /tmp/merge-atlas-support-email.py'
+          rm -f /tmp/atlas-support-email.env /tmp/merge-atlas-support-email.py
