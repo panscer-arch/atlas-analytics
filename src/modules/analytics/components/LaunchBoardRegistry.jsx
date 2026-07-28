@@ -113,7 +113,6 @@ export const CONTENT_BOARD_TABS = [
   { id: "contentPlan", label: "Контент-план" },
   { id: "funnel", label: "Воронка" },
   { id: "atlasPages", label: "Страницы Atlas" },
-  { id: "atlasSupport", label: "Atlas Support" },
   { id: "landings", label: "Лендинги" },
   { id: "images", label: "Images" },
   { id: "materials", label: "Материалы" },
@@ -336,20 +335,6 @@ const STATIC_BOARD_RENDERERS = {
   contentPlan: () => <ContentPlanBoard />,
   funnel: () => <AtlasFunnelBoard />,
   atlasPages: () => <AtlasPagesBoard />,
-  atlasSupport: () => (
-    <AnalyticsBoardEmbed
-      boardUrl="https://atlas-system.space/widget/?locale=ru"
-      frameTitle="Тестовый виджет Atlas Support"
-      kicker="Бета-тест"
-      panelId="atlas-support-test"
-      primaryLabel="Открыть виджет"
-      secondaryLabel="Операторская админка"
-      secondaryUrl="https://support-admin-stage.supersussystem.com/app/accounts/2/dashboard"
-      subtitle="Проверяйте ответы AI, форму обращения, историю диалога и передачу заявки оператору."
-      title="Atlas Support"
-      variant="inline"
-    />
-  ),
   landings: () => <LandingContentBoard />,
   images: () => <ImageContentBoard />,
   presentation: () => <PresentationContentTab />,
