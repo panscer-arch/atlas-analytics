@@ -5,15 +5,27 @@ import {
   SEGMENT_OUTREACH_STORAGE_KEY,
   defaultSegmentOutreachLeads,
 } from "../data/segmentOutreachData";
-import { loadServerContent, postServerJson, saveServerContent } from "../services/contentStore";
+import {
+  getServerJson,
+  loadServerContent,
+  postServerJson,
+  saveServerContent,
+} from "../services/contentStore";
 
 const INSTAGRAM_PARSER_LEADS_STORAGE_KEY = "atlas.analytics.instagramParser.leads.v1";
 const INSTAGRAM_PARSER_RUNS_STORAGE_KEY = "atlas.analytics.instagramParser.runs.v1";
+const AGENT_REACH_LEADS_STORAGE_KEY = "atlas.analytics.socialParser.leads.v2";
+const AGENT_REACH_PLATFORMS = new Set(["linkedin", "facebook", "x", "youtube", "reddit", "github", "web"]);
 
 const SOCIAL_PARSER_TABS = [
   { id: "instagram", label: "Instagram", ready: true },
-  { id: "facebook", label: "Facebook" },
-  { id: "linkedin", label: "LinkedIn" },
+  { id: "linkedin", label: "LinkedIn", ready: true, provider: "Agent Reach" },
+  { id: "facebook", label: "Facebook", ready: true, provider: "Agent Reach" },
+  { id: "x", label: "X", ready: true, provider: "Agent Reach" },
+  { id: "youtube", label: "YouTube", ready: true, provider: "Agent Reach" },
+  { id: "reddit", label: "Reddit", ready: true, provider: "Agent Reach" },
+  { id: "github", label: "GitHub", ready: true, provider: "Agent Reach" },
+  { id: "web", label: "Web", ready: true, provider: "Agent Reach" },
   { id: "vk", label: "VK" },
   { id: "discord", label: "Discord" },
   { id: "wechat", label: "WeChat" },
@@ -42,6 +54,14 @@ const DEFAULT_INSTAGRAM_FORM = {
   language: "en",
   limit: "25",
   mode: "profiles",
+};
+
+const DEFAULT_AGENT_REACH_FORM = {
+  query: "web3 crypto community marketing",
+  segment: "cryptoMlm",
+  country: "Global",
+  language: "en",
+  limit: "10",
 };
 
 function csvCell(value) {
@@ -84,6 +104,46 @@ function downloadInstagramCsv(rows) {
   const link = document.createElement("a");
   link.href = url;
   link.download = "atlas-instagram-parser-leads.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadAgentReachCsv(rows) {
+  const header = [
+    "Platform",
+    "Name",
+    "Profile",
+    "Description",
+    "Public contact",
+    "Segment",
+    "Country",
+    "Language",
+    "Score",
+    "Status",
+    "Provider",
+    "Captured",
+  ];
+  const body = rows.map((row) => [
+    row.platform,
+    row.displayName,
+    row.profileUrl,
+    row.bioExcerpt,
+    row.publicContact,
+    row.segment,
+    row.country,
+    row.language,
+    row.score,
+    row.reviewStatus || row.contactStatus,
+    row.rawProvider,
+    row.capturedAt,
+  ].map(csvCell).join(","));
+  const blob = new Blob([["\ufeff" + header.map(csvCell).join(","), ...body].join("\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "atlas-agent-reach-social-leads.csv";
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -159,6 +219,32 @@ function mapInstagramLeadToSegmentRow(lead) {
   };
 }
 
+function mapAgentReachLeadToSegmentRow(lead) {
+  const status = lead.reviewStatus || lead.contactStatus || "not_contacted";
+  return {
+    id: `segment-outreach-${lead.platform}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    segment: lead.segment || "cryptoMlm",
+    social: lead.platform,
+    name: lead.displayName || `${lead.platform} lead`,
+    type: `${lead.platform} public profile`,
+    url: lead.profileUrl || lead.sourceUrl,
+    contact: lead.publicContact || "Проверить публичные контакты на странице",
+    region: [lead.country, lead.language].filter(Boolean).join(" / ") || "Global",
+    fit: lead.relevanceReason || "Публичный профиль найден Agent Reach. Требуется ручная проверка.",
+    route: "Открыть источник, проверить актуальность и публичный business contact, затем подготовить персональное сообщение.",
+    price: "Запросить условия сотрудничества",
+    priority: Number(lead.score || 0) >= 75 ? "1. Сначала" : "2. Следом",
+    status: status === "human_review_approved" ? "Найти контакты" : "Ручная проверка",
+    notes: [
+      `Источник: ${lead.platform} / Agent Reach`,
+      `Score: ${lead.score || 0}`,
+      `Captured: ${lead.capturedAt || ""}`,
+      `Contact status: ${status}`,
+      lead.bioExcerpt ? `Описание: ${lead.bioExcerpt}` : "",
+    ].filter(Boolean).join(" · "),
+  };
+}
+
 function EmptySocialParserTab({ label }) {
   return (
     <section className="analytics-parser-table-wrap analytics-surface">
@@ -173,6 +259,231 @@ function EmptySocialParserTab({ label }) {
   );
 }
 
+function AgentReachParserPanel({ platform, label, status }) {
+  const [form, setForm] = useState(DEFAULT_AGENT_REACH_FORM);
+  const [savedLeads, setSavedLeads] = useState([]);
+  const [results, setResults] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [notice, setNotice] = useState("Загружаю очередь Agent Reach...");
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    loadServerContent(AGENT_REACH_LEADS_STORAGE_KEY).then((stored) => {
+      if (!isMounted) return;
+      const rows = uniqueByProfile(Array.isArray(stored) ? stored : []);
+      setSavedLeads(rows);
+      setResults(rows.filter((lead) => lead.platform === platform));
+      setSelectedIds([]);
+      setNotice(status?.ok
+        ? `Agent Reach ${status.version || ""} готов. Сохранено для ${label}: ${rows.filter((lead) => lead.platform === platform).length}.`
+        : "Agent Reach на сервере пока недоступен. После деплоя статус обновится автоматически.");
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [label, platform, status?.ok, status?.version]);
+
+  const selectedResults = useMemo(() => {
+    const selected = new Set(selectedIds);
+    return results.filter((lead) => selected.has(lead.id));
+  }, [results, selectedIds]);
+
+  function updateField(name, value) {
+    setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function updateLead(id, patch) {
+    setResults((current) => current.map((lead) => (
+      lead.id === id
+        ? { ...lead, ...patch, contactStatus: patch.reviewStatus || patch.contactStatus || lead.contactStatus }
+        : lead
+    )));
+  }
+
+  async function persistQueue(nextPlatformRows) {
+    const otherPlatforms = savedLeads.filter((lead) => lead.platform !== platform);
+    const next = uniqueByProfile([...nextPlatformRows, ...otherPlatforms]);
+    const ok = await saveServerContent(AGENT_REACH_LEADS_STORAGE_KEY, next);
+    if (ok) setSavedLeads(next);
+    return ok;
+  }
+
+  async function runSearch() {
+    setIsSearching(true);
+    setSelectedIds([]);
+    setNotice(`Agent Reach ищет публичные страницы ${label}...`);
+    const response = await postServerJson("/api/content/agent-reach-search", {
+      ...form,
+      platform,
+      limit: Number(form.limit || 10),
+    });
+    setIsSearching(false);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        setNotice("Нужен доступ к маркетинг-центру. Открой SuperSUS по своей защищенной ссылке.");
+        return;
+      }
+      setNotice(`Agent Reach: ${response.payload?.message || response.payload?.error || "ошибка поиска"}`);
+      return;
+    }
+
+    const items = Array.isArray(response.payload?.items) ? response.payload.items : [];
+    const currentPlatformRows = savedLeads.filter((lead) => lead.platform === platform);
+    const merged = uniqueByProfile([...items, ...currentPlatformRows]);
+    setResults(merged);
+    await persistQueue(merged);
+    setNotice(`Найдено: ${items.length}. В очереди ${label}: ${merged.length}.`);
+  }
+
+  async function saveSelected() {
+    if (!selectedResults.length) {
+      setNotice("Сначала выбери строки в таблице.");
+      return;
+    }
+    const allowed = selectedResults.filter((lead) => !["opted_out", "do_not_contact"].includes(lead.reviewStatus || lead.contactStatus));
+    if (!allowed.length) {
+      setNotice("Выбранные строки помечены как opted_out/do_not_contact.");
+      return;
+    }
+    const merged = uniqueByProfile([...allowed, ...results]);
+    const ok = await persistQueue(merged);
+    setResults(merged);
+    setNotice(ok ? `Сохранено: ${allowed.length}.` : "Не удалось сохранить: проверь доступ к маркетинг-центру.");
+  }
+
+  async function sendToSegment() {
+    const approved = selectedResults.filter((lead) => lead.reviewStatus === "human_review_approved");
+    if (!approved.length) {
+      setNotice("В сегментный парсер идут только выбранные строки со статусом human_review_approved.");
+      return;
+    }
+    const current = await loadServerContent(SEGMENT_OUTREACH_STORAGE_KEY);
+    const rows = Array.isArray(current) && current.length ? current : defaultSegmentOutreachLeads;
+    const next = uniqueSegmentRows([...approved.map(mapAgentReachLeadToSegmentRow), ...rows]);
+    const ok = await saveServerContent(SEGMENT_OUTREACH_STORAGE_KEY, next);
+    setNotice(ok ? `Передано в сегментный парсер: ${approved.length}.` : "Не удалось сохранить в сегментный парсер.");
+  }
+
+  function toggleSelected(id) {
+    setSelectedIds((current) => (
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    ));
+  }
+
+  return (
+    <section className="analytics-parser-table-wrap analytics-surface">
+      <div className="analytics-parser-table-head">
+        <div>
+          <h2>{label} · Agent Reach</h2>
+          <p>{notice}</p>
+        </div>
+        <div>
+          <button type="button" onClick={runSearch} disabled={isSearching || status?.ok === false}>
+            {isSearching ? "Ищу..." : "Найти"}
+          </button>
+          <button type="button" onClick={saveSelected}>Сохранить</button>
+          <button type="button" onClick={sendToSegment}>В сегментный парсер</button>
+          <button type="button" onClick={() => downloadAgentReachCsv(selectedResults.length ? selectedResults : results)}>CSV</button>
+        </div>
+      </div>
+
+      <div className="analytics-parser-controls analytics-youtube-api-form">
+        <label className="analytics-parser-wide">
+          Ключевые слова
+          <input value={form.query} onChange={(event) => updateField("query", event.target.value)} placeholder="web3 community marketing defi" />
+        </label>
+        <label>
+          Сегмент
+          <select value={form.segment} onChange={(event) => updateField("segment", event.target.value)}>
+            {SEGMENT_OUTREACH_SEGMENTS.map((segment) => <option key={segment.id} value={segment.id}>{segment.label}</option>)}
+          </select>
+        </label>
+        <label>
+          GEO
+          <input value={form.country} onChange={(event) => updateField("country", event.target.value)} placeholder="Global, India, Indonesia..." />
+        </label>
+        <label>
+          Язык
+          <input value={form.language} onChange={(event) => updateField("language", event.target.value)} placeholder="en, id, es..." />
+        </label>
+        <label>
+          Лимит
+          <input type="number" min="1" max="30" value={form.limit} onChange={(event) => updateField("limit", event.target.value)} />
+        </label>
+      </div>
+
+      <div className="analytics-parser-table-scroll">
+        <table className="analytics-table analytics-parser-table analytics-instagram-parser-table analytics-agent-reach-table">
+          <thead>
+            <tr>
+              <th>
+                <button
+                  type="button"
+                  className="analytics-parser-mini-button"
+                  onClick={() => setSelectedIds(selectedIds.length === results.length ? [] : results.map((lead) => lead.id))}
+                >
+                  {selectedIds.length === results.length && results.length ? "Снять" : "Все"}
+                </button>
+              </th>
+              <th>Профиль / страница</th>
+              <th>Описание / причина</th>
+              <th>Публичный контакт</th>
+              <th>Score</th>
+              <th>Статус</th>
+              <th>Источник</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.length ? results.map((lead) => (
+              <tr key={lead.id}>
+                <td data-label="Выбор">
+                  <input type="checkbox" checked={selectedIds.includes(lead.id)} onChange={() => toggleSelected(lead.id)} aria-label={`Выбрать ${lead.displayName}`} />
+                </td>
+                <td data-label="Профиль / страница">
+                  <strong>{lead.displayName}</strong>
+                  <small>{lead.country || "Global"} / {lead.language || "en"}</small>
+                  <a className="analytics-parser-site-link" href={lead.profileUrl} target="_blank" rel="noreferrer">Открыть</a>
+                </td>
+                <td data-label="Описание / причина">
+                  <textarea value={lead.bioExcerpt || ""} onChange={(event) => updateLead(lead.id, { bioExcerpt: event.target.value })} rows="4" />
+                  <textarea value={lead.relevanceReason || ""} onChange={(event) => updateLead(lead.id, { relevanceReason: event.target.value })} rows="3" />
+                </td>
+                <td data-label="Публичный контакт">
+                  <textarea value={lead.publicContact || ""} onChange={(event) => updateLead(lead.id, { publicContact: event.target.value })} rows="3" />
+                  <small>Только публичные business contacts · без auto-DM</small>
+                </td>
+                <td data-label="Score">
+                  <div className="analytics-parser-score">
+                    <b>{lead.score || 0}</b>
+                    <progress value={lead.score || 0} max="100" />
+                  </div>
+                </td>
+                <td data-label="Статус">
+                  <select value={lead.reviewStatus || "not_contacted"} onChange={(event) => updateLead(lead.id, { reviewStatus: event.target.value })}>
+                    {INSTAGRAM_REVIEW_STATUSES.map((reviewStatus) => <option key={reviewStatus} value={reviewStatus}>{reviewStatus}</option>)}
+                  </select>
+                </td>
+                <td data-label="Источник">
+                  <a className="analytics-parser-site-link" href={lead.sourceUrl} target="_blank" rel="noreferrer">Source</a>
+                  <small>{lead.rawProvider || "agent-reach/exa"} · {lead.capturedAt?.slice(0, 10)}</small>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan="7">
+                  <p className="analytics-parser-static-text">Пока результатов нет. Введи запрос и нажми "Найти".</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function UniversalSocialParserPanel() {
   const [activeSocialTab, setActiveSocialTab] = useState("instagram");
   const [instagramForm, setInstagramForm] = useState(DEFAULT_INSTAGRAM_FORM);
@@ -181,6 +492,7 @@ export default function UniversalSocialParserPanel() {
   const [instagramSelectedIds, setInstagramSelectedIds] = useState([]);
   const [instagramNotice, setInstagramNotice] = useState("Загружаю очередь Instagram...");
   const [isInstagramSearching, setIsInstagramSearching] = useState(false);
+  const [agentReachStatus, setAgentReachStatus] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -195,6 +507,16 @@ export default function UniversalSocialParserPanel() {
       setInstagramNotice(savedLeads.length
         ? `В таблице сохраненная очередь Instagram: ${savedLeads.length}.`
         : "Очередь пустая. Запусти поиск или добавь Instagram URL вручную.");
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    getServerJson("/api/content/agent-reach-status").then((response) => {
+      if (isMounted) setAgentReachStatus(response.payload || { ok: false });
     });
     return () => {
       isMounted = false;
@@ -354,14 +676,12 @@ export default function UniversalSocialParserPanel() {
             aria-selected={activeSocialTab === tab.id}
           >
             <span>{tab.label}</span>
-            <small>{tab.ready ? "работает" : "не настроен"}</small>
+            <small>{tab.provider || (tab.ready ? "работает" : "не настроен")}</small>
           </button>
         ))}
       </section>
 
-      {activeSocialTab !== "instagram" ? (
-        <EmptySocialParserTab label={activeTab.label} />
-      ) : (
+      {activeSocialTab === "instagram" ? (
         <section className="analytics-parser-table-wrap analytics-surface">
           <div className="analytics-parser-table-head">
             <div>
@@ -479,6 +799,15 @@ export default function UniversalSocialParserPanel() {
             </table>
           </div>
         </section>
+      ) : AGENT_REACH_PLATFORMS.has(activeSocialTab) ? (
+        <AgentReachParserPanel
+          key={activeSocialTab}
+          platform={activeSocialTab}
+          label={activeTab.label}
+          status={agentReachStatus}
+        />
+      ) : (
+        <EmptySocialParserTab label={activeTab.label} />
       )}
     </section>
   );

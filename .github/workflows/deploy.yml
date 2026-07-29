@@ -146,6 +146,8 @@ jobs:
           }
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/agent-reach-parser.mjs /tmp/atlas-agent-reach-parser.mjs
+          scp_to_vps server/agent-reach-mcporter.json /tmp/atlas-agent-reach-mcporter.json
           scp_to_vps server/hermes-speech.mjs /tmp/atlas-hermes-speech.mjs
           scp_to_vps server/hermes-transcription.mjs /tmp/atlas-hermes-transcription.mjs
           scp_to_vps server/marketing-dashboard-monitor.mjs /tmp/atlas-marketing-dashboard-monitor.mjs
@@ -171,6 +173,7 @@ jobs:
 
           sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content/telegram-memory-archive /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
           sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs
           sudo mv /tmp/atlas-hermes-transcription.mjs /opt/atlas-content-api/hermes-transcription.mjs
           sudo mv /tmp/atlas-marketing-dashboard-monitor.mjs /opt/atlas-content-api/marketing-dashboard-monitor.mjs
@@ -189,6 +192,32 @@ jobs:
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
           sudo chown -R root:root /var/backups/atlas-analytics-content
           sudo chmod 750 /var/backups/atlas-analytics-content
+
+          AGENT_REACH_DIR=/opt/atlas-agent-reach
+          AGENT_REACH_VENV="$AGENT_REACH_DIR/venv"
+          AGENT_REACH_COMMIT=b4d52c46c9113cb0f653d6df4cf71ebadf4930ac
+          sudo mkdir -p "$AGENT_REACH_DIR" /var/lib/atlas-agent-reach
+          if [ ! -x "$AGENT_REACH_VENV/bin/python" ]; then
+            if ! sudo python3 -m venv "$AGENT_REACH_VENV"; then
+              sudo apt-get update
+              sudo apt-get install -y python3-venv
+              sudo python3 -m venv "$AGENT_REACH_VENV"
+            fi
+          fi
+          sudo "$AGENT_REACH_VENV/bin/pip" install \
+            --disable-pip-version-check \
+            --quiet \
+            "https://github.com/Panniantong/Agent-Reach/archive/${AGENT_REACH_COMMIT}.zip"
+          sudo npm install \
+            --prefix "$AGENT_REACH_DIR" \
+            --omit=dev \
+            --no-audit \
+            --no-fund \
+            mcporter@0.9.0
+          sudo mv /tmp/atlas-agent-reach-mcporter.json "$AGENT_REACH_DIR/mcporter.json"
+          sudo chown -R root:root "$AGENT_REACH_DIR"
+          sudo chmod -R a+rX "$AGENT_REACH_DIR"
+          sudo chown -R www-data:www-data /var/lib/atlas-agent-reach
 
           PIPER_DIR=/opt/atlas-hermes-tts
           PIPER_VENV="$PIPER_DIR/venv"
@@ -263,6 +292,10 @@ jobs:
           Environment=EDGE_TTS_BIN=/opt/atlas-hermes-tts/venv/bin/edge-tts
           Environment=EDGE_TTS_VOICE=en-US-AndrewMultilingualNeural
           Environment=WHISPER_ASR_URL=http://127.0.0.1:7467/asr
+          Environment=AGENT_REACH_HOME=/var/lib/atlas-agent-reach
+          Environment=AGENT_REACH_BIN=/opt/atlas-agent-reach/venv/bin/agent-reach
+          Environment=AGENT_REACH_MCPORTER_BIN=/opt/atlas-agent-reach/node_modules/.bin/mcporter
+          Environment=AGENT_REACH_MCPORTER_CONFIG=/opt/atlas-agent-reach/mcporter.json
           ExecStart=/usr/bin/node /opt/atlas-content-api/content-api.mjs
           Restart=always
           RestartSec=3

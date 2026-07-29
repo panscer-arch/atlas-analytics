@@ -7,6 +7,12 @@ import { transcribeHermesAudio } from "./hermes-transcription.mjs";
 import { addTelegramTask, appendTelegramOperation, collectTasks, CONTENT_KEYS, readContent, writeContent } from "./telegram-task-store.mjs";
 import { searchInstagramApi } from "./instagram-parser.mjs";
 import {
+  AGENT_REACH_LEADS_KEY,
+  AGENT_REACH_RUNS_KEY,
+  getAgentReachStatus,
+  searchAgentReachApi,
+} from "./agent-reach-parser.mjs";
+import {
   collectMarketingDashboardEvents,
   collectMarketingDueEvents,
   collectMarketingSourceEvents,
@@ -151,6 +157,7 @@ const INTERNAL_CONTENT_KEYS = new Set([
   ATLAS_FUNNEL_LEADS_KEY,
   ATLAS_FUNNEL_COMPLETIONS_KEY,
   FINANCE_BROWSER_SESSIONS_KEY,
+  AGENT_REACH_RUNS_KEY,
 ]);
 const MARKETING_YOUTUBE_BOARD_URL = process.env.ATLAS_MARKETING_YOUTUBE_BOARD_URL
   || "https://pupanel.cc/workspaces/cmp5aou0h0005l5b26ldwn59c/marketing/youtube";
@@ -172,6 +179,7 @@ const MARKETING_SOURCE_CONFIGS = [
 ];
 const MARKETING_MONITORED_CONTENT_KEYS = new Set([
   MARKETING_DASHBOARD_KEY,
+  AGENT_REACH_LEADS_KEY,
   ...FINANCE_CONTENT_KEYS,
   YOUTUBE_API_LEADS_KEY,
   SEGMENT_OUTREACH_KEY,
@@ -4496,6 +4504,30 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       const result = await searchInstagramApi(parsed);
+      sendJson(response, result.ok ? 200 : result.status || 400, result);
+      return;
+    }
+
+    if (url.pathname === "/api/content/agent-reach-status" && request.method === "GET") {
+      const result = await getAgentReachStatus();
+      sendJson(response, result.ok ? 200 : 503, result);
+      return;
+    }
+
+    if (url.pathname === "/api/content/agent-reach-search" && request.method === "POST") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
+        return;
+      }
+      const body = await readBody(request);
+      let parsed = {};
+      try {
+        parsed = body ? JSON.parse(body) : {};
+      } catch {
+        sendJson(response, 400, { ok: false, error: "invalid_json_body", message: "Request body must be valid JSON." });
+        return;
+      }
+      const result = await searchAgentReachApi(parsed);
       sendJson(response, result.ok ? 200 : result.status || 400, result);
       return;
     }

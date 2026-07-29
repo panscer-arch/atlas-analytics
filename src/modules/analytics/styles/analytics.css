@@ -20460,6 +20460,81 @@ input.analytics-smm-cell-input {
     grid-template-columns: 1fr;
   }
 
+  .analytics-parser-table-head {
+    display: grid;
+  }
+
+  .analytics-parser-table-head > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .analytics-parser-table-head button {
+    width: 100%;
+  }
+
+  .analytics-agent-reach-table {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  .analytics-agent-reach-table thead {
+    display: none;
+  }
+
+  .analytics-agent-reach-table tbody,
+  .analytics-agent-reach-table tr,
+  .analytics-agent-reach-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .analytics-agent-reach-table tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .analytics-agent-reach-table tbody tr {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.85rem;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .analytics-agent-reach-table td,
+  .analytics-agent-reach-table td:first-child {
+    min-width: 0;
+    border: 0;
+    padding: 0.5rem 0;
+  }
+
+  .analytics-agent-reach-table td + td {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .analytics-agent-reach-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.4rem;
+    color: rgba(185, 204, 225, 0.62);
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .analytics-agent-reach-table textarea {
+    min-height: 6rem;
+  }
+
+  .analytics-agent-reach-table .analytics-parser-score {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    min-width: 0;
+  }
+
   .analytics-expenses-fund-form textarea,
   .analytics-expenses-fund-form button,
   .analytics-expenses-fund-form input:nth-child(4) {
