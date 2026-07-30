@@ -210,11 +210,11 @@ const PANCAKE_USDT_USDC_POOL = {
   address: "0x92b7807bF19b7DDdf89b706143896d05228f3121",
   label: "PancakeSwap V3 USDT/USDC 0.01%",
 };
-const BSC_RPC_URLS = (process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io")
+const BSC_RPC_URLS = (process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "https://bsc-dataseed1.defibit.io,https://bsc-dataseed2.defibit.io,https://bsc-dataseed1.ninicoin.io,https://bsc-dataseed.binance.org")
   .split(",")
   .map((item) => item.trim())
   .filter(Boolean);
-const BSC_LOG_RPC_URLS = (process.env.BSC_LOG_RPC_URLS || process.env.BSC_ARCHIVE_RPC_URLS || process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "https://bsc-rpc.publicnode.com,https://bsc-dataseed.binance.org,https://bsc-dataseed1.defibit.io")
+const BSC_LOG_RPC_URLS = (process.env.BSC_LOG_RPC_URLS || process.env.BSC_ARCHIVE_RPC_URLS || process.env.BSC_RPC_URLS || process.env.BSC_RPC_URL || "https://bsc-dataseed1.defibit.io,https://bsc-dataseed2.defibit.io,https://bsc-dataseed1.ninicoin.io,https://bsc-dataseed.binance.org")
   .split(",")
   .map((item) => item.trim())
   .filter(Boolean);
@@ -232,13 +232,25 @@ const ATLAS_CONTRACT_ADDRESSES = [
     type: "Smart Cycle contract",
     description: "Smart Cycle contract with a fixed participation term",
     address: "0x8F6daC6F25A5038112E1A01f1cBBD682e4D64889",
+    orderKind: "lockup",
   },
   {
     id: "daily-flow",
-    name: "Daily Flow",
+    name: "Daily Flow V2",
     type: "Smart Cycle contract",
-    description: "Smart Cycle contract with daily accruals; platform fee is charged only on the delta portion",
+    description: "Current Daily Flow contract; platform fee is charged only on the delta portion",
     address: "0x8e61483d45a822cCB59482c47e1b6D28465605EC",
+    status: "pending-activation",
+    orderKind: "daily-v2",
+  },
+  {
+    id: "daily-flow-legacy",
+    name: "Daily Flow V1 Legacy",
+    type: "Legacy Smart Cycle contract",
+    description: "Previous Daily Flow deployment; retained for existing cycles and on-chain history",
+    address: "0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3",
+    status: "legacy",
+    orderKind: "daily-v1",
   },
   {
     id: "transport",
@@ -273,6 +285,13 @@ const ATLAS_FLOW_EVENT_CONFIG = {
   },
   "daily-flow": {
     lockedTopic: "0xb487eb29fe0f7991a6856ef7823cffab7461b3d1b9436c6df2f82a56491dd41f",
+    claimedTopic: "0x1477ca23c5c9b13af39615646e6bbc834b5f2e67bdc91dbd162c74df7e4b2ab2",
+    lockedParts: [0],
+    claimedParts: [1],
+    feeParts: [2],
+  },
+  "daily-flow-legacy": {
+    lockedTopic: "0xb487eb29fe0f7991a6856ef7823cffab7461b3d1b9436c6df2f82a56491dd41f",
     claimedTopic: "0xf0f69f9e2ee7cb1d092c923008e795077ffd8228496080084f26fb6802e20829",
     lockedParts: [0],
     claimedParts: [1],
@@ -281,7 +300,7 @@ const ATLAS_FLOW_EVENT_CONFIG = {
 };
 
 function isDailyFlowContractId(contractId = "") {
-  return contractId === "daily-flow";
+  return contractId === "daily-flow" || contractId === "daily-flow-legacy";
 }
 const ATLAS_PARTNER_STATUS_TABLE = [
   { status: "Start", personal: 10, firstLine: 0, structure: 0, rewardPermille: 150, matchingPermille: 0 },
@@ -314,9 +333,14 @@ const ATLAS_DAY_SECONDS = 24 * 60 * 60;
 const ATLAS_DAILY_REWARD_DAYS = 200n;
 const ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE = 300n;
 const ATLAS_PLATFORM_COMMISSION_PERMILLE = 100n;
-const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_MS || 120000));
-const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 4)));
+const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_MS || 600000));
+const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(12, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 8)));
+const ATLAS_ORDER_STATE_CONCURRENCY = Math.max(1, Math.min(12, Number(process.env.ATLAS_ORDER_STATE_CONCURRENCY || 8)));
 const ATLAS_FLOW_DAY_OFFSET_HOURS = Number(process.env.ATLAS_FLOW_DAY_OFFSET_HOURS || 3);
+const ATLAS_NEXT_ORDER_ID_SELECTOR = "0x2a58b330";
+const ATLAS_GET_ORDER_SELECTOR = "0xd09ef241";
+const BSC_MULTICALL3_ADDRESS = "0xca11bde05977b3631167028862be2a173976ca11";
+const MULTICALL3_AGGREGATE3_SELECTOR = "0x82ad56cb";
 let atlasFlowCache = null;
 
 let telegramEnvCache = null;
@@ -2170,6 +2194,39 @@ async function callBscRpc(method, params = []) {
   throw new Error(lastError || "bsc_rpc_unavailable");
 }
 
+async function callBscRpcBatch(calls = []) {
+  if (!calls.length) return [];
+  const body = JSON.stringify(calls.map((call, index) => ({
+    jsonrpc: "2.0",
+    id: index,
+    method: call.method,
+    params: call.params,
+  })));
+  let lastError = null;
+
+  for (const rpcUrl of BSC_RPC_URLS) {
+    try {
+      const result = await fetchJsonWithTimeout(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body,
+      }, 10000);
+      if (result.ok && Array.isArray(result.payload)) {
+        const byId = new Map(result.payload.map((item) => [Number(item.id), item]));
+        return calls.map((_, index) => {
+          const item = byId.get(index);
+          return item && !item.error ? item.result : null;
+        });
+      }
+      lastError = result.payload?.error?.message || result.payload?.message || `rpc_batch_${result.status || "failed"}`;
+    } catch (error) {
+      lastError = error?.message || "rpc_batch_failed";
+    }
+  }
+
+  throw new Error(lastError || "bsc_rpc_batch_unavailable");
+}
+
 async function callBscLogRpc(method, params = []) {
   const body = JSON.stringify({
     jsonrpc: "2.0",
@@ -2295,8 +2352,266 @@ function getEventOrderId(log = {}) {
   return hexToBigInt(log?.topics?.[1] || "0x0").toString();
 }
 
+function getAtlasDailyGrossRewardRaw(amountLockedRaw = 0n, tier = 0) {
+  const rewardRateBps = BigInt(ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER[tier] || 0);
+  return (BigInt(amountLockedRaw || 0) * rewardRateBps * ATLAS_DAILY_REWARD_DAYS) / 10000n;
+}
+
+function getAtlasDailyDeltaRaw(amountLockedRaw = 0n, tier = 0) {
+  const grossRewardRaw = getAtlasDailyGrossRewardRaw(amountLockedRaw, tier);
+  return grossRewardRaw > amountLockedRaw ? grossRewardRaw - amountLockedRaw : 0n;
+}
+
+function getAtlasExpectedFeeRaw(contractId = "", amountLockedRaw = 0n, grossRewardRaw = 0n) {
+  const feeBasisRaw = contractId === "daily-flow-legacy"
+    ? BigInt(grossRewardRaw || 0)
+    : BigInt(grossRewardRaw || 0) > BigInt(amountLockedRaw || 0)
+      ? BigInt(grossRewardRaw || 0) - BigInt(amountLockedRaw || 0)
+      : 0n;
+  return multiplyPermilleRaw(feeBasisRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+}
+
+function getAtlasExpectedNetRaw(contractId = "", amountLockedRaw = 0n, grossRewardRaw = 0n) {
+  return BigInt(grossRewardRaw || 0) - getAtlasExpectedFeeRaw(contractId, amountLockedRaw, grossRewardRaw);
+}
+
+function encodeUint256Call(selector = "", value = 0) {
+  return `${selector}${BigInt(value || 0).toString(16).padStart(64, "0")}`;
+}
+
+function encodeAbiWord(value = 0) {
+  return BigInt(value || 0).toString(16).padStart(64, "0");
+}
+
+function encodeAbiBytes(value = "0x") {
+  const clean = String(value || "0x").replace(/^0x/, "");
+  return `${encodeAbiWord(clean.length / 2)}${clean.padEnd(Math.ceil(clean.length / 64) * 64, "0")}`;
+}
+
+function encodeMulticall3Aggregate(calls = []) {
+  const tuples = calls.map((call) => {
+    const addressWord = String(call.target || "").replace(/^0x/, "").toLowerCase().padStart(64, "0");
+    return `${addressWord}${encodeAbiWord(1)}${encodeAbiWord(96)}${encodeAbiBytes(call.callData)}`;
+  });
+  let tupleOffsetBytes = calls.length * 32;
+  const offsets = tuples.map((tuple) => {
+    const offset = encodeAbiWord(tupleOffsetBytes);
+    tupleOffsetBytes += tuple.length / 2;
+    return offset;
+  }).join("");
+  const encodedArray = `${encodeAbiWord(calls.length)}${offsets}${tuples.join("")}`;
+  return `${MULTICALL3_AGGREGATE3_SELECTOR}${encodeAbiWord(32)}${encodedArray}`;
+}
+
+function decodeMulticall3Results(data = "0x") {
+  const clean = String(data || "0x").replace(/^0x/, "");
+  if (clean.length < 128) throw new Error("multicall_result_incomplete");
+  const readWord = (byteOffset) => hexToBigInt(`0x${clean.slice(byteOffset * 2, byteOffset * 2 + 64)}`);
+  const arrayStart = Number(readWord(0));
+  const length = Number(readWord(arrayStart));
+  const offsetBase = arrayStart + 32;
+  const results = [];
+
+  for (let index = 0; index < length; index += 1) {
+    const tupleStart = offsetBase + Number(readWord(offsetBase + index * 32));
+    const success = readWord(tupleStart) !== 0n;
+    const bytesStart = tupleStart + Number(readWord(tupleStart + 32));
+    const bytesLength = Number(readWord(bytesStart));
+    const dataStart = (bytesStart + 32) * 2;
+    results.push({
+      success,
+      data: `0x${clean.slice(dataStart, dataStart + bytesLength * 2)}`,
+    });
+  }
+
+  return results;
+}
+
+function decodeAtlasOrderState(contract = {}, data = "0x", snapshotTimestamp = 0) {
+  const orderId = Number(hexToBigInt(getDataWord(data, 0)));
+  const started = Number(hexToBigInt(getDataWord(data, 2)));
+  const finished = Number(hexToBigInt(getDataWord(data, 3)));
+  const now = Number(snapshotTimestamp || Math.floor(Date.now() / 1000));
+
+  if (contract.orderKind === "lockup") {
+    const amountLockedRaw = hexToBigInt(getDataWord(data, 4));
+    const grossRewardRaw = hexToBigInt(getDataWord(data, 5));
+    const expectedNetRaw = hexToBigInt(getDataWord(data, 6));
+    const tier = Number(hexToBigInt(getDataWord(data, 7)));
+    const notClaimed = hexToBigInt(getDataWord(data, 9)) !== 0n;
+    const expectedFeeRaw = grossRewardRaw > expectedNetRaw ? grossRewardRaw - expectedNetRaw : 0n;
+    const closed = !notClaimed;
+    const termEnded = now >= finished;
+
+    return {
+      contractId: contract.id,
+      contractName: contract.name,
+      orderId: String(orderId),
+      started,
+      finished,
+      lockTime: started,
+      unlockTime: finished,
+      termSeconds: Math.max(0, finished - started),
+      tier,
+      tierName: ATLAS_LOCKUP_TIER_NAMES[tier] || `Tier ${tier}`,
+      providedRaw: amountLockedRaw,
+      partnerDeltaRaw: grossRewardRaw > amountLockedRaw ? grossRewardRaw - amountLockedRaw : 0n,
+      grossRewardRaw,
+      expectedNetRaw,
+      expectedFeeRaw,
+      claimedRaw: closed ? expectedNetRaw : 0n,
+      feeRaw: closed ? expectedFeeRaw : 0n,
+      remainingLoadRaw: closed ? 0n : expectedNetRaw,
+      claimableNowRaw: !closed && termEnded ? expectedNetRaw : 0n,
+      next7DaysLoadRaw: !closed && !termEnded && finished <= now + 7 * ATLAS_DAY_SECONDS ? expectedNetRaw : 0n,
+      next30DaysLoadRaw: !closed && !termEnded && finished <= now + 30 * ATLAS_DAY_SECONDS ? expectedNetRaw : 0n,
+      closed,
+      claimable: !closed && termEnded,
+      termEnded,
+    };
+  }
+
+  if (contract.orderKind === "daily-v1" || contract.orderKind === "daily-v2") {
+    const amountLockedIndex = 5;
+    const amountUnclaimedIndex = 6;
+    const amountAvailableIndex = 7;
+    const tierIndex = contract.orderKind === "daily-v2" ? 10 : 8;
+    const amountLockedRaw = hexToBigInt(getDataWord(data, amountLockedIndex));
+    const amountUnclaimedRaw = hexToBigInt(getDataWord(data, amountUnclaimedIndex));
+    const amountAvailableRaw = hexToBigInt(getDataWord(data, amountAvailableIndex));
+    const tier = Number(hexToBigInt(getDataWord(data, tierIndex)));
+    const grossRewardRaw = getAtlasDailyGrossRewardRaw(amountLockedRaw, tier);
+    const partnerDeltaRaw = getAtlasDailyDeltaRaw(amountLockedRaw, tier);
+    const expectedFeeRaw = getAtlasExpectedFeeRaw(contract.id, amountLockedRaw, grossRewardRaw);
+    const expectedNetRaw = grossRewardRaw - expectedFeeRaw;
+    const claimedGrossRaw = grossRewardRaw > amountUnclaimedRaw ? grossRewardRaw - amountUnclaimedRaw : 0n;
+    const claimedPrincipalRaw = grossRewardRaw > 0n ? (amountLockedRaw * claimedGrossRaw) / grossRewardRaw : 0n;
+    const claimedDeltaRaw = claimedGrossRaw > claimedPrincipalRaw ? claimedGrossRaw - claimedPrincipalRaw : 0n;
+    const claimedFeeRaw = contract.orderKind === "daily-v1"
+      ? multiplyPermilleRaw(claimedGrossRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE)
+      : multiplyPermilleRaw(claimedDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+    const remainingPrincipalRaw = grossRewardRaw > 0n ? (amountLockedRaw * amountUnclaimedRaw) / grossRewardRaw : 0n;
+    const remainingDeltaRaw = amountUnclaimedRaw > remainingPrincipalRaw ? amountUnclaimedRaw - remainingPrincipalRaw : 0n;
+    const remainingFeeRaw = contract.orderKind === "daily-v1"
+      ? multiplyPermilleRaw(amountUnclaimedRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE)
+      : multiplyPermilleRaw(remainingDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+    const remainingLoadRaw = amountUnclaimedRaw > remainingFeeRaw ? amountUnclaimedRaw - remainingFeeRaw : 0n;
+    const availablePrincipalRaw = contract.orderKind === "daily-v2"
+      ? hexToBigInt(getDataWord(data, 8))
+      : grossRewardRaw > 0n
+        ? (amountLockedRaw * amountAvailableRaw) / grossRewardRaw
+        : 0n;
+    const availableDeltaRaw = contract.orderKind === "daily-v2"
+      ? hexToBigInt(getDataWord(data, 9))
+      : amountAvailableRaw > availablePrincipalRaw
+        ? amountAvailableRaw - availablePrincipalRaw
+        : 0n;
+    const availableFeeRaw = contract.orderKind === "daily-v1"
+      ? multiplyPermilleRaw(amountAvailableRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE)
+      : multiplyPermilleRaw(availableDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+    const claimableNowRaw = amountAvailableRaw > availableFeeRaw ? amountAvailableRaw - availableFeeRaw : 0n;
+    const dailyNetRaw = expectedNetRaw / ATLAS_DAILY_REWARD_DAYS;
+    const futureLoadRaw = remainingLoadRaw > claimableNowRaw ? remainingLoadRaw - claimableNowRaw : 0n;
+    const closed = amountUnclaimedRaw === 0n;
+
+    return {
+      contractId: contract.id,
+      contractName: contract.name,
+      orderId: String(orderId),
+      started,
+      finished,
+      lockTime: started,
+      unlockTime: finished,
+      termSeconds: Math.max(0, finished - started),
+      tier,
+      tierName: ATLAS_DAILY_TIER_NAMES[tier] || `Tier ${tier}`,
+      providedRaw: amountLockedRaw,
+      partnerDeltaRaw,
+      grossRewardRaw,
+      expectedNetRaw,
+      expectedFeeRaw,
+      claimedRaw: claimedGrossRaw > claimedFeeRaw ? claimedGrossRaw - claimedFeeRaw : 0n,
+      feeRaw: claimedFeeRaw,
+      remainingLoadRaw: closed ? 0n : remainingLoadRaw,
+      claimableNowRaw: closed ? 0n : claimableNowRaw,
+      next7DaysLoadRaw: closed ? 0n : futureLoadRaw < dailyNetRaw * 7n ? futureLoadRaw : dailyNetRaw * 7n,
+      next30DaysLoadRaw: closed ? 0n : futureLoadRaw < dailyNetRaw * 30n ? futureLoadRaw : dailyNetRaw * 30n,
+      closed,
+      claimable: !closed && claimableNowRaw > 0n,
+      termEnded: now >= finished,
+    };
+  }
+
+  throw new Error(`unsupported_order_kind:${contract.orderKind || contract.id}`);
+}
+
+async function getAtlasContractOrderStates(contract = {}, snapshotTimestamp = 0) {
+  const nextOrderHex = await callBscRpc("eth_call", [{ to: contract.address, data: ATLAS_NEXT_ORDER_ID_SELECTOR }, "latest"]);
+  const nextOrderId = Number(hexToBigInt(nextOrderHex));
+  const orderIds = Array.from({ length: nextOrderId }, (_, index) => index);
+  const failures = [];
+  const rows = [];
+  const chunks = [];
+  for (let index = 0; index < orderIds.length; index += 20) chunks.push(orderIds.slice(index, index + 20));
+
+  await mapWithConcurrency(chunks, ATLAS_ORDER_STATE_CONCURRENCY, async (chunk) => {
+    try {
+      const aggregateData = encodeMulticall3Aggregate(chunk.map((orderId) => ({
+        target: contract.address,
+        callData: encodeUint256Call(ATLAS_GET_ORDER_SELECTOR, orderId),
+      })));
+      const rawResult = await callBscRpc("eth_call", [{
+        to: BSC_MULTICALL3_ADDRESS,
+        data: aggregateData,
+      }, "latest"]);
+      const results = decodeMulticall3Results(rawResult);
+      if (results.length !== chunk.length) throw new Error("multicall_order_count_mismatch");
+
+      results.forEach((result, index) => {
+        const orderId = chunk[index];
+        try {
+          if (!result.success) throw new Error("multicall_order_failed");
+          const decoded = decodeAtlasOrderState(contract, result.data, snapshotTimestamp);
+          if (decoded.orderId !== String(orderId)) throw new Error(`order_state_id_mismatch:${decoded.orderId}`);
+          rows.push(decoded);
+        } catch (error) {
+          failures.push({ orderId, error: error?.message || "order_state_failed" });
+        }
+      });
+    } catch (error) {
+      failures.push(...chunk.map((orderId) => ({ orderId, error: error?.message || "order_multicall_failed" })));
+    }
+  });
+
+  if (failures.length) {
+    const retryOrderIds = [...new Set(failures.map((failure) => failure.orderId))];
+    failures.length = 0;
+    await mapWithConcurrency(retryOrderIds, ATLAS_ORDER_STATE_CONCURRENCY, async (orderId) => {
+      try {
+        const rawResult = await callBscRpc("eth_call", [{
+          to: contract.address,
+          data: encodeUint256Call(ATLAS_GET_ORDER_SELECTOR, orderId),
+        }, "latest"]);
+        const decoded = decodeAtlasOrderState(contract, rawResult, snapshotTimestamp);
+        if (decoded.orderId !== String(orderId)) throw new Error(`order_state_id_mismatch:${decoded.orderId}`);
+        rows.push(decoded);
+      } catch (error) {
+        failures.push({ orderId, error: error?.message || "order_state_retry_failed" });
+      }
+    });
+  }
+
+  return {
+    nextOrderId,
+    rows: rows.sort((left, right) => Number(left.orderId) - Number(right.orderId)),
+    failures,
+  };
+}
+
 function getAtlasLockedCycleDetails(contractId = "", data = "0x") {
   if (contractId === "lockup-flow") {
+    const amountLockedRaw = hexToBigInt(getDataWord(data, 0));
+    const grossRewardRaw = hexToBigInt(getDataWord(data, 1));
     const lockTime = Number(hexToBigInt(getDataWord(data, 4)));
     const unlockTime = Number(hexToBigInt(getDataWord(data, 5)));
     const tier = Number(hexToBigInt(getDataWord(data, 3)));
@@ -2306,20 +2621,26 @@ function getAtlasLockedCycleDetails(contractId = "", data = "0x") {
       lockTime,
       unlockTime,
       termSeconds: Math.max(0, unlockTime - lockTime),
-      expectedLoadRaw: hexToBigInt(getDataWord(data, 1)),
+      expectedGrossLoadRaw: grossRewardRaw,
+      expectedFeeRaw: getAtlasExpectedFeeRaw(contractId, amountLockedRaw, grossRewardRaw),
+      expectedLoadRaw: getAtlasExpectedNetRaw(contractId, amountLockedRaw, grossRewardRaw),
     };
   }
 
   if (isDailyFlowContractId(contractId)) {
+    const amountLockedRaw = hexToBigInt(getDataWord(data, 0));
     const lockTime = Number(hexToBigInt(getDataWord(data, 2)));
     const tier = Number(hexToBigInt(getDataWord(data, 1)));
+    const grossRewardRaw = getAtlasDailyGrossRewardRaw(amountLockedRaw, tier);
     return {
       tier,
       tierName: ATLAS_DAILY_TIER_NAMES[tier] || `Tier ${tier}`,
       lockTime,
       unlockTime: lockTime + Number(ATLAS_DAILY_REWARD_DAYS) * ATLAS_DAY_SECONDS,
       termSeconds: Number(ATLAS_DAILY_REWARD_DAYS) * ATLAS_DAY_SECONDS,
-      expectedLoadRaw: getAtlasPartnerDeltaRaw(contractId, data),
+      expectedGrossLoadRaw: grossRewardRaw,
+      expectedFeeRaw: getAtlasExpectedFeeRaw(contractId, amountLockedRaw, grossRewardRaw),
+      expectedLoadRaw: getAtlasExpectedNetRaw(contractId, amountLockedRaw, grossRewardRaw),
     };
   }
 
@@ -2357,17 +2678,7 @@ function createAtlasCycleStatsBucket({ contractId = "", contractName = "", tier 
   };
 }
 
-function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
-  const claimsByCycle = new Map();
-  for (const event of eventRows) {
-    if (event.type !== "claimed") continue;
-    const key = `${event.contractId}:${event.orderId}`;
-    const claim = claimsByCycle.get(key) || { events: 0, claimedDays: 0 };
-    claim.events += 1;
-    claim.claimedDays += event.claimedDays || 0;
-    claimsByCycle.set(key, claim);
-  }
-
+function buildAtlasCycleStats({ orderRows = [], snapshotTimestamp = 0 } = {}) {
   const now = Number(snapshotTimestamp || Math.floor(Date.now() / 1000));
   const byTermMap = new Map();
   const totals = createAtlasCycleStatsBucket({ contractId: "all", contractName: "Все потоки", tierName: "Все сроки" });
@@ -2377,50 +2688,21 @@ function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
     tierName: "Без Contract Test",
   });
 
-  for (const event of eventRows) {
-    if (event.type !== "locked") continue;
-    const key = `${event.contractId}:${event.orderId}`;
-    const claim = claimsByCycle.get(key) || { events: 0, claimedDays: 0 };
-    const termKey = `${event.contractId}:${event.tier}:${event.termSeconds}`;
+  for (const order of orderRows) {
+    const termKey = `${order.contractId}:${order.tier}:${order.termSeconds}`;
     if (!byTermMap.has(termKey)) {
-      byTermMap.set(termKey, createAtlasCycleStatsBucket(event));
+      byTermMap.set(termKey, createAtlasCycleStatsBucket(order));
     }
 
-    const amountLockedRaw = event.providedRaw || 0n;
-    let closed = false;
-    let claimable = false;
-    let termEnded = now >= event.unlockTime;
-    let claimableNowRaw = 0n;
-    let remainingLoadRaw = 0n;
-    let next7DaysLoadRaw = 0n;
-    let next30DaysLoadRaw = 0n;
-
-    if (event.contractId === "lockup-flow") {
-      closed = claim.events > 0;
-      claimable = !closed && termEnded;
-      claimableNowRaw = claimable ? event.expectedLoadRaw : 0n;
-      remainingLoadRaw = closed ? 0n : event.expectedLoadRaw;
-      if (!closed && !termEnded && event.unlockTime <= now + 7 * ATLAS_DAY_SECONDS) next7DaysLoadRaw = event.expectedLoadRaw;
-      if (!closed && !termEnded && event.unlockTime <= now + 30 * ATLAS_DAY_SECONDS) next30DaysLoadRaw = event.expectedLoadRaw;
-    } else if (isDailyFlowContractId(event.contractId)) {
-      const claimedDays = Math.min(Number(ATLAS_DAILY_REWARD_DAYS), claim.claimedDays || 0);
-      const elapsedDays = Math.max(0, Math.min(Number(ATLAS_DAILY_REWARD_DAYS), Math.floor((now - event.lockTime) / ATLAS_DAY_SECONDS)));
-      const dailyRewardRaw = event.expectedLoadRaw / ATLAS_DAILY_REWARD_DAYS;
-      const claimableDays = Math.max(0, elapsedDays - claimedDays);
-      closed = claimedDays >= Number(ATLAS_DAILY_REWARD_DAYS);
-      claimable = !closed && claimableDays > 0;
-      claimableNowRaw = dailyRewardRaw * BigInt(claimableDays);
-      remainingLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(Number(ATLAS_DAILY_REWARD_DAYS) - claimedDays);
-
-      const accruedDaysIn = (daysAhead) => Math.max(0, Math.min(
-        Number(ATLAS_DAILY_REWARD_DAYS),
-        Math.floor(((now + daysAhead * ATLAS_DAY_SECONDS) - event.lockTime) / ATLAS_DAY_SECONDS),
-      ) - elapsedDays);
-      next7DaysLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(accruedDaysIn(7));
-      next30DaysLoadRaw = closed ? 0n : dailyRewardRaw * BigInt(accruedDaysIn(30));
-    }
-
-    const isContractTest = event.contractId === "lockup-flow" && event.tier === 0;
+    const amountLockedRaw = order.providedRaw || 0n;
+    const closed = Boolean(order.closed);
+    const claimable = Boolean(order.claimable);
+    const termEnded = Boolean(order.termEnded ?? (now >= order.unlockTime));
+    const claimableNowRaw = order.claimableNowRaw || 0n;
+    const remainingLoadRaw = order.remainingLoadRaw || 0n;
+    const next7DaysLoadRaw = order.next7DaysLoadRaw || 0n;
+    const next30DaysLoadRaw = order.next30DaysLoadRaw || 0n;
+    const isContractTest = order.contractId === "lockup-flow" && order.tier === 0;
     const buckets = [byTermMap.get(termKey), totals];
     if (!isContractTest) buckets.push(productionTotals);
 
@@ -2466,10 +2748,10 @@ function buildAtlasCycleStats({ eventRows = [], snapshotTimestamp = 0 } = {}) {
 
   return {
     definitions: {
-      open: "Цикл создан и ещё не закрыт полностью.",
-      closed: "Lockup: выполнен Claim. Daily: выплачены все 200 расчётных дней.",
+      open: "Цикл существует в состоянии смарт-контракта и ещё не закрыт полностью.",
+      closed: "Статус определён по getOrder: Lockup уже выплачен, Daily не имеет оставшейся суммы.",
       claimable: "Открытый цикл, по которому прямо сейчас доступна сумма к Claim.",
-      load: "Расчётная оставшаяся сумма выплат по условиям открытых циклов.",
+      load: "Оставшаяся net-сумма участникам после будущей комиссии, рассчитанная по состоянию контрактов.",
       production: "Рабочая сводка не включает Contract Test; тестовые события показаны отдельной строкой.",
     },
     totals: serializeBucket(totals),
@@ -2495,14 +2777,19 @@ function getAtlasPartnerDeltaRaw(contractId = "", data = "0x") {
   if (isDailyFlowContractId(contractId)) {
     const amountLockedRaw = hexToBigInt(getDataWord(data, 0));
     const tier = Number(hexToBigInt(getDataWord(data, 1)));
-    const rewardRateBps = BigInt(ATLAS_DAILY_REWARD_RATE_BPS_BY_TIER[tier] || 0);
-    return (amountLockedRaw * rewardRateBps * ATLAS_DAILY_REWARD_DAYS) / 10000n;
+    return getAtlasDailyDeltaRaw(amountLockedRaw, tier);
   }
 
   return 0n;
 }
 
-function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw = 0n, collectedFeeRaw = 0n, daily = [] } = {}) {
+function buildAtlasPartnerProgramSnapshot({
+  lockupDeltaRaw = 0n,
+  dailyDeltaRaw = 0n,
+  collectedFeeRaw = 0n,
+  expectedFeeRaw = 0n,
+  daily = [],
+} = {}) {
   const totalDeltaRaw = lockupDeltaRaw + dailyDeltaRaw;
   const dailyImmediateDeltaRaw = multiplyPermilleRaw(dailyDeltaRaw, ATLAS_DAILY_PARTNER_IMMEDIATE_PERMILLE);
   const dailyDeferredDeltaRaw = dailyDeltaRaw - dailyImmediateDeltaRaw;
@@ -2510,9 +2797,11 @@ function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw =
   const maxRewardRaw = multiplyPermilleRaw(totalDeltaRaw, executivePermille);
   const maxImmediateRewardRaw = multiplyPermilleRaw(lockupDeltaRaw + dailyImmediateDeltaRaw, executivePermille);
   const maxDeferredRewardRaw = multiplyPermilleRaw(dailyDeferredDeltaRaw, executivePermille);
-  const platformDeltaCommissionRaw = multiplyPermilleRaw(totalDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+  const platformDeltaCommissionRaw = expectedFeeRaw;
   const platformLockupDeltaCommissionRaw = multiplyPermilleRaw(lockupDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
-  const platformDailyDeltaCommissionRaw = multiplyPermilleRaw(dailyDeltaRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
+  const platformDailyDeltaCommissionRaw = expectedFeeRaw > platformLockupDeltaCommissionRaw
+    ? expectedFeeRaw - platformLockupDeltaCommissionRaw
+    : 0n;
   const platformMaxPartnerBonusCommissionRaw = multiplyPermilleRaw(maxRewardRaw, ATLAS_PLATFORM_COMMISSION_PERMILLE);
   const platformMaxTotalCommissionRaw = platformDeltaCommissionRaw + platformMaxPartnerBonusCommissionRaw;
   const platformUnclaimedDeltaCommissionRaw = platformDeltaCommissionRaw > collectedFeeRaw
@@ -2520,12 +2809,13 @@ function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw =
     : 0n;
 
   return {
-    basis: "Расчетная Delta из событий Locked. Фактические начисления по кошелькам требуют referral tree, статусов участников и истории Distribute.",
+    basis: "Расчётная Delta восстановлена из состояния каждого on-chain ордера. Фактические начисления по кошелькам требуют referral tree, статусов участников, компрессии и истории Distribute.",
     limitations: [
       "Не распределяет начисления по конкретным партнерам.",
       "Не учитывает разницу статусов между пригласителем и приглашенным.",
       "Matching Bonus можно показать только как правило статуса, а не как факт начисления.",
-      "Daily Flow разделен по правилу 30% сразу и 70% равными частями за 200 дней.",
+      "Daily Flow разделён по правилу 30% сразу и 70% равными частями за 200 дней.",
+      "Таблица статусов ниже является матрицей сценариев: она не означает, что весь системный объём принадлежит одному партнёру.",
     ],
     dailyRules: {
       coreDailyPercent: 1.1,
@@ -2548,9 +2838,11 @@ function buildAtlasPartnerProgramSnapshot({ lockupDeltaRaw = 0n, dailyDeltaRaw =
       totalDeltaRaw: totalDeltaRaw.toString(),
     },
     platformCommission: {
-      rule: "10% от Delta и партнёрских бонусов. Комиссия не применяется к первоначальной сумме участия.",
+      rule: "Lockup и Daily V2: 10% от Delta. Daily V1 Legacy: 10% от начисленной суммы по правилам старого контракта.",
       percent: Number(ATLAS_PLATFORM_COMMISSION_PERMILLE) / 10,
       deltaCommission: decimalFromUnits(platformDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      estimatedTotalFee: decimalFromUnits(expectedFeeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      estimatedFutureFee: decimalFromUnits(platformUnclaimedDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
       lockupDeltaCommission: decimalFromUnits(platformLockupDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
       dailyDeltaCommission: decimalFromUnits(platformDailyDeltaCommissionRaw, ATLAS_USDT_TOKEN.decimals, 6),
       collectedFee: decimalFromUnits(collectedFeeRaw, ATLAS_USDT_TOKEN.decimals, 6),
@@ -2626,18 +2918,31 @@ function parseBscScanTxHashes(html = "") {
   return [...new Set([...html.matchAll(/\/tx\/(0x[a-fA-F0-9]{64})/g)].map((match) => match[1]))];
 }
 
+function parseBscScanTxTimestamps(html = "") {
+  const timestamps = new Map();
+  for (const rowMatch of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const row = rowMatch[1];
+    const hash = row.match(/\/tx\/(0x[a-fA-F0-9]{64})/i)?.[1];
+    const timestamp = Number(row.match(/class=['"]showLocalDate['"][\s\S]*?<span[^>]*>(\d{10})<\/span>/i)?.[1] || 0);
+    if (hash && timestamp) timestamps.set(hash.toLowerCase(), timestamp);
+  }
+  return timestamps;
+}
+
 async function getBscScanContractTxHashes(address = "") {
   const firstHtml = await fetchBscScanText(`https://bscscan.com/txs?a=${encodeURIComponent(address)}&p=1`);
   const total = parseBscScanTxTotal(firstHtml);
   const pages = Math.max(1, Math.ceil(total / 50));
   let hashes = parseBscScanTxHashes(firstHtml);
+  const timestamps = parseBscScanTxTimestamps(firstHtml);
 
   for (let page = 2; page <= pages; page += 1) {
     const html = await fetchBscScanText(`https://bscscan.com/txs?a=${encodeURIComponent(address)}&p=${page}`);
     hashes = [...new Set([...hashes, ...parseBscScanTxHashes(html)])];
+    for (const [hash, timestamp] of parseBscScanTxTimestamps(html)) timestamps.set(hash, timestamp);
   }
 
-  return { total, pages, hashes };
+  return { total, pages, hashes, timestamps };
 }
 
 async function getTransactionReceiptWithRetry(hash = "") {
@@ -2715,127 +3020,12 @@ async function getAtlasContractFlowSnapshot() {
 
   const latestHex = await callBscRpc("eth_blockNumber", []);
   const latestBlock = Number.parseInt(latestHex, 16);
-  const flowContracts = ATLAS_CONTRACT_ADDRESSES.filter((contract) => ATLAS_FLOW_EVENT_CONFIG[contract.id]);
-  const contracts = [];
-  const failures = [];
-  const eventRows = [];
-
-  for (const contract of flowContracts) {
-    const config = ATLAS_FLOW_EVENT_CONFIG[contract.id];
-    const baseStats = buildEmptyAtlasFlowStats(contract);
-    const { total, pages, hashes } = await getBscScanContractTxHashes(contract.address);
-    let providedRaw = 0n;
-    let claimedRaw = 0n;
-    let feeRaw = 0n;
-    let partnerDeltaRaw = 0n;
-    let lockupDeltaRaw = 0n;
-    let dailyDeltaRaw = 0n;
-    let lockedEvents = 0;
-    let claimedEvents = 0;
-    let failedReceipts = 0;
-
-    await mapWithConcurrency(hashes, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (hash) => {
-      try {
-        const receipt = await getTransactionReceiptWithRetry(hash);
-        for (const log of receipt?.logs || []) {
-          if ((log.address || "").toLowerCase() !== contract.address.toLowerCase()) continue;
-          const topic = (log.topics?.[0] || "").toLowerCase();
-          const blockNumber = Number.parseInt(log.blockNumber || receipt.blockNumber || "0x0", 16);
-          if (topic === config.lockedTopic.toLowerCase()) {
-            const amountRaw = sumEventDataWords(log.data, config.lockedParts);
-            const eventPartnerDeltaRaw = getAtlasPartnerDeltaRaw(contract.id, log.data);
-            const cycleDetails = getAtlasLockedCycleDetails(contract.id, log.data);
-            providedRaw += amountRaw;
-            partnerDeltaRaw += eventPartnerDeltaRaw;
-            if (contract.id === "lockup-flow") lockupDeltaRaw += eventPartnerDeltaRaw;
-            if (isDailyFlowContractId(contract.id)) dailyDeltaRaw += eventPartnerDeltaRaw;
-            lockedEvents += 1;
-            eventRows.push({
-              contractId: contract.id,
-              contractName: contract.name,
-              type: "locked",
-              orderId: getEventOrderId(log),
-              blockNumber,
-              hash,
-              providedRaw: amountRaw,
-              claimedRaw: 0n,
-              feeRaw: 0n,
-              partnerDeltaRaw: eventPartnerDeltaRaw,
-              lockupDeltaRaw: contract.id === "lockup-flow" ? eventPartnerDeltaRaw : 0n,
-              dailyDeltaRaw: isDailyFlowContractId(contract.id) ? eventPartnerDeltaRaw : 0n,
-              ...cycleDetails,
-            });
-          }
-          if (topic === config.claimedTopic.toLowerCase()) {
-            const eventClaimedAmountRaw = sumEventDataWords(log.data, config.claimedParts);
-            const feeAmountRaw = sumEventDataWords(log.data, config.feeParts);
-            const claimedAmountRaw = contract.id === "lockup-flow" && eventClaimedAmountRaw > feeAmountRaw
-              ? eventClaimedAmountRaw - feeAmountRaw
-              : eventClaimedAmountRaw;
-            claimedRaw += claimedAmountRaw;
-            feeRaw += feeAmountRaw;
-            claimedEvents += 1;
-            eventRows.push({
-              contractId: contract.id,
-              contractName: contract.name,
-              type: "claimed",
-              orderId: getEventOrderId(log),
-              claimedDays: isDailyFlowContractId(contract.id) ? Number(hexToBigInt(getDataWord(log.data, 0))) : 0,
-              blockNumber,
-              hash,
-              providedRaw: 0n,
-              claimedRaw: claimedAmountRaw,
-              feeRaw: feeAmountRaw,
-              partnerDeltaRaw: 0n,
-              lockupDeltaRaw: 0n,
-              dailyDeltaRaw: 0n,
-            });
-          }
-        }
-      } catch {
-        failedReceipts += 1;
-      }
-    });
-
-    const remainingRaw = providedRaw - claimedRaw - feeRaw;
-    contracts.push({
-      ...baseStats,
-      txListTotal: total,
-      txListPages: pages,
-      receipts: hashes.length,
-      failedReceipts,
-      lockedEvents,
-      claimedEvents,
-      providedRaw: providedRaw.toString(),
-      claimedRaw: claimedRaw.toString(),
-      feeRaw: feeRaw.toString(),
-      partnerDeltaRaw: partnerDeltaRaw.toString(),
-      lockupDeltaRaw: lockupDeltaRaw.toString(),
-      dailyDeltaRaw: dailyDeltaRaw.toString(),
-      remainingRaw: remainingRaw.toString(),
-      provided: decimalFromUnits(providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
-      claimed: decimalFromUnits(claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
-      fee: decimalFromUnits(feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
-      partnerDelta: decimalFromUnits(partnerDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
-      lockupDelta: decimalFromUnits(lockupDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
-      dailyDelta: decimalFromUnits(dailyDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
-      remaining: decimalFromUnits(remainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
-    });
-
-    if (failedReceipts) {
-      failures.push({ contract: contract.name, failedReceipts });
+  const debugStartedAt = Date.now();
+  const debugFlow = (label) => {
+    if (process.env.ATLAS_FLOW_DEBUG === "1") {
+      console.error(`[atlas-flow] ${label} +${Date.now() - debugStartedAt}ms`);
     }
-  }
-
-  const blockTimestampMap = new Map();
-  const uniqueBlocks = [...new Set(eventRows.map((event) => event.blockNumber).filter(Boolean))];
-  await mapWithConcurrency(uniqueBlocks, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (blockNumber) => {
-    try {
-      blockTimestampMap.set(blockNumber, await getBlockTimestampWithRetry(blockNumber));
-    } catch {
-      blockTimestampMap.set(blockNumber, 0);
-    }
-  });
+  };
   let snapshotTimestamp = Math.floor(Date.now() / 1000);
   try {
     snapshotTimestamp = await getBlockTimestampWithRetry(latestBlock);
@@ -2843,9 +3033,257 @@ async function getAtlasContractFlowSnapshot() {
     // Wall-clock fallback keeps the status summary available if the latest block lookup briefly fails.
   }
 
+  const flowContracts = ATLAS_CONTRACT_ADDRESSES.filter((contract) => ATLAS_FLOW_EVENT_CONFIG[contract.id]);
+  const contracts = [];
+  const failures = [];
+  const eventRows = [];
+  const orderRows = [];
+  const diagnostics = {
+    stateOrders: 0,
+    historyLockedEvents: 0,
+    recoveredLockedEvents: 0,
+    duplicateLockedEvents: [],
+    duplicateLockupClaims: [],
+    unmatchedClaimEvents: [],
+    orderStateFailures: [],
+  };
+
+  for (const contract of flowContracts) {
+    const config = ATLAS_FLOW_EVENT_CONFIG[contract.id];
+    const baseStats = buildEmptyAtlasFlowStats(contract);
+    let orderState = { nextOrderId: 0, rows: [], failures: [] };
+    try {
+      orderState = await getAtlasContractOrderStates(contract, snapshotTimestamp);
+    } catch (error) {
+      orderState.failures.push({ orderId: "*", error: error?.message || "order_state_failed" });
+    }
+    orderRows.push(...orderState.rows);
+    diagnostics.stateOrders += orderState.rows.length;
+    diagnostics.orderStateFailures.push(...orderState.failures.map((failure) => ({
+      contractId: contract.id,
+      ...failure,
+    })));
+    debugFlow(`${contract.id}:orders:${orderState.rows.length}`);
+
+    const { total, pages, hashes, timestamps } = await getBscScanContractTxHashes(contract.address);
+    debugFlow(`${contract.id}:hashes:${hashes.length}`);
+    const lockedEventCounts = new Map();
+    const claimedEventCounts = new Map();
+    let historyLockedEvents = 0;
+    let historyClaimedEvents = 0;
+    let historyClaimedRaw = 0n;
+    let historyFeeRaw = 0n;
+    let failedReceipts = 0;
+
+    const processReceipt = (receipt, hash) => {
+      if (!receipt || !Array.isArray(receipt.logs)) throw new Error("receipt_empty");
+      for (const log of receipt.logs) {
+        if ((log.address || "").toLowerCase() !== contract.address.toLowerCase()) continue;
+        const topic = (log.topics?.[0] || "").toLowerCase();
+        const blockNumber = Number.parseInt(log.blockNumber || receipt.blockNumber || "0x0", 16);
+        if (topic === config.lockedTopic.toLowerCase()) {
+          const amountRaw = sumEventDataWords(log.data, config.lockedParts);
+          const eventPartnerDeltaRaw = getAtlasPartnerDeltaRaw(contract.id, log.data);
+          const cycleDetails = getAtlasLockedCycleDetails(contract.id, log.data);
+          const orderId = getEventOrderId(log);
+          lockedEventCounts.set(orderId, (lockedEventCounts.get(orderId) || 0) + 1);
+          historyLockedEvents += 1;
+          eventRows.push({
+            contractId: contract.id,
+            contractName: contract.name,
+            type: "locked",
+            orderId,
+            blockNumber,
+            timestamp: timestamps.get(hash.toLowerCase()) || 0,
+            hash,
+            providedRaw: amountRaw,
+            claimedRaw: 0n,
+            feeRaw: 0n,
+            partnerDeltaRaw: eventPartnerDeltaRaw,
+            lockupDeltaRaw: contract.id === "lockup-flow" ? eventPartnerDeltaRaw : 0n,
+            dailyDeltaRaw: isDailyFlowContractId(contract.id) ? eventPartnerDeltaRaw : 0n,
+            ...cycleDetails,
+          });
+        }
+        if (topic === config.claimedTopic.toLowerCase()) {
+          const claimedAmountRaw = sumEventDataWords(log.data, config.claimedParts);
+          const feeAmountRaw = sumEventDataWords(log.data, config.feeParts);
+          const orderId = getEventOrderId(log);
+          claimedEventCounts.set(orderId, (claimedEventCounts.get(orderId) || 0) + 1);
+          historyClaimedEvents += 1;
+          historyClaimedRaw += claimedAmountRaw;
+          historyFeeRaw += feeAmountRaw;
+          eventRows.push({
+            contractId: contract.id,
+            contractName: contract.name,
+            type: "claimed",
+            orderId,
+            claimedDays: isDailyFlowContractId(contract.id) ? Number(hexToBigInt(getDataWord(log.data, 0))) : 0,
+            blockNumber,
+            timestamp: timestamps.get(hash.toLowerCase()) || 0,
+            hash,
+            providedRaw: 0n,
+            claimedRaw: claimedAmountRaw,
+            feeRaw: feeAmountRaw,
+            partnerDeltaRaw: 0n,
+            lockupDeltaRaw: 0n,
+            dailyDeltaRaw: 0n,
+          });
+        }
+      }
+    };
+
+    const receiptChunks = [];
+    for (let index = 0; index < hashes.length; index += 10) receiptChunks.push(hashes.slice(index, index + 10));
+    await mapWithConcurrency(receiptChunks, 4, async (chunk) => {
+      try {
+        const receipts = await callBscRpcBatch(chunk.map((hash) => ({
+          method: "eth_getTransactionReceipt",
+          params: [hash],
+        })));
+        await mapWithConcurrency(chunk, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (hash, index) => {
+          try {
+            const receipt = receipts[index] || await getTransactionReceiptWithRetry(hash);
+            processReceipt(receipt, hash);
+          } catch {
+            failedReceipts += 1;
+          }
+        });
+      } catch {
+        await mapWithConcurrency(chunk, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (hash) => {
+          try {
+            processReceipt(await getTransactionReceiptWithRetry(hash), hash);
+          } catch {
+            failedReceipts += 1;
+          }
+        });
+      }
+    });
+    debugFlow(`${contract.id}:receipts:${hashes.length - failedReceipts}`);
+
+    const stateOrderIds = new Set(orderState.rows.map((row) => row.orderId));
+    for (const [orderId, count] of lockedEventCounts) {
+      if (count > 1) diagnostics.duplicateLockedEvents.push({ contractId: contract.id, orderId, count });
+    }
+    if (contract.id === "lockup-flow") {
+      for (const [orderId, count] of claimedEventCounts) {
+        if (count > 1) diagnostics.duplicateLockupClaims.push({ contractId: contract.id, orderId, count });
+      }
+    }
+    for (const orderId of claimedEventCounts.keys()) {
+      if (!stateOrderIds.has(orderId)) diagnostics.unmatchedClaimEvents.push({ contractId: contract.id, orderId });
+    }
+
+    const missingHistoryOrders = orderState.rows.filter((row) => !lockedEventCounts.has(row.orderId));
+    diagnostics.recoveredLockedEvents += missingHistoryOrders.length;
+    for (const order of missingHistoryOrders) {
+      eventRows.push({
+        contractId: contract.id,
+        contractName: contract.name,
+        type: "locked",
+        orderId: order.orderId,
+        blockNumber: 0,
+        timestamp: order.started,
+        hash: "",
+        source: "contract-state",
+        providedRaw: order.providedRaw,
+        claimedRaw: 0n,
+        feeRaw: 0n,
+        partnerDeltaRaw: order.partnerDeltaRaw,
+        lockupDeltaRaw: contract.id === "lockup-flow" ? order.partnerDeltaRaw : 0n,
+        dailyDeltaRaw: isDailyFlowContractId(contract.id) ? order.partnerDeltaRaw : 0n,
+        tier: order.tier,
+        tierName: order.tierName,
+        lockTime: order.lockTime,
+        unlockTime: order.unlockTime,
+        termSeconds: order.termSeconds,
+        expectedGrossLoadRaw: order.grossRewardRaw,
+        expectedFeeRaw: order.expectedFeeRaw,
+        expectedLoadRaw: order.expectedNetRaw,
+      });
+    }
+
+    diagnostics.historyLockedEvents += historyLockedEvents;
+    const providedRaw = orderState.rows.reduce((sum, row) => sum + row.providedRaw, 0n);
+    const claimedRaw = historyClaimedRaw;
+    const feeRaw = historyFeeRaw;
+    const expectedFeeRaw = orderState.rows.reduce((sum, row) => sum + row.expectedFeeRaw, 0n);
+    const partnerDeltaRaw = orderState.rows.reduce((sum, row) => sum + row.partnerDeltaRaw, 0n);
+    const lockupDeltaRaw = contract.id === "lockup-flow" ? partnerDeltaRaw : 0n;
+    const dailyDeltaRaw = isDailyFlowContractId(contract.id) ? partnerDeltaRaw : 0n;
+    const remainingRaw = providedRaw - claimedRaw - feeRaw;
+    contracts.push({
+      ...baseStats,
+      txListTotal: total,
+      txListPages: pages,
+      receipts: hashes.length,
+      failedReceipts,
+      stateOrders: orderState.rows.length,
+      expectedStateOrders: orderState.nextOrderId,
+      historyLockedEvents,
+      recoveredLockedEvents: missingHistoryOrders.length,
+      lockedEvents: orderState.rows.length,
+      claimedEvents: historyClaimedEvents,
+      providedRaw: providedRaw.toString(),
+      claimedRaw: claimedRaw.toString(),
+      feeRaw: feeRaw.toString(),
+      expectedFeeRaw: expectedFeeRaw.toString(),
+      partnerDeltaRaw: partnerDeltaRaw.toString(),
+      lockupDeltaRaw: lockupDeltaRaw.toString(),
+      dailyDeltaRaw: dailyDeltaRaw.toString(),
+      remainingRaw: remainingRaw.toString(),
+      provided: decimalFromUnits(providedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      claimed: decimalFromUnits(claimedRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      fee: decimalFromUnits(feeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      expectedFee: decimalFromUnits(expectedFeeRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      partnerDelta: decimalFromUnits(partnerDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      lockupDelta: decimalFromUnits(lockupDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      dailyDelta: decimalFromUnits(dailyDeltaRaw, ATLAS_USDT_TOKEN.decimals, 6),
+      remaining: decimalFromUnits(remainingRaw, ATLAS_USDT_TOKEN.decimals, 6),
+    });
+
+    if (failedReceipts || orderState.failures.length) {
+      failures.push({
+        contract: contract.name,
+        failedReceipts,
+        failedOrderStates: orderState.failures.length,
+      });
+    }
+  }
+
+  const blockTimestampMap = new Map();
+  const uniqueBlocks = [...new Set(eventRows.filter((event) => !event.timestamp).map((event) => event.blockNumber).filter(Boolean))];
+  const blockChunks = [];
+  for (let index = 0; index < uniqueBlocks.length; index += 10) blockChunks.push(uniqueBlocks.slice(index, index + 10));
+  await mapWithConcurrency(blockChunks, 2, async (chunk) => {
+    try {
+      const blocks = await callBscRpcBatch(chunk.map((blockNumber) => ({
+        method: "eth_getBlockByNumber",
+        params: [`0x${Number(blockNumber).toString(16)}`, false],
+      })));
+      await mapWithConcurrency(chunk, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (blockNumber, index) => {
+        try {
+          const timestamp = Number.parseInt(blocks[index]?.timestamp || "0x0", 16)
+            || await getBlockTimestampWithRetry(blockNumber);
+          blockTimestampMap.set(blockNumber, timestamp);
+        } catch {
+          blockTimestampMap.set(blockNumber, 0);
+        }
+      });
+    } catch {
+      await mapWithConcurrency(chunk, ATLAS_FLOW_RECEIPT_CONCURRENCY, async (blockNumber) => {
+        try {
+          blockTimestampMap.set(blockNumber, await getBlockTimestampWithRetry(blockNumber));
+        } catch {
+          blockTimestampMap.set(blockNumber, 0);
+        }
+      });
+    }
+  });
+  debugFlow(`timestamps:${uniqueBlocks.length}`);
   const dailyMap = new Map();
   for (const event of eventRows) {
-    const timestamp = blockTimestampMap.get(event.blockNumber) || 0;
+    const timestamp = event.timestamp || blockTimestampMap.get(event.blockNumber) || 0;
     if (!timestamp) continue;
     const date = dayKeyFromTimestamp(timestamp);
     if (!dailyMap.has(date)) dailyMap.set(date, createDailyBucket(date));
@@ -2918,19 +3356,33 @@ async function getAtlasContractFlowSnapshot() {
       partnerDelta: accumulator.partnerDelta + BigInt(row.partnerDeltaRaw || 0),
       lockupDelta: accumulator.lockupDelta + BigInt(row.lockupDeltaRaw || 0),
       dailyDelta: accumulator.dailyDelta + BigInt(row.dailyDeltaRaw || 0),
+      expectedFee: accumulator.expectedFee + BigInt(row.expectedFeeRaw || 0),
       receipts: accumulator.receipts + (row.receipts || 0),
       lockedEvents: accumulator.lockedEvents + (row.lockedEvents || 0),
       claimedEvents: accumulator.claimedEvents + (row.claimedEvents || 0),
     }),
-    { provided: 0n, claimed: 0n, fee: 0n, remaining: 0n, partnerDelta: 0n, lockupDelta: 0n, dailyDelta: 0n, receipts: 0, lockedEvents: 0, claimedEvents: 0 },
+    {
+      provided: 0n,
+      claimed: 0n,
+      fee: 0n,
+      remaining: 0n,
+      partnerDelta: 0n,
+      lockupDelta: 0n,
+      dailyDelta: 0n,
+      expectedFee: 0n,
+      receipts: 0,
+      lockedEvents: 0,
+      claimedEvents: 0,
+    },
   );
   const partnerProgram = buildAtlasPartnerProgramSnapshot({
     lockupDeltaRaw: totalsRaw.lockupDelta,
     dailyDeltaRaw: totalsRaw.dailyDelta,
     collectedFeeRaw: totalsRaw.fee,
+    expectedFeeRaw: totalsRaw.expectedFee,
     daily,
   });
-  const cycleStats = buildAtlasCycleStats({ eventRows, snapshotTimestamp });
+  const cycleStats = buildAtlasCycleStats({ orderRows, snapshotTimestamp });
 
   const payload = {
     ok: true,
@@ -2947,6 +3399,7 @@ async function getAtlasContractFlowSnapshot() {
       provided: decimalFromUnits(totalsRaw.provided, ATLAS_USDT_TOKEN.decimals, 6),
       claimed: decimalFromUnits(totalsRaw.claimed, ATLAS_USDT_TOKEN.decimals, 6),
       fee: decimalFromUnits(totalsRaw.fee, ATLAS_USDT_TOKEN.decimals, 6),
+      expectedFee: decimalFromUnits(totalsRaw.expectedFee, ATLAS_USDT_TOKEN.decimals, 6),
       remaining: decimalFromUnits(totalsRaw.remaining, ATLAS_USDT_TOKEN.decimals, 6),
       partnerDelta: decimalFromUnits(totalsRaw.partnerDelta, ATLAS_USDT_TOKEN.decimals, 6),
       lockupDelta: decimalFromUnits(totalsRaw.lockupDelta, ATLAS_USDT_TOKEN.decimals, 6),
@@ -2954,6 +3407,7 @@ async function getAtlasContractFlowSnapshot() {
       providedRaw: totalsRaw.provided.toString(),
       claimedRaw: totalsRaw.claimed.toString(),
       feeRaw: totalsRaw.fee.toString(),
+      expectedFeeRaw: totalsRaw.expectedFee.toString(),
       remainingRaw: totalsRaw.remaining.toString(),
       partnerDeltaRaw: totalsRaw.partnerDelta.toString(),
       lockupDeltaRaw: totalsRaw.lockupDelta.toString(),
@@ -2973,7 +3427,8 @@ async function getAtlasContractFlowSnapshot() {
       dayOffsetHours: ATLAS_FLOW_DAY_OFFSET_HOURS,
     },
     failures,
-    source: "BscScan tx list + BNB Chain transaction receipts",
+    diagnostics,
+    source: "BscScan tx list + BNB Chain receipts; cycle totals verified with nextOrderId/getOrder",
     rpcCount: BSC_RPC_URLS.length,
     updatedAt: new Date().toISOString(),
   };

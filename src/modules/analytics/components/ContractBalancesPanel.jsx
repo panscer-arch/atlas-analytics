@@ -108,7 +108,7 @@ export default function ContractBalancesPanel() {
     { label: "Входящий поток", value: formatToken(flowSnapshot?.totals?.provided, "USDT"), note: "вся помощь, внесённая в Lockup и Daily" },
     { label: "Выплачено участникам", value: formatToken(flowSnapshot?.totals?.claimed, "USDT"), note: "фактические net-выплаты по Claim" },
     { label: "Получено комиссий", value: formatToken(flowSnapshot?.totals?.fee, "USDT"), note: "фактически удержанный platform fee" },
-    { label: "Осталось по событиям", value: formatToken(flowSnapshot?.totals?.remaining, "USDT"), note: "создано циклов минус выплаты и fee" },
+    { label: "Расчётный остаток оборота", value: formatToken(flowSnapshot?.totals?.remaining, "USDT"), note: "входящий поток минус net-выплаты и fee; это не текущая ликвидность" },
   ];
   const cycleStats = flowSnapshot?.cycleStats;
   const cycleTotals = cycleStats?.productionTotals || cycleStats?.totals;
@@ -129,11 +129,15 @@ export default function ContractBalancesPanel() {
   const partnerStats = [
     { label: "Расчётная Delta всего", value: formatToken(partnerProgram?.totals?.totalDelta, "USDT"), note: "база для партнёрских процентов" },
     { label: "Lockup Delta", value: formatToken(partnerProgram?.totals?.lockupDelta, "USDT"), note: "amountEarned минус amountLocked" },
-    { label: "Daily Delta", value: formatToken(partnerProgram?.totals?.dailyDelta, "USDT"), note: "Core 1,1% / Elite 1,3% в день на 200 дней" },
-    { label: "Макс. партнёрка 60%", value: formatToken(partnerProgram?.totals?.maxReward, "USDT"), note: "теоретически для статуса Executive" },
+    { label: "Daily Delta", value: formatToken(partnerProgram?.totals?.dailyDelta, "USDT"), note: "доход сверх первоначальной суммы за 200 дней" },
+    { label: "Теоретический сценарий 60%", value: formatToken(partnerProgram?.totals?.maxReward, "USDT"), note: "если весь системный Delta-пул считать по ставке Executive; не фактическая выплата" },
     { label: "Получено комиссий", value: formatToken(platformCommission?.collectedFee, "USDT"), note: "фактически удержано по завершённым Claim" },
-    { label: "Ожидается комиссий", value: formatToken(platformCommission?.unclaimedDeltaCommission, "USDT"), note: "будет удержано только при будущих Claim" },
+    { label: "Ожидается комиссий", value: formatToken(platformCommission?.estimatedFutureFee ?? platformCommission?.unclaimedDeltaCommission, "USDT"), note: "будет удержано только при будущих Claim" },
   ];
+  const flowBalanceDifference = Number(flowSnapshot?.totals?.remaining || 0) - Number(snapshot?.totals?.usdt || 0);
+  const flowDiagnostics = flowSnapshot?.diagnostics;
+  const recoveredLockedEvents = Number(flowDiagnostics?.recoveredLockedEvents || 0);
+  const orderStateFailures = flowDiagnostics?.orderStateFailures?.length || 0;
 
   return (
     <section className="analytics-contract-balances">
@@ -142,9 +146,9 @@ export default function ContractBalancesPanel() {
           <p className="analytics-kicker">BSC contracts / flows</p>
           <h2>Обороты и балансы официальных контрактов Atlas</h2>
             <p>
-            Read-only мониторинг USDT по адресам из Transparency / BscScan Check. Обороты считаются по событиям
-            Lockup Flow и Daily Flow: сколько создано циклов, сколько участники уже вывели и какой остаток
-            получается по событиям контрактов.
+            Read-only мониторинг USDT по адресам из Transparency / BscScan Check. Циклы и итоговые суммы
+            сверяются по состоянию каждого orderId в Lockup Flow, Daily Flow V1 Legacy и Daily Flow V2.
+            События BscScan используются для календаря и дополнительной проверки истории.
           </p>
         </div>
         <div className={`analytics-contract-balances-state analytics-contract-balances-state-${status === "error" ? "danger" : "success"}`}>
@@ -162,7 +166,7 @@ export default function ContractBalancesPanel() {
           <div>
             <span className="analytics-kicker">Atlas USDT movement</span>
             <h2>Сколько всего вложили и вывели</h2>
-            <p className="chart-card-subtitle">Считаем по событиям Locked/Claimed в пользовательских контрактах. Текущий баланс адресов ниже показывает, где USDT лежит прямо сейчас.</p>
+            <p className="chart-card-subtitle">Итоги считаем по состоянию ордеров; события Locked/Claimed дают календарь и контроль истории. Текущий баланс адресов ниже показывает, где USDT лежит прямо сейчас.</p>
           </div>
         </div>
         {flowError ? (
@@ -181,6 +185,27 @@ export default function ContractBalancesPanel() {
                 </article>
               ))}
             </div>
+            <div className="analytics-contract-partner-note">
+              <strong>Оборот и текущий баланс — разные показатели</strong>
+              <span>
+                На адресах контрактов сейчас {formatToken(snapshot?.totals?.usdt, "USDT")}. Расчётный остаток оборота
+                отличается на {formatToken(flowBalanceDifference, "USDT")}, потому что средства могут проходить через
+                Transport / Distribute и другие операции. Его нельзя называть доступной ликвидностью.
+              </span>
+              <span>
+                Источник: {flowSnapshot?.source || "BNB Chain"}. Состояние циклов: {flowDiagnostics?.stateOrders || 0};
+                событий Locked в найденной истории: {flowDiagnostics?.historyLockedEvents || 0}.
+              </span>
+            </div>
+            {recoveredLockedEvents || orderStateFailures ? (
+              <div className="analytics-contract-balances-error">
+                <strong>{orderStateFailures ? "Сверка состояния выполнена не полностью" : "История BscScan дополнена состоянием контракта"}</strong>
+                <span>
+                  {recoveredLockedEvents ? `${recoveredLockedEvents} циклов восстановлено через getOrder, потому что событие Locked не попало в найденную историю. ` : ""}
+                  {orderStateFailures ? `${orderStateFailures} orderId не удалось прочитать; итог требует повторной проверки.` : "Итоговые суммы и статусы рассчитаны по authoritative state смарт-контракта."}
+                </span>
+              </div>
+            ) : null}
             {cycleStats ? (
               <section className="analytics-contract-cycle-load">
                 <div className="analytics-data-table-head">
@@ -188,9 +213,9 @@ export default function ContractBalancesPanel() {
                     <span className="analytics-kicker">Cycles & load forecast</span>
                     <h2>Циклы по срокам и ожидаемая нагрузка</h2>
                     <p className="chart-card-subtitle">
-                      Открытые и закрытые циклы восстановлены по orderId из событий Locked/Claimed. Нагрузка показывает
-                      расчётную сумму, которая уже доступна или ещё должна стать доступной по условиям циклов. Рабочая
-                      сводка не включает Contract Test, но тестовые события сохранены в таблице отдельной строкой.
+                      Открытые и закрытые циклы прочитаны непосредственно из getOrder. Нагрузка показывает net-сумму
+                      участникам после будущей комиссии, которая уже доступна или ещё должна стать доступной. Рабочая
+                      сводка не включает Contract Test, но тестовые циклы сохранены отдельной строкой.
                     </p>
                   </div>
                 </div>
@@ -312,10 +337,11 @@ export default function ContractBalancesPanel() {
                 <div className="analytics-data-table-head">
                   <div>
                     <span className="analytics-kicker">Invite & Earn</span>
-                    <h2>Партнёрка: расчётный пул Delta</h2>
+                    <h2>Партнёрка: Delta и теоретическая матрица ставок</h2>
                     <p className="chart-card-subtitle">
                       Это не фактические выплаты по кошелькам. Здесь показано всё, что можно вывести из on-chain событий:
-                      расчётная Delta и теоретическая сумма партнёрских начислений по статусам.
+                      расчётная Delta и сценарий применения каждой статусной ставки ко всему системному Delta-пулу.
+                      Реальный доход конкретного партнёра без referral tree, статусов и компрессии здесь не определяется.
                     </p>
                   </div>
                 </div>
@@ -343,13 +369,13 @@ export default function ContractBalancesPanel() {
                     </article>
                     <article>
                       <span>Ожидается в будущем</span>
-                      <strong>{formatToken(platformCommission.unclaimedDeltaCommission, "USDT")}</strong>
+                      <strong>{formatToken(platformCommission.estimatedFutureFee ?? platformCommission.unclaimedDeltaCommission, "USDT")}</strong>
                       <small>будет получено только при будущих Claim</small>
                     </article>
                     <article>
-                      <span>Расчётный итог по Delta</span>
-                      <strong>{formatToken(platformCommission.deltaCommission, "USDT")}</strong>
-                      <small>факт плюс ожидаемая комиссия по текущим циклам</small>
+                      <span>Расчётная комиссия всего</span>
+                      <strong>{formatToken(platformCommission.estimatedTotalFee ?? platformCommission.deltaCommission, "USDT")}</strong>
+                      <small>по правилам каждой версии контракта</small>
                     </article>
                   </div>
                 ) : null}
@@ -359,11 +385,11 @@ export default function ContractBalancesPanel() {
                       <tr>
                         <th>Статус</th>
                         <th>%</th>
-                        <th>Всего</th>
+                        <th>Теор. вознаграждение</th>
                         <th>Lockup</th>
                         <th>Daily сразу 30%</th>
                         <th>Daily 200д 70%</th>
-                        <th>Комиссия 10%</th>
+                        <th>Теор. fee с бонуса</th>
                         <th>Matching</th>
                       </tr>
                     </thead>
@@ -438,14 +464,14 @@ export default function ContractBalancesPanel() {
                     <tr key={contract.id}>
                       <td>
                         <strong>{contract.name}</strong>
-                        <span>{contract.shortAddress}</span>
+                        <span>{contract.shortAddress}{contract.status ? ` · ${contract.status}` : ""}</span>
                       </td>
                       <td><strong className="analytics-contract-balance analytics-contract-balance-success">{formatToken(contract.provided, "USDT")}</strong></td>
                       <td><strong className="analytics-contract-balance analytics-contract-balance-warning">{formatToken(contract.claimed, "USDT")}</strong></td>
                       <td>{formatToken(contract.partnerDelta, "USDT")}</td>
                       <td>{formatToken(contract.fee, "USDT")}</td>
                       <td><strong className={`analytics-contract-balance analytics-contract-balance-${getBalanceTone(contract.remaining)}`}>{formatToken(contract.remaining, "USDT")}</strong></td>
-                      <td>{contract.lockedEvents || 0} / {contract.claimedEvents || 0}</td>
+                      <td>{contract.stateOrders || contract.lockedEvents || 0} state / {contract.historyLockedEvents || 0} Locked / {contract.claimedEvents || 0} Claim</td>
                     </tr>
                   ))}
                 </tbody>
@@ -497,7 +523,7 @@ export default function ContractBalancesPanel() {
                 <tr key={contract.id}>
                   <td>
                     <strong>{contract.name}</strong>
-                    <span>{contract.type}</span>
+                    <span>{contract.type}{contract.status ? ` · ${contract.status}` : ""}</span>
                   </td>
                   <td>{contract.description}</td>
                   <td>
