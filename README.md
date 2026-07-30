@@ -2,6 +2,8 @@
 
 Отдельный frontend-репозиторий под аналитику. Нужен для сценария, где аналитика живёт по своей ссылке и просто открывается из общей панели управления.
 
+Atlas Analytics is the public analytics and transparency frontend for Atlas System. It is designed to present activity and contract data from Atlas System on BNB Smart Chain (BSC), with local fallback data when an external API is unavailable.
+
 ## Документация
 
 Подробная документация проекта: [docs/atlas-analytics-docs.md](docs/atlas-analytics-docs.md)
