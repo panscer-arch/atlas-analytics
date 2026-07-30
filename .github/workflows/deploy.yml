@@ -40,6 +40,7 @@ jobs:
         run: |
           npm ci
           npm run test:marketing-monitor
+          npm run test:support-ticket-webhook
           npm run test:expenses
           npm run test:telegram-memory
           npm run test:hermes-voice
@@ -151,6 +152,8 @@ jobs:
           scp_to_vps server/marketing-dashboard-monitor.mjs /tmp/atlas-marketing-dashboard-monitor.mjs
           scp_to_vps server/telegram-task-store.mjs /tmp/atlas-telegram-task-store.mjs
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
+          scp_to_vps server/support-ticket-webhook-core.mjs /tmp/atlas-support-ticket-webhook-core.mjs
+          scp_to_vps server/support-ticket-telegram-webhook.mjs /tmp/atlas-support-ticket-telegram-webhook.mjs
           scp_to_vps server/telegram-memory-archive.mjs /tmp/atlas-telegram-memory-archive.mjs
           scp_to_vps server/telegram-memory-sync.mjs /tmp/atlas-telegram-memory-sync.mjs
           scp_to_vps server/hermes-telegram-bridge.py /tmp/hermes-telegram-bridge.py
@@ -176,6 +179,8 @@ jobs:
           sudo mv /tmp/atlas-marketing-dashboard-monitor.mjs /opt/atlas-content-api/marketing-dashboard-monitor.mjs
           sudo mv /tmp/atlas-telegram-task-store.mjs /opt/atlas-content-api/telegram-task-store.mjs
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
+          sudo mv /tmp/atlas-support-ticket-webhook-core.mjs /opt/atlas-content-api/support-ticket-webhook-core.mjs
+          sudo mv /tmp/atlas-support-ticket-telegram-webhook.mjs /opt/atlas-content-api/support-ticket-telegram-webhook.mjs
           sudo mv /tmp/atlas-telegram-memory-archive.mjs /opt/atlas-content-api/telegram-memory-archive.mjs
           sudo mv /tmp/atlas-telegram-memory-sync.mjs /opt/atlas-content-api/telegram-memory-sync.mjs
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
@@ -446,6 +451,29 @@ jobs:
           WantedBy=multi-user.target
           SERVICE
 
+          sudo tee /etc/systemd/system/atlas-support-ticket-notifier.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Send signed Atlas support ticket notifications to Telegram
+          After=network.target
+
+          [Service]
+          Type=simple
+          EnvironmentFile=-/etc/atlas-telegram-bot.env
+          EnvironmentFile=-/etc/atlas-support-ticket-webhook.env
+          Environment=ATLAS_SUPPORT_TICKET_WEBHOOK_PORT=8798
+          Environment=ATLAS_SUPPORT_TICKET_NOTIFICATION_STATE=/var/lib/atlas-analytics-content/support-ticket-notifications.json
+          ExecStart=/usr/bin/node /opt/atlas-content-api/support-ticket-telegram-webhook.mjs
+          Restart=always
+          RestartSec=5
+          User=www-data
+          Group=www-data
+          NoNewPrivileges=true
+          PrivateTmp=true
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
           sudo tee /etc/systemd/system/atlas-telegram-memory-sync.service >/dev/null <<'SERVICE'
           [Unit]
           Description=Sync the durable Atlas Telegram archive into Hermes long-term memory
@@ -536,6 +564,19 @@ jobs:
           timeout 45s sudo systemctl restart atlas-content-api.service
           timeout 45s sudo systemctl enable --now atlas-telegram-bot.service
           timeout 45s sudo systemctl restart atlas-telegram-bot.service
+          timeout 45s sudo systemctl enable --now atlas-support-ticket-notifier.service
+          timeout 45s sudo systemctl restart atlas-support-ticket-notifier.service
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8798/health >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              sudo systemctl status atlas-support-ticket-notifier.service --no-pager || true
+              sudo journalctl -u atlas-support-ticket-notifier.service -n 40 --no-pager || true
+              exit 1
+            fi
+            sleep 2
+          done
           if systemctl list-unit-files | grep -q '^hermes-telegram-bridge.service'; then
             timeout 45s sudo systemctl restart hermes-telegram-bridge.service
           fi
@@ -620,6 +661,38 @@ jobs:
               else:
                   index = text.rfind("}")
                   text = text[:index] + snippet + "\n" + text[index:]
+              open(path, "w", encoding="utf-8").write(text)
+          PY
+            fi
+
+            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location = /api/telegram/support-ticket-webhook' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          snippet = """
+
+              location = /api/telegram/support-ticket-webhook {
+                  proxy_pass http://127.0.0.1:8798/webhooks/chatwoot;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 256k;
+              }
+          """
+          if "location = /api/telegram/support-ticket-webhook" not in text:
+              index = text.find("location /api/telegram/")
+              if index != -1:
+                  line_start = text.rfind("\n", 0, index) + 1
+                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+              else:
+                  index = text.find("location /")
+                  if index != -1:
+                      line_start = text.rfind("\n", 0, index) + 1
+                      text = text[:line_start] + snippet + "\n" + text[line_start:]
+                  else:
+                      index = text.rfind("}")
+                      text = text[:index] + snippet + "\n" + text[index:]
               open(path, "w", encoding="utf-8").write(text)
           PY
             fi
