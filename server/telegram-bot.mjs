@@ -1,4 +1,4 @@
-import { randomBytes, randomInt } from "node:crypto";
+import { createHmac, randomBytes, randomInt } from "node:crypto";
 import {
   addTelegramTask,
   appendTelegramOperation,
@@ -24,6 +24,10 @@ const HERMES_BRIDGE_URL = process.env.HERMES_BRIDGE_URL || "";
 const HERMES_BRIDGE_TOKEN = process.env.HERMES_BRIDGE_TOKEN || "";
 const HERMES_TIMEOUT_MS = Number(process.env.HERMES_BRIDGE_TIMEOUT_MS || 180_000);
 const CONTENT_API_URL = process.env.ATLAS_CONTENT_API_URL || `http://127.0.0.1:${process.env.ATLAS_CONTENT_API_PORT || 8787}`;
+const SUPPORT_TICKET_REPLY_URL =
+  process.env.ATLAS_SUPPORT_TICKET_REPLY_URL || "";
+const SUPPORT_TICKET_REPLY_SECRET =
+  process.env.ATLAS_SUPPORT_TICKET_REPLY_SECRET || "";
 const ALLOWED_CHAT_IDS = new Set(
   String(process.env.TELEGRAM_ALLOWED_CHAT_IDS || "")
     .split(",")
@@ -62,6 +66,7 @@ const CATEGORY_BUTTONS = [
 
 let offset = Number(process.env.TELEGRAM_UPDATE_OFFSET || 0);
 const pendingCategory = new Map();
+const pendingTicketReplies = new Map();
 const recentMessages = new Map();
 
 function log(message, payload = "") {
@@ -208,6 +213,7 @@ async function handleUpdate(update) {
 
   if (isHermesCommand(text)) return handleHermesCommand(message, text);
   if (!operationalChat) return;
+  if (await handlePendingTicketReply(message, text)) return;
 
   if (text.startsWith("/task")) return handleTaskCommand(message, text);
   if (text.startsWith("/done")) return handleDoneCommand(message, text);
@@ -430,6 +436,10 @@ async function askCategoryForMessage(message, parsed = null) {
 
 async function handleCallback(callback) {
   const data = callback.data || "";
+  if (data.startsWith("atlasreply:")) {
+    await handleTicketReplyCallback(callback, data);
+    return;
+  }
   if (!data.startsWith("taskcat:")) return;
 
   const [, chatId, messageId, category] = data.split(":");
@@ -453,6 +463,138 @@ async function handleCallback(callback) {
     reply_to_message_id: pending.message.message_id,
     text: `Задача добавлена: ${result.boardTitle}\n${result.task.title}`,
   });
+}
+
+function ticketReplyKey(chatId, userId) {
+  return `${chatId}:${userId}`;
+}
+
+async function handleTicketReplyCallback(callback, data) {
+  const chatId = callback.message?.chat?.id;
+  const userId = callback.from?.id;
+  if (!chatId || !userId || !isAllowedChat(chatId)) {
+    await telegram("answerCallbackQuery", {
+      callback_query_id: callback.id,
+      text: "Этот чат не подключён к ответам Atlas.",
+      show_alert: true,
+    });
+    return;
+  }
+  const [, conversationRaw, reference] = data.split(":");
+  const conversationId = Number.parseInt(conversationRaw || "", 10);
+  if (
+    !Number.isSafeInteger(conversationId) ||
+    conversationId <= 0 ||
+    !/^ATLAS-[A-F0-9]{8}$/.test(reference || "")
+  ) {
+    await telegram("answerCallbackQuery", {
+      callback_query_id: callback.id,
+      text: "Не удалось определить тикет.",
+      show_alert: true,
+    });
+    return;
+  }
+  if (
+    !SUPPORT_TICKET_REPLY_URL ||
+    SUPPORT_TICKET_REPLY_SECRET.length < 32
+  ) {
+    await telegram("answerCallbackQuery", {
+      callback_query_id: callback.id,
+      text: "Ответы из бота пока не настроены.",
+      show_alert: true,
+    });
+    return;
+  }
+  const prompt = await telegram("sendMessage", {
+    chat_id: chatId,
+    text: `Напишите ответ для ${reference} одним сообщением.`,
+    reply_markup: { force_reply: true, selective: true },
+  });
+  pendingTicketReplies.set(ticketReplyKey(chatId, userId), {
+    conversationId,
+    reference,
+    promptMessageId: prompt.message_id,
+    expiresAt: Date.now() + 15 * 60_000,
+  });
+  await telegram("answerCallbackQuery", {
+    callback_query_id: callback.id,
+    text: `Ответ для ${reference}`,
+  });
+}
+
+async function handlePendingTicketReply(message, text) {
+  const key = ticketReplyKey(message.chat.id, message.from?.id);
+  const pending = pendingTicketReplies.get(key);
+  if (!pending) return false;
+  if (pending.expiresAt <= Date.now()) {
+    pendingTicketReplies.delete(key);
+    return false;
+  }
+  if (text === "/cancel") {
+    pendingTicketReplies.delete(key);
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: `Ответ для ${pending.reference} отменён.`,
+    });
+    return true;
+  }
+  if (message.reply_to_message?.message_id !== pending.promptMessageId) {
+    return false;
+  }
+  if (text.length > 4_000) {
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: "Ответ слишком длинный. Максимум 4000 символов.",
+    });
+    return true;
+  }
+  try {
+    await sendTicketReply(pending, text);
+    pendingTicketReplies.delete(key);
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: `Ответ отправлен в ${pending.reference}. Пользователь увидит его в виджете и получит по email, если оставил адрес.`,
+    });
+  } catch (error) {
+    log("support ticket reply error:", error?.message || String(error));
+    await telegram("sendMessage", {
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: `Не удалось отправить ответ в ${pending.reference}. Попробуйте ответить на это сообщение ещё раз или откройте тикет в Chatwoot.`,
+    });
+  }
+  return true;
+}
+
+async function sendTicketReply(pending, content) {
+  const id = `telegram-ticket-${pending.conversationId}-${Date.now()}-${randomBytes(6).toString("hex")}`;
+  const body = JSON.stringify({
+    id,
+    conversationId: pending.conversationId,
+    content: content.trim(),
+  });
+  const timestamp = String(Math.floor(Date.now() / 1_000));
+  const signature = createHmac("sha256", SUPPORT_TICKET_REPLY_SECRET)
+    .update(`${timestamp}.`)
+    .update(body)
+    .digest("hex");
+  const response = await fetch(SUPPORT_TICKET_REPLY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Atlas-Delivery": id,
+      "X-Atlas-Timestamp": timestamp,
+      "X-Atlas-Signature": `sha256=${signature}`,
+    },
+    body,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload?.accepted !== true) {
+    throw new Error(payload?.error || `support_reply_http_${response.status}`);
+  }
 }
 
 async function handleDoneCommand(message, text) {

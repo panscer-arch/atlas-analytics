@@ -97,7 +97,13 @@ async function sendTelegramNotification(ticket) {
         disable_web_page_preview: true,
         reply_markup: {
           inline_keyboard: [
-            [{ text: "Открыть тикет в Chatwoot", url: conversationUrl(ticket) }],
+            [
+              {
+                text: "Ответить",
+                callback_data: `atlasreply:${ticket.conversationId}:${ticket.reference}`,
+              },
+              { text: "Открыть в Chatwoot", url: conversationUrl(ticket) },
+            ],
           ],
         },
       }),
@@ -200,4 +206,3 @@ server.listen(PORT, "127.0.0.1", () => {
     `[support-ticket-notifier] listening on 127.0.0.1:${PORT}`,
   );
 });
-

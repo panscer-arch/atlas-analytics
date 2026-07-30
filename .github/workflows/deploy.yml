@@ -439,6 +439,7 @@ jobs:
           [Service]
           Type=simple
           EnvironmentFile=-/etc/atlas-telegram-bot.env
+          EnvironmentFile=-/etc/atlas-support-ticket-webhook.env
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
           Environment=TELEGRAM_MEMORY_ARCHIVE_DIR=/var/lib/atlas-analytics-content/telegram-memory-archive
           ExecStart=/usr/bin/node /opt/atlas-content-api/telegram-bot.mjs
