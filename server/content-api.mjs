@@ -19,6 +19,7 @@ import {
   formatMarketingDashboardDigest,
   mergeMarketingEvents,
 } from "./marketing-dashboard-monitor.mjs";
+import { getGoogleAnalyticsOverview } from "./google-analytics.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
@@ -4547,6 +4548,16 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/content/health") {
       sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/content/google-analytics" && request.method === "GET") {
+      if (!await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "ga4_access_required" });
+        return;
+      }
+      const result = await getGoogleAnalyticsOverview({ range: url.searchParams.get("range") || "28d" });
+      sendJson(response, result.ok ? 200 : result.status || 502, result);
       return;
     }
 
