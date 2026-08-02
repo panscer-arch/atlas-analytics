@@ -1,4 +1,7 @@
+import { LockKeyhole } from "lucide-react";
 import AnalyticsDateTime from "./AnalyticsDateTime";
+
+const VAULT_URL = String(import.meta.env.VITE_VAULT_URL || "").trim();
 
 function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, hermesUrl, onLiveAnalyticsClick, showAdmins = false, showMotion = true }) {
   return (
@@ -63,6 +66,18 @@ function AnalyticsHeader({ onAiReview, onParserOpen, onQuickNotes, hermesUrl, on
               <span className="analytics-header-notes-pen" />
             </span>
           </button>
+        ) : null}
+        {VAULT_URL ? (
+          <a
+            className="analytics-header-hermes-button"
+            href={VAULT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Открыть хранилище паролей"
+            title="Пароли"
+          >
+            <LockKeyhole size={22} strokeWidth={1.8} aria-hidden="true" />
+          </a>
         ) : null}
         {hermesUrl ? (
           <a className="analytics-header-hermes-button" href={hermesUrl} target="_blank" rel="noreferrer" aria-label="Открыть Гермес" title="Гермес">
