@@ -71,6 +71,7 @@ const MAIN_TAB_BOARD_IDS = {
 };
 const ANALYTICS_TAB_BOARD_IDS = {
   dashboard: "analytics",
+  ga4: "analytics-ga4",
   overview: "analytics-overview",
   traffic: "analytics-traffic",
   products: "analytics-products",
@@ -627,6 +628,7 @@ function AnalyticsPage() {
 
   const analyticsSectionTabs = [
     { id: "dashboard", label: "Дашборд", hint: "центр" },
+    { id: "ga4", label: "Google Analytics", hint: "GA4" },
     { id: "overview", label: "Обзор", hint: "день" },
     { id: "traffic", label: "Трафик / Онлайн", hint: "онлайн" },
     { id: "products", label: "Продукты / Циклы", hint: "тарифы" },
@@ -779,7 +781,7 @@ function AnalyticsPage() {
         }}
       />
 
-      {activeTab === "analytics" ? (
+      {activeTab === "analytics" && activeAnalyticsTab !== "ga4" ? (
         <Wrapper as="section" marginTop="lg">
           <div className="analytics-footer-actions">
             <button type="button" className="analytics-export-btn analytics-export-btn-bottom" onClick={() => downloadCsv(exportAnalyticsCsv(data.table))}>

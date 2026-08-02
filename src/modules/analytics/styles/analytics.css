@@ -4,6 +4,325 @@
   padding: 1.5rem 1rem;
 }
 
+.ga4-board {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  color: #f4f7fd;
+}
+
+.ga4-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  border-color: rgba(255, 157, 50, 0.2);
+}
+
+.ga4-title,
+.ga4-toolbar-actions,
+.ga4-metric-head,
+.ga4-section-head {
+  display: flex;
+  align-items: center;
+}
+
+.ga4-title {
+  min-width: 0;
+  gap: 0.85rem;
+}
+
+.ga4-title h2,
+.ga4-section-head h3,
+.ga4-connection h2 {
+  margin: 0;
+  color: #f7f9ff;
+  letter-spacing: 0;
+}
+
+.ga4-title h2 {
+  margin-top: 0.2rem;
+  font-size: 1.45rem;
+}
+
+.ga4-title p {
+  margin: 0.25rem 0 0;
+  color: #8fa3c0;
+  font-size: 0.78rem;
+}
+
+.ga4-google-mark {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+
+.ga4-google-mark i {
+  position: absolute;
+  bottom: 4px;
+  width: 9px;
+  border-radius: 2px;
+}
+
+.ga4-google-mark i:nth-child(1) { left: 2px; height: 18px; background: #f9ab00; }
+.ga4-google-mark i:nth-child(2) { left: 14px; height: 30px; background: #e37400; }
+.ga4-google-mark i:nth-child(3) { left: 27px; bottom: 2px; width: 11px; height: 11px; border-radius: 50%; background: #f9ab00; }
+
+.ga4-toolbar-actions {
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.ga4-ranges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid rgba(157, 178, 255, 0.13);
+  border-radius: 8px;
+  background: rgba(5, 11, 20, 0.55);
+}
+
+.ga4-ranges button,
+.ga4-refresh,
+.ga4-open {
+  border: 0;
+  color: #aebdd4;
+  background: transparent;
+}
+
+.ga4-ranges button {
+  min-height: 34px;
+  padding: 0 0.7rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
+.ga4-ranges button.is-active {
+  color: #15100a;
+  background: #ff9d32;
+}
+
+.ga4-refresh,
+.ga4-open {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(157, 178, 255, 0.14);
+  border-radius: 8px;
+}
+
+.ga4-refresh:hover,
+.ga4-open:hover {
+  color: #fff;
+  border-color: rgba(255, 157, 50, 0.42);
+}
+
+.ga4-refresh:disabled { opacity: 0.55; }
+
+.is-spinning { animation: ga4-spin 0.9s linear infinite; }
+
+@keyframes ga4-spin { to { transform: rotate(360deg); } }
+
+.ga4-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ga4-metric {
+  min-width: 0;
+  min-height: 128px;
+  padding: 1rem;
+  border: 1px solid rgba(157, 178, 255, 0.12);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(22, 29, 43, 0.94), rgba(12, 18, 29, 0.98));
+}
+
+.ga4-metric-head {
+  gap: 0.45rem;
+  min-height: 25px;
+  color: #94a6bf;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ga4-metric-icon {
+  display: inline-flex;
+  color: #ffad52;
+}
+
+.ga4-metric-head > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ga4-metric strong {
+  display: block;
+  margin-top: 0.75rem;
+  color: #f7f9ff;
+  font-size: 1.72rem;
+  line-height: 1;
+}
+
+.ga4-metric small {
+  display: block;
+  margin-top: 0.55rem;
+  color: #8294ad;
+  font-size: 0.73rem;
+}
+
+.ga4-change {
+  margin-left: auto;
+  padding: 0.23rem 0.38rem;
+  border-radius: 5px;
+  font-size: 0.64rem;
+}
+
+.ga4-change.is-positive { color: #65e1b6; background: rgba(95, 240, 191, 0.1); }
+.ga4-change.is-negative { color: #ff9c9c; background: rgba(255, 122, 122, 0.1); }
+.ga4-change.is-neutral { color: #b8c4d6; background: rgba(157, 178, 255, 0.08); }
+
+.ga4-primary-grid,
+.ga4-tables-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+.ga4-chart-section,
+.ga4-insights,
+.ga4-table-section {
+  min-width: 0;
+  padding: 1.1rem;
+  border-radius: 8px;
+}
+
+.ga4-section-head {
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.ga4-section-head h3 { margin-top: 0.2rem; font-size: 1rem; }
+.ga4-section-head > span { color: #8294ad; font-size: 0.72rem; }
+
+.ga4-chart { height: 290px; }
+
+.ga4-insight-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ga4-insight {
+  display: grid;
+  grid-template-columns: 5px minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(157, 178, 255, 0.09);
+}
+
+.ga4-insight:last-child { border-bottom: 0; }
+.ga4-insight > i { width: 5px; border-radius: 3px; background: #8fa3c0; }
+.ga4-insight.is-positive > i { background: #5ff0bf; }
+.ga4-insight.is-negative > i { background: #ff8e8e; }
+.ga4-insight.is-warning > i { background: #ffb65f; }
+.ga4-insight strong { color: #edf3ff; font-size: 0.83rem; }
+.ga4-insight p { margin: 0.25rem 0 0; color: #92a4bc; font-size: 0.75rem; line-height: 1.45; }
+.ga4-caveat { margin: 0.8rem 0 0; color: #6f829c; font-size: 0.68rem; line-height: 1.45; }
+
+.ga4-tables-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.ga4-table-scroll { overflow-x: auto; }
+.ga4-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+.ga4-table th { padding: 0.62rem 0.55rem; color: #8294ad; text-align: right; font-size: 0.66rem; text-transform: uppercase; border-bottom: 1px solid rgba(157, 178, 255, 0.12); }
+.ga4-table th:first-child { text-align: left; }
+.ga4-table td { padding: 0.68rem 0.55rem; color: #dce5f3; text-align: right; border-bottom: 1px solid rgba(157, 178, 255, 0.07); }
+.ga4-table td:first-child { max-width: 310px; color: #f4f7fd; text-align: left; }
+.ga4-table tr:last-child td { border-bottom: 0; }
+.ga4-path { display: block; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ga4-connection,
+.ga4-access,
+.ga4-loading,
+.ga4-error {
+  padding: 1.25rem;
+}
+
+.ga4-connection {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: flex-start;
+  border-radius: 8px;
+}
+
+.ga4-access {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 460px);
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border-radius: 8px;
+}
+
+.ga4-access h2 { margin: 0.3rem 0 0.75rem; font-size: 1.12rem; letter-spacing: 0; }
+.ga4-access form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; }
+.ga4-access input { min-height: 42px; min-width: 0; padding: 0 0.75rem; border: 1px solid rgba(157, 178, 255, 0.18); border-radius: 7px; color: #f4f7fd; background: rgba(5, 11, 20, 0.72); }
+.ga4-access button { min-height: 42px; padding: 0 1rem; border: 0; border-radius: 7px; color: #17100a; background: #ff9d32; font-weight: 800; }
+.ga4-access p { margin: 0.5rem 0 0; color: #ffadad; font-size: 0.75rem; }
+
+.ga4-connection-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #ffad52;
+  background: rgba(255, 157, 50, 0.1);
+}
+
+.ga4-connection h2 { margin-top: 0.3rem; font-size: 1.12rem; }
+.ga4-connection p { max-width: 720px; margin: 0.5rem 0 0; color: #94a6bf; line-height: 1.5; }
+.ga4-loading { display: flex; align-items: center; gap: 0.65rem; color: #aebdd4; border-radius: 8px; }
+.ga4-error { display: flex; align-items: center; gap: 0.75rem; border-radius: 8px; border-color: rgba(255, 122, 122, 0.24); }
+.ga4-error strong { color: #ffadad; }
+.ga4-error span { color: #aebdd4; font-size: 0.78rem; }
+.ga4-error button { margin-left: auto; min-height: 36px; padding: 0 0.8rem; border: 1px solid rgba(255, 122, 122, 0.25); border-radius: 7px; color: #ffe7e7; background: rgba(255, 122, 122, 0.08); }
+
+@media (max-width: 1180px) {
+  .ga4-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 800px) {
+  .ga4-toolbar { align-items: flex-start; flex-direction: column; }
+  .ga4-toolbar-actions { width: 100%; justify-content: flex-start; }
+  .ga4-ranges { max-width: calc(100vw - 8.5rem); overflow-x: auto; }
+  .ga4-primary-grid,
+  .ga4-tables-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .ga4-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ga4-metric { min-height: 118px; padding: 0.85rem; }
+  .ga4-metric strong { font-size: 1.42rem; }
+  .ga4-title p { overflow-wrap: anywhere; }
+  .ga4-connection { grid-template-columns: 1fr; }
+  .ga4-access { grid-template-columns: 1fr; }
+  .ga4-access form { grid-template-columns: 1fr; }
+  .ga4-error { align-items: flex-start; flex-direction: column; }
+  .ga4-error button { margin-left: 0; }
+}
+
 .analytics-youtrack {
   display: grid;
   gap: 1.1rem;

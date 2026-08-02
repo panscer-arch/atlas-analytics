@@ -43,6 +43,7 @@ jobs:
           npm run test:expenses
           npm run test:telegram-memory
           npm run test:hermes-voice
+          npm run test:ga4
           npm run build
 
       - name: Detect server changes
@@ -146,6 +147,7 @@ jobs:
           }
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/google-analytics.mjs /tmp/atlas-google-analytics.mjs
           scp_to_vps server/agent-reach-parser.mjs /tmp/atlas-agent-reach-parser.mjs
           scp_to_vps server/agent-reach-mcporter.json /tmp/atlas-agent-reach-mcporter.json
           scp_to_vps server/hermes-speech.mjs /tmp/atlas-hermes-speech.mjs
@@ -173,6 +175,7 @@ jobs:
 
           sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content/telegram-memory-archive /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
           sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs
           sudo mv /tmp/atlas-hermes-transcription.mjs /opt/atlas-content-api/hermes-transcription.mjs
@@ -218,6 +221,14 @@ jobs:
           sudo chown -R root:root "$AGENT_REACH_DIR"
           sudo chmod -R a+rX "$AGENT_REACH_DIR"
           sudo chown -R www-data:www-data /var/lib/atlas-agent-reach
+
+          GA4_CREDENTIALS_BASE64='${{ secrets.ATLAS_GA4_SERVICE_ACCOUNT_JSON_BASE64 }}'
+          if [ -n "$GA4_CREDENTIALS_BASE64" ]; then
+            printf '%s' "$GA4_CREDENTIALS_BASE64" | base64 --decode | sudo tee /etc/atlas-ga4-service-account.json >/dev/null
+            sudo node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync("/etc/atlas-ga4-service-account.json","utf8")); if(!value.client_email || !value.private_key) process.exit(1)'
+            sudo chown root:www-data /etc/atlas-ga4-service-account.json
+            sudo chmod 640 /etc/atlas-ga4-service-account.json
+          fi
 
           PIPER_DIR=/opt/atlas-hermes-tts
           PIPER_VENV="$PIPER_DIR/venv"
@@ -272,6 +283,8 @@ jobs:
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ATLAS_FINANCE_PASSWORD=${{ secrets.ATLAS_FINANCE_PASSWORD }}
+          ATLAS_GA4_PROPERTY_ID=546276265
+          ATLAS_GA4_CREDENTIALS_FILE=/etc/atlas-ga4-service-account.json
           ENV
           INTERNAL_MONITOR_TOKEN="$(openssl rand -hex 32)"
           echo "ATLAS_INTERNAL_MONITOR_TOKEN=$INTERNAL_MONITOR_TOKEN" | sudo tee -a /etc/atlas-outreach.env >/dev/null
