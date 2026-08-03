@@ -36,6 +36,7 @@ jobs:
           sudo python3 - <<'PY'
           import json
           from pathlib import Path
+          from urllib.parse import urlparse
 
           def contains_access_token(value):
               if isinstance(value, dict):
@@ -66,6 +67,39 @@ jobs:
                   }))
               except Exception as error:
                   print(json.dumps({'path': filename, 'exists': path.exists(), 'errorType': type(error).__name__}))
+
+          for filename in (
+              '/opt/hermes/.env',
+              '/opt/hermes/.hindsight/profiles/hermes.env',
+          ):
+              path = Path(filename)
+              values = {}
+              try:
+                  for raw in path.read_text(encoding='utf-8').splitlines():
+                      if '=' not in raw or raw.lstrip().startswith('#'):
+                          continue
+                      key, value = raw.split('=', 1)
+                      if key in {
+                          'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'HINDSIGHT_LLM_API_KEY',
+                          'HINDSIGHT_API_LLM_API_KEY', 'GOOGLE_API_KEY', 'GEMINI_API_KEY',
+                      }:
+                          values[key] = bool(value.strip())
+                  print(json.dumps({'path': filename, 'configuredKeys': values}))
+              except Exception as error:
+                  print(json.dumps({'path': filename, 'exists': path.exists(), 'errorType': type(error).__name__}))
+
+          config_path = Path('/opt/hermes/hindsight/config.json')
+          try:
+              config = json.loads(config_path.read_text(encoding='utf-8'))
+              print(json.dumps({
+                  'path': str(config_path),
+                  'mode': config.get('mode'),
+                  'llmProvider': config.get('llm_provider'),
+                  'llmModel': config.get('llm_model'),
+                  'llmHost': urlparse(str(config.get('llm_base_url') or '')).hostname,
+              }))
+          except Exception as error:
+              print(json.dumps({'path': str(config_path), 'exists': config_path.exists(), 'errorType': type(error).__name__}))
           PY
 
           ready="$(sudo sed -n 's/^HERMES_LONG_TERM_MEMORY_READY=//p' /etc/atlas-telegram-bot.env | tail -n 1)"
