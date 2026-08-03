@@ -156,7 +156,7 @@ jobs:
               answer = json.load(response).get('answer', '')
           lowered = answer.lower()
           assert '0x8e61483d45a822ccb59482c47e1b6d28465605ec' in lowered, answer
-          assert '0x8f418e29a32aab69abf3da742c43e7adfbfa3c3' in lowered, answer
+          assert '0x8f418e29a32aab69abf3da742c43e7adfbfba3c3' in lowered, answer
           assert 'legacy' in lowered or 'устар' in lowered, answer
           assert 'план' in lowered or 'planned' in lowered, answer
           print(answer)
