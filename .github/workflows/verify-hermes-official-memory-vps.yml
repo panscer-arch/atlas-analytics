@@ -141,7 +141,7 @@ jobs:
           if not token:
               raise SystemExit('Hermes bridge token is not configured')
           payload = json.dumps({
-              'prompt': 'Проверка официальной памяти. Назови текущий адрес Daily Flow V2, пометь Daily Flow V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
+              'prompt': 'Проверка официальной памяти. Обязательно используй hindsight_recall. Назови текущий адрес Daily Flow V2, пометь Daily Flow V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
               'memoryScope': 'global',
               'source': {'chatId': 'official-memory-verification', 'chatTitle': 'Official memory verification', 'authorName': 'Deployment verifier'},
           }, ensure_ascii=False).encode('utf-8')
