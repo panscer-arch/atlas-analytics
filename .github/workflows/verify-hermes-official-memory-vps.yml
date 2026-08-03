@@ -2,6 +2,12 @@ name: Verify Hermes Official Memory on VPS
 
 on:
   workflow_dispatch:
+    inputs:
+      inspect_only:
+        description: Report safe sync progress without waiting
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   verify:
@@ -41,6 +47,16 @@ jobs:
 
           sudo test -s "$CATALOG"
           sudo systemctl is-enabled atlas-official-memory-sync.timer
+
+          if [ "${{ inputs.inspect_only }}" = "true" ]; then
+            state="$(sudo systemctl is-active atlas-official-memory-sync.service || true)"
+            cursor_sources="$(sudo node -e "try { const c=require('$CURSOR'); process.stdout.write(String(Object.keys(c.sources || {}).length)); } catch { process.stdout.write('0'); }" 2>/dev/null || printf '0')"
+            catalog_sources="$(sudo node -e "const c=require('$CATALOG'); process.stdout.write(String((c.sources || []).length));")"
+            provider="$(sudo node -e "try { const c=require('/opt/hermes/hindsight/config.json'); process.stdout.write(String(c.llm_provider || 'unknown')); } catch { process.stdout.write('unknown'); }")"
+            echo "official-memory-sync state=$state cursorSources=$cursor_sources catalogSources=$catalog_sources provider=$provider"
+            sudo systemctl show atlas-hermes-hindsight-nous.service --property=Result,ExecMainStatus --no-pager
+            exit 0
+          fi
 
           ready="$(sudo sed -n 's/^HERMES_LONG_TERM_MEMORY_READY=//p' /etc/atlas-telegram-bot.env | tail -n 1)"
           if ! printf '%s' "$ready" | grep -Eiq '^(1|true|yes|on)$'; then
