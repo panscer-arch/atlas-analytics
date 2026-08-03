@@ -35,6 +35,8 @@ jobs:
           sudo systemctl is-enabled atlas-official-memory-sync.timer
           sudo python3 - <<'PY'
           import json
+          import urllib.error
+          import urllib.request
           from pathlib import Path
           from urllib.parse import urlparse
 
@@ -100,6 +102,32 @@ jobs:
               }))
           except Exception as error:
               print(json.dumps({'path': str(config_path), 'exists': config_path.exists(), 'errorType': type(error).__name__}))
+
+          env_values = {}
+          for raw in Path('/opt/hermes/.env').read_text(encoding='utf-8').splitlines():
+              if '=' in raw and not raw.lstrip().startswith('#'):
+                  key, value = raw.split('=', 1)
+                  env_values[key] = value.strip()
+          candidates = {
+              'OPENAI_API_KEY': env_values.get('OPENAI_API_KEY'),
+              'HINDSIGHT_LLM_API_KEY': env_values.get('HINDSIGHT_LLM_API_KEY'),
+          }
+          for name, token in candidates.items():
+              if not token:
+                  continue
+              for host, endpoint in (
+                  ('openai', 'https://api.openai.com/v1/models'),
+                  ('nous', 'https://inference-api.nousresearch.com/v1/models'),
+              ):
+                  request = urllib.request.Request(endpoint, headers={'Authorization': f'Bearer {token}'})
+                  try:
+                      with urllib.request.urlopen(request, timeout=20) as response:
+                          status = response.status
+                  except urllib.error.HTTPError as error:
+                      status = error.code
+                  except Exception as error:
+                      status = type(error).__name__
+                  print(json.dumps({'credential': name, 'endpoint': host, 'status': status}))
           PY
 
           ready="$(sudo sed -n 's/^HERMES_LONG_TERM_MEMORY_READY=//p' /etc/atlas-telegram-bot.env | tail -n 1)"
