@@ -15,6 +15,7 @@ HERMES_STATE_HOME = os.environ.get("HERMES_HOME", f"{HERMES_WORKDIR}/.hermes")
 HERMES_BIN = os.environ.get("HERMES_BIN", f"{HERMES_WORKDIR}/.local/bin/hermes")
 TIMEOUT_SECONDS = int(os.environ.get("HERMES_TELEGRAM_BRIDGE_TIMEOUT", "180"))
 SESSION_GENERATION = os.environ.get("HERMES_TELEGRAM_SESSION_GENERATION", "v1")
+GLOBAL_SESSION_GENERATION = os.environ.get("HERMES_TELEGRAM_GLOBAL_SESSION_GENERATION", "v2")
 SESSION_LOCKS = {}
 SESSION_LOCKS_GUARD = threading.Lock()
 
@@ -28,9 +29,17 @@ def json_response(handler, status, payload):
     handler.wfile.write(data)
 
 
-def session_name(source, memory_scope="chat"):
+def session_name(source, memory_scope="chat", memory_only=False):
+    if memory_only:
+        memory_kind = safe_session_part(source.get("memoryKind") or "telegram")
+        if memory_kind == "official":
+            return f"memory-official-{safe_session_part(SESSION_GENERATION)}"
+        chat_id = str(source.get("chatId") or "unknown")
+        sign = "n" if chat_id.startswith("-") else "p" if chat_id[:1].isdigit() else ""
+        safe = re.sub(r"[^a-zA-Z0-9_.-]+", "-", chat_id.lstrip("-")).strip("-") or "unknown"
+        return f"memory-{memory_kind}-{safe_session_part(SESSION_GENERATION)}-{sign}{safe}"
     if str(memory_scope or "").lower() == "global":
-        return f"global-{safe_session_part(SESSION_GENERATION)}"
+        return f"global-{safe_session_part(GLOBAL_SESSION_GENERATION)}"
     chat_id = str(source.get("chatId") or "unknown")
     sign = "n" if chat_id.startswith("-") else "p" if chat_id[:1].isdigit() else ""
     safe = re.sub(r"[^a-zA-Z0-9_.-]+", "-", chat_id.lstrip("-")).strip("-") or "unknown"
@@ -94,8 +103,8 @@ def get_session_lock(name):
         return SESSION_LOCKS.setdefault(name, threading.Lock())
 
 
-def run_hermes(prompt, source, memory_scope, env):
-    name = session_name(source, memory_scope)
+def run_hermes(prompt, source, memory_scope, env, memory_only=False):
+    name = session_name(source, memory_scope, memory_only)
     with get_session_lock(name):
         continued = subprocess.run(
             [
@@ -199,6 +208,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 payload.get("source") or {},
                 payload.get("memoryScope") or "chat",
                 env,
+                bool(payload.get("memoryOnly")),
             )
         except subprocess.TimeoutExpired:
             json_response(self, 504, {"error": "hermes_timeout"})

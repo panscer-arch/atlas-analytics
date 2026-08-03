@@ -12,7 +12,9 @@ SPEC.loader.exec_module(MODULE)
 
 assert MODULE.session_name({"chatId": "-100123"}, "chat") == "chat-v1-n100123"
 assert MODULE.session_name({"chatId": "100123"}, "chat") == "chat-v1-p100123"
-assert MODULE.session_name({"chatId": "-100123"}, "global") == "global-v1"
+assert MODULE.session_name({"chatId": "-100123"}, "global") == "global-v2"
+assert MODULE.session_name({"chatId": "atlas-official-memory", "memoryKind": "official"}, "global", True) == "memory-official-v1"
+assert MODULE.session_name({"chatId": "-100123"}, "global", True) == "memory-telegram-v1-n100123"
 
 memory_prompt = MODULE.build_prompt({
     "memoryOnly": True,
@@ -67,5 +69,22 @@ assert calls[0][1:3] == ["--continue", "chat-v1-n100123"]
 assert calls[1][1:3] == ["chat", "--query"]
 assert calls[2][1:4] == ["sessions", "rename", "test_session_1"]
 assert calls[2][4] == "chat-v1-n100123"
+
+calls.clear()
+MODULE.subprocess.run = fake_run
+try:
+    created = MODULE.run_hermes(
+        "test",
+        {"chatId": "atlas-official-memory", "memoryKind": "official"},
+        "global",
+        {},
+        memory_only=True,
+    )
+finally:
+    MODULE.subprocess.run = real_run
+
+assert created.returncode == 0
+assert calls[0][1:3] == ["--continue", "memory-official-v1"]
+assert calls[2][4] == "memory-official-v1"
 
 print("Hermes memory bridge checks passed")

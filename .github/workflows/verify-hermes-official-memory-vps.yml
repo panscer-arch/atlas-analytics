@@ -2,6 +2,12 @@ name: Verify Hermes Official Memory on VPS
 
 on:
   workflow_dispatch:
+    inputs:
+      inspect_only:
+        description: Report safe sync progress without waiting
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   verify:
@@ -31,6 +37,8 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=25 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=20 \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             'bash -s' <<'REMOTE'
           set -euo pipefail
@@ -39,6 +47,16 @@ jobs:
 
           sudo test -s "$CATALOG"
           sudo systemctl is-enabled atlas-official-memory-sync.timer
+
+          if [ "${{ inputs.inspect_only }}" = "true" ]; then
+            state="$(sudo systemctl is-active atlas-official-memory-sync.service || true)"
+            cursor_sources="$(sudo node -e "try { const c=require('$CURSOR'); process.stdout.write(String(Object.keys(c.sources || {}).length)); } catch { process.stdout.write('0'); }" 2>/dev/null || printf '0')"
+            catalog_sources="$(sudo node -e "const c=require('$CATALOG'); process.stdout.write(String((c.sources || []).length));")"
+            provider="$(sudo node -e "try { const c=require('/opt/hermes/hindsight/config.json'); process.stdout.write(String(c.llm_provider || 'unknown')); } catch { process.stdout.write('unknown'); }")"
+            echo "official-memory-sync state=$state cursorSources=$cursor_sources catalogSources=$catalog_sources provider=$provider"
+            sudo systemctl show atlas-hermes-hindsight-nous.service --property=Result,ExecMainStatus --no-pager
+            exit 0
+          fi
 
           ready="$(sudo sed -n 's/^HERMES_LONG_TERM_MEMORY_READY=//p' /etc/atlas-telegram-bot.env | tail -n 1)"
           if ! printf '%s' "$ready" | grep -Eiq '^(1|true|yes|on)$'; then
@@ -74,6 +92,10 @@ jobs:
             state="$(sudo systemctl is-active atlas-official-memory-sync.service || true)"
             if [ "$state" != "activating" ]; then
               break
+            fi
+            if [ $((attempt % 6)) -eq 0 ]; then
+              cursor_sources="$(sudo node -e "try { const c=require('$CURSOR'); process.stdout.write(String(Object.keys(c.sources || {}).length)); } catch { process.stdout.write('0'); }" 2>/dev/null || printf '0')"
+              echo "official-memory-sync state=$state cursorSources=$cursor_sources"
             fi
             sleep 10
           done
@@ -119,7 +141,7 @@ jobs:
           if not token:
               raise SystemExit('Hermes bridge token is not configured')
           payload = json.dumps({
-              'prompt': 'Проверка официальной памяти. Назови текущий адрес Daily Flow V2, пометь Daily Flow V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
+              'prompt': 'Проверка официальной памяти. Обязательно используй hindsight_recall. Назови текущий адрес Daily Flow V2, пометь Daily Flow V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
               'memoryScope': 'global',
               'source': {'chatId': 'official-memory-verification', 'chatTitle': 'Official memory verification', 'authorName': 'Deployment verifier'},
           }, ensure_ascii=False).encode('utf-8')
