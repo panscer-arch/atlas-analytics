@@ -8,7 +8,7 @@
     "test:funnel-pilot": "node scripts/verify-atlas-funnel-pilot.mjs && node scripts/verify-atlas-funnel-api.mjs",
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",
     "test:telegram-memory": "node scripts/verify-telegram-memory-archive.mjs && python3 scripts/verify-hermes-memory-bridge.py",
-    "test:official-memory": "node scripts/verify-official-memory-sync.mjs",
+    "test:official-memory": "node scripts/verify-official-memory-sync.mjs && python3 scripts/verify-hermes-nous-auth-preparation.py",
     "test:hermes-voice": "node scripts/verify-hermes-assistant-voice.mjs",
     "memory:official:build": "node scripts/build-hermes-official-catalog.mjs",
     "memory:official:sync": "node server/official-memory-sync.mjs",

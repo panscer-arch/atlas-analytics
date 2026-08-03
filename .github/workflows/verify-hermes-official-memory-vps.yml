@@ -33,6 +33,69 @@ jobs:
 
           sudo test -s "$CATALOG"
           sudo systemctl is-enabled atlas-official-memory-sync.timer
+          sudo python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          def contains_access_token(value):
+              if isinstance(value, dict):
+                  return any(
+                      (str(key).lower() in {'access_token', 'access-token'} and bool(item))
+                      or contains_access_token(item)
+                      for key, item in value.items()
+                  )
+              if isinstance(value, list):
+                  return any(contains_access_token(item) for item in value)
+              return False
+
+          for filename in (
+              '/opt/hermes/auth.json',
+              '/opt/hermes/.hermes/auth.json',
+              '/opt/hermes/.hermes/shared/nous_auth.json',
+          ):
+              path = Path(filename)
+              try:
+                  data = json.loads(path.read_text(encoding='utf-8'))
+                  print(json.dumps({
+                      'path': filename,
+                      'exists': True,
+                      'isSymlink': path.is_symlink(),
+                      'topLevelKeys': sorted(data.keys()),
+                      'providers': sorted((data.get('providers') or {}).keys()),
+                      'hasAccessToken': contains_access_token(data),
+                  }))
+              except Exception as error:
+                  print(json.dumps({'path': filename, 'exists': path.exists(), 'errorType': type(error).__name__}))
+          PY
+
+          ready="$(sudo sed -n 's/^HERMES_LONG_TERM_MEMORY_READY=//p' /etc/atlas-telegram-bot.env | tail -n 1)"
+          if ! printf '%s' "$ready" | grep -Eiq '^(1|true|yes|on)$'; then
+            sudo -u hermes env HOME=/opt/hermes HERMES_HOME=/opt/hermes \
+              /opt/hermes/configure-hermes-hindsight.sh
+            sudo python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('/etc/atlas-telegram-bot.env')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          key = 'HERMES_LONG_TERM_MEMORY_READY'
+          updated = []
+          found = False
+          for line in lines:
+              if line.startswith(f'{key}='):
+                  updated.append(f'{key}=1')
+                  found = True
+              else:
+                  updated.append(line)
+          if not found:
+              updated.append(f'{key}=1')
+          temporary = path.with_suffix('.tmp')
+          temporary.write_text('\n'.join(updated) + '\n', encoding='utf-8')
+          temporary.chmod(0o600)
+          temporary.replace(path)
+          PY
+            sudo systemctl restart hermes-telegram-bridge.service
+          fi
+
           sudo systemctl start --no-block atlas-official-memory-sync.service
 
           for attempt in $(seq 1 240); do
@@ -45,6 +108,14 @@ jobs:
 
           state="$(sudo systemctl is-active atlas-official-memory-sync.service || true)"
           if [ "$state" = "activating" ] || [ "$state" = "failed" ]; then
+            sudo systemctl status atlas-official-memory-sync.service --no-pager || true
+            sudo journalctl -u atlas-official-memory-sync.service -n 120 --no-pager || true
+            exit 1
+          fi
+
+          if ! sudo test -s "$CURSOR"; then
+            sudo systemctl status atlas-hermes-hindsight-nous.service --no-pager || true
+            sudo journalctl -u atlas-hermes-hindsight-nous.service -n 120 --no-pager || true
             sudo systemctl status atlas-official-memory-sync.service --no-pager || true
             sudo journalctl -u atlas-official-memory-sync.service -n 120 --no-pager || true
             exit 1
