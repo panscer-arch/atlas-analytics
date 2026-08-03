@@ -1,0 +1,73 @@
+name: Inspect Hermes Official Memory on VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/deploy_key
+          ${{ secrets.VPS_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then exit 1; fi
+            sleep 5
+          done
+
+      - name: Inspect safe sync state
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=25 \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'sudo python3 -' <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          catalog_path = Path('/opt/atlas-content-api/atlas-official-memory/catalog.json')
+          cursor_path = Path('/var/lib/atlas-analytics-content/official-memory-sync/cursors.json')
+          config_path = Path('/opt/hermes/hindsight/config.json')
+
+          catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+          try:
+              cursor = json.loads(cursor_path.read_text(encoding='utf-8'))
+          except Exception:
+              cursor = {}
+          try:
+              config = json.loads(config_path.read_text(encoding='utf-8'))
+          except Exception:
+              config = {}
+
+          state = subprocess.run(
+              ['systemctl', 'is-active', 'atlas-official-memory-sync.service'],
+              capture_output=True, text=True, check=False,
+          ).stdout.strip()
+          preparer = subprocess.run(
+              ['systemctl', 'show', 'atlas-hermes-hindsight-nous.service', '--property=Result,ExecMainStatus'],
+              capture_output=True, text=True, check=False,
+          ).stdout.strip().replace('\n', ',')
+          print(json.dumps({
+              'serviceState': state,
+              'preparer': preparer,
+              'catalogSources': len(catalog.get('sources') or []),
+              'cursorSources': len((cursor.get('sources') or {}).keys()),
+              'cursorUpdatedAt': cursor.get('updatedAt'),
+              'llmProvider': config.get('llm_provider'),
+              'llmModel': config.get('llm_model'),
+              'llmHost': urlparse(str(config.get('llm_base_url') or '')).hostname,
+          }, indent=2))
+          PY
