@@ -37,4 +37,16 @@ with tempfile.TemporaryDirectory(prefix="atlas-nous-auth-") as directory:
     assert MODULE.HINDSIGHT_AUTH_FILE.is_symlink()
     assert MODULE.restore_nous_provider_from_shared_store() is False
 
+    MODULE.ENV_FILE = root / ".env"
+    MODULE.ENV_FILE.write_text("OPENAI_API_KEY=stable-openai-key\n", encoding="utf-8")
+
+    def unavailable_nous(**_kwargs):
+        raise RuntimeError("expired")
+
+    fallback = MODULE.resolve_memory_credentials(unavailable_nous)
+    assert fallback["provider"] == "openai"
+    assert fallback["api_key"] == "stable-openai-key"
+    assert fallback["base_url"] == "https://api.openai.com/v1"
+    assert fallback["fallback"] is True
+
 print("Hermes Nous auth preparation checks passed")
