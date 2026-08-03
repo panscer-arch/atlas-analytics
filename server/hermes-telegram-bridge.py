@@ -48,6 +48,21 @@ def build_prompt(payload):
     chat = source.get("chatTitle") or source.get("chatId") or "telegram"
     message_url = source.get("messageUrl") or ""
     if payload.get("memoryOnly"):
+        memory_kind = str(source.get("memoryKind") or "telegram").lower()
+        if memory_kind == "official":
+            context = [
+                "Это внутренняя запись проверенной официальной базы знаний Atlas System.",
+                "Это не вопрос пользователя. Ничего не отправляй в Telegram.",
+                "Сохрани факты, правила, риски, статусы продуктов, адреса контрактов и ссылки на источники.",
+                "Учитывай указанный приоритет источников и не превращай планы или расчётные значения в запущенные функции и гарантии.",
+                f"Источник памяти: collection={chat}, author={author}",
+                "",
+                "Запись памяти:",
+                prompt,
+                "",
+                "Ответь одной строкой только для технического лога: что принято в память.",
+            ]
+            return "\n".join(line for line in context if line != "")
         context = [
             "Это внутренняя запись долговременной памяти Telegram-чатов Atlas.",
             "Это не вопрос пользователя. Ничего не отправляй в Telegram.",
