@@ -122,6 +122,7 @@ jobs:
           const sourceCount = catalog.sources?.length || 0;
           const cursorCount = Object.keys(cursor.sources || {}).length;
           if (cursorCount < sourceCount) throw new Error(`Only ${cursorCount}/${sourceCount} source chunks were synced`);
+          if (!cursor.sources?.['canonical-atlas-hermes-facts:1']) throw new Error('Canonical Atlas facts were not synced');
           console.log(JSON.stringify({ catalog: catalog.stats, sourceCount, cursorCount, syncedAt: cursor.updatedAt }, null, 2));
           NODE
 
@@ -141,7 +142,7 @@ jobs:
           if not token:
               raise SystemExit('Hermes bridge token is not configured')
           payload = json.dumps({
-              'prompt': 'Проверка официальной памяти. Обязательно используй hindsight_recall. Назови текущий адрес Daily Flow V2, пометь Daily Flow V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
+              'prompt': 'Проверка официальной памяти. Обязательно используй hindsight_recall. Назови точные 0x-адреса Daily Flow V2 и Daily Flow V1, пометь V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
               'memoryScope': 'global',
               'source': {'chatId': 'official-memory-verification', 'chatTitle': 'Official memory verification', 'authorName': 'Deployment verifier'},
           }, ensure_ascii=False).encode('utf-8')
@@ -155,7 +156,7 @@ jobs:
               answer = json.load(response).get('answer', '')
           lowered = answer.lower()
           assert '0x8e61483d45a822ccb59482c47e1b6d28465605ec' in lowered, answer
-          assert '0x8f418e29a32aab69abf3da742c43e7adfbfa3c3' in lowered, answer
+          assert '0x8f418e29a32aab69abf3da742c43e7adfbfba3c3' in lowered, answer
           assert 'legacy' in lowered or 'устар' in lowered, answer
           assert 'план' in lowered or 'planned' in lowered, answer
           print(answer)
