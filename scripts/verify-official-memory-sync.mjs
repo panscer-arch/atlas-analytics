@@ -37,4 +37,12 @@ assert.equal(dryRun.catalogSources, 1);
 assert.equal(dryRun.syncedBatches, 1);
 assert.equal(dryRun.pendingChunks, 1);
 
+const checkedInCatalog = JSON.parse(await readFile(path.resolve("content/hermes/atlas-official-memory.v1.json"), "utf8"));
+assert.equal(checkedInCatalog.stats.canonicalFacts, 1);
+const canonical = checkedInCatalog.sources.find((item) => item.id === "canonical-atlas-hermes-facts");
+assert.ok(canonical);
+assert.match(canonical.content, /0x8e61483d45a822cCB59482c47e1b6D28465605EC/);
+assert.match(canonical.content, /0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3/);
+assert.match(canonical.content, /Linear, Binary and Smart Matrix 1 are planned/);
+
 console.log("Official Hermes memory sync checks passed");
