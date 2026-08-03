@@ -20,6 +20,10 @@ PROFILE_ENV_FILE = HERMES_HOME / ".hindsight" / "profiles" / "hermes.env"
 EMBED_BIN = HERMES_AGENT / "venv" / "bin" / "hindsight-embed"
 CANONICAL_AUTH_FILE = HERMES_HOME / "auth.json"
 HINDSIGHT_AUTH_FILE = HERMES_HOME / ".hermes" / "auth.json"
+SHARED_NOUS_AUTH_FILE = Path(os.environ.get(
+    "HERMES_SHARED_AUTH_DIR",
+    HERMES_HOME / ".hermes" / "shared",
+)) / "nous_auth.json"
 
 
 def replace_env_value(path, key, value):
@@ -64,6 +68,14 @@ def read_json(path):
         return {}
 
 
+def write_private_json(path, payload):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.chmod(0o600)
+    temporary.replace(path)
+
+
 def merge_auth_stores():
     """Give Hermes and Hindsight one OAuth store so token rotation stays atomic."""
     canonical = read_json(CANONICAL_AUTH_FILE)
@@ -80,11 +92,7 @@ def merge_auth_stores():
         **(canonical.get("credential_pool") or {}),
     }
 
-    CANONICAL_AUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
-    temporary = CANONICAL_AUTH_FILE.with_suffix(".tmp")
-    temporary.write_text(json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    temporary.chmod(0o600)
-    temporary.replace(CANONICAL_AUTH_FILE)
+    write_private_json(CANONICAL_AUTH_FILE, merged)
 
     HINDSIGHT_AUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
     if HINDSIGHT_AUTH_FILE.is_symlink():
@@ -100,16 +108,54 @@ def merge_auth_stores():
     HINDSIGHT_AUTH_FILE.symlink_to(CANONICAL_AUTH_FILE)
 
 
+def restore_nous_provider_from_shared_store():
+    """Repair an incomplete providers.nous entry from Hermes' shared OAuth store."""
+    auth_store = read_json(CANONICAL_AUTH_FILE)
+    providers = auth_store.setdefault("providers", {})
+    if not isinstance(providers, dict):
+        providers = {}
+        auth_store["providers"] = providers
+    current = providers.get("nous")
+    current = dict(current) if isinstance(current, dict) else {}
+    if current.get("access_token") and current.get("refresh_token"):
+        return False
+
+    shared = read_json(SHARED_NOUS_AUTH_FILE)
+    if not shared.get("access_token") or not shared.get("refresh_token"):
+        return False
+
+    for key in (
+        "access_token",
+        "refresh_token",
+        "token_type",
+        "scope",
+        "client_id",
+        "portal_base_url",
+        "inference_base_url",
+        "obtained_at",
+        "expires_at",
+    ):
+        value = shared.get(key)
+        if value not in {None, ""}:
+            current[key] = value
+    current.pop("last_auth_error", None)
+    providers["nous"] = current
+    auth_store["active_provider"] = "nous"
+    write_private_json(CANONICAL_AUTH_FILE, auth_store)
+    return True
+
+
 def main():
     sys.path.insert(0, str(HERMES_AGENT))
     from hermes_cli.auth import resolve_nous_runtime_credentials
 
+    merge_auth_stores()
+    restored_from_shared = restore_nous_provider_from_shared_store()
     credentials = resolve_nous_runtime_credentials(timeout_seconds=30)
     api_key = str(credentials.get("api_key") or "")
     base_url = str(credentials.get("base_url") or "").rstrip("/")
     if not api_key or not base_url:
         raise RuntimeError("Nous did not return inference credentials")
-    merge_auth_stores()
 
     previous = ""
     if ENV_FILE.exists():
@@ -168,6 +214,7 @@ def main():
         "host": urlparse(base_url).hostname,
         "model": config["llm_model"],
         "expiresAt": credentials.get("expires_at"),
+        "restoredFromShared": restored_from_shared,
         "credentialUpdated": previous != api_key,
         "profileUpdated": profile_changed,
     }))
