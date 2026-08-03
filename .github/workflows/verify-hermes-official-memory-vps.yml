@@ -33,6 +33,40 @@ jobs:
 
           sudo test -s "$CATALOG"
           sudo systemctl is-enabled atlas-official-memory-sync.timer
+          sudo python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          def contains_access_token(value):
+              if isinstance(value, dict):
+                  return any(
+                      (str(key).lower() in {'access_token', 'access-token'} and bool(item))
+                      or contains_access_token(item)
+                      for key, item in value.items()
+                  )
+              if isinstance(value, list):
+                  return any(contains_access_token(item) for item in value)
+              return False
+
+          for filename in (
+              '/opt/hermes/auth.json',
+              '/opt/hermes/.hermes/auth.json',
+              '/opt/hermes/.hermes/shared/nous_auth.json',
+          ):
+              path = Path(filename)
+              try:
+                  data = json.loads(path.read_text(encoding='utf-8'))
+                  print(json.dumps({
+                      'path': filename,
+                      'exists': True,
+                      'isSymlink': path.is_symlink(),
+                      'topLevelKeys': sorted(data.keys()),
+                      'providers': sorted((data.get('providers') or {}).keys()),
+                      'hasAccessToken': contains_access_token(data),
+                  }))
+              except Exception as error:
+                  print(json.dumps({'path': filename, 'exists': path.exists(), 'errorType': type(error).__name__}))
+          PY
 
           ready="$(sudo sed -n 's/^HERMES_LONG_TERM_MEMORY_READY=//p' /etc/atlas-telegram-bot.env | tail -n 1)"
           if ! printf '%s' "$ready" | grep -Eiq '^(1|true|yes|on)$'; then
