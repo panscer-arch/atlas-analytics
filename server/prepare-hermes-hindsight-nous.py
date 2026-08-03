@@ -13,6 +13,7 @@ HERMES_AGENT = Path(os.environ.get(
     "HERMES_AGENT_ROOT",
     HERMES_HOME / ".hermes" / "hermes-agent",
 ))
+HERMES_BIN = Path(os.environ.get("HERMES_BIN", HERMES_HOME / ".local" / "bin" / "hermes"))
 ENV_FILE = HERMES_HOME / ".env"
 CONFIG_FILE = HERMES_HOME / "hindsight" / "config.json"
 HERMES_CONFIG_FILE = HERMES_HOME / "config.yaml"
@@ -46,6 +47,15 @@ def replace_env_value(path, key, value):
     temporary.replace(path)
 
 
+def read_env_value(path, key):
+    if not path.exists():
+        return ""
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(f"{key}="):
+            return line.split("=", 1)[1].strip()
+    return ""
+
+
 def configured_model():
     explicit = os.environ.get("HINDSIGHT_NOUS_MODEL", "").strip()
     if explicit:
@@ -59,6 +69,29 @@ def configured_model():
     except Exception:
         pass
     return "Hermes-4-70B"
+
+
+def resolve_memory_credentials(resolve_nous):
+    try:
+        credentials = resolve_nous(timeout_seconds=30)
+        return {
+            **credentials,
+            "provider": "nous",
+            "model": configured_model(),
+            "fallback": False,
+        }
+    except Exception as nous_error:
+        api_key = os.environ.get("OPENAI_API_KEY", "").strip() or read_env_value(ENV_FILE, "OPENAI_API_KEY")
+        if not api_key:
+            raise nous_error
+        return {
+            "api_key": api_key,
+            "base_url": os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
+            "provider": "openai",
+            "model": os.environ.get("HINDSIGHT_OPENAI_MODEL", "gpt-4o-mini"),
+            "fallback": True,
+            "fallback_reason": type(nous_error).__name__,
+        }
 
 
 def read_json(path):
@@ -151,11 +184,13 @@ def main():
 
     merge_auth_stores()
     restored_from_shared = restore_nous_provider_from_shared_store()
-    credentials = resolve_nous_runtime_credentials(timeout_seconds=30)
+    credentials = resolve_memory_credentials(resolve_nous_runtime_credentials)
     api_key = str(credentials.get("api_key") or "")
     base_url = str(credentials.get("base_url") or "").rstrip("/")
+    provider = str(credentials.get("provider") or "nous")
+    model = str(credentials.get("model") or configured_model())
     if not api_key or not base_url:
-        raise RuntimeError("Nous did not return inference credentials")
+        raise RuntimeError("No inference credentials are available for Hindsight")
 
     previous = ""
     if ENV_FILE.exists():
@@ -172,9 +207,9 @@ def main():
         config = {}
     config.update({
         "mode": "local_embedded",
-        "llm_provider": "nous",
+        "llm_provider": provider,
         "llm_base_url": base_url,
-        "llm_model": configured_model(),
+        "llm_model": model,
     })
     temporary = CONFIG_FILE.with_suffix(".tmp")
     temporary.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -189,7 +224,7 @@ def main():
                 profile_previous[key] = value
     PROFILE_ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
     profile_values = {
-        "HINDSIGHT_API_LLM_PROVIDER": "nous",
+        "HINDSIGHT_API_LLM_PROVIDER": provider,
         "HINDSIGHT_API_LLM_API_KEY": api_key,
         "HINDSIGHT_API_LLM_MODEL": config["llm_model"],
         "HINDSIGHT_API_LLM_BASE_URL": base_url,
@@ -208,13 +243,20 @@ def main():
             check=False,
         )
 
+    if credentials.get("fallback") and HERMES_BIN.exists():
+        subprocess.run([str(HERMES_BIN), "config", "set", "model.provider", "custom"], check=True)
+        subprocess.run([str(HERMES_BIN), "config", "set", "model.default", model], check=True)
+        subprocess.run([str(HERMES_BIN), "config", "set", "model.base_url", base_url], check=True)
+
     print(json.dumps({
         "ok": True,
-        "provider": "nous",
+        "provider": provider,
         "host": urlparse(base_url).hostname,
-        "model": config["llm_model"],
+        "model": model,
         "expiresAt": credentials.get("expires_at"),
         "restoredFromShared": restored_from_shared,
+        "usedFallback": bool(credentials.get("fallback")),
+        "fallbackReason": credentials.get("fallback_reason"),
         "credentialUpdated": previous != api_key,
         "profileUpdated": profile_changed,
     }))
