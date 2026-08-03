@@ -1,0 +1,81 @@
+{
+  "version": "2026-08-03",
+  "purpose": "Official Atlas knowledge for the owner's Hermes assistant",
+  "languages": ["en", "ru"],
+  "sitemaps": [
+    { "url": "https://atlas-system.io/page-sitemap.xml", "tier": "B", "kind": "website" },
+    { "url": "https://atlas-system.io/post-sitemap.xml", "tier": "C", "kind": "publication" },
+    { "url": "https://knowledge.atlas-system.io/page-sitemap.xml", "tier": "B", "kind": "knowledge" },
+    { "url": "https://knowledge.atlas-system.io/knowledge-sitemap.xml", "tier": "B", "kind": "knowledge" },
+    { "url": "https://knowledge.atlas-system.io/brand-book-sitemap.xml", "tier": "B", "kind": "brand" },
+    { "url": "https://knowledge.atlas-system.io/presentations-sitemap.xml", "tier": "B", "kind": "presentation" },
+    { "url": "https://knowledge.atlas-system.io/video-sitemap.xml", "tier": "C", "kind": "video" }
+  ],
+  "explicitPagePaths": [
+    "/",
+    "/smartcycle-1/",
+    "/smart-cycle-2/",
+    "/level/",
+    "/linear/",
+    "/binary/",
+    "/smart-matrix-1/",
+    "/invite-and-earn/",
+    "/leader/",
+    "/documents/",
+    "/contract-registry/",
+    "/system-rules/",
+    "/risk-disclosure/",
+    "/interface-terms-of-use/",
+    "/partner-program-rules/",
+    "/dao-inspired-governance-framework/",
+    "/direct-interaction-with-smart-contracts/",
+    "/privacy_policy/",
+    "/cookie/",
+    "/publications/",
+    "/contacts/"
+  ],
+  "explicitDocuments": [
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/white_paper_en_v.1.pdf", "title": "Atlas System White Paper", "language": "en", "tier": "A", "topic": "white-paper" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/white_paper_ru_v.1.pdf", "title": "Atlas System White Paper", "language": "ru", "tier": "A", "topic": "white-paper" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/en-2.pdf", "title": "Atlas System Manifesto", "language": "en", "tier": "A", "topic": "manifesto" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/ru-2.pdf", "title": "Манифест Atlas System", "language": "ru", "tier": "A", "topic": "manifesto" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/audit-report_cyberscope.pdf", "title": "Cyberscope Audit Report", "language": "en", "tier": "A", "topic": "audit" },
+    { "url": "https://beosin.com/audits/atlas_202606171520.pdf", "title": "Beosin Audit Report", "language": "en", "tier": "A", "topic": "audit", "fallbackFile": "content/hermes/snapshots/beosin-audit-2026-06.pdf" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas-contract-registry-page-en.pdf", "title": "Atlas Smart Contract Registry", "language": "en", "tier": "A", "topic": "contracts" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas-contract-registry-page-ru.pdf", "title": "Официальный реестр смарт-контрактов Atlas", "language": "ru", "tier": "A", "topic": "contracts" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas_official_audit_explanation_en.pdf", "title": "Atlas Official Audit Explanation", "language": "en", "tier": "A", "topic": "audit" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas_official_audit_explanation_ru.pdf", "title": "Официальное пояснение Atlas к аудитам", "language": "ru", "tier": "A", "topic": "audit" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas-system-how-it-works-participant-en.pdf", "title": "How Atlas Works for Participants", "language": "en", "tier": "A", "topic": "participant-guide" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas-system-how-it-works-participant-ru.pdf", "title": "Как устроена Atlas System простыми словами", "language": "ru", "tier": "A", "topic": "participant-guide" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas_direct_smart_contract_guide_en.pdf", "title": "Direct Smart Contract Interaction Guide", "language": "en", "tier": "A", "topic": "direct-contract-guide" },
+    { "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas_direct_smart_contract_guide_ru.pdf", "title": "Прямое взаимодействие со смарт-контрактами Atlas", "language": "ru", "tier": "A", "topic": "direct-contract-guide" }
+  ],
+  "productStatus": {
+    "/smartcycle-1/": "active",
+    "/level/": "active",
+    "/leader/": "active",
+    "/smart-cycle-2/": "planned",
+    "/linear/": "planned",
+    "/binary/": "planned",
+    "/smart-matrix-1/": "planned"
+  },
+  "sourcePriority": [
+    "A: approved documents, rules, risk disclosures, audits and the current contract registry",
+    "B: official website and Knowledge Hub pages after conflict checks",
+    "C: dated publications, presentations and videos for announcement context only"
+  ],
+  "knownConflicts": [
+    {
+      "id": "daily-flow-v1-v2",
+      "topic": "contracts",
+      "handling": "Daily Flow V2 is current. V1 is legacy and must be labelled legacy.",
+      "current": "0x8e61483d45a822cCB59482c47e1b6D28465605EC",
+      "legacy": "0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3"
+    },
+    {
+      "id": "public-beta-date",
+      "topic": "availability",
+      "handling": "The homepage still mentions a public beta through 1 August 2026. Do not treat that date as current availability after 1 August without a newer official confirmation."
+    }
+  ]
+}

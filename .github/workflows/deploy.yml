@@ -42,6 +42,7 @@ jobs:
           npm run test:marketing-monitor
           npm run test:expenses
           npm run test:telegram-memory
+          npm run test:official-memory
           npm run test:hermes-voice
           npm run test:ga4
           npm run build
@@ -157,6 +158,8 @@ jobs:
           scp_to_vps server/telegram-bot.mjs /tmp/atlas-telegram-bot.mjs
           scp_to_vps server/telegram-memory-archive.mjs /tmp/atlas-telegram-memory-archive.mjs
           scp_to_vps server/telegram-memory-sync.mjs /tmp/atlas-telegram-memory-sync.mjs
+          scp_to_vps server/official-memory-sync.mjs /tmp/atlas-official-memory-sync.mjs
+          scp_to_vps content/hermes/atlas-official-memory.v1.json /tmp/atlas-official-memory.json
           scp_to_vps server/hermes-telegram-bridge.py /tmp/hermes-telegram-bridge.py
           scp_to_vps server/prepare-hermes-hindsight-nous.py /tmp/prepare-hermes-hindsight-nous.py
           scp_to_vps server/configure-hermes-hindsight.sh /tmp/configure-hermes-hindsight.sh
@@ -173,7 +176,7 @@ jobs:
             'bash -s' <<'REMOTE'
           set -euo pipefail
 
-          sudo mkdir -p /opt/atlas-content-api /var/lib/atlas-analytics-content/telegram-memory-archive /var/backups/atlas-analytics-content
+          sudo mkdir -p /opt/atlas-content-api/atlas-official-memory /var/lib/atlas-analytics-content/telegram-memory-archive /var/lib/atlas-analytics-content/official-memory-sync /var/backups/atlas-analytics-content
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
@@ -184,11 +187,18 @@ jobs:
           sudo mv /tmp/atlas-telegram-bot.mjs /opt/atlas-content-api/telegram-bot.mjs
           sudo mv /tmp/atlas-telegram-memory-archive.mjs /opt/atlas-content-api/telegram-memory-archive.mjs
           sudo mv /tmp/atlas-telegram-memory-sync.mjs /opt/atlas-content-api/telegram-memory-sync.mjs
+          sudo mv /tmp/atlas-official-memory-sync.mjs /opt/atlas-content-api/official-memory-sync.mjs
+          sudo mv /tmp/atlas-official-memory.json /opt/atlas-content-api/atlas-official-memory/catalog.json
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
           if id hermes >/dev/null 2>&1 && [ -d /opt/hermes ]; then
             sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
             sudo install -m 750 -o hermes -g hermes /tmp/prepare-hermes-hindsight-nous.py /opt/hermes/prepare-hermes-hindsight-nous.py
             sudo install -m 750 -o hermes -g hermes /tmp/configure-hermes-hindsight.sh /opt/hermes/configure-hermes-hindsight.sh
+            sudo mkdir -p /opt/hermes/files/atlas-official
+            sudo node /opt/atlas-content-api/official-memory-sync.mjs \
+              --catalog=/opt/atlas-content-api/atlas-official-memory/catalog.json \
+              --materialize=/opt/hermes/files/atlas-official
+            sudo chown -R hermes:hermes /opt/hermes/files/atlas-official
           fi
           sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api
@@ -525,6 +535,37 @@ jobs:
           Group=hermes
           SERVICE
 
+          sudo tee /etc/systemd/system/atlas-official-memory-sync.service >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Sync approved Atlas website and documents into Hermes long-term memory
+          Requires=atlas-hermes-hindsight-nous.service
+          After=network.target atlas-hermes-hindsight-nous.service hermes-telegram-bridge.service
+
+          [Service]
+          Type=oneshot
+          EnvironmentFile=-/etc/atlas-telegram-bot.env
+          Environment=ATLAS_OFFICIAL_MEMORY_CATALOG=/opt/atlas-content-api/atlas-official-memory/catalog.json
+          Environment=ATLAS_OFFICIAL_MEMORY_CURSOR_FILE=/var/lib/atlas-analytics-content/official-memory-sync/cursors.json
+          ExecCondition=/bin/sh -c 'case "$HERMES_LONG_TERM_MEMORY_READY" in 1|true|yes|on) exit 0;; *) exit 1;; esac'
+          ExecStart=/usr/bin/node /opt/atlas-content-api/official-memory-sync.mjs
+          User=www-data
+          Group=www-data
+          SERVICE
+
+          sudo tee /etc/systemd/system/atlas-official-memory-sync.timer >/dev/null <<'TIMER'
+          [Unit]
+          Description=Refresh approved Atlas knowledge in Hermes daily
+
+          [Timer]
+          OnCalendar=*-*-* 03:30:00 UTC
+          Persistent=true
+          RandomizedDelaySec=10m
+          Unit=atlas-official-memory-sync.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
           sudo tee /etc/systemd/system/atlas-telegram-memory-sync.timer >/dev/null <<'TIMER'
           [Unit]
           Description=Sync Atlas Telegram memory twice daily
@@ -586,6 +627,8 @@ jobs:
             timeout 45s sudo systemctl restart hermes-telegram-bridge.service
           fi
           timeout 45s sudo systemctl enable --now atlas-telegram-memory-sync.timer
+          timeout 45s sudo systemctl enable --now atlas-official-memory-sync.timer
+          sudo systemctl start --no-block atlas-official-memory-sync.service
           timeout 45s sudo systemctl enable --now atlas-content-backup.timer
           timeout 90s sudo systemctl start atlas-content-backup.service || true
           timeout 45s sudo systemctl enable --now atlas-youtrack-monitor.timer

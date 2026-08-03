@@ -156,6 +156,29 @@ npm run memory:telegram:sync -- --dry-run
 
 Проверки покрывают полный текст, дедупликацию, редакции, различие положительных и отрицательных chat ID, вложения, импорт, маскирование секретов, курсор и разграничение банков памяти.
 
+## Официальные материалы Atlas
+
+Помимо Telegram-архива Hermes получает версионированный снимок официального
+сайта Atlas, Knowledge Hub и документов RU/EN. Полные тексты доступны в Files:
+
+```text
+/opt/hermes/files/atlas-official/
+```
+
+В долговременную память они загружаются в общий банк `atlas-global` с приоритетом
+источников `A > B > C`: утверждённые правила, риски, аудиты и реестр контрактов
+выше текста продуктовых страниц, а публикации используются только как
+датированный контекст. Планируемые продукты помечаются отдельно от активных.
+
+```bash
+npm run memory:official:build
+npm run test:official-memory
+npm run memory:official:sync -- --dry-run
+```
+
+Сервис `atlas-official-memory-sync.timer` проверяет обновлённый каталог ежедневно.
+Курсор по хэшу не позволяет повторно загружать неизменившиеся материалы.
+
 ## Исходные проекты
 
 - Hermes memory providers: https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/memory-providers.md

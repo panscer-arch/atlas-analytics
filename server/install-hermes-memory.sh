@@ -6,6 +6,7 @@ SOURCE_DIR="${1:-/tmp/atlas-memory-deploy}"
 CONTENT_DIR="/opt/atlas-content-api"
 HERMES_DIR="/opt/hermes"
 ARCHIVE_DIR="/var/lib/atlas-analytics-content/telegram-memory-archive"
+OFFICIAL_MEMORY_DIR="/var/lib/atlas-analytics-content/official-memory-sync"
 BOT_ENV="/etc/atlas-telegram-bot.env"
 
 require_file() {
@@ -22,6 +23,8 @@ for file in \
   telegram-bot.mjs \
   telegram-memory-archive.mjs \
   telegram-memory-sync.mjs \
+  official-memory-sync.mjs \
+  atlas-official-memory.v1.json \
   hermes-telegram-bridge.py \
   prepare-hermes-hindsight-nous.py \
   configure-hermes-hindsight.sh \
@@ -36,6 +39,9 @@ fi
 
 install -d -m 755 "$CONTENT_DIR"
 install -d -m 700 -o www-data -g www-data "$ARCHIVE_DIR"
+install -d -m 700 -o www-data -g www-data "$OFFICIAL_MEMORY_DIR"
+install -d -m 755 "$CONTENT_DIR/atlas-official-memory"
+install -d -m 755 -o hermes -g hermes "$HERMES_DIR/files/atlas-official"
 
 install -m 644 -o root -g root "$SOURCE_DIR/content-api.mjs" "$CONTENT_DIR/content-api.mjs"
 install -m 644 -o root -g root "$SOURCE_DIR/marketing-dashboard-monitor.mjs" "$CONTENT_DIR/marketing-dashboard-monitor.mjs"
@@ -43,11 +49,17 @@ install -m 644 -o root -g root "$SOURCE_DIR/telegram-task-store.mjs" "$CONTENT_D
 install -m 644 -o root -g root "$SOURCE_DIR/telegram-bot.mjs" "$CONTENT_DIR/telegram-bot.mjs"
 install -m 644 -o root -g root "$SOURCE_DIR/telegram-memory-archive.mjs" "$CONTENT_DIR/telegram-memory-archive.mjs"
 install -m 644 -o root -g root "$SOURCE_DIR/telegram-memory-sync.mjs" "$CONTENT_DIR/telegram-memory-sync.mjs"
+install -m 644 -o root -g root "$SOURCE_DIR/official-memory-sync.mjs" "$CONTENT_DIR/official-memory-sync.mjs"
+install -m 644 -o root -g root "$SOURCE_DIR/atlas-official-memory.v1.json" "$CONTENT_DIR/atlas-official-memory/catalog.json"
 install -m 755 -o root -g root "$SOURCE_DIR/backup-content.sh" "$CONTENT_DIR/backup-content.sh"
 
 install -m 755 -o root -g root "$SOURCE_DIR/hermes-telegram-bridge.py" "$HERMES_DIR/hermes-telegram-bridge.py"
 install -m 750 -o hermes -g hermes "$SOURCE_DIR/prepare-hermes-hindsight-nous.py" "$HERMES_DIR/prepare-hermes-hindsight-nous.py"
 install -m 750 -o hermes -g hermes "$SOURCE_DIR/configure-hermes-hindsight.sh" "$HERMES_DIR/configure-hermes-hindsight.sh"
+node "$CONTENT_DIR/official-memory-sync.mjs" \
+  --catalog="$CONTENT_DIR/atlas-official-memory/catalog.json" \
+  --materialize="$HERMES_DIR/files/atlas-official"
+chown -R hermes:hermes "$HERMES_DIR/files/atlas-official"
 
 if [[ ! -f "$BOT_ENV" ]]; then
   install -m 600 -o root -g root /dev/null "$BOT_ENV"
@@ -113,6 +125,37 @@ Unit=atlas-telegram-memory-sync.service
 WantedBy=timers.target
 TIMER
 
+cat >/etc/systemd/system/atlas-official-memory-sync.service <<'SERVICE'
+[Unit]
+Description=Sync approved Atlas website and documents into Hermes long-term memory
+Requires=atlas-hermes-hindsight-nous.service
+After=network.target atlas-hermes-hindsight-nous.service hermes-telegram-bridge.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/atlas-telegram-bot.env
+Environment=ATLAS_OFFICIAL_MEMORY_CATALOG=/opt/atlas-content-api/atlas-official-memory/catalog.json
+Environment=ATLAS_OFFICIAL_MEMORY_CURSOR_FILE=/var/lib/atlas-analytics-content/official-memory-sync/cursors.json
+ExecCondition=/bin/sh -c 'case "$HERMES_LONG_TERM_MEMORY_READY" in 1|true|yes|on) exit 0;; *) exit 1;; esac'
+ExecStart=/usr/bin/node /opt/atlas-content-api/official-memory-sync.mjs
+User=www-data
+Group=www-data
+SERVICE
+
+cat >/etc/systemd/system/atlas-official-memory-sync.timer <<'TIMER'
+[Unit]
+Description=Refresh approved Atlas knowledge in Hermes daily
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+Persistent=true
+RandomizedDelaySec=10m
+Unit=atlas-official-memory-sync.service
+
+[Install]
+WantedBy=timers.target
+TIMER
+
 chown hermes:hermes \
   "$HERMES_DIR/.env" \
   "$HERMES_DIR/auth.json" \
@@ -126,6 +169,7 @@ chmod 600 \
 
 systemctl daemon-reload
 systemctl enable atlas-telegram-memory-sync.timer
+systemctl enable atlas-official-memory-sync.timer
 systemctl restart atlas-content-api.service
 systemctl restart atlas-telegram-bot.service
 systemctl restart hermes-telegram-bridge.service

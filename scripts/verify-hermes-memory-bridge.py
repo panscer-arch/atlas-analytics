@@ -22,6 +22,20 @@ memory_prompt = MODULE.build_prompt({
 assert "ничего не отправляй в telegram" in memory_prompt.lower()
 assert "EVENT -100123:7:original" in memory_prompt
 
+official_prompt = MODULE.build_prompt({
+    "memoryOnly": True,
+    "prompt": "SOURCE contract-registry",
+    "source": {
+        "chatId": "atlas-official-memory",
+        "chatTitle": "Atlas official knowledge",
+        "authorName": "Official source sync",
+        "memoryKind": "official",
+    },
+})
+assert "официальной базы знаний" in official_prompt.lower()
+assert "telegram-чатов" not in official_prompt.lower()
+assert "SOURCE contract-registry" in official_prompt
+
 normal_prompt = MODULE.build_prompt({
     "prompt": "Что решили?",
     "source": {"chatId": "-100123", "chatTitle": "Atlas Team", "authorName": "Digitex"},

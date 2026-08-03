@@ -1,0 +1,98 @@
+name: Verify Hermes Official Memory on VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/deploy_key
+          ${{ secrets.VPS_SSH_KEY }}
+          EOF
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -T 15 -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Verify catalog, sync and recall
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=25 \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+          CATALOG=/opt/atlas-content-api/atlas-official-memory/catalog.json
+          CURSOR=/var/lib/atlas-analytics-content/official-memory-sync/cursors.json
+
+          sudo test -s "$CATALOG"
+          sudo systemctl is-enabled atlas-official-memory-sync.timer
+          sudo systemctl start --no-block atlas-official-memory-sync.service
+
+          for attempt in $(seq 1 240); do
+            state="$(sudo systemctl is-active atlas-official-memory-sync.service || true)"
+            if [ "$state" != "activating" ]; then
+              break
+            fi
+            sleep 10
+          done
+
+          state="$(sudo systemctl is-active atlas-official-memory-sync.service || true)"
+          if [ "$state" = "activating" ] || [ "$state" = "failed" ]; then
+            sudo systemctl status atlas-official-memory-sync.service --no-pager || true
+            sudo journalctl -u atlas-official-memory-sync.service -n 120 --no-pager || true
+            exit 1
+          fi
+
+          sudo node - "$CATALOG" "$CURSOR" <<'NODE'
+          const fs = require('node:fs');
+          const catalog = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const cursor = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          const sourceCount = catalog.sources?.length || 0;
+          const cursorCount = Object.keys(cursor.sources || {}).length;
+          if (cursorCount < sourceCount) throw new Error(`Only ${cursorCount}/${sourceCount} source chunks were synced`);
+          console.log(JSON.stringify({ catalog: catalog.stats, sourceCount, cursorCount, syncedAt: cursor.updatedAt }, null, 2));
+          NODE
+
+          sudo python3 - <<'PY'
+          import json
+          import urllib.request
+
+          env = {}
+          with open('/etc/atlas-telegram-bot.env', encoding='utf-8') as handle:
+              for raw in handle:
+                  line = raw.strip()
+                  if not line or line.startswith('#') or '=' not in line:
+                      continue
+                  key, value = line.split('=', 1)
+                  env[key] = value.strip().strip('"').strip("'")
+          token = env.get('HERMES_TELEGRAM_BRIDGE_TOKEN') or env.get('HERMES_BRIDGE_TOKEN')
+          if not token:
+              raise SystemExit('Hermes bridge token is not configured')
+          payload = json.dumps({
+              'prompt': 'Проверка официальной памяти. Назови текущий адрес Daily Flow V2, пометь Daily Flow V1 как legacy и скажи, запущены или планируются Linear, Binary и Smart Matrix 1. Ответь кратко.',
+              'memoryScope': 'global',
+              'source': {'chatId': 'official-memory-verification', 'chatTitle': 'Official memory verification', 'authorName': 'Deployment verifier'},
+          }, ensure_ascii=False).encode('utf-8')
+          request = urllib.request.Request(
+              'http://127.0.0.1:9120/message',
+              data=payload,
+              headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+              method='POST',
+          )
+          with urllib.request.urlopen(request, timeout=190) as response:
+              answer = json.load(response).get('answer', '')
+          lowered = answer.lower()
+          assert '0x8e61483d45a822ccb59482c47e1b6d28465605ec' in lowered, answer
+          assert '0x8f418e29a32aab69abf3da742c43e7adfbfa3c3' in lowered, answer
+          assert 'legacy' in lowered or 'устар' in lowered, answer
+          assert 'план' in lowered or 'planned' in lowered, answer
+          print(answer)
+          PY
+          REMOTE
