@@ -31,6 +31,8 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=25 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=20 \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             'bash -s' <<'REMOTE'
           set -euo pipefail
