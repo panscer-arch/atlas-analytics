@@ -98,6 +98,33 @@ const documentResults = await mapLimit(documentJobs, 3, async (job) => {
 });
 sources.push(...documentResults.filter(Boolean));
 
+if ((policy.canonicalFacts || []).length) {
+  const canonicalContent = [
+    "Atlas System canonical facts for Hermes",
+    "",
+    "These compact facts resolve known conflicts in longer website pages and documents.",
+    "Return exact contract addresses as 0x values, never as page URLs.",
+    "",
+    ...(policy.canonicalFacts || []).map((item) => `${item.id} [${item.topic}]: ${item.fact}`),
+    "",
+    "Source priority:",
+    ...policy.sourcePriority.map((item) => `- ${item}`),
+  ].join("\n");
+  sources.push(makeSource({
+    id: "canonical-atlas-hermes-facts",
+    title: "Atlas System canonical facts for Hermes",
+    url: "https://atlas-system.io/contract-registry/",
+    type: "canonical_facts",
+    kind: "curated-conflict-guardrail",
+    tier: "A",
+    topic: "canonical-facts",
+    language: "en",
+    productStatus: null,
+    version: policy.version,
+    content: canonicalContent,
+  }));
+}
+
 sources.sort((left, right) => {
   const tier = String(left.tier).localeCompare(String(right.tier));
   return tier || left.url.localeCompare(right.url);
@@ -120,6 +147,7 @@ const catalog = {
   stats: {
     pages: sources.filter((source) => source.type === "web_page").length,
     documents: sources.filter((source) => source.type === "document").length,
+    canonicalFacts: sources.filter((source) => source.type === "canonical_facts").length,
     tierA: sources.filter((source) => source.tier === "A").length,
     tierB: sources.filter((source) => source.tier === "B").length,
     tierC: sources.filter((source) => source.tier === "C").length,

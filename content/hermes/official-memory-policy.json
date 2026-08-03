@@ -64,6 +64,23 @@
     "B: official website and Knowledge Hub pages after conflict checks",
     "C: dated publications, presentations and videos for announcement context only"
   ],
+  "canonicalFacts": [
+    {
+      "id": "daily-flow-contracts",
+      "topic": "contracts",
+      "fact": "Daily Flow V2 is the current contract and its exact address is 0x8e61483d45a822cCB59482c47e1b6D28465605EC. Daily Flow V1 is legacy and its exact address is 0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3. Never replace either contract address with a website URL."
+    },
+    {
+      "id": "product-statuses",
+      "topic": "products",
+      "fact": "Smart Cycle 1, Level and Leader are active. Smart Cycle 2, Linear, Binary and Smart Matrix 1 are planned and must not be described as launched."
+    },
+    {
+      "id": "risk-language",
+      "topic": "risk",
+      "fact": "Delta and the return of the support amount are not guaranteed. Outcomes depend on the applicable Smart Cycle rules, participant actions and available liquidity."
+    }
+  ],
   "knownConflicts": [
     {
       "id": "daily-flow-v1-v2",
