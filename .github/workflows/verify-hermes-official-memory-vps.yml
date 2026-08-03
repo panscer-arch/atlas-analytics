@@ -77,6 +77,10 @@ jobs:
             if [ "$state" != "activating" ]; then
               break
             fi
+            if [ $((attempt % 6)) -eq 0 ]; then
+              cursor_sources="$(sudo node -e "try { const c=require('$CURSOR'); process.stdout.write(String(Object.keys(c.sources || {}).length)); } catch { process.stdout.write('0'); }" 2>/dev/null || printf '0')"
+              echo "official-memory-sync state=$state cursorSources=$cursor_sources"
+            fi
             sleep 10
           done
 
