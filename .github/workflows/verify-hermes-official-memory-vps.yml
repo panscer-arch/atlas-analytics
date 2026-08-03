@@ -80,6 +80,8 @@ jobs:
           fi
 
           if ! sudo test -s "$CURSOR"; then
+            sudo systemctl status atlas-hermes-hindsight-nous.service --no-pager || true
+            sudo journalctl -u atlas-hermes-hindsight-nous.service -n 120 --no-pager || true
             sudo systemctl status atlas-official-memory-sync.service --no-pager || true
             sudo journalctl -u atlas-official-memory-sync.service -n 120 --no-pager || true
             exit 1
