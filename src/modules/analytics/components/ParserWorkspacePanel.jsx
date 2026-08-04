@@ -7,6 +7,7 @@ import HyipParserPanel from "./HyipParserPanel";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import MarketingDirectionWorkspace from "./MarketingDirectionWorkspace";
 import MarketSegmentsPanel from "./MarketSegmentsPanel";
+import MlmGatewayTracker from "./MlmGatewayTracker";
 import MlmLeaderOutreachPanel from "./MlmLeaderOutreachPanel";
 import PoolMonitorPanel from "./PoolMonitorPanel";
 import RegionalHiringPanel from "./RegionalHiringPanel";
@@ -119,6 +120,11 @@ const PARSER_TABS = [
     hint: `${defaultMlmLeaderOutreachPlatforms.length} источника`,
   },
   {
+    id: "mlmGateway",
+    label: "MLM Gateway",
+    hint: "73 компании",
+  },
+  {
     id: "segmentOutreach",
     label: "Сегментный парсер",
     hint: "7 x соцсети",
@@ -153,6 +159,7 @@ const PARSER_TAB_BOARD_IDS = {
   marketSegments: "marketSegments",
   regionalHiring: "regionalHiring",
   mlmLeaders: "mlmLeaders",
+  mlmGateway: "mlmGateway",
   segmentOutreach: "segmentOutreach",
   socialUniversal: "socialParser",
   web3Segments: "web3Segments",
@@ -864,6 +871,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         <RegionalHiringPanel />
       ) : activeTab === "mlmLeaders" ? (
         <MlmLeaderOutreachPanel />
+      ) : activeTab === "mlmGateway" ? (
+        <MlmGatewayTracker />
       ) : activeTab === "segmentOutreach" ? (
         <SegmentOutreachPanel />
       ) : activeTab === "socialUniversal" ? (
