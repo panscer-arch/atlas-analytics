@@ -227,15 +227,16 @@ export default function MlmGatewayTracker() {
         <div>
           <small>НАШЕ РАЗМЕЩЕНИЕ</small>
           <h2>Atlas System</h2>
-          <p>Business Opportunity заполнена и добавлена в MLM Gateway.</p>
+          <p>Business Opportunity опубликована. Первая статья отправлена на ручную модерацию MLM Gateway.</p>
         </div>
         <div className="mlmg-listing-meta">
           <span><Check size={14} /> Профиль заполнен</span>
           <span><Check size={14} /> Карточка добавлена</span>
+          <span><Send size={14} /> Статья: Pending Review · 05.08.2026</span>
           <span className="mlmg-vault-note">Пароль хранится в SuperSUS Vault</span>
         </div>
-        <a href="https://www.mlmgateway.com/opportunities.php" target="_blank" rel="noreferrer">
-          Открыть площадку <ArrowUpRight size={16} />
+        <a href="https://www.mlmgateway.com/announcementscenter.php" target="_blank" rel="noreferrer">
+          Проверить модерацию <ArrowUpRight size={16} />
         </a>
       </section>
 
