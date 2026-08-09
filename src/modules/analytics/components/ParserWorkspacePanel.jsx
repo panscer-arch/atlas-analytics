@@ -137,7 +137,7 @@ const PARSER_TABS = [
   {
     id: "web3Segments",
     label: "Web3 сегменты",
-    hint: "12 аудиторий",
+    hint: "2 стратегии · 202 wallets",
   },
   {
     id: "poolMonitor",

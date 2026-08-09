@@ -152,6 +152,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "telegramParser",
   "influencers",
   "socialParser",
+  "web3Segments",
   "agentTasks",
   "agentDataset",
   "agentFaq",

@@ -6,6 +6,7 @@ import {
   defaultWeb3Segments,
 } from "../data/web3SegmentsData";
 import { loadServerContent, saveServerContent } from "../services/contentStore";
+import Web3AudienceCampaignSummary from "./Web3AudienceCampaignSummary";
 
 const STATUS_OPTIONS = ["Искать источники", "Готовить angle", "Фильтровать", "Пауза"];
 
@@ -167,6 +168,8 @@ export default function Web3SegmentsPanel() {
 
   return (
     <section className="analytics-parser">
+      <Web3AudienceCampaignSummary />
+
       <section className="analytics-parser-table-wrap analytics-surface">
         <div className="analytics-parser-table-head">
           <div>
