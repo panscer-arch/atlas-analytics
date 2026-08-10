@@ -57,6 +57,7 @@ import "./styles/analytics.css";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
+const ATLAS_LISTINGS_CRM_URL = "https://atlas-partners-crm.panscer.chatgpt.site";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
 const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
@@ -66,6 +67,7 @@ const MAIN_TAB_BOARD_IDS = {
   expenses: "expenses",
   tasks: "launch",
   content: "materials",
+  listings: "listings",
   hermes: "hermesAssistant",
   diary: "diary",
 };
@@ -622,6 +624,7 @@ function AnalyticsPage() {
     { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
     { id: "expenses", label: "Расходы" },
+    { id: "listings", label: "Листинги" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
   ];
@@ -722,6 +725,7 @@ function AnalyticsPage() {
       <AnalyticsMainPanel
         activeTab={activeTab}
         analyticsBoardUrl={ANALYTICS_BOARD_URL}
+        listingsCrmUrl={ATLAS_LISTINGS_CRM_URL}
         crmDashboard={{
           isAiReviewOpen,
           aiTaskSummary: crmAiTaskSummary,
