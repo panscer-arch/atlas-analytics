@@ -278,7 +278,7 @@ jobs:
           timeout 45s sudo systemctl enable --now docker.service
           sudo mkdir -p /opt/atlas-hermes-stt/cache
           if sudo docker container inspect atlas-hermes-stt >/dev/null 2>&1; then
-            if [ "$(sudo docker inspect -f '{{.State.Running}}' atlas-hermes-stt)" != "true" ]; then
+            if ! sudo docker ps --quiet --filter 'name=^/atlas-hermes-stt$' --filter 'status=running' | grep -q .; then
               sudo docker start atlas-hermes-stt
             fi
           else
