@@ -193,6 +193,9 @@ const MARKETING_WRITE_CONTENT_KEYS = new Set([
   "atlas.analytics.firstFunnel.v1",
   "atlas.analytics.listingsCrm.v1",
 ]);
+const MARKETING_READ_CONTENT_KEYS = new Set([
+  "atlas.analytics.listingsCrm.v1",
+]);
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
 const YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID = "-5158247269";
@@ -5159,6 +5162,10 @@ const server = http.createServer(async (request, response) => {
     if (request.method === "GET") {
       if (FINANCE_CONTENT_KEYS.has(key) && !await hasFinanceContentAccess(request)) {
         sendJson(response, 401, { ok: false, error: "finance_read_auth_required" });
+        return;
+      }
+      if (MARKETING_READ_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
+        sendJson(response, 401, { ok: false, error: "marketing_read_auth_required" });
         return;
       }
       try {
