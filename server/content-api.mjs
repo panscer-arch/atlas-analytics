@@ -191,6 +191,7 @@ const MARKETING_WRITE_CONTENT_KEYS = new Set([
   ...MARKETING_MONITORED_CONTENT_KEYS,
   "atlas.analytics.atlasCreatives.v1",
   "atlas.analytics.firstFunnel.v1",
+  "atlas.analytics.listingsCrm.v1",
 ]);
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";

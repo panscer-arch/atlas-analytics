@@ -164,6 +164,7 @@ jobs:
           scp_to_vps server/prepare-hermes-hindsight-nous.py /tmp/prepare-hermes-hindsight-nous.py
           scp_to_vps server/configure-hermes-hindsight.sh /tmp/configure-hermes-hindsight.sh
           scp_to_vps server/backup-content.sh /tmp/atlas-content-backup.sh
+          scp_to_vps src/modules/analytics/data/listingsCrmInitialData.json /tmp/atlas-listings-crm-initial.json
 
           # Do not wrap a heredoc-backed SSH session in run_with_retry: after the
           # first attempt stdin is exhausted and a later empty SSH call can hide
@@ -177,6 +178,9 @@ jobs:
           set -euo pipefail
 
           sudo mkdir -p /opt/atlas-content-api/atlas-official-memory /var/lib/atlas-analytics-content/telegram-memory-archive /var/lib/atlas-analytics-content/official-memory-sync /var/backups/atlas-analytics-content
+          if [ ! -f /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json ]; then
+            sudo install -m 640 -o www-data -g www-data /tmp/atlas-listings-crm-initial.json /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json
+          fi
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs

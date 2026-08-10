@@ -5,6 +5,7 @@ import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
 import HermesAssistantBoard from "./HermesAssistantBoard";
 import LaunchChecklistSection from "./LaunchChecklistSection";
+import ListingsCrmBoard from "./ListingsCrmBoard";
 import LifeDiaryBoard from "./LifeDiaryBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
@@ -107,16 +108,7 @@ export default function AnalyticsMainPanel({
   if (activeTab === "listings") {
     return (
       <Wrapper as="section" marginTop="lg">
-        <AnalyticsBoardEmbed
-          boardUrl={listingsCrmUrl}
-          variant="inline"
-          kicker="Atlas Partners CRM"
-          title="Листинги"
-          subtitle="Заявки, публикации, партнёрства, оплаты, сроки продления и пруфы размещения. Доступ к рабочим данным закрыт авторизацией."
-          frameTitle="CRM листингов Atlas System"
-          panelId="atlas-listings-crm"
-          primaryLabel="Открыть CRM отдельно"
-        />
+        <ListingsCrmBoard />
       </Wrapper>
     );
   }
