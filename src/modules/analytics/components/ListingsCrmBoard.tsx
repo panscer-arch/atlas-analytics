@@ -82,6 +82,10 @@ function priorityValue(priority: string) {
   return Number.isFinite(numeric) ? 100 - numeric : 50;
 }
 
+function isAwaitingResponse(status: string) {
+  return /жд[её]м|ожида/i.test(status);
+}
+
 function ListingsCrmWorkspace() {
   const [data, setData] = useState<CrmData>(EMPTY_DATA);
   const [view, setView] = useState("overview");
@@ -138,7 +142,7 @@ function ListingsCrmWorkspace() {
     total: data.records.length,
     today: data.records.filter((item) => item.dueDate === today).length,
     tomorrow: data.records.filter((item) => item.dueDate === tomorrow).length,
-    waiting: data.records.filter((item) => /ожида|отправ|провер/i.test(item.status)).length,
+    waiting: data.records.filter((item) => isAwaitingResponse(item.status)).length,
     payment: data.records.filter((item) => /оплат/i.test(item.status)).length,
     published: data.records.filter((item) => /опублик/i.test(item.status)).length,
     renewals: data.records.filter((item) => {
