@@ -75,6 +75,7 @@ function TasksWorkspacePanel({ analyticsBoardUrl, initialView = "tasks" }) {
 export default function AnalyticsMainPanel({
   activeTab,
   analyticsBoardUrl,
+  listingsCrmUrl,
   crmDashboard,
   analyticsSection,
 }) {
@@ -102,6 +103,23 @@ export default function AnalyticsMainPanel({
     );
   }
   if (activeTab === "content") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
+
+  if (activeTab === "listings") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <AnalyticsBoardEmbed
+          boardUrl={listingsCrmUrl}
+          variant="inline"
+          kicker="Atlas Partners CRM"
+          title="Листинги"
+          subtitle="Заявки, публикации, партнёрства, оплаты, сроки продления и пруфы размещения. Доступ к рабочим данным закрыт авторизацией."
+          frameTitle="CRM листингов Atlas System"
+          panelId="atlas-listings-crm"
+          primaryLabel="Открыть CRM отдельно"
+        />
+      </Wrapper>
+    );
+  }
 
   if (activeTab === "parser") {
     return (
