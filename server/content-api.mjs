@@ -196,6 +196,8 @@ const MARKETING_WRITE_CONTENT_KEYS = new Set([
 const MARKETING_READ_CONTENT_KEYS = new Set([
   "atlas.analytics.listingsCrm.v1",
 ]);
+
+// Private CRM content requires the existing SuperSUS marketing session.
 const YOUTRACK_SNAPSHOT_KEY = "atlas.analytics.youtrackIssueSnapshot.v1";
 const YOUTRACK_DIGEST_SNAPSHOT_KEY = "atlas.analytics.youtrackDigestSnapshot.v1";
 const YOUTRACK_DEFAULT_TELEGRAM_CHAT_ID = "-5158247269";

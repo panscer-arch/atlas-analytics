@@ -59,7 +59,7 @@ jobs:
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             BEFORE="${{ github.sha }}^"
           fi
-          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^(server/|content/hermes/|scripts/build-hermes-official-catalog\.mjs$|scripts/verify-official-memory-sync\.mjs$|\.github/workflows/deploy\.yml$)'; then
+          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^(server/|content/hermes/|scripts/build-hermes-official-catalog\.mjs$|scripts/verify-official-memory-sync\.mjs$)'; then
             echo "content_api=true" >> "$GITHUB_OUTPUT"
           else
             echo "content_api=false" >> "$GITHUB_OUTPUT"
@@ -206,10 +206,6 @@ jobs:
           fi
           sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api
-
-          # Apply security and API fixes immediately on existing installations.
-          # Auxiliary speech services are intentionally handled later so a large
-          # Docker image cannot prevent the content API from being updated.
           if systemctl list-unit-files | grep -q '^atlas-content-api.service'; then
             timeout 45s sudo systemctl restart atlas-content-api.service
           fi
@@ -277,28 +273,20 @@ jobs:
           fi
           timeout 45s sudo systemctl enable --now docker.service
           sudo mkdir -p /opt/atlas-hermes-stt/cache
-          if sudo docker container inspect atlas-hermes-stt >/dev/null 2>&1; then
-            if ! sudo docker ps --quiet --filter 'name=^/atlas-hermes-stt$' --filter 'status=running' | grep -q .; then
-              sudo docker start atlas-hermes-stt
-            fi
-          else
-            if ! sudo docker image inspect onerahmet/openai-whisper-asr-webservice:latest >/dev/null 2>&1; then
-              sudo docker image prune -f
-              sudo docker pull onerahmet/openai-whisper-asr-webservice:latest
-            fi
-            sudo docker run -d \
-              --name atlas-hermes-stt \
-              --restart unless-stopped \
-              --memory 2g \
-              --cpus 1 \
-              -p 127.0.0.1:7467:9000 \
-              -e ASR_ENGINE=faster_whisper \
-              -e ASR_MODEL=base \
-              -e ASR_DEVICE=cpu \
-              -e MODEL_IDLE_TIMEOUT=600 \
-              -v /opt/atlas-hermes-stt/cache:/root/.cache \
-              onerahmet/openai-whisper-asr-webservice:latest
-          fi
+          sudo docker pull onerahmet/openai-whisper-asr-webservice:latest
+          sudo docker rm -f atlas-hermes-stt >/dev/null 2>&1 || true
+          sudo docker run -d \
+            --name atlas-hermes-stt \
+            --restart unless-stopped \
+            --memory 2g \
+            --cpus 1 \
+            -p 127.0.0.1:7467:9000 \
+            -e ASR_ENGINE=faster_whisper \
+            -e ASR_MODEL=base \
+            -e ASR_DEVICE=cpu \
+            -e MODEL_IDLE_TIMEOUT=600 \
+            -v /opt/atlas-hermes-stt/cache:/root/.cache \
+            onerahmet/openai-whisper-asr-webservice:latest
           sudo tee /etc/atlas-outreach.env >/dev/null <<'ENV'
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           OUTREACH_FROM_EMAIL=${{ secrets.OUTREACH_FROM_EMAIL }}
