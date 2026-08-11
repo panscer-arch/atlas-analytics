@@ -45,6 +45,7 @@ jobs:
           npm run test:official-memory
           npm run test:hermes-voice
           npm run test:ga4
+          npm run test:products
           npm run build
 
       - name: Detect server changes
@@ -164,6 +165,10 @@ jobs:
           scp_to_vps server/prepare-hermes-hindsight-nous.py /tmp/prepare-hermes-hindsight-nous.py
           scp_to_vps server/configure-hermes-hindsight.sh /tmp/configure-hermes-hindsight.sh
           scp_to_vps server/backup-content.sh /tmp/atlas-content-backup.sh
+          scp_to_vps server/products/products-registry.mjs /tmp/atlas-products-registry.mjs
+          scp_to_vps server/products/products-registry-seed.mjs /tmp/atlas-products-registry-seed.mjs
+          scp_to_vps server/products/001_products_registry.sql /tmp/atlas-products-registry.sql
+          scp_to_vps scripts/backup-products-registry.mjs /tmp/atlas-products-backup.mjs
           scp_to_vps src/modules/analytics/data/listingsCrmInitialData.json /tmp/atlas-listings-crm-initial.json
 
           # Do not wrap a heredoc-backed SSH session in run_with_retry: after the
@@ -177,7 +182,7 @@ jobs:
             'bash -s' <<'REMOTE'
           set -euo pipefail
 
-          sudo mkdir -p /opt/atlas-content-api/atlas-official-memory /var/lib/atlas-analytics-content/telegram-memory-archive /var/lib/atlas-analytics-content/official-memory-sync /var/backups/atlas-analytics-content
+          sudo mkdir -p /opt/atlas-content-api/atlas-official-memory /opt/atlas-content-api/products /var/lib/atlas-analytics-content/products /var/lib/atlas-analytics-content/telegram-memory-archive /var/lib/atlas-analytics-content/official-memory-sync /var/backups/atlas-analytics-content
           if [ ! -f /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json ]; then
             sudo install -m 640 -o www-data -g www-data /tmp/atlas-listings-crm-initial.json /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json
           fi
@@ -194,6 +199,31 @@ jobs:
           sudo mv /tmp/atlas-official-memory-sync.mjs /opt/atlas-content-api/official-memory-sync.mjs
           sudo mv /tmp/atlas-official-memory.json /opt/atlas-content-api/atlas-official-memory/catalog.json
           sudo mv /tmp/atlas-content-backup.sh /opt/atlas-content-api/backup-content.sh
+          sudo mv /tmp/atlas-products-registry.mjs /opt/atlas-content-api/products/products-registry.mjs
+          sudo mv /tmp/atlas-products-registry-seed.mjs /opt/atlas-content-api/products/products-registry-seed.mjs
+          sudo mv /tmp/atlas-products-registry.sql /opt/atlas-content-api/products/001_products_registry.sql
+          sudo mv /tmp/atlas-products-backup.mjs /opt/atlas-content-api/backup-products-registry.mjs
+          sudo npm install --prefix /opt/atlas-content-api --omit=dev --no-audit --no-fund pg@8.22.0
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql postgresql-client
+          fi
+          timeout 45s sudo systemctl enable --now postgresql.service
+          if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='www-data'" | grep -qx 1; then
+            sudo -u postgres psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE "www-data" LOGIN'
+          fi
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c 'ALTER ROLE "www-data" LOGIN'
+          if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='atlas_products'" | grep -qx 1; then
+            sudo -u postgres createdb --owner=www-data atlas_products
+          fi
+          if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='atlas_products_restore_test'" | grep -qx 1; then
+            sudo -u postgres createdb --owner=www-data atlas_products_restore_test
+          fi
+          sudo touch /etc/atlas-outreach.env
+          sudo sed -i '/^ATLAS_PRODUCTS_DATABASE_URL=/d' /etc/atlas-outreach.env
+          echo 'ATLAS_PRODUCTS_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql' | sudo tee -a /etc/atlas-outreach.env >/dev/null
+          sudo chown root:root /etc/atlas-outreach.env
+          sudo chmod 600 /etc/atlas-outreach.env
           if id hermes >/dev/null 2>&1 && [ -d /opt/hermes ]; then
             sudo install -m 755 -o root -g root /tmp/hermes-telegram-bridge.py /opt/hermes/hermes-telegram-bridge.py
             sudo install -m 750 -o hermes -g hermes /tmp/prepare-hermes-hindsight-nous.py /opt/hermes/prepare-hermes-hindsight-nous.py
@@ -206,11 +236,14 @@ jobs:
           fi
           sudo chmod 755 /opt/atlas-content-api/backup-content.sh
           sudo chown -R root:root /opt/atlas-content-api
+          sudo chown -R www-data:www-data /var/lib/atlas-analytics-content/products
           if systemctl list-unit-files | grep -q '^atlas-content-api.service'; then
             timeout 45s sudo systemctl restart atlas-content-api.service
           fi
           sudo chown -R www-data:www-data /var/lib/atlas-analytics-content
+          sudo mkdir -p /var/backups/atlas-products
           sudo chown -R root:root /var/backups/atlas-analytics-content
+          sudo chown -R www-data:www-data /var/backups/atlas-products
           sudo chmod 750 /var/backups/atlas-analytics-content
 
           AGENT_REACH_DIR=/opt/atlas-agent-reach
@@ -300,6 +333,7 @@ jobs:
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ATLAS_FINANCE_PASSWORD=${{ secrets.ATLAS_FINANCE_PASSWORD }}
+          ATLAS_PRODUCTS_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql
           ATLAS_GA4_PROPERTY_ID=546276265
           ATLAS_GA4_CREDENTIALS_FILE=/etc/atlas-ga4-service-account.json
           ENV
@@ -362,10 +396,13 @@ jobs:
 
           [Service]
           Type=oneshot
+          EnvironmentFile=-/etc/atlas-outreach.env
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
           Environment=ATLAS_CONTENT_BACKUP_DIR=/var/backups/atlas-analytics-content
           Environment=ATLAS_CONTENT_BACKUP_RETENTION_DAYS=30
+          Environment=ATLAS_PRODUCTS_BACKUP_DIR=/var/backups/atlas-products
           ExecStart=/opt/atlas-content-api/backup-content.sh
+          ExecStart=/usr/sbin/runuser -u www-data -- /usr/bin/env ATLAS_PRODUCTS_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql ATLAS_PRODUCTS_RESTORE_TEST_URL=postgresql://www-data@/atlas_products_restore_test?host=/var/run/postgresql ATLAS_PRODUCTS_BACKUP_DIR=/var/backups/atlas-products /usr/bin/node /opt/atlas-content-api/backup-products-registry.mjs
           User=root
           Group=root
           SERVICE
@@ -628,6 +665,12 @@ jobs:
           fi
           timeout 45s sudo systemctl enable --now atlas-content-api.service
           timeout 45s sudo systemctl restart atlas-content-api.service
+          curl -fsS http://127.0.0.1:8787/api/products | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data.get("ok") and len(data.get("items", [])) >= 1'
+          timeout 120s sudo -u www-data /usr/bin/env \
+            ATLAS_PRODUCTS_DATABASE_URL='postgresql://www-data@/atlas_products?host=/var/run/postgresql' \
+            ATLAS_PRODUCTS_RESTORE_TEST_URL='postgresql://www-data@/atlas_products_restore_test?host=/var/run/postgresql' \
+            ATLAS_PRODUCTS_BACKUP_DIR=/var/backups/atlas-products \
+            /usr/bin/node /opt/atlas-content-api/backup-products-registry.mjs
           timeout 45s sudo systemctl enable --now atlas-telegram-bot.service
           timeout 45s sudo systemctl restart atlas-telegram-bot.service
           if systemctl list-unit-files | grep -q '^hermes-telegram-bridge.service'; then
@@ -692,6 +735,37 @@ jobs:
           fi
 
           for NGINX_FILE in $NGINX_FILES; do
+            if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/products' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          snippet = """
+
+              location /api/products {
+                  proxy_pass http://127.0.0.1:8787/api/products;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                  client_max_body_size 256k;
+              }
+          """
+          if "location /api/products" not in text:
+              index = text.find("location /api/content/")
+              if index == -1:
+                  index = text.find("location /")
+              if index != -1:
+                  line_start = text.rfind("\n", 0, index) + 1
+                  text = text[:line_start] + snippet + "\n" + text[line_start:]
+              else:
+                  index = text.rfind("}")
+                  text = text[:index] + snippet + "\n" + text[index:]
+              open(path, "w", encoding="utf-8").write(text)
+          PY
+            fi
+
             if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/content/' "$NGINX_FILE"; then
               sudo python3 - "$NGINX_FILE" <<'PY'
           import sys

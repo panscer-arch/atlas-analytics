@@ -20,6 +20,7 @@ import {
   mergeMarketingEvents,
 } from "./marketing-dashboard-monitor.mjs";
 import { getGoogleAnalyticsOverview } from "./google-analytics.mjs";
+import { createProductsRequestHandler } from "./products/products-registry.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
@@ -4547,10 +4548,15 @@ async function backupExistingContent(key, targetPath) {
 }
 
 await mkdir(STORE_DIR, { recursive: true });
+const handleProductsRequest = await createProductsRequestHandler({
+  storeDir: process.env.ATLAS_PRODUCTS_STORE_DIR || path.join(STORE_DIR, "products"),
+});
 
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+
+    if (await handleProductsRequest(request, response, url)) return;
 
     if (url.pathname === "/api/content/health") {
       sendJson(response, 200, { ok: true });
