@@ -14,6 +14,7 @@ Atlas Analytics is the public analytics and transparency frontend for Atlas Syst
 - восстановленная старая версия на `/legacy`
 - mock/fallback-логика уже встроена
 - можно подключить внешний analytics API и доску через env
+- реестр продуктов доступен по `/?board=products` и хранит данные через отдельный Products API
 
 ## Локальный запуск
 
@@ -47,12 +48,23 @@ cp .env.example .env.local
 - `VITE_CONTENT_API_BASE_URL`
   Пример: `https://supersussystem.com`
   Если не задано, сохранение идёт в относительный `/api/content/...` на том же домене.
+- `ATLAS_PRODUCTS_DATABASE_URL`
+  Серверная строка подключения PostgreSQL для `/api/products`. Во frontend не передаётся.
 
 Если переменные не заданы:
 
 - analytics API просто не используется, экран падает в локальный fallback
 - отправка идей в доску не ломает интерфейс и сохраняет идею локально
 - редактируемый контент пробует сохраняться в `/api/content/...` на текущем домене и остаётся в localStorage, если сервер сохранения недоступен
+- вкладка «Продукты» обращается к отдельному `/api/products`; локальный файловый fallback используется только при запуске API без PostgreSQL
+
+## Проверка реестра продуктов
+
+```bash
+npm run test:products
+```
+
+Проверка покрывает создание, версионные конфликты, архивирование и восстановление, историю, фильтры, безопасные ссылки, XSS-защиту, сохранение после перезапуска и Markdown-экспорт.
 
 ## GitHub -> Netlify
 

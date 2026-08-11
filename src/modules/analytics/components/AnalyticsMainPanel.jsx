@@ -9,6 +9,7 @@ import ListingsCrmBoard from "./ListingsCrmBoard";
 import LifeDiaryBoard from "./LifeDiaryBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
+import ProductsRegistry from "./ProductsRegistry";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import WorkSessionQueue from "./WorkSessionQueue";
 import Wrapper from "./Wrapper";
@@ -133,6 +134,14 @@ export default function AnalyticsMainPanel({
     return (
       <Wrapper as="section" marginTop="lg">
         <DevelopmentsRegistry />
+      </Wrapper>
+    );
+  }
+
+  if (activeTab === "products") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <ProductsRegistry />
       </Wrapper>
     );
   }
