@@ -67,6 +67,7 @@ Netlify настроен на SPA fallback через `netlify.toml`: все н�
 - `Парсер` - поиск HYIP-мониторов и рекламных площадок по странам, контакты, скоринг живости и очередь outreach.
 - `Контент` - материалы, презентации, параметры агента, датасет, FAQ, white paper, ролики и терминология.
 - `Разработки` - реестр связанных разработок и ссылок.
+- `Продукты` - отдельный каталог продуктов, программ, модулей, контентных площадок, внутренних инструментов и концепций. Фильтры и открытая карточка сохраняются в URL вида `/?board=products&product=<slug>`.
 - `CRM-доска` - встроенная внешняя analytics-board доска.
 - `Заметки` - быстрые локальные заметки.
 
@@ -98,6 +99,7 @@ cp .env.example .env.local
 | `VITE_ANALYTICS_BOARD_URL` | URL внешней доски для iframe и кнопки открытия |
 | `VITE_ANALYTICS_BOARD_API_URL` | API доски для отправки сигналов/идей, если подключено |
 | `VITE_CONTENT_API_BASE_URL` | базовый URL content API; если пусто, frontend ходит в относительный `/api/content/...` |
+| `ATLAS_PRODUCTS_DATABASE_URL` | серверная строка подключения PostgreSQL для Products API; во frontend не передаётся |
 | `RESEND_API_KEY` | API-ключ Resend для outreach-агента в парсере |
 | `OUTREACH_FROM_EMAIL` | email отправителя, например `Superflow Systems <ads@superflowsystems.com>` |
 | `OUTREACH_REPLY_TO_EMAIL` | email для ответов площадок |
@@ -165,6 +167,23 @@ Endpoints:
 
 Ограничение размера тела запроса: 10 MB.
 
+## Products API
+
+Вкладка `Продукты` использует отдельный контур данных внутри того же Node.js-сервиса. Каталог не сохраняется одним JSON через универсальный content endpoint.
+
+| Метод | Путь | Назначение |
+| --- | --- | --- |
+| `GET`, `POST` | `/api/products` | каталог с поиском и фильтрами; создание карточки |
+| `GET`, `PATCH` | `/api/products/:id` | подробности и редактирование с проверкой версии |
+| `POST` | `/api/products/:id/entries` | неизменяемая заметка, решение, блокер или релиз |
+| `POST` | `/api/products/:id/links` | типизированная безопасная `http/https`-ссылка |
+| `POST` | `/api/products/:id/transition` | изменение стадии, состояния или доступности с записью в историю |
+| `POST` | `/api/products/:id/archive` | обратимая архивация |
+| `POST` | `/api/products/:id/restore` | восстановление предыдущей версии или архива |
+| `GET` | `/api/products/:id/export.md` | Markdown-снимок для передачи контекста |
+
+Production использует PostgreSQL из `ATLAS_PRODUCTS_DATABASE_URL`. Если переменная не задана, локальная разработка использует файловое хранилище в `${ATLAS_CONTENT_STORE_DIR}/products`; это fallback, а не production-архитектура. Запросы изменения требуют актуальную версию записи (`If-Match` или поле `version`), чтобы параллельные посетители не перезаписывали данные молча.
+
 Outreach-агент вкладки `Парсер` хранит очередь переговоров через content API по ключу `atlas.analytics.hyipOutreach.queue.v1`. Отправка email не работает без `RESEND_API_KEY`, `OUTREACH_FROM_EMAIL` и `OUTREACH_REPLY_TO_EMAIL`; в этом случае UI создаёт черновики и Telegram-тексты, но показывает понятную ошибку при попытке отправить email.
 
 На VPS эти переменные читаются сервисом `atlas-content-api.service` из файла `/etc/atlas-outreach.env`:
@@ -217,6 +236,17 @@ bash server/backup-content.sh
 
 Скрипт создаёт архив вида `atlas-analytics-content-YYYYMMDDTHHMMSSZ.tar.gz` и обновляет symlink `latest.tar.gz`.
 
+PostgreSQL-каталог продуктов архивируется отдельно:
+
+```bash
+ATLAS_PRODUCTS_DATABASE_URL='postgresql://www-data@/atlas_products?host=/var/run/postgresql' \
+ATLAS_PRODUCTS_RESTORE_TEST_URL='postgresql://www-data@/atlas_products_restore_test?host=/var/run/postgresql' \
+ATLAS_PRODUCTS_BACKUP_DIR=/var/backups/atlas-products \
+node scripts/backup-products-registry.mjs
+```
+
+Скрипт создаёт `pg_dump`, проверяет архив и выполняет пробное восстановление в отдельную test-базу. Production deploy подключает этот шаг к ежедневному `atlas-content-backup.timer`.
+
 ## Хранение данных на клиенте
 
 Приложение использует `localStorage` как локальный fallback для:
@@ -267,6 +297,10 @@ atlas-analytics-repo/
   server/
     content-api.mjs
     backup-content.sh
+    products/
+      001_products_registry.sql
+      products-registry.mjs
+      products-registry-seed.mjs
   src/
     App.jsx
     main.jsx
@@ -289,6 +323,9 @@ atlas-analytics-repo/
 | Добавить или изменить вкладку верхнего уровня | `src/modules/analytics/AnalyticsPage.jsx` |
 | Изменить API-интеграцию | `src/modules/analytics/services/analyticsApi.js` |
 | Изменить content API клиент | `src/modules/analytics/services/contentStore.js` |
+| Изменить вкладку и карточки продуктов | `src/modules/analytics/components/ProductsRegistry.jsx` |
+| Изменить Products API клиент | `src/modules/analytics/services/productsRegistryApi.js` |
+| Изменить схему или сервер Products API | `server/products/` |
 | Изменить mock-данные | `src/modules/analytics/data/analyticsMockData.js` |
 | Изменить задачи и контентные доски | `src/modules/analytics/components/LaunchChecklistSection.jsx` |
 | Изменить стили аналитики | `src/modules/analytics/styles/analytics.css` |
@@ -302,10 +339,14 @@ atlas-analytics-repo/
 - static frontend на Netlify/Vercel/Nginx;
 - backend analytics API на отдельном домене;
 - content API за reverse proxy на том же домене или под отдельным origin;
+- отдельная PostgreSQL-база для Products API, доступная только backend-сервису;
 - регулярный backup `ATLAS_CONTENT_STORE_DIR`;
+- ежедневный `pg_dump` реестра продуктов с пробным восстановлением;
 - Bearer-token и IP allowlist для analytics API по контракту OpenAPI.
 
 Если frontend и content API находятся на одном домене, можно оставить `VITE_CONTENT_API_BASE_URL` пустым и проксировать `/api/content/*` на `server/content-api.mjs`.
+
+На том же домене `/api/products*` проксируется в `server/content-api.mjs`. Открытое редактирование защищено запретом hard delete, audit trail, version conflict, Origin-проверкой, rate limit, очисткой Markdown и allowlist для URL.
 
 ## Smoke checklist после изменений
 
@@ -319,4 +360,7 @@ atlas-analytics-repo/
 - при подключённом analytics API вкладки получают реальные данные;
 - редактируемые материалы/задачи сохраняются в `localStorage`;
 - если подключён content API, `GET /api/content/health` возвращает `{ "ok": true }`;
+- `npm run test:products` проходит без ошибок;
+- `GET /api/products` возвращает каталог и `storageMode: "postgres"` в production;
+- `/?board=products` восстанавливает фильтры и открытую карточку из URL;
 - iframe доски открывает корректный `VITE_ANALYTICS_BOARD_URL`.
