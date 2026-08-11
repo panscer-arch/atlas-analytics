@@ -11,6 +11,12 @@ import {
   postServerJson,
   saveServerContent,
 } from "../services/contentStore";
+import {
+  COUNTRY_DISCOVERY_REGIONS,
+  COUNTRY_DISCOVERY_TIERS,
+  countryDiscoveryRows,
+  createCountryDiscoverySearchUrl,
+} from "../data/countryDiscoveryData";
 
 const INSTAGRAM_PARSER_LEADS_STORAGE_KEY = "atlas.analytics.instagramParser.leads.v1";
 const INSTAGRAM_PARSER_RUNS_STORAGE_KEY = "atlas.analytics.instagramParser.runs.v1";
@@ -19,6 +25,7 @@ const AGENT_REACH_PLATFORMS = new Set(["linkedin", "facebook", "x", "youtube", "
 
 const SOCIAL_PARSER_TABS = [
   { id: "instagram", label: "Instagram", ready: true },
+  { id: "countries", label: "Страны", ready: true, provider: "Discovery map" },
   { id: "linkedin", label: "LinkedIn", ready: true, provider: "Agent Reach" },
   { id: "facebook", label: "Facebook", ready: true, provider: "Agent Reach" },
   { id: "x", label: "X", ready: true, provider: "Agent Reach" },
@@ -63,6 +70,11 @@ const DEFAULT_AGENT_REACH_FORM = {
   language: "en",
   limit: "10",
 };
+
+function getInitialSocialParserTab() {
+  const requested = new URLSearchParams(window.location.search).get("social");
+  return SOCIAL_PARSER_TABS.some((tab) => tab.id === requested) ? requested : "instagram";
+}
 
 function csvCell(value) {
   return `"${String(value ?? "").replaceAll('"', '""')}"`;
@@ -255,6 +267,181 @@ function EmptySocialParserTab({ label }) {
         </div>
         <button type="button" disabled>Будет подключено позже</button>
       </div>
+    </section>
+  );
+}
+
+function CountryDiscoveryPanel() {
+  const [region, setRegion] = useState("Все регионы");
+  const [tier, setTier] = useState("Все приоритеты");
+  const [platform, setPlatform] = useState("Все платформы");
+  const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState("brazil");
+  const [notice, setNotice] = useState("");
+
+  const platforms = useMemo(() => [
+    "Все платформы",
+    ...Array.from(new Set(countryDiscoveryRows.flatMap((country) => country.discovery))).sort((a, b) => a.localeCompare(b, "ru")),
+  ], []);
+
+  const rows = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return countryDiscoveryRows
+      .filter((country) => region === "Все регионы" || country.region === region)
+      .filter((country) => tier === "Все приоритеты" || country.tier === tier)
+      .filter((country) => platform === "Все платформы" || country.discovery.includes(platform))
+      .filter((country) => !normalized || [
+        country.country,
+        country.countryEn,
+        country.region,
+        country.languages,
+        country.marketSignal,
+        country.discovery.join(" "),
+        country.conversation.join(" "),
+        country.queries.join(" "),
+      ].join(" ").toLowerCase().includes(normalized))
+      .sort((a, b) => b.score - a.score);
+  }, [platform, query, region, tier]);
+
+  async function copyQueries(country) {
+    const text = country.queries.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice(`Запросы для ${country.country} скопированы.`);
+    } catch {
+      setNotice("Не удалось скопировать. Выдели запросы вручную.");
+    }
+  }
+
+  function openDiscovery(country) {
+    const primaryPlatform = country.discovery[0];
+    window.open(createCountryDiscoverySearchUrl(country, country.queries[0], primaryPlatform), "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <section className="analytics-country-discovery">
+      <section className="analytics-parser-table-wrap analytics-surface analytics-country-discovery-head">
+        <div className="analytics-parser-table-head">
+          <div>
+            <h2>Карта MLM-комьюнити по странам</h2>
+            <p>{rows.length} рынков в выборке · discovery → проверка → персональный контакт после решения человека</p>
+          </div>
+          <div className="analytics-country-discovery-kpis" aria-label="Сводка">
+            <span><b>{countryDiscoveryRows.filter((item) => item.tier === "A").length}</b> Tier A</span>
+            <span><b>{new Set(countryDiscoveryRows.flatMap((item) => item.discovery)).size}</b> платформ</span>
+          </div>
+        </div>
+
+        <div className="analytics-parser-controls analytics-country-discovery-filters">
+          <label>
+            Регион
+            <select value={region} onChange={(event) => setRegion(event.target.value)}>
+              {COUNTRY_DISCOVERY_REGIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            Приоритет
+            <select value={tier} onChange={(event) => setTier(event.target.value)}>
+              {COUNTRY_DISCOVERY_TIERS.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            Платформа
+            <select value={platform} onChange={(event) => setPlatform(event.target.value)}>
+              {platforms.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </label>
+          <label>
+            Поиск
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="страна, язык, платформа..." />
+          </label>
+        </div>
+        <p className="analytics-country-discovery-guardrail">
+          Tier показывает приоритет публичного поиска и ручного исследования, а не готовность страны к запуску. До оффера нужны локальная юридическая проверка и подтверждение допустимого платёжного контура.
+        </p>
+        {notice ? <p className="analytics-country-discovery-notice" role="status">{notice}</p> : null}
+      </section>
+
+      <section className="analytics-country-discovery-list" aria-label="Страны">
+        {rows.map((country) => {
+          const expanded = expandedId === country.id;
+          return (
+            <article key={country.id} className={`analytics-surface analytics-country-row ${expanded ? "analytics-country-row-expanded" : ""}`}>
+              <button
+                type="button"
+                className="analytics-country-row-summary"
+                onClick={() => setExpandedId(expanded ? "" : country.id)}
+                aria-expanded={expanded}
+              >
+                <span className="analytics-country-code">{country.flag}</span>
+                <span className="analytics-country-name">
+                  <strong>{country.country}</strong>
+                  <small>{country.region} · {country.languages}</small>
+                </span>
+                <span className={`analytics-country-tier analytics-country-tier-${country.tier.toLowerCase()}`}>Tier {country.tier}</span>
+                <span className="analytics-country-score"><b>{country.score}</b><small>приоритет поиска</small></span>
+                <span className="analytics-country-primary"><b>{country.discovery[0]}</b><small>искать сначала</small></span>
+                <span className="analytics-country-expand">{expanded ? "Свернуть" : "Открыть"}</span>
+              </button>
+
+              {expanded ? (
+                <div className="analytics-country-row-details">
+                  <div className="analytics-country-detail-main">
+                    <section>
+                      <h3>Сигнал рынка</h3>
+                      <p>{country.marketSignal}</p>
+                    </section>
+                    <section>
+                      <h3>Где обнаруживать</h3>
+                      <div className="analytics-country-tags">
+                        {country.discovery.map((item, index) => <span key={item}>{index + 1}. {item}</span>)}
+                      </div>
+                    </section>
+                    <section>
+                      <h3>Где продолжают разговор</h3>
+                      <div className="analytics-country-tags analytics-country-tags-contact">
+                        {country.conversation.map((item) => <span key={item}>{item}</span>)}
+                      </div>
+                    </section>
+                    <section>
+                      <h3>Типы сообществ</h3>
+                      <ul>{country.communities.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                  </div>
+
+                  <aside className="analytics-country-query-panel">
+                    <div>
+                      <h3>Локальные запросы</h3>
+                      <ol>{country.queries.map((item) => <li key={item}>{item}</li>)}</ol>
+                    </div>
+                    <div className="analytics-country-actions">
+                      <button type="button" onClick={() => openDiscovery(country)}>Открыть поиск</button>
+                      <button type="button" onClick={() => copyQueries(country)}>Скопировать запросы</button>
+                    </div>
+                    <div className="analytics-country-caution">
+                      <strong>Проверить перед работой</strong>
+                      <p>{country.caution}</p>
+                    </div>
+                    <div className="analytics-country-sources">
+                      <strong>Источники · confidence: {country.confidence}</strong>
+                      {country.sources.map((source, index) => (
+                        <a key={source} href={source} target="_blank" rel="noreferrer">Источник {index + 1}</a>
+                      ))}
+                    </div>
+                  </aside>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
+      </section>
+
+      {!rows.length ? (
+        <section className="analytics-surface analytics-youtube-api-empty">
+          <strong>Страны не найдены</strong>
+          <p>Измени регион, приоритет, платформу или поисковую строку.</p>
+        </section>
+      ) : null}
     </section>
   );
 }
@@ -485,7 +672,7 @@ function AgentReachParserPanel({ platform, label, status }) {
 }
 
 export default function UniversalSocialParserPanel() {
-  const [activeSocialTab, setActiveSocialTab] = useState("instagram");
+  const [activeSocialTab, setActiveSocialTab] = useState(getInitialSocialParserTab);
   const [instagramForm, setInstagramForm] = useState(DEFAULT_INSTAGRAM_FORM);
   const [instagramResults, setInstagramResults] = useState([]);
   const [instagramSavedLeads, setInstagramSavedLeads] = useState([]);
@@ -524,6 +711,13 @@ export default function UniversalSocialParserPanel() {
   }, []);
 
   const activeTab = SOCIAL_PARSER_TABS.find((tab) => tab.id === activeSocialTab) || SOCIAL_PARSER_TABS[0];
+
+  function selectSocialTab(tabId) {
+    setActiveSocialTab(tabId);
+    const url = new URL(window.location.href);
+    url.searchParams.set("social", tabId);
+    window.history.replaceState({}, "", url);
+  }
 
   const selectedInstagramResults = useMemo(() => {
     const ids = new Set(instagramSelectedIds);
@@ -671,7 +865,7 @@ export default function UniversalSocialParserPanel() {
             key={tab.id}
             type="button"
             className={`analytics-parser-subtab ${activeSocialTab === tab.id ? "analytics-parser-subtab-active" : ""}`}
-            onClick={() => setActiveSocialTab(tab.id)}
+            onClick={() => selectSocialTab(tab.id)}
             role="tab"
             aria-selected={activeSocialTab === tab.id}
           >
@@ -681,7 +875,9 @@ export default function UniversalSocialParserPanel() {
         ))}
       </section>
 
-      {activeSocialTab === "instagram" ? (
+      {activeSocialTab === "countries" ? (
+        <CountryDiscoveryPanel />
+      ) : activeSocialTab === "instagram" ? (
         <section className="analytics-parser-table-wrap analytics-surface">
           <div className="analytics-parser-table-head">
             <div>
