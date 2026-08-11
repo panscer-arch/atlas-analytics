@@ -694,7 +694,18 @@ jobs:
           fi
           timeout 45s sudo systemctl enable --now atlas-content-api.service
           timeout 45s sudo systemctl restart atlas-content-api.service
-          curl -fsS http://127.0.0.1:8787/api/products | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data.get("ok") and len(data.get("items", [])) >= 1'
+          for attempt in $(seq 1 15); do
+            if curl -fsS http://127.0.0.1:8787/api/products \
+              | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data.get("ok") and len(data.get("items", [])) >= 1'; then
+              break
+            fi
+            if [ "$attempt" -eq 15 ]; then
+              sudo systemctl status atlas-content-api.service --no-pager || true
+              sudo journalctl -u atlas-content-api.service -n 100 --no-pager || true
+              exit 1
+            fi
+            sleep 2
+          done
           timeout 120s sudo -u www-data /usr/bin/env \
             ATLAS_PRODUCTS_DATABASE_URL='postgresql://www-data@/atlas_products?host=/var/run/postgresql' \
             ATLAS_PRODUCTS_RESTORE_TEST_URL='postgresql://www-data@/atlas_products_restore_test?host=/var/run/postgresql' \
