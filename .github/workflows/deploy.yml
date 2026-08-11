@@ -421,6 +421,23 @@ jobs:
           WantedBy=timers.target
           TIMER
 
+          REMOTE
+
+      - name: Finish content API deployment
+        if: steps.server_changes.outputs.content_api == 'true'
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          # Keep this as a separate remote script. GitHub Actions rejects a
+          # single run expression larger than 21,000 characters.
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=25 \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+
           sudo tee /etc/systemd/system/atlas-youtrack-monitor.service >/dev/null <<'SERVICE'
           [Unit]
           Description=Check Atlas YouTrack task changes and push notifications
