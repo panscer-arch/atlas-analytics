@@ -159,10 +159,34 @@ try {
   });
   assert(restored.status === 200 && restored.body.item.lifecycleStage === "DISCOVERY" && restored.body.item.version === 6, "restore_failed");
 
+  const repositoryLinkId = repositoryLink.body.item.links.find((link) => link.type === "REPOSITORY")?.id;
+  const updatedLink = await request(`/${product.id}/links/${repositoryLinkId}`, {
+    method: "PATCH",
+    headers: { "if-match": '"6"' },
+    body: JSON.stringify({
+      type: "REPOSITORY",
+      label: "Current repo",
+      url: "https://github.com/example/products-registry-current",
+      environment: "LIVE",
+      checkStatus: "VERIFIED",
+      actorName: "Verification",
+      version: 6,
+    }),
+  });
+  assert(updatedLink.status === 200 && updatedLink.body.item.version === 7, "link_update_failed");
+  assert(updatedLink.body.item.links.some((link) => link.id === repositoryLinkId && link.url.endsWith("products-registry-current") && link.checkStatus === "VERIFIED"), "link_update_not_persisted");
+
+  const invalidVerificationDate = await request(`/${product.id}/links/${repositoryLinkId}`, {
+    method: "PATCH",
+    headers: { "if-match": '"7"' },
+    body: JSON.stringify({ verifiedAt: "not-a-date", actorName: "Verification", version: 7 }),
+  });
+  assert(invalidVerificationDate.status === 400 && invalidVerificationDate.body.error === "invalid_verified_at", "invalid_verification_date_accepted");
+
   const foreignOrigin = await request(`/${product.id}`, {
     method: "PATCH",
-    headers: { "if-match": '"6"', origin: "https://evil.example" },
-    body: JSON.stringify({ name: product.name, actorName: "Verification", version: 6 }),
+    headers: { "if-match": '"7"', origin: "https://evil.example" },
+    body: JSON.stringify({ name: product.name, actorName: "Verification", version: 7 }),
   });
   assert(foreignOrigin.status === 403 && foreignOrigin.body.error === "origin_not_allowed", "foreign_origin_accepted");
 
@@ -179,11 +203,11 @@ try {
   server = startServer();
   await waitForServer();
   const persisted = await request(`/${product.id}`);
-  assert(persisted.status === 200 && persisted.body.item.version === 6, "restart_persistence_failed");
+  assert(persisted.status === 200 && persisted.body.item.version === 7, "restart_persistence_failed");
 
   const exported = await fetch(`${baseUrl}/${product.id}/export.md`);
   const markdown = await exported.text();
-  assert(exported.status === 200 && markdown.includes("# Products Registry Verification") && markdown.includes("DISCOVERY") && markdown.includes("Keep the registry separate") && markdown.includes("github.com/example/products-registry"), "markdown_export_failed");
+  assert(exported.status === 200 && markdown.includes("# Products Registry Verification") && markdown.includes("DISCOVERY") && markdown.includes("Keep the registry separate") && markdown.includes("github.com/example/products-registry-current"), "markdown_export_failed");
 
   const backupOutput = await runScript("scripts/backup-products-registry.mjs", {
     ATLAS_CONTENT_STORE_DIR: storeDir,
@@ -198,6 +222,7 @@ try {
     requiredVersion: true,
     parentCycleGuard: true,
     duplicateLinkGuard: true,
+    linkUpdate: true,
     xssSanitization: true,
     originGuard: true,
     archiveRestore: true,

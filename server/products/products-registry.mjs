@@ -68,6 +68,14 @@ function validateUrl(value) {
   return parsed.toString();
 }
 
+function validateTimestamp(value, field) {
+  const normalized = normalizeText(value, 80);
+  if (!normalized) return "";
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) throw Object.assign(new Error(`invalid_${field}`), { status: 400 });
+  return parsed.toISOString();
+}
+
 function normalizeProductInput(input, current = {}) {
   const next = { ...current };
   for (const field of PRODUCT_FIELDS) {
@@ -255,7 +263,10 @@ async function upsertProductRow(client, item) {
 }
 
 async function insertLinkRow(client, item) {
-  await client.query("INSERT INTO atlas_product_links (id,product_id,type,label,url,environment,verified_at,check_status,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING", [item.id,item.productId,item.type,item.label,item.url,item.environment,item.verifiedAt || null,item.checkStatus,item.createdAt]);
+  await client.query(`INSERT INTO atlas_product_links (id,product_id,type,label,url,environment,verified_at,check_status,created_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    ON CONFLICT (id) DO UPDATE SET type=excluded.type,label=excluded.label,url=excluded.url,environment=excluded.environment,verified_at=excluded.verified_at,check_status=excluded.check_status`,
+  [item.id,item.productId,item.type,item.label,item.url,item.environment,item.verifiedAt || null,item.checkStatus,item.createdAt]);
 }
 
 async function insertEntryRow(client, item) {
@@ -264,8 +275,10 @@ async function insertEntryRow(client, item) {
 
 async function replacePostgresState(client, before, state) {
   for (const item of state.products) await upsertProductRow(client, item);
-  const beforeLinks = new Set(before.links.map((item) => item.id));
-  for (const item of state.links) if (!beforeLinks.has(item.id)) await insertLinkRow(client, item);
+  const beforeLinks = new Map(before.links.map((item) => [item.id, item]));
+  for (const item of state.links) {
+    if (JSON.stringify(beforeLinks.get(item.id)) !== JSON.stringify(item)) await insertLinkRow(client, item);
+  }
   const beforeEntries = new Set(before.entries.map((item) => item.id));
   for (const item of state.entries) if (!beforeEntries.has(item.id)) await insertEntryRow(client, item);
   const beforeAudit = new Set(before.auditEvents.map((item) => item.id));
@@ -421,6 +434,7 @@ export async function createProductsRequestHandler({ storeDir }) {
       const parts = url.pathname.split("/").filter(Boolean);
       const idOrSlug = decodeURIComponent(parts[2] || "");
       const action = parts[3] || "";
+      const actionId = decodeURIComponent(parts[4] || "");
       if (request.method !== "GET") assertWriteAllowed(request);
 
       if (request.method === "GET" && !idOrSlug) {
@@ -527,6 +541,38 @@ export async function createProductsRequestHandler({ storeDir }) {
           state.links.push({ id: randomUUID(), productId: item.id, type, label: normalizeText(body.label, 160) || type, url: normalizedUrl, environment, verifiedAt: "", checkStatus: "UNCHECKED", createdAt: timestamp });
           item.version += 1; item.updatedAt = timestamp; item.lastActivityAt = timestamp;
           state.auditEvents.push(createAudit(item.id, "ADD_LINK", authorName, before, productSnapshot(item)));
+          return getDetails(state, item);
+        }
+
+        if (request.method === "PATCH" && action === "links" && actionId) {
+          const link = state.links.find((candidate) => candidate.id === actionId && candidate.productId === item.id);
+          if (!link) throw Object.assign(new Error("link_not_found"), { status: 404 });
+          const beforeLink = clone(link);
+          const normalizedUrl = validateUrl(body.url ?? link.url);
+          const urlChanged = normalizedUrl !== link.url;
+          const duplicate = state.links.find((candidate) => candidate.id !== link.id && candidate.url === normalizedUrl);
+          if (duplicate) throw Object.assign(new Error("possible_duplicate_link"), { status: 409, current: duplicate });
+          link.type = validateEnum(body.type || link.type, PRODUCT_ENUMS.linkTypes, "link_type");
+          link.label = normalizeText(body.label ?? link.label, 160) || link.type;
+          link.url = normalizedUrl;
+          link.environment = validateEnum(body.environment || link.environment, ["LOCAL", "TEST", "STAGING", "LIVE"], "link_environment");
+          const statusProvided = Object.prototype.hasOwnProperty.call(body, "checkStatus");
+          link.checkStatus = validateEnum(body.checkStatus ?? (urlChanged ? "UNCHECKED" : link.checkStatus), ["UNCHECKED", "VERIFIED", "BROKEN", "LOCAL"], "link_check_status");
+          const verifiedAt = body.verifiedAt ?? (link.checkStatus === "VERIFIED"
+            ? (urlChanged && statusProvided ? timestamp : link.verifiedAt || timestamp)
+            : "");
+          link.verifiedAt = validateTimestamp(verifiedAt, "verified_at");
+          item.version += 1; item.updatedAt = timestamp; item.lastActivityAt = timestamp;
+          state.entries.push({
+            id: randomUUID(),
+            productId: item.id,
+            type: "LINK_CHANGE",
+            authorName,
+            bodyMd: sanitizeMarkdown(body.note, 4_000) || `Ссылка «${beforeLink.label}» обновлена: ${beforeLink.url} → ${link.url}`,
+            occurredAt: timestamp,
+            supersedesEntryId: null,
+          });
+          state.auditEvents.push(createAudit(item.id, "UPDATE_LINK", authorName, beforeLink, clone(link)));
           return getDetails(state, item);
         }
 
