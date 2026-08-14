@@ -7,8 +7,10 @@ import TabSummary from "./TabSummary";
 import Wrapper from "./Wrapper";
 import RetentionChart from "../charts/RetentionChart";
 import TrafficSourcesChart from "../charts/TrafficSourcesChart";
+import LimitedAnalyticsTab from "./LimitedAnalyticsTab";
 
 export default function ReinvestTabSection({ reinvestTabData }) {
+  if (reinvestTabData.limited) return <LimitedAnalyticsTab kicker="Реинвест" data={reinvestTabData} />;
   return (
     <>
       <Wrapper as="section" marginTop="lg">

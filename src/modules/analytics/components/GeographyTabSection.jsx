@@ -6,8 +6,10 @@ import SectionHeading from "./SectionHeading";
 import TabSummary from "./TabSummary";
 import Wrapper from "./Wrapper";
 import TrafficSourcesChart from "../charts/TrafficSourcesChart";
+import LimitedAnalyticsTab from "./LimitedAnalyticsTab";
 
 export default function GeographyTabSection({ geographyData }) {
+  if (geographyData.limited) return <LimitedAnalyticsTab kicker="География" data={geographyData} />;
   return (
     <>
       <Wrapper as="section" marginTop="lg">

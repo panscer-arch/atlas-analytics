@@ -1,6 +1,6 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-function TrafficLifecycleChart({ data }) {
+function TrafficLifecycleChart({ data, mode = "web" }) {
   const safeData = Array.isArray(data) ? data : [];
 
   return (
@@ -11,8 +11,8 @@ function TrafficLifecycleChart({ data }) {
         <YAxis stroke="#93a7c3" tickLine={false} axisLine={false} />
         <Tooltip contentStyle={{ background: "#0f1724", border: "1px solid rgba(255,255,255,0.12)" }} />
         <Legend />
-        <Line type="monotone" dataKey="registrations" name="Регистрации" stroke="#5ea6ff" strokeWidth={3} dot={false} />
-        <Line type="monotone" dataKey="walletConnects" name="Кошельки" stroke="#3dd9b3" strokeWidth={3} dot={false} />
+        <Line type="monotone" dataKey="registrations" name={mode === "onchain" ? "Новые участники" : "Регистрации"} stroke="#5ea6ff" strokeWidth={3} dot={false} />
+        <Line type="monotone" dataKey="walletConnects" name={mode === "onchain" ? "Активные участники" : "Кошельки"} stroke="#3dd9b3" strokeWidth={3} dot={false} />
         <Line type="monotone" dataKey="cycleActivations" name="Циклы" stroke="#ffb648" strokeWidth={3} dot={false} />
       </LineChart>
     </ResponsiveContainer>

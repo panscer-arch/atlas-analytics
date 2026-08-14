@@ -36,6 +36,7 @@ export default function OverviewTabSection({
   onActivationPageChange,
   structureKpis,
 }) {
+  const isOnChain = Boolean(data.onChain?.connected);
   return (
     <>
       <Wrapper as="section" marginTop="lg">
@@ -113,8 +114,15 @@ export default function OverviewTabSection({
             <LayoutCell>
               <AnalyticsDataTable
                 title="Деньги и циклы по периодам"
-                subtitle="Входящий поток, новые и повторные деньги, количество созданных циклов и общий исходящий поток."
-                columns={[
+                subtitle={isOnChain ? "Фактические поступления, Claim, комиссия и события создания циклов." : "Входящий поток, новые и повторные деньги, количество созданных циклов и общий исходящий поток."}
+                columns={isOnChain ? [
+                  { key: "period", label: "Период" },
+                  { key: "incoming", label: "Поступило", type: "currency" },
+                  { key: "outgoing", label: "Claim + комиссия", type: "currency" },
+                  { key: "fee", label: "Комиссия", type: "currency" },
+                  { key: "cycleActivations", label: "Создано циклов", type: "number" },
+                  { key: "claims", label: "Claim-события", type: "number" },
+                ] : [
                   { key: "period", label: "Период" },
                   { key: "incoming", label: "Входящий поток", type: "currency" },
                   { key: "newMoney", label: "Новые деньги", type: "currency" },
@@ -145,7 +153,7 @@ export default function OverviewTabSection({
         </AnalyticsCollapsibleSection>
       </Wrapper>
 
-      <Wrapper as="section" marginTop="lg">
+      {!isOnChain ? <Wrapper as="section" marginTop="lg">
         <AnalyticsCollapsibleSection
           kicker="72 часа"
           title="Посмотреть ближайшее давление по контракту"
@@ -167,9 +175,9 @@ export default function OverviewTabSection({
             rows={next72h}
           />
         </AnalyticsCollapsibleSection>
-      </Wrapper>
+      </Wrapper> : null}
 
-      <Wrapper as="section" marginTop="lg">
+      {!isOnChain ? <Wrapper as="section" marginTop="lg">
         <AnalyticsCollapsibleSection
           kicker="План действий"
           title="Посмотреть, что сделать сегодня"
@@ -178,17 +186,24 @@ export default function OverviewTabSection({
         >
           <AnalyticsPriorityActions actions={data.priorityActions} embedded />
         </AnalyticsCollapsibleSection>
-      </Wrapper>
+      </Wrapper> : (
+        <Wrapper as="section" marginTop="lg">
+          <div className="analytics-data-notice analytics-surface">
+            <strong>Прогнозы и сценарии отключены для BSC-среза</strong>
+            <p>Текущий источник подтверждает факты, но не прогнозирует будущую ликвидность. Для этого нужна отдельная модель с правилами, целями и допущениями.</p>
+          </div>
+        </Wrapper>
+      )}
 
-      <Wrapper as="section" marginTop="lg">
+      {!isOnChain ? <Wrapper as="section" marginTop="lg">
         <AnalyticsInsights alerts={data.insights.alerts} recommendations={data.insights.recommendations} />
-      </Wrapper>
+      </Wrapper> : null}
 
-      <Wrapper as="section" marginTop="lg">
+      {!isOnChain ? <Wrapper as="section" marginTop="lg">
         <AnalyticsScenarios scenarios={data.scenarios} defaultOpen={false} />
-      </Wrapper>
+      </Wrapper> : null}
 
-      <Wrapper as="section" marginTop="lg">
+      {!isOnChain ? <Wrapper as="section" marginTop="lg">
         <ActivationSection
           period={activationPeriod}
           periodOptions={periodOptions}
@@ -199,7 +214,7 @@ export default function OverviewTabSection({
           onPeriodChange={onActivationPeriodChange}
           onPageChange={onActivationPageChange}
         />
-      </Wrapper>
+      </Wrapper> : null}
 
       <Wrapper as="section" marginTop="lg">
         <AnalyticsCollapsibleSection

@@ -27,6 +27,13 @@ export default function DashboardTabSection({
   reinvestCapitalRate,
   repeatDepositRate,
 }) {
+    const isOnChain = Boolean(data.onChain?.connected);
+    const yesterdaySnapshot = overviewOperations.periods.find((row) => row.period === "Вчера") || {};
+    const changeLabel = (todayValue, yesterdayValue) => {
+      if (!yesterdayValue) return "нет базы";
+      const delta = ((Number(todayValue || 0) - Number(yesterdayValue || 0)) / Math.abs(Number(yesterdayValue))) * 100;
+      return `${delta >= 0 ? "+" : ""}${formatPercent(delta)}`;
+    };
     const walletRows = (data.tabsData?.wallets?.rows || []).slice(0, 5);
     const geographyRows = (data.tabsData?.geography?.rows || []).slice(0, 5);
     const leaderRows = (data.tabsData?.leaders?.participation || []).slice(0, 5).map((row) => ({
@@ -35,7 +42,10 @@ export default function DashboardTabSection({
       orders: row.cycles,
     }));
     const partnerRows = (data.tabsData?.partner?.rows || []).slice(0, 4);
-    const dashboardCycleMix = Object.values(
+    const dashboardCycleMix = isOnChain ? data.table.map((row) => ({
+      source: row.source,
+      incomingAmount: Number(row.incomingAmount || 0),
+    })) : Object.values(
       overviewOperations.cycleTypes.reduce((accumulator, row) => {
         const sourceKey = String(row.source || "").toLowerCase().includes("daily") ? "Daily Flow" : "Lockup";
 
@@ -54,52 +64,58 @@ export default function DashboardTabSection({
       {
         kicker: "Пришло сегодня",
         value: formatCurrency(cashPosition.incomingFact ?? data.kpis.factToday),
-        note: `↑ ${formatPercent(18.4)}`,
+        note: changeLabel(cashPosition.incomingFact ?? data.kpis.factToday, yesterdaySnapshot.incoming),
         sub: "vs вчера",
         tone: "in",
       },
       {
         kicker: "Выплачено сегодня",
         value: formatCurrency(cashPosition.outgoingFact ?? 0),
-        note: `↑ ${formatPercent(12.7)}`,
+        note: changeLabel(cashPosition.outgoingFact ?? 0, yesterdaySnapshot.outgoing),
         sub: "vs вчера",
         tone: "out",
       },
       {
         kicker: "Чистый поток",
         value: formatCurrency(contractNetFlowToday),
-        note: `↑ ${formatPercent(32.1)}`,
+        note: changeLabel(contractNetFlowToday, Number(yesterdaySnapshot.incoming || 0) - Number(yesterdaySnapshot.outgoing || 0)),
         sub: "vs вчера",
         tone: "net",
       },
       {
-        kicker: "Цель на сегодня",
-        value: formatCurrency(data.kpis.targetToday),
-        note: `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
-        sub: "выполнено",
+        kicker: isOnChain ? "Нагрузка 7 дней" : "Цель на сегодня",
+        value: formatCurrency(isOnChain ? data.kpis.obligations7d : data.kpis.targetToday),
+        note: isOnChain ? "getOrder" : `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
+        sub: isOnChain ? "расчётная" : "выполнено",
         tone: "target",
       },
       {
         kicker: "Первая дата риска",
-        value: data.kpis.firstRiskDate === "без риска" ? "Без риска" : String(data.kpis.firstRiskDate).replace(/-/g, " "),
-        note: data.kpis.firstRiskGap || "окно 72 часа",
-        sub: "окно 72 часа",
+        value: data.kpis.firstRiskDate === "без риска" ? "Без риска" : data.kpis.firstRiskDate === "не рассчитывается" ? "Нет прогноза" : String(data.kpis.firstRiskDate).replace(/-/g, " "),
+        note: data.kpis.firstRiskGap || (isOnChain ? "нужна модель ликвидности" : "окно 72 часа"),
+        sub: isOnChain ? "не подменяем оценкой" : "окно 72 часа",
         tone: "risk",
       },
     ];
     const cashRows = [
-      ["Доступно в пуле", formatCurrency(cashPosition.closingBalance ?? cashPosition.availableCash ?? 0), "success"],
+      [isOnChain ? "Объём открытых циклов" : "Доступно в пуле", formatCurrency(cashPosition.closingBalance ?? cashPosition.availableCash ?? 0), "success"],
       ["Можно забрать сейчас", formatCurrency(data.kpis.claimableNow), "accent"],
       ["Начислено, но не выведено", formatCurrency(data.kpis.accruedLater), "accent"],
-      ["Нужно добрать на 30 дней", formatCurrency(data.kpis.requiredNewMoney), "danger"],
-      ["Покрытие ближайшего окна", `${((next72h[0]?.expectedIncoming || 0) / Math.max(next72h[0]?.totalOutgoing || 1, 1)).toFixed(2)}x`, "success"],
+      [isOnChain ? "Нагрузка 30 дней" : "Нужно добрать на 30 дней", formatCurrency(isOnChain ? data.kpis.obligations30d : data.kpis.requiredNewMoney), "danger"],
+      [isOnChain ? "Рабочих циклов" : "Покрытие ближайшего окна", isOnChain ? (data.onChain?.cycleStats?.productionTotals?.total || 0) : `${((next72h[0]?.expectedIncoming || 0) / Math.max(next72h[0]?.totalOutgoing || 1, 1)).toFixed(2)}x`, "success"],
     ];
-    const conversionRows = [
+    const conversionRows = isOnChain ? [
+      ["Новые участники", data.onChain?.participants?.newParticipantsToday || 0, "последний день"],
+      ["Уникальные участники", data.onChain?.participants?.uniqueTotal || 0, "BSC"],
+      ["С открытыми циклами", data.onChain?.participants?.uniqueOpen || 0, "сейчас"],
+      ["Повторные участники", data.onChain?.participants?.repeatParticipants || 0, "2+ циклов"],
+      ["Циклов сегодня", todaySnapshot?.cycleActivations || 0, "BSC"],
+    ] : [
       ["Регистрации", trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0, "день"],
       ["Подключили кошелёк", trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%"],
       ["Активировали цикл", trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0, trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%"],
       ["Средний чек активации", formatCurrency((todaySnapshot?.incoming || 0) / Math.max(todaySnapshot?.cycleActivations || 1, 1)), "среднее"],
-      ["Качество потока", formatPercent(53.8), "в активацию"],
+      ["Качество потока", "—", "нужна аналитика"],
     ];
     const next72hColumns = [
       { key: "period", label: "Период", render: (_row, index) => (index === 0 ? "Сегодня" : index === 1 ? "Завтра" : "День 3") },
@@ -114,7 +130,12 @@ export default function DashboardTabSection({
         },
       },
     ];
-    const cycleColumns = [
+    const cycleColumns = isOnChain ? [
+      { key: "cycleType", label: "Тариф" },
+      { key: "share", label: "Доля", render: (row) => formatPercent((row.monthCreated / Math.max(data.onChain?.cycleStats?.productionTotals?.total || 1, 1)) * 100) },
+      { key: "monthCreated", label: "Всего" },
+      { key: "averageAmount", label: "Контур", render: (row) => row.source },
+    ] : [
       { key: "cycleType", label: "Тариф" },
       { key: "share", label: "Доля", render: (row) => formatPercent((row.todayIncoming / Math.max(todaySnapshot?.incoming || 1, 1)) * 100) },
       { key: "monthCreated", label: "Активные" },
@@ -156,12 +177,20 @@ export default function DashboardTabSection({
             </LayoutCell>
 
             <LayoutCell>
-              <DashboardBlock title="72 часа">
+              <DashboardBlock title={isOnChain ? "Источник данных" : "72 часа"}>
+                {isOnChain ? (
+                  <DashboardList>
+                    <DashboardListRow label="Сеть" value={data.onChain?.network?.name || "BNB Smart Chain"} tone="success" />
+                    <DashboardListRow label="Источник" value="getOrder + receipts" />
+                    <DashboardListRow label="Обновлено" value={data.onChain?.updatedAt ? new Date(data.onChain.updatedAt).toLocaleString("ru-RU") : "—"} />
+                  </DashboardList>
+                ) : (
                 <DashboardMiniTable
                   columns={next72hColumns}
                   getRowKey={(row) => row.date}
                   rows={next72h}
                 />
+                )}
               </DashboardBlock>
             </LayoutCell>
           </LayoutGrid>
@@ -200,12 +229,17 @@ export default function DashboardTabSection({
         <Wrapper as="section" marginTop="lg">
           <LayoutGrid columns="three" gap="md">
             <LayoutCell>
-              <DashboardBlock title="Новые vs повторные деньги">
+              <DashboardBlock title={isOnChain ? "Участники" : "Новые vs повторные деньги"}>
                 <DashboardBalance label="Всего за день" value={formatCurrency(todaySnapshot?.incoming || 0)} />
                 <Wrapper marginTop="md">
                   <DashboardList>
-                    <DashboardListRow label="Новые деньги" value={formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="success" />
-                    <DashboardListRow label="Повторные деньги" value={formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="accent" />
+                    {isOnChain ? <>
+                      <DashboardListRow label="Уникальные" value={data.onChain?.participants?.uniqueTotal || 0} tone="success" />
+                      <DashboardListRow label="Повторные" value={data.onChain?.participants?.repeatParticipants || 0} tone="accent" />
+                    </> : <>
+                      <DashboardListRow label="Новые деньги" value={formatPercent(((todaySnapshot?.newMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="success" />
+                      <DashboardListRow label="Повторные деньги" value={formatPercent(((todaySnapshot?.existingMoney || 0) / Math.max(todaySnapshot?.incoming || 1, 1)) * 100)} tone="accent" />
+                    </>}
                   </DashboardList>
                 </Wrapper>
               </DashboardBlock>
@@ -216,8 +250,8 @@ export default function DashboardTabSection({
                 <DashboardList>
                   <DashboardListRow label="Обязательства 7 дней" value={formatCurrency(data.kpis.obligations7d)} />
                   <DashboardListRow label="Обязательства 30 дней" value={formatCurrency(data.kpis.obligations30d)} />
-                  <DashboardListRow label="Давление выплат" value="76%" tone="danger" />
-                  <DashboardListRow label="Ближайший риск" value={data.kpis.firstRiskGap || "3 дня"} tone="danger" />
+                  <DashboardListRow label="Доступно к Claim" value={formatCurrency(data.kpis.claimableNow)} tone="accent" />
+                  <DashboardListRow label="Прогноз риска" value={data.kpis.firstRiskDate === "не рассчитывается" ? "Нет модели" : (data.kpis.firstRiskGap || "Без риска")} />
                 </DashboardList>
               </DashboardBlock>
             </LayoutCell>
@@ -227,14 +261,14 @@ export default function DashboardTabSection({
                 <DashboardList>
                   <DashboardListRow label="Reinvest rate" value={formatPercent(reinvestCapitalRate)} tone="success" />
                   <DashboardListRow label="Доля повторных циклов" value={formatPercent(repeatDepositRate)} />
-                  <DashboardListRow label="Возврат в систему" value="68.3/100" tone="success" />
+                  <DashboardListRow label="Статус источника" value={isOnChain ? "Нужна атрибуция Claim → цикл" : "Не подключён"} />
                 </DashboardList>
               </DashboardBlock>
             </LayoutCell>
           </LayoutGrid>
         </Wrapper>
 
-        <Wrapper as="section" marginTop="lg">
+        {!isOnChain ? <Wrapper as="section" marginTop="lg">
           <LayoutGrid columns="four" gap="md">
             <LayoutCell>
               <DashboardBlock title="Кошельки">
@@ -272,12 +306,18 @@ export default function DashboardTabSection({
                   {partnerRows.slice(0, 3).map((row) => (
                     <DashboardListRow key={row.branch} label={row.branch} value={formatCurrency(row.inflow)} sub={`${row.invited} приглаш.`} />
                   ))}
-                  <DashboardListRow label="Риск перегруза" value="Высокий" tone="danger" />
                 </DashboardList>
               </DashboardBlock>
             </LayoutCell>
           </LayoutGrid>
-        </Wrapper>
+        </Wrapper> : (
+          <Wrapper as="section" marginTop="lg">
+            <div className="analytics-data-notice analytics-surface">
+              <strong>Лидеры, география и партнёрские ветки</strong>
+              <p>Эти разрезы не выводятся из публичного BSC без внешней атрибуции. После подключения CRM/продуктовой аналитики они появятся здесь без вымышленных имён и стран.</p>
+            </div>
+          </Wrapper>
+        )}
       </>
     );
 }

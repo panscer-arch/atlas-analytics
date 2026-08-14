@@ -3,11 +3,38 @@ import AnalyticsDateTime from "./AnalyticsDateTime";
 
 const VAULT_URL = String(import.meta.env.VITE_VAULT_URL || "").trim();
 
+function HeaderTool({ label, onClick, href, children, className = "" }) {
+  const Component = href ? "a" : "button";
+  const externalProps = href ? { href, target: "_blank", rel: "noreferrer" } : { type: "button", onClick };
+  return (
+    <Component
+      {...externalProps}
+      className={`analytics-header-tool ${className}`.trim()}
+      aria-label={label}
+      data-tooltip={label}
+    >
+      {children}
+    </Component>
+  );
+}
+
+function ToolIcon({ type }) {
+  if (type === "session") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 2" /><path d="M8 3h8" /></svg>;
+  if (type === "hermes") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 14c3-1 4-5 7-8 3 3 4 7 7 8-2 4-5 6-7 6s-5-2-7-6Z" /><path d="M8 14h8M12 6v14" /></svg>;
+  if (type === "expenses") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18l-2-1.5L12 21l-3-1.5L7 21V3Z" /><path d="M10 8h4M10 12h4M10 16h2" /></svg>;
+  if (type === "notes") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Z" /><path d="M9 10h6M9 14h6M9 18h4" /></svg>;
+  if (type === "marketing") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 13 11-5v8L4 13Z" /><path d="M7 14v5h4v-3M18 10v4" /></svg>;
+  if (type === "media") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m5 17 5-4 3 2 3-3 3 5" /></svg>;
+  return null;
+}
+
 function AnalyticsHeader({
   onAiReview,
   onParserOpen,
   onQuickNotes,
   onHermesOpen,
+  onSessionOpen,
+  onExpensesOpen,
   crmUrl,
   mediaPreviewUrl,
   onLiveAnalyticsClick,
@@ -52,81 +79,28 @@ function AnalyticsHeader({
 
       <div className="analytics-header-center">
         {onAiReview ? (
-          <button type="button" className="analytics-header-ai-button" onClick={onAiReview} aria-label="AI-разбор задач">
+          <button type="button" className="analytics-header-ai-button" onClick={onAiReview} aria-label="AI-разбор задач" data-tooltip="AI-разбор задач" title="AI-разбор задач">
             <span>AI</span>
             <b>Разбор</b>
           </button>
         ) : null}
-        {onParserOpen ? (
-          <button type="button" className="analytics-header-parser-button" onClick={onParserOpen} aria-label="Открыть парсер" title="Парсер">
-            <span className="analytics-header-parser-radar" aria-hidden="true">
-              <span className="analytics-header-parser-ring analytics-header-parser-ring-1" />
-              <span className="analytics-header-parser-ring analytics-header-parser-ring-2" />
-              <span className="analytics-header-parser-sweep" />
-              <span className="analytics-header-parser-dot analytics-header-parser-dot-1" />
-              <span className="analytics-header-parser-dot analytics-header-parser-dot-2" />
-            </span>
-          </button>
-        ) : null}
+        {onSessionOpen ? <HeaderTool label="Сессия" onClick={onSessionOpen}><ToolIcon type="session" /></HeaderTool> : null}
+        {onHermesOpen ? <HeaderTool label="Гермес" onClick={onHermesOpen}><ToolIcon type="hermes" /></HeaderTool> : null}
+        {onExpensesOpen ? <HeaderTool label="Расходы" onClick={onExpensesOpen}><ToolIcon type="expenses" /></HeaderTool> : null}
+        {onParserOpen ? <HeaderTool label="Маркетинг" onClick={onParserOpen}><ToolIcon type="marketing" /></HeaderTool> : null}
         {onQuickNotes ? (
-          <button type="button" className="analytics-header-notes-button" onClick={onQuickNotes} aria-label="Открыть заметки" title="Заметки">
-            <span className="analytics-header-notes-paper" aria-hidden="true">
-              <span className="analytics-header-notes-line analytics-header-notes-line-1" />
-              <span className="analytics-header-notes-line analytics-header-notes-line-2" />
-              <span className="analytics-header-notes-pen" />
-            </span>
-          </button>
+          <HeaderTool label="Заметки" onClick={onQuickNotes}><ToolIcon type="notes" /></HeaderTool>
         ) : null}
         {VAULT_URL ? (
-          <a
-            className="analytics-header-hermes-button"
-            href={VAULT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Открыть хранилище паролей"
-            title="Пароли"
-          >
+          <HeaderTool label="Пароли" href={VAULT_URL}>
             <LockKeyhole size={22} strokeWidth={1.8} aria-hidden="true" />
-          </a>
-        ) : null}
-        {onHermesOpen ? (
-          <button type="button" className="analytics-header-hermes-button" onClick={onHermesOpen} aria-label="Открыть Гермес" title="Гермес">
-            <span className="analytics-header-hermes-mark" aria-hidden="true">
-              <span className="analytics-header-hermes-core" />
-              <span className="analytics-header-hermes-orbit analytics-header-hermes-orbit-1" />
-              <span className="analytics-header-hermes-orbit analytics-header-hermes-orbit-2" />
-              <span className="analytics-header-hermes-spark analytics-header-hermes-spark-1" />
-              <span className="analytics-header-hermes-spark analytics-header-hermes-spark-2" />
-            </span>
-          </button>
+          </HeaderTool>
         ) : null}
         {crmUrl ? (
-          <a
-            className="analytics-header-crm-button"
-            href={crmUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Открыть CRM"
-            title="CRM"
-          >
-            CRM
-          </a>
+          <HeaderTool label="CRM" href={crmUrl} className="analytics-header-tool-text">CRM</HeaderTool>
         ) : null}
         {mediaPreviewUrl ? (
-          <a
-            className="analytics-header-media-button"
-            href={mediaPreviewUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Открыть макет Atlas Media"
-            title="Atlas Media"
-          >
-            <span className="analytics-header-media-mark" aria-hidden="true">
-              <span className="analytics-header-media-picture" />
-              <span className="analytics-header-media-line analytics-header-media-line-1" />
-              <span className="analytics-header-media-line analytics-header-media-line-2" />
-            </span>
-          </a>
+          <HeaderTool label="Atlas Media" href={mediaPreviewUrl}><ToolIcon type="media" /></HeaderTool>
         ) : null}
         <AnalyticsDateTime />
       </div>

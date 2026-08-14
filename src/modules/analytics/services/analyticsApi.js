@@ -4,6 +4,8 @@ import { groupByDate, groupBySource, groupNetworkStats } from "../utils/buildCha
 
 const ANALYTICS_API_BASE_URL = (import.meta.env.VITE_ANALYTICS_API_BASE_URL || "").trim().replace(/\/+$/, "");
 const ANALYTICS_API_TIMEOUT_MS = 1500;
+const ATLAS_FLOW_API_URL = "/api/contracts/atlas-flows";
+const ATLAS_FLOW_API_TIMEOUT_MS = 45000;
 
 const COUNTRY_PROFILES = [
   { country: "Great Britain", share: 0.22, city: "Manchester" },
@@ -57,6 +59,20 @@ async function fetchJson(url) {
       throw new Error(`Analytics API failed: ${response.status}`);
     }
     return response.json();
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function fetchAtlasFlowSnapshot() {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), ATLAS_FLOW_API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(ATLAS_FLOW_API_URL, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Atlas flow API failed: ${response.status}`);
+    const payload = await response.json();
+    return payload?.ok ? payload : null;
   } finally {
     window.clearTimeout(timeoutId);
   }
@@ -2281,14 +2297,237 @@ function buildPriorityActions(kpis, futureRecords, tabsData) {
   ];
 }
 
+function numberFromFlow(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getMoscowDayKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function shiftDayKey(dayKey, days) {
+  const date = new Date(`${dayKey}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function findFlowDay(rows = [], dayKey = getMoscowDayKey()) {
+  return rows.find((row) => row.date === dayKey) || { date: dayKey };
+}
+
+function sumFlowDays(rows = []) {
+  return rows.reduce((result, row) => ({
+    incoming: result.incoming + numberFromFlow(row.provided),
+    outgoing: result.outgoing + numberFromFlow(row.claimed) + numberFromFlow(row.fee),
+    fee: result.fee + numberFromFlow(row.fee),
+    cycleActivations: result.cycleActivations + numberFromFlow(row.lockedEvents),
+    claims: result.claims + numberFromFlow(row.claimedEvents),
+  }), { incoming: 0, outgoing: 0, fee: 0, cycleActivations: 0, claims: 0 });
+}
+
+function buildOnChainOverviewOperations(flowSnapshot) {
+  const daily = flowSnapshot?.daily || [];
+  const todayKey = getMoscowDayKey();
+  const latest = findFlowDay(daily, todayKey);
+  const previous = findFlowDay(daily, shiftDayKey(todayKey, -1));
+  const periodRows = [
+    ["Вчера", [previous]],
+    ["Сегодня", [latest]],
+    ["7 дней", daily.slice(-7)],
+    ["30 дней", daily.slice(-30)],
+  ];
+  const periods = periodRows.map(([period, rows]) => ({ period, ...sumFlowDays(rows) }));
+  const cycleTypes = (flowSnapshot?.cycleStats?.byTerm || []).map((row) => {
+    return {
+      cycleType: row.tierName,
+      source: row.contractName,
+      todayCreated: 0,
+      weekCreated: 0,
+      monthCreated: row.total,
+      todayIncoming: 0,
+      todayOutgoing: 0,
+    };
+  });
+  return { periods, cycleTypes };
+}
+
+function buildOnChainProductsTab(flowSnapshot) {
+  const rows = (flowSnapshot?.cycleStats?.byTerm || []).map((row) => ({
+    tariff: row.tierName,
+    source: row.contractId === "lockup-flow" ? "Lockup" : "Daily Flow",
+    shortLabel: `${row.contractName} · ${row.termLabel}`,
+    limit: "По контракту",
+    cycle: row.termLabel,
+    mode: row.contractId === "lockup-flow" ? "По окончании срока" : "Daily claim",
+    deltaPercent: 0,
+    dailyPercent: 0,
+    inflow: numberFromFlow(row.totalVolume),
+    orders: row.total,
+    claimable: numberFromFlow(row.claimableNow),
+    accrued: Math.max(0, numberFromFlow(row.remainingLoad) - numberFromFlow(row.claimableNow)),
+    obligations30d: numberFromFlow(row.next30DaysLoad),
+    pressure: 0,
+    riskDate: "не рассчитывается",
+  }));
+  const lockup = rows.filter((row) => row.source === "Lockup");
+  const daily = rows.filter((row) => row.source === "Daily Flow");
+  const metricFor = (title, sourceRows) => ({
+    title,
+    value: sourceRows.reduce((sum, row) => sum + row.inflow, 0),
+    variant: "currency",
+    icon: title === "Lockup" ? "calendar" : "claim",
+    statusLabel: `${sourceRows.reduce((sum, row) => sum + row.orders, 0)} циклов`,
+    description: "Фактический объём созданных циклов по состоянию контрактов.",
+    tone: "success",
+  });
+  return {
+    summary: {
+      title: `${rows.reduce((sum, row) => sum + row.orders, 0)} циклов подтверждено в BNB Chain`,
+      description: "Срез построен по nextOrderId/getOrder. Нагрузка показывает доступный Claim и расчётные обязательства открытых циклов.",
+      bullets: [
+        `Открыто: ${flowSnapshot?.cycleStats?.productionTotals?.open || 0}`,
+        `Закрыто: ${flowSnapshot?.cycleStats?.productionTotals?.closed || 0}`,
+        `Доступно к Claim: ${flowSnapshot?.cycleStats?.productionTotals?.claimable || 0}`,
+      ],
+    },
+    metrics: [metricFor("Lockup", lockup), metricFor("Daily Flow", daily)],
+    rows,
+  };
+}
+
+function buildOnChainTrafficTab(flowSnapshot) {
+  const participants = flowSnapshot?.participants || {};
+  const participantDays = new Map((participants.byDay || []).map((row) => [row.date, row]));
+  const lifecycleRows = (flowSnapshot?.daily || []).map((row) => {
+    const participantDay = participantDays.get(row.date) || {};
+    const newParticipants = numberFromFlow(participantDay.newParticipants);
+    const activeParticipants = numberFromFlow(participantDay.activeParticipants);
+    const cycles = numberFromFlow(row.lockedEvents);
+    return {
+      date: row.date,
+      registrations: newParticipants,
+      walletConnects: activeParticipants,
+      cycleActivations: cycles,
+      walletConnectRate: newParticipants ? (activeParticipants / newParticipants) * 100 : 0,
+      cycleActivationRate: activeParticipants ? (cycles / activeParticipants) * 100 : 0,
+    };
+  });
+  const today = lifecycleRows.at(-1) || {};
+  const uniqueTotal = numberFromFlow(participants.uniqueTotal);
+  const uniqueOpen = numberFromFlow(participants.uniqueOpen);
+  const repeatParticipants = numberFromFlow(participants.repeatParticipants);
+  const cycleTotal = numberFromFlow(flowSnapshot?.cycleStats?.productionTotals?.total);
+  return {
+    mode: "onchain",
+    summary: {
+      title: `${uniqueTotal} уникальных on-chain участников`,
+      description: "BSC показывает реальные адреса, циклы и Claim. Веб-регистрации, сессии, online и география появятся после подключения продуктовой аналитики.",
+      bullets: [
+        `С открытыми циклами: ${uniqueOpen}`,
+        `Повторно создавали циклы: ${repeatParticipants}`,
+        `Рабочих циклов: ${cycleTotal}`,
+      ],
+    },
+    metrics: [
+      { title: "Новые on-chain участники", value: numberFromFlow(today.registrations), icon: "users", statusLabel: "последний день", description: "Адрес впервые создал цикл." },
+      { title: "Активировали циклы", value: numberFromFlow(today.cycleActivations), icon: "calendar", statusLabel: "последний день", description: "Созданные циклы в BNB Chain." },
+      { title: "Уникальные участники", value: uniqueTotal, icon: "unique", statusLabel: "всего", description: "Уникальные owner-адреса в getOrder." },
+      { title: "С открытыми циклами", value: uniqueOpen, icon: "active-wallet", statusLabel: "сейчас", description: "Участники, у которых есть открытые циклы." },
+      { title: "Повторные участники", value: repeatParticipants, icon: "claim", statusLabel: uniqueTotal ? `${Math.round((repeatParticipants / uniqueTotal) * 100)}%` : "0%", description: "Создали больше одного цикла." },
+      { title: "Рабочие циклы", value: cycleTotal, icon: "transactions", statusLabel: "BSC", description: "Без Contract Test." },
+    ],
+    countries: [],
+    sources: [],
+    funnel: [
+      { stage: "Уникальные участники", value: uniqueTotal },
+      { stage: "С открытыми циклами", value: uniqueOpen },
+      { stage: "Повторные участники", value: repeatParticipants },
+    ],
+    conversion: [],
+    qualityRows: [],
+    lifecycleRows,
+    lifecycleTotals: [],
+    sourceQualityRows: [],
+    timeline: lifecycleRows.map((row) => ({ date: row.date, users: row.walletConnects, registrations: row.registrations })),
+    countryShare: [],
+  };
+}
+
+function buildUnavailableTab(title, description) {
+  return {
+    limited: true,
+    summary: { title, description, bullets: ["Источник не подключён — нулевые значения не выдаются за фактические данные."] },
+    metrics: [], rows: [], qualityRows: [], riskRows: [], financeRows: [], byParticipation: [], byAttraction: [],
+    inflowShare: [], obligationsShare: [], referralShare: [],
+  };
+}
+
+function mergeOnChainKpis(localKpis, flowSnapshot) {
+  if (!flowSnapshot) return localKpis;
+  const latest = findFlowDay(flowSnapshot.daily || []);
+  const totals = flowSnapshot.totals || {};
+  const production = flowSnapshot.cycleStats?.productionTotals || {};
+  const participants = flowSnapshot.participants || {};
+  const incomingToday = numberFromFlow(latest.provided);
+  const outgoingToday = numberFromFlow(latest.claimed) + numberFromFlow(latest.fee);
+  const receipts = numberFromFlow(totals.receipts);
+  return {
+    ...localKpis,
+    incomingToday,
+    factToday: incomingToday,
+    outgoingToday,
+    contractNetFlowToday: incomingToday - outgoingToday,
+    planToday: 0,
+    gapToday: 0,
+    targetToday: 0,
+    targetTomorrow: 0,
+    obligations7d: numberFromFlow(production.next7DaysLoad),
+    obligations30d: numberFromFlow(production.next30DaysLoad),
+    requiredNewMoney: 0,
+    referralBurden: numberFromFlow(latest.partnerDelta),
+    platformFee: numberFromFlow(latest.fee),
+    operatorNet: numberFromFlow(production.openVolume),
+    activeWallets: numberFromFlow(participants.uniqueOpen),
+    connectedWallets: numberFromFlow(participants.uniqueTotal),
+    uniqueWallets: numberFromFlow(participants.uniqueTotal),
+    transactions: receipts,
+    transactionVolume: numberFromFlow(totals.provided) + numberFromFlow(totals.claimed),
+    failedTransactions: (flowSnapshot.failures || []).reduce((sum, row) => sum + numberFromFlow(row.failedReceipts) + numberFromFlow(row.failedOrderStates), 0),
+    averageTransactionValue: receipts ? (numberFromFlow(totals.provided) + numberFromFlow(totals.claimed)) / receipts : 0,
+    topNetwork: flowSnapshot.network?.name || "BNB Smart Chain",
+    claimableNow: numberFromFlow(production.claimableNow),
+    accruedLater: Math.max(0, numberFromFlow(production.remainingLoad) - numberFromFlow(production.claimableNow)),
+    firstRiskDate: "не рассчитывается",
+    firstRiskGap: 0,
+    cashPosition: {
+      incomingFact: incomingToday,
+      outgoingFact: outgoingToday,
+      availableCash: numberFromFlow(production.openVolume),
+      closingBalance: numberFromFlow(production.openVolume),
+    },
+  };
+}
+
 export async function getAnalyticsDashboard(filters) {
   let backendBundle = null;
+  let flowSnapshot = null;
 
-  try {
-    backendBundle = await fetchAnalyticsBackendBundle(filters);
-  } catch (error) {
-    console.warn("Analytics backend bundle unavailable, using mock fallback.", error);
-  }
+  const [backendResult, flowResult] = await Promise.allSettled([
+    fetchAnalyticsBackendBundle(filters),
+    fetchAtlasFlowSnapshot(),
+  ]);
+  if (backendResult.status === "fulfilled") backendBundle = backendResult.value;
+  else console.warn("Analytics backend bundle unavailable, using local fallback.", backendResult.reason);
+  if (flowResult.status === "fulfilled") flowSnapshot = flowResult.value;
+  else console.warn("Atlas on-chain flow unavailable.", flowResult.reason);
 
   const safeBaseFilters = {
     dateRange: "30d",
@@ -2301,19 +2540,78 @@ export async function getAnalyticsDashboard(filters) {
   const records = fallbackToBase ? filterRecords(safeBaseFilters) : filteredRecords;
   const futureRecords = filterFutureObligations(effectiveFilters);
   const timeseries = groupByDate(records);
+  const onChainTimeseries = (flowSnapshot?.daily || []).map((row) => ({
+    date: row.date,
+    incomingAmount: numberFromFlow(row.provided),
+    cyclePayouts: numberFromFlow(row.claimed),
+    referralPayouts: numberFromFlow(row.partnerDelta),
+    platformFee: numberFromFlow(row.fee),
+    operatorNet: numberFromFlow(row.remaining),
+  }));
   const localKpis = buildKpis(records, futureRecords);
-  const kpis = mergeBackendKpis(localKpis, backendBundle);
-  const table = buildProductsTable(records);
-  const trafficTab = mergeBackendTrafficTab(buildTrafficTab(records), backendBundle);
-  const productsTab = buildProductsTab(records, futureRecords);
-  const overviewOperations = buildOverviewOperations(records);
-  const leadersTab = mergeBackendLeadersTab(buildLeadersTab(records), backendBundle);
-  const geographyTab = mergeBackendGeographyTab(buildGeographyTab(records, futureRecords), backendBundle);
-  const partnerTab = mergeBackendPartnerTab(buildPartnerTab(records, futureRecords), backendBundle);
+  const kpis = mergeOnChainKpis(mergeBackendKpis(localKpis, backendBundle), flowSnapshot);
+  const table = flowSnapshot ? (flowSnapshot.contracts || []).map((row) => ({
+    source: row.name,
+    incomingAmount: numberFromFlow(row.provided),
+    planAmount: 0,
+    cyclePayouts: numberFromFlow(row.claimed),
+    referralPayouts: numberFromFlow(row.partnerDelta),
+    platformFee: numberFromFlow(row.fee),
+    operatorNet: numberFromFlow(row.remaining),
+    gap: 0,
+  })) : buildProductsTable(records);
+  const trafficTab = flowSnapshot
+    ? buildOnChainTrafficTab(flowSnapshot)
+    : mergeBackendTrafficTab(buildTrafficTab(records), backendBundle);
+  const productsTab = flowSnapshot ? buildOnChainProductsTab(flowSnapshot) : buildProductsTab(records, futureRecords);
+  const overviewOperations = flowSnapshot ? buildOnChainOverviewOperations(flowSnapshot) : buildOverviewOperations(records);
+  const leadersTab = backendBundle
+    ? mergeBackendLeadersTab(buildLeadersTab(records), backendBundle)
+    : buildUnavailableTab("Данные по лидерам не подключены", "BNB Chain не содержит подтверждённой привязки адресов к именам лидеров.");
+  const geographyTab = backendBundle
+    ? mergeBackendGeographyTab(buildGeographyTab(records, futureRecords), backendBundle)
+    : buildUnavailableTab("География не определяется по блокчейну", "Для стран и городов нужен обезличенный источник веб-аналитики или CRM.");
+  const partnerTab = backendBundle
+    ? mergeBackendPartnerTab(buildPartnerTab(records, futureRecords), backendBundle)
+    : {
+      ...buildUnavailableTab("Партнёрская нагрузка доступна агрегированно", "BSC подтверждает общую партнёрскую дельту по контрактам. Именованные ветки и лидеры требуют отдельной CRM-атрибуции."),
+      metrics: flowSnapshot ? [
+        { title: "Партнёрская дельта", value: flowSnapshot.totals?.partnerDelta || 0, variant: "currency", icon: "network", statusLabel: "всего", description: "Расчётная дельта по всем созданным циклам." },
+        { title: "Партнёрская дельта сегодня", value: findFlowDay(flowSnapshot.daily || []).partnerDelta || 0, variant: "currency", icon: "inflow", statusLabel: "день", description: "По циклам текущего дня по Москве." },
+        { title: "Lockup-контур", value: flowSnapshot.totals?.lockupDelta || 0, variant: "currency", icon: "calendar", statusLabel: "Lockup", description: "Партнёрская дельта Lockup Flow." },
+        { title: "Daily-контур", value: flowSnapshot.totals?.dailyDelta || 0, variant: "currency", icon: "claim", statusLabel: "Daily", description: "Партнёрская дельта Daily Flow." },
+      ] : [],
+    };
   const partnerPressureMetrics = buildOverviewPartnerPressure(partnerTab);
-  const walletsTab = mergeBackendWalletsTab(buildWalletsTab(records, futureRecords), backendBundle);
-  const reinvestTab = mergeBackendReinvestTab(buildReinvestTab(records), backendBundle);
-  const baseCompositionTab = mergeBackendBaseCompositionTab(buildBaseCompositionTab(records, futureRecords), backendBundle);
+  const walletsTab = backendBundle
+    ? mergeBackendWalletsTab(buildWalletsTab(records, futureRecords), backendBundle)
+    : {
+      ...buildUnavailableTab("Кошельки посчитаны агрегированно", "Адреса не публикуются в операционной панели; показываются только агрегаты owner из getOrder."),
+      metrics: flowSnapshot ? [
+        { title: "Уникальные участники", value: flowSnapshot.participants?.uniqueTotal || 0, icon: "unique", statusLabel: "BSC", description: "Уникальные owner-адреса." },
+        { title: "С открытыми циклами", value: flowSnapshot.participants?.uniqueOpen || 0, icon: "active-wallet", statusLabel: "сейчас", description: "Есть хотя бы один открытый цикл." },
+        { title: "Доступен Claim", value: flowSnapshot.participants?.uniqueClaimable || 0, icon: "claim", statusLabel: "сейчас", description: "Есть доступная к Claim сумма." },
+        { title: "Повторные участники", value: flowSnapshot.participants?.repeatParticipants || 0, icon: "transactions", statusLabel: "2+ циклов", description: "Создали больше одного цикла." },
+      ] : [],
+    };
+  const reinvestTab = backendBundle
+    ? mergeBackendReinvestTab(buildReinvestTab(records), backendBundle)
+    : {
+      limited: true,
+      summary: { title: "Реинвест требует связки Claim → новый цикл", description: "Текущий BSC-срез считает Claim и циклы отдельно. Без атрибуции по адресу показатель реинвеста не публикуется.", bullets: ["После серверной связки событий вкладка заполнится фактическими значениями."] },
+      metrics: [], byProduct: [], byCountry: [], timeline: [], productShare: [],
+    };
+  const baseCompositionTab = backendBundle
+    ? mergeBackendBaseCompositionTab(buildBaseCompositionTab(records, futureRecords), backendBundle)
+    : {
+      ...buildUnavailableTab("Состав базы доступен на уровне on-chain активности", "Роли, статусы и сегменты требуют CRM; сейчас доступны только факты создания циклов."),
+      metrics: flowSnapshot ? [
+        { title: "Уникальные участники", value: flowSnapshot.participants?.uniqueTotal || 0, icon: "users", statusLabel: "всего", description: "Owner-адреса в контрактах." },
+        { title: "Активная база", value: flowSnapshot.participants?.uniqueOpen || 0, icon: "active-wallet", statusLabel: "open", description: "Есть открытые циклы." },
+        { title: "Закрывали циклы", value: flowSnapshot.participants?.uniqueClosed || 0, icon: "claim", statusLabel: "history", description: "Есть закрытый цикл." },
+        { title: "Повторная активность", value: flowSnapshot.participants?.repeatParticipants || 0, icon: "transactions", statusLabel: "2+", description: "Больше одного цикла." },
+      ] : [],
+    };
   const enrichedPartnerTab = {
     ...partnerTab,
     metrics: [...partnerPressureMetrics, ...(partnerTab.metrics || [])],
@@ -2340,17 +2638,22 @@ export async function getAnalyticsDashboard(filters) {
       dateRanges: analyticsMockData.dateRanges,
       segments: analyticsMockData.segments,
       sources: analyticsMockData.sources,
-      generatedAt: backendBundle?.overview?.generatedAt || analyticsMockData.generatedAt,
+      generatedAt: flowSnapshot?.updatedAt || backendBundle?.overview?.generatedAt || analyticsMockData.generatedAt,
       fallbackToBase,
     },
     kpis,
     charts: {
-      usersGrowth: timeseries,
-      revenue: timeseries,
-      funnel: buildBreakdownFunnel(records, futureRecords),
+      usersGrowth: flowSnapshot ? onChainTimeseries : timeseries,
+      revenue: flowSnapshot ? onChainTimeseries : timeseries,
+      funnel: flowSnapshot ? [
+        { stage: "Создано циклов", value: numberFromFlow(flowSnapshot.cycleStats?.productionTotals?.total), conversion: 100 },
+        { stage: "Открыто", value: numberFromFlow(flowSnapshot.cycleStats?.productionTotals?.open), conversion: 0 },
+        { stage: "Доступен Claim", value: numberFromFlow(flowSnapshot.cycleStats?.productionTotals?.claimable), conversion: 0 },
+        { stage: "Закрыто", value: numberFromFlow(flowSnapshot.cycleStats?.productionTotals?.closed), conversion: 0 },
+      ] : buildBreakdownFunnel(records, futureRecords),
       trafficSources: table,
-      retention: buildCoverageCurve(futureRecords),
-      campaigns: buildProductPressure(records, futureRecords),
+      retention: flowSnapshot ? [] : buildCoverageCurve(futureRecords),
+      campaigns: flowSnapshot ? [] : buildProductPressure(records, futureRecords),
     },
     executiveSummary,
     dayState,
@@ -2367,6 +2670,16 @@ export async function getAnalyticsDashboard(filters) {
       endpoints: backendBundle
         ? ["overview", "cash-position", "obligations", "plan-fact", "orders", "wallets", "partner-structure", "reinvest", "leaders", "geography", "traffic", "base-composition"]
         : [],
+    },
+    onChain: {
+      connected: Boolean(flowSnapshot),
+      source: flowSnapshot?.source || "BNB Chain endpoint unavailable",
+      updatedAt: flowSnapshot?.updatedAt || null,
+      network: flowSnapshot?.network || null,
+      totals: flowSnapshot?.totals || null,
+      today: flowSnapshot ? findFlowDay(flowSnapshot.daily || []) : null,
+      participants: flowSnapshot?.participants || null,
+      cycleStats: flowSnapshot?.cycleStats || null,
     },
     recordsCount: records.length,
   };

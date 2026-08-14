@@ -5,6 +5,7 @@ import AtlasCreativesPanel from "./AtlasCreativesPanel";
 import BitnestYoutubeParserPanel from "./BitnestYoutubeParserPanel";
 import HyipParserPanel from "./HyipParserPanel";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
+import ListingsCrmBoard from "./ListingsCrmBoard";
 import MarketingDirectionWorkspace from "./MarketingDirectionWorkspace";
 import MarketSegmentsPanel from "./MarketSegmentsPanel";
 import MlmGatewayTracker from "./MlmGatewayTracker";
@@ -144,6 +145,11 @@ const PARSER_TABS = [
     label: "Pool Monitor",
     hint: "USDT/USDC",
   },
+  {
+    id: "listings",
+    label: "Листинги",
+    hint: "CRM",
+  },
 ];
 
 const PARSER_TAB_BOARD_IDS = {
@@ -164,6 +170,7 @@ const PARSER_TAB_BOARD_IDS = {
   socialUniversal: "socialParser",
   web3Segments: "web3Segments",
   poolMonitor: "poolMonitor",
+  listings: "listings",
 };
 const BOARD_PARSER_TABS = Object.fromEntries(
   Object.entries(PARSER_TAB_BOARD_IDS).map(([tabId, boardId]) => [boardId, tabId]),
@@ -881,6 +888,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         <Web3SegmentsPanel />
       ) : activeTab === "poolMonitor" ? (
         <PoolMonitorPanel />
+      ) : activeTab === "listings" ? (
+        <ListingsCrmBoard />
       ) : (
         <HyipParserPanel />
       )}

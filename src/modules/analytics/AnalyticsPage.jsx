@@ -57,18 +57,16 @@ import "./styles/analytics.css";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
-const ATLAS_LISTINGS_CRM_URL = "https://atlas-partners-crm.panscer.chatgpt.site";
 const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
 const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
   session: "sessionQueue",
   parser: "parser",
   analytics: "analytics",
-  expenses: "expenses",
   products: "products",
+  expenses: "expenses",
   tasks: "launch",
   content: "materials",
-  listings: "listings",
   hermes: "hermesAssistant",
   diary: "diary",
 };
@@ -318,7 +316,10 @@ function AnalyticsPage() {
   }
 
   const gapTone = getRiskTone(data.kpis.gapToday);
-  const riskTone = data.kpis.firstRiskDate === "без риска" ? "success" : "danger";
+  const isOnChain = Boolean(data.onChain?.connected);
+  const riskTone = data.kpis.firstRiskDate === "без риска"
+    ? "success"
+    : data.kpis.firstRiskDate === "не рассчитывается" ? "accent" : "danger";
   const cashPosition = data.kpis.cashPosition || {};
   const trafficTabData = data.tabsData?.traffic || {
     summary: { title: "Нет данных по трафику", description: "Пока нет live-данных для этого среза.", bullets: [] },
@@ -433,24 +434,24 @@ function AnalyticsPage() {
       emphasis: true,
     },
     {
-      title: "Цель на сегодня",
-      value: data.kpis.targetToday,
+      title: isOnChain ? "Нагрузка ближайших 7 дней" : "Цель на сегодня",
+      value: isOnChain ? data.kpis.obligations7d : data.kpis.targetToday,
       variant: "currency",
-      tone: gapTone,
+      tone: isOnChain ? "accent" : gapTone,
       icon: "target",
-      statusLabel: `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
-      description: `План дня с учётом хвоста. Уже закрыто ${data.kpis.factToday}.`,
+      statusLabel: isOnChain ? "BSC" : `${Math.max(0, Math.round((data.kpis.factToday / Math.max(data.kpis.targetToday, 1)) * 100))}%`,
+      description: isOnChain ? "Расчётная net-нагрузка открытых циклов." : `План дня с учётом хвоста. Уже закрыто ${data.kpis.factToday}.`,
       emphasis: true,
-      pulse: gapTone === "danger",
+      pulse: !isOnChain && gapTone === "danger",
     },
     {
-      title: "Доступный остаток",
+      title: isOnChain ? "Объём открытых циклов" : "Доступный остаток",
       value: cashPosition.availableCash ?? 0,
       variant: "currency",
       tone: "accent",
       icon: "wallet",
       statusLabel: cashPosition.closingBalance ? `баланс ${cashPosition.closingBalance}` : "cash",
-      description: "Свободные деньги после резервов.",
+      description: isOnChain ? "Тело действующих рабочих циклов, не свободная ликвидность." : "Свободные деньги после резервов.",
       emphasis: true,
     },
     {
@@ -466,7 +467,14 @@ function AnalyticsPage() {
     },
   ];
 
-  const structureKpis = [
+  const structureKpis = isOnChain ? [
+    { title: "Партнёрская дельта", value: data.onChain?.totals?.partnerDelta || 0, variant: "currency", icon: "network", statusLabel: "всего", description: "Расчётная партнёрская часть по созданным циклам." },
+    { title: "Комиссия собрана", value: data.onChain?.totals?.fee || 0, variant: "currency", icon: "fee", statusLabel: "fact", description: "Фактически удержанная комиссия." },
+    { title: "Нагрузка 30 дней", value: data.kpis.obligations30d, variant: "currency", icon: "calendar", statusLabel: "30д", description: "Расчётная net-нагрузка открытых циклов." },
+    { title: "Открытые циклы", value: data.onChain?.cycleStats?.productionTotals?.open || 0, icon: "transactions", statusLabel: "BSC", description: "Рабочие циклы без Contract Test." },
+    { title: "Можно Claim сейчас", value: data.kpis.claimableNow, variant: "currency", tone: "success", icon: "claim", statusLabel: "claim", description: "Доступная по состоянию контрактов сумма." },
+    { title: "Начислено позже", value: data.kpis.accruedLater, variant: "currency", tone: "accent", icon: "accrued", statusLabel: "later", description: "Оставшаяся нагрузка за вычетом доступного Claim." },
+  ] : [
     { title: "Требуемый новый приток", value: data.kpis.requiredNewMoney, variant: "currency", tone: "accent", icon: "inflow", statusLabel: "30д", description: "Нужно на 30 дней." },
     { title: "Реферальная нагрузка", value: data.kpis.referralBurden, variant: "currency", icon: "network", statusLabel: "7д", description: "Ближайшая рефералка." },
     { title: "Комиссия платформы", value: data.kpis.platformFee, variant: "currency", icon: "fee", statusLabel: "7д", description: "Ближайшая комиссия." },
@@ -497,14 +505,14 @@ function AnalyticsPage() {
       pulse: outgoingCoverage < 100,
     },
     {
-      title: "Запас контракта",
-      value: formatDays(runwayDays),
-      variant: "text",
-      tone: runwayDays >= 7 ? "success" : runwayDays >= 3 ? "accent" : "danger",
+      title: isOnChain ? "Открытые циклы" : "Запас контракта",
+      value: isOnChain ? (data.onChain?.cycleStats?.productionTotals?.open || 0) : formatDays(runwayDays),
+      variant: isOnChain ? "number" : "text",
+      tone: isOnChain ? "accent" : runwayDays >= 7 ? "success" : runwayDays >= 3 ? "accent" : "danger",
       icon: "calendar",
-      statusLabel: formatCurrency(cashPosition.availableCash ?? 0),
-      description: "На сколько дней хватит текущего остатка.",
-      pulse: runwayDays < 3,
+      statusLabel: isOnChain ? `${data.onChain?.cycleStats?.productionTotals?.claimable || 0} claimable` : formatCurrency(cashPosition.availableCash ?? 0),
+      description: isOnChain ? "Текущие рабочие циклы по getOrder." : "На сколько дней хватит текущего остатка.",
+      pulse: !isOnChain && runwayDays < 3,
     },
     {
       title: "Возврат в контракт",
@@ -535,20 +543,20 @@ function AnalyticsPage() {
       description: "Полный исходящий поток недели.",
     },
     {
-      title: "Новые деньги сегодня",
-      value: todaySnapshot?.newMoney || 0,
-      variant: "currency",
+      title: isOnChain ? "Создано циклов сегодня" : "Новые деньги сегодня",
+      value: isOnChain ? (todaySnapshot?.cycleActivations || 0) : (todaySnapshot?.newMoney || 0),
+      variant: isOnChain ? "number" : "currency",
       icon: "users",
-      statusLabel: todaySnapshot?.incoming ? `${Math.round(((todaySnapshot?.newMoney || 0) / todaySnapshot.incoming) * 100)}%` : "0%",
-      description: "Деньги от новых пользователей.",
+      statusLabel: isOnChain ? "BSC" : todaySnapshot?.incoming ? `${Math.round(((todaySnapshot?.newMoney || 0) / todaySnapshot.incoming) * 100)}%` : "0%",
+      description: isOnChain ? "Фактические события создания циклов." : "Деньги от новых пользователей.",
     },
     {
-      title: "Повторные деньги сегодня",
-      value: todaySnapshot?.existingMoney || 0,
-      variant: "currency",
+      title: isOnChain ? "Claim-события сегодня" : "Повторные деньги сегодня",
+      value: isOnChain ? (todaySnapshot?.claims || 0) : (todaySnapshot?.existingMoney || 0),
+      variant: isOnChain ? "number" : "currency",
       icon: "wallet",
-      statusLabel: todaySnapshot?.incoming ? `${Math.round(((todaySnapshot?.existingMoney || 0) / todaySnapshot.incoming) * 100)}%` : "0%",
-      description: "Деньги от возврата базы.",
+      statusLabel: isOnChain ? "BSC" : todaySnapshot?.incoming ? `${Math.round(((todaySnapshot?.existingMoney || 0) / todaySnapshot.incoming) * 100)}%` : "0%",
+      description: isOnChain ? "Фактические события Claim." : "Деньги от возврата базы.",
     },
     {
       title: "Выплачено вчера",
@@ -572,26 +580,26 @@ function AnalyticsPage() {
 
   const trafficToMoneyKpis = [
     {
-      title: "Регистрации сегодня",
-      value: trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0,
+      title: isOnChain ? "Новые on-chain участники" : "Регистрации сегодня",
+      value: isOnChain ? (data.onChain?.participants?.newParticipantsToday || 0) : (trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0),
       icon: "users",
       statusLabel: "today",
-      description: "Новые регистрации за день.",
+      description: isOnChain ? "Адрес впервые создал цикл." : "Новые регистрации за день.",
     },
     {
-      title: "Подключили кошелёк",
-      value: trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0,
+      title: isOnChain ? "Уникальные участники" : "Подключили кошелёк",
+      value: isOnChain ? (data.onChain?.participants?.uniqueTotal || 0) : (trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0),
       icon: "connected",
       statusLabel:
-        trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%",
-      description: "Дошли до wallet connect.",
+        isOnChain ? "BSC" : trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.statusLabel || "0%",
+      description: isOnChain ? "Уникальные owner-адреса в getOrder." : "Дошли до wallet connect.",
     },
     {
-      title: "Активировали цикл",
-      value: trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0,
+      title: isOnChain ? "Создано циклов сегодня" : "Активировали цикл",
+      value: isOnChain ? (todaySnapshot?.cycleActivations || 0) : (trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || 0),
       icon: "calendar",
       statusLabel:
-        trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%",
+        isOnChain ? "сегодня" : trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.statusLabel || "0%",
       description: "Запустили smart-cycle.",
     },
     {
@@ -620,13 +628,9 @@ function AnalyticsPage() {
 
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
-    { id: "hermes", label: "Гермес" },
-    { id: "session", label: "Сессия" },
     { id: "parser", label: "Маркетинг" },
     { id: "analytics", label: "Аналитика" },
-    { id: "expenses", label: "Расходы" },
     { id: "products", label: "Продукты" },
-    { id: "listings", label: "Листинги" },
     { id: "tasks", label: "Задачи" },
     { id: "content", label: "Контент" },
   ];
@@ -647,19 +651,20 @@ function AnalyticsPage() {
   ];
 
   const crmAnalyticsCoverageValue = Math.min(Math.max(outgoingCoverage, 0), 100);
-  const crmRegistrationsToday = trafficTabData.metrics.find((item) => item.title === "Регистрации сегодня")?.value || 0;
-  const crmWalletConnections = trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0;
-  const crmCycleActivations = trafficTabData.metrics.find((item) => item.title === "Активировали цикл")?.value || todaySnapshot?.cycleActivations || 0;
+  const crmRegistrationsToday = trafficTabData.metrics.find((item) => ["Регистрации сегодня", "Новые on-chain участники"].includes(item.title))?.value || 0;
+  const crmWalletConnections = data.onChain?.participants?.uniqueTotal
+    || trafficTabData.metrics.find((item) => item.title === "Подключили кошелёк")?.value || 0;
+  const crmCycleActivations = trafficTabData.metrics.find((item) => ["Активировали цикл", "Активировали циклы"].includes(item.title))?.value || todaySnapshot?.cycleActivations || 0;
   const crmAnalyticsSignals = [
     ["Входящие", formatCurrency(incomingToday), "success"],
     ["Выплаты", formatCurrency(outgoingToday), "default"],
     ["Покрытие", formatPercent(outgoingCoverage), outgoingCoverage >= 100 ? "success" : "danger"],
-    ["Запас", formatDays(runwayDays), runwayDays >= 7 ? "success" : runwayDays >= 3 ? "accent" : "danger"],
+    [isOnChain ? "Нагрузка 7д" : "Запас", isOnChain ? formatCurrency(data.kpis.obligations7d) : formatDays(runwayDays), isOnChain ? "accent" : runwayDays >= 7 ? "success" : runwayDays >= 3 ? "accent" : "danger"],
   ];
   const crmAnalyticsPulseRows = [
     ["Риск", data.kpis.firstRiskDate, riskTone],
-    ["Регистрации", crmRegistrationsToday, "accent"],
-    ["Кошельки", crmWalletConnections, "success"],
+    [data.onChain?.connected ? "Новые BSC" : "Регистрации", crmRegistrationsToday, "accent"],
+    [data.onChain?.connected ? "Участники" : "Кошельки", crmWalletConnections, "success"],
     ["Активации", crmCycleActivations, "success"],
   ];
   const crmTaskTotals = crmTaskStats.reduce(
@@ -711,6 +716,8 @@ function AnalyticsPage() {
         onParserOpen={() => handleMainTabChange("parser")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
         onHermesOpen={() => handleMainTabChange("hermes")}
+        onSessionOpen={() => handleMainTabChange("session")}
+        onExpensesOpen={() => handleMainTabChange("expenses")}
         crmUrl="https://crm.46.202.153.132.sslip.io"
         mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}
@@ -727,7 +734,6 @@ function AnalyticsPage() {
       <AnalyticsMainPanel
         activeTab={activeTab}
         analyticsBoardUrl={ANALYTICS_BOARD_URL}
-        listingsCrmUrl={ATLAS_LISTINGS_CRM_URL}
         crmDashboard={{
           isAiReviewOpen,
           aiTaskSummary: crmAiTaskSummary,
@@ -737,6 +743,7 @@ function AnalyticsPage() {
           analyticsCoverageValue: crmAnalyticsCoverageValue,
           analyticsSignals: crmAnalyticsSignals,
           analyticsPulseRows: crmAnalyticsPulseRows,
+          analyticsSource: data.onChain,
           taskTotals: crmTaskTotals,
           taskWidgets: crmTaskWidgets,
           crmTaskStats,

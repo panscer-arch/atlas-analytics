@@ -345,11 +345,13 @@ const ATLAS_FLOW_CACHE_MS = Math.max(15000, Number(process.env.ATLAS_FLOW_CACHE_
 const ATLAS_FLOW_RECEIPT_CONCURRENCY = Math.max(1, Math.min(12, Number(process.env.ATLAS_FLOW_RECEIPT_CONCURRENCY || 8)));
 const ATLAS_ORDER_STATE_CONCURRENCY = Math.max(1, Math.min(12, Number(process.env.ATLAS_ORDER_STATE_CONCURRENCY || 8)));
 const ATLAS_FLOW_DAY_OFFSET_HOURS = Number(process.env.ATLAS_FLOW_DAY_OFFSET_HOURS || 3);
+const ATLAS_FLOW_SNAPSHOT_KEY = "atlas.analytics.bscFlowSnapshot.v1";
 const ATLAS_NEXT_ORDER_ID_SELECTOR = "0x2a58b330";
 const ATLAS_GET_ORDER_SELECTOR = "0xd09ef241";
 const BSC_MULTICALL3_ADDRESS = "0xca11bde05977b3631167028862be2a173976ca11";
 const MULTICALL3_AGGREGATE3_SELECTOR = "0x82ad56cb";
 let atlasFlowCache = null;
+let atlasFlowRefreshPromise = null;
 
 let telegramEnvCache = null;
 let marketingSessionMutationQueue = Promise.resolve();
@@ -2437,6 +2439,8 @@ function decodeMulticall3Results(data = "0x") {
 
 function decodeAtlasOrderState(contract = {}, data = "0x", snapshotTimestamp = 0) {
   const orderId = Number(hexToBigInt(getDataWord(data, 0)));
+  const participantWord = String(getDataWord(data, 1) || "").replace(/^0x/, "").padStart(64, "0");
+  const participant = `0x${participantWord.slice(-40)}`.toLowerCase();
   const started = Number(hexToBigInt(getDataWord(data, 2)));
   const finished = Number(hexToBigInt(getDataWord(data, 3)));
   const now = Number(snapshotTimestamp || Math.floor(Date.now() / 1000));
@@ -2455,6 +2459,7 @@ function decodeAtlasOrderState(contract = {}, data = "0x", snapshotTimestamp = 0
       contractId: contract.id,
       contractName: contract.name,
       orderId: String(orderId),
+      participant,
       started,
       finished,
       lockTime: started,
@@ -2526,6 +2531,7 @@ function decodeAtlasOrderState(contract = {}, data = "0x", snapshotTimestamp = 0
       contractId: contract.id,
       contractName: contract.name,
       orderId: String(orderId),
+      participant,
       started,
       finished,
       lockTime: started,
@@ -2768,6 +2774,58 @@ function buildAtlasCycleStats({ orderRows = [], snapshotTimestamp = 0 } = {}) {
       .sort((left, right) => left.termSeconds - right.termSeconds || left.tier - right.tier)
       .map(serializeBucket),
     asOf: new Date(now * 1000).toISOString(),
+  };
+}
+
+function buildAtlasParticipantStats({ orderRows = [], snapshotTimestamp = 0 } = {}) {
+  const zeroAddress = "0x0000000000000000000000000000000000000000";
+  const validRows = orderRows.filter((row) => row.participant && row.participant !== zeroAddress);
+  const uniqueParticipants = new Set(validRows.map((row) => row.participant));
+  const openParticipants = new Set(validRows.filter((row) => !row.closed).map((row) => row.participant));
+  const closedParticipants = new Set(validRows.filter((row) => row.closed).map((row) => row.participant));
+  const claimableParticipants = new Set(validRows.filter((row) => row.claimable).map((row) => row.participant));
+  const ordersPerParticipant = new Map();
+  const firstOrderTimestamp = new Map();
+  const dailyMap = new Map();
+
+  for (const row of validRows) {
+    ordersPerParticipant.set(row.participant, (ordersPerParticipant.get(row.participant) || 0) + 1);
+    const started = Number(row.started || 0);
+    const previousFirst = firstOrderTimestamp.get(row.participant);
+    if (started && (!previousFirst || started < previousFirst)) firstOrderTimestamp.set(row.participant, started);
+    if (!started) continue;
+    const date = dayKeyFromTimestamp(started);
+    const bucket = dailyMap.get(date) || { date, cycleActivations: 0, participants: new Set() };
+    bucket.cycleActivations += 1;
+    bucket.participants.add(row.participant);
+    dailyMap.set(date, bucket);
+  }
+
+  const newParticipantsByDay = new Map();
+  for (const timestamp of firstOrderTimestamp.values()) {
+    const date = dayKeyFromTimestamp(timestamp);
+    newParticipantsByDay.set(date, (newParticipantsByDay.get(date) || 0) + 1);
+  }
+
+  const byDay = [...dailyMap.values()]
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .map((bucket) => ({
+      date: bucket.date,
+      cycleActivations: bucket.cycleActivations,
+      activeParticipants: bucket.participants.size,
+      newParticipants: newParticipantsByDay.get(bucket.date) || 0,
+    }));
+  const snapshotDate = dayKeyFromTimestamp(snapshotTimestamp || Math.floor(Date.now() / 1000));
+
+  return {
+    uniqueTotal: uniqueParticipants.size,
+    uniqueOpen: openParticipants.size,
+    uniqueClosed: closedParticipants.size,
+    uniqueClaimable: claimableParticipants.size,
+    repeatParticipants: [...ordersPerParticipant.values()].filter((count) => count > 1).length,
+    newParticipantsToday: newParticipantsByDay.get(snapshotDate) || 0,
+    byDay,
+    definition: "Уникальные адреса участников рассчитаны по owner в getOrder. В ответе API публикуются только агрегаты, без списка адресов.",
   };
 }
 
@@ -3391,6 +3449,7 @@ async function getAtlasContractFlowSnapshot() {
     daily,
   });
   const cycleStats = buildAtlasCycleStats({ orderRows, snapshotTimestamp });
+  const participants = buildAtlasParticipantStats({ orderRows, snapshotTimestamp });
 
   const payload = {
     ok: true,
@@ -3403,6 +3462,7 @@ async function getAtlasContractFlowSnapshot() {
     contracts,
     daily,
     cycleStats,
+    participants,
     totals: {
       provided: decimalFromUnits(totalsRaw.provided, ATLAS_USDT_TOKEN.decimals, 6),
       claimed: decimalFromUnits(totalsRaw.claimed, ATLAS_USDT_TOKEN.decimals, 6),
@@ -3441,7 +3501,56 @@ async function getAtlasContractFlowSnapshot() {
     updatedAt: new Date().toISOString(),
   };
   atlasFlowCache = { createdAt: Date.now(), payload };
+  try {
+    await writeInternalState(ATLAS_FLOW_SNAPSHOT_KEY, payload);
+  } catch (error) {
+    console.error("Could not persist Atlas flow snapshot.", error);
+  }
   return { ...payload, cache: { hit: false, ttlMs: ATLAS_FLOW_CACHE_MS } };
+}
+
+async function refreshAtlasContractFlowSnapshot() {
+  if (!atlasFlowRefreshPromise) {
+    atlasFlowRefreshPromise = getAtlasContractFlowSnapshot()
+      .finally(() => {
+        atlasFlowRefreshPromise = null;
+      });
+  }
+  return atlasFlowRefreshPromise;
+}
+
+async function getAtlasContractFlowSnapshotForRequest() {
+  if (atlasFlowCache) {
+    const isFresh = Date.now() - atlasFlowCache.createdAt < ATLAS_FLOW_CACHE_MS;
+    if (isFresh) return { ...atlasFlowCache.payload, cache: { hit: true, ttlMs: ATLAS_FLOW_CACHE_MS } };
+    void refreshAtlasContractFlowSnapshot().catch((error) => {
+      console.error("Could not refresh stale Atlas flow snapshot.", error);
+    });
+    return { ...atlasFlowCache.payload, cache: { hit: true, stale: true, refreshing: true, ttlMs: ATLAS_FLOW_CACHE_MS } };
+  }
+
+  try {
+    const persisted = JSON.parse(await readFile(filePathForKey(ATLAS_FLOW_SNAPSHOT_KEY), "utf8"));
+    if (persisted?.ok) {
+      atlasFlowCache = { createdAt: 0, payload: persisted };
+      void refreshAtlasContractFlowSnapshot().catch((error) => {
+        console.error("Could not refresh persisted Atlas flow snapshot.", error);
+      });
+      return { ...persisted, cache: { hit: true, stale: true, refreshing: true, ttlMs: ATLAS_FLOW_CACHE_MS } };
+    }
+  } catch (error) {
+    if (error?.code !== "ENOENT") console.error("Could not read persisted Atlas flow snapshot.", error);
+  }
+
+  void refreshAtlasContractFlowSnapshot().catch((error) => {
+    console.error("Could not build initial Atlas flow snapshot.", error);
+  });
+  return {
+    ok: false,
+    refreshing: true,
+    source: "BNB Chain snapshot is being built",
+    updatedAt: null,
+  };
 }
 
 function normalizeYoutubeNumber(value) {
@@ -5023,7 +5132,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/contracts/atlas-flows" && request.method === "GET") {
-      const result = await getAtlasContractFlowSnapshot();
+      const result = await getAtlasContractFlowSnapshotForRequest();
       sendJson(response, 200, result);
       return;
     }

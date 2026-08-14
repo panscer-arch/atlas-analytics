@@ -6,8 +6,10 @@ import SectionHeading from "./SectionHeading";
 import TabSummary from "./TabSummary";
 import Wrapper from "./Wrapper";
 import TrafficSourcesChart from "../charts/TrafficSourcesChart";
+import LimitedAnalyticsTab from "./LimitedAnalyticsTab";
 
 export default function LeadersTabSection({ leadersData }) {
+  if (leadersData.limited) return <LimitedAnalyticsTab kicker="Лидеры" data={leadersData} />;
   return (
     <>
       <Wrapper as="section" marginTop="lg">

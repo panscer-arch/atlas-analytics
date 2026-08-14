@@ -23,6 +23,53 @@ export default function TrafficTabSection({
   onActivationPeriodChange,
   onActivationPageChange,
 }) {
+  if (trafficTabData.mode === "onchain") {
+    return (
+      <>
+        <Wrapper as="section" marginTop="lg">
+          <TabSummary kicker="BNB Chain" title={trafficTabData.summary.title} description={trafficTabData.summary.description} bullets={trafficTabData.summary.bullets} />
+        </Wrapper>
+        <Wrapper as="section" marginTop="lg">
+          <SectionHeading kicker="On-chain активность" title="Участники и циклы, подтверждённые контрактами" />
+          <MetricsGrid metrics={trafficTabData.metrics} density="balanced" />
+        </Wrapper>
+        <Wrapper as="section" marginTop="sm">
+          <div className="analytics-data-notice analytics-surface">
+            <strong>Что пока нельзя заполнить из BSC</strong>
+            <p>Регистрации сайта, текущий online, сессии, источники трафика и география требуют подключения веб-аналитики. Здесь они не заменяются количеством транзакций.</p>
+          </div>
+        </Wrapper>
+        <Wrapper as="section" marginTop="sm">
+          <LayoutGrid columns="one" gap="md">
+            <LayoutCell span="full">
+              <ChartCard title="Новые участники → активные участники → циклы" subtitle="Фактическая on-chain активность по дням.">
+                <TrafficLifecycleChart data={trafficTabData.lifecycleRows} mode="onchain" />
+              </ChartCard>
+            </LayoutCell>
+            <LayoutCell>
+              <ChartCard title="Воронка on-chain базы" subtitle="Уникальные адреса, открытые циклы и повторная активность.">
+                <ConversionFunnelChart data={trafficTabData.funnel} />
+              </ChartCard>
+            </LayoutCell>
+            <LayoutCell>
+              <AnalyticsDataTable
+                title="On-chain активность по дням"
+                subtitle="Агрегаты owner из getOrder; адреса не публикуются."
+                columns={[
+                  { key: "date", label: "Дата" },
+                  { key: "registrations", label: "Новые участники", type: "number" },
+                  { key: "walletConnects", label: "Активные участники", type: "number" },
+                  { key: "cycleActivations", label: "Создано циклов", type: "number" },
+                ]}
+                rows={trafficTabData.lifecycleRows.slice(-30).reverse()}
+              />
+            </LayoutCell>
+          </LayoutGrid>
+        </Wrapper>
+      </>
+    );
+  }
+
   return (
     <>
       <Wrapper as="section" marginTop="lg">
