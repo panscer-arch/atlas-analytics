@@ -11,6 +11,7 @@ Atlas Analytics is the public analytics and transparency frontend for Atlas Syst
 ## Что внутри
 
 - современная аналитика на `/`
+- сводка Dashboard и вкладки аналитики получают агрегированные данные Atlas из BSC через `/api/contracts/atlas-flows`
 - восстановленная старая версия на `/legacy`
 - mock/fallback-логика уже встроена
 - можно подключить внешний analytics API и доску через env

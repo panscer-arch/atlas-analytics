@@ -6,8 +6,10 @@ import SectionHeading from "./SectionHeading";
 import TabSummary from "./TabSummary";
 import Wrapper from "./Wrapper";
 import TrafficSourcesChart from "../charts/TrafficSourcesChart";
+import LimitedAnalyticsTab from "./LimitedAnalyticsTab";
 
 export default function WalletsTabSection({ walletsData }) {
+  if (walletsData.limited) return <LimitedAnalyticsTab kicker="Кошельки" data={walletsData} metricsTitle="Агрегаты по owner-адресам" />;
   return (
     <>
       <Wrapper as="section" marginTop="lg">

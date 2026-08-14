@@ -16,6 +16,7 @@ function CrmCommandDashboard({
   analyticsCoverageValue,
   analyticsSignals,
   analyticsPulseRows,
+  analyticsSource,
   taskTotals,
   taskWidgets,
   crmTaskStats,
@@ -40,6 +41,11 @@ function CrmCommandDashboard({
       <div className="analytics-crm-command-head">
         <div>
           <span className="analytics-kicker">Command center</span>
+        </div>
+        <div className={`analytics-source-status${analyticsSource?.connected ? " is-live" : " is-offline"}`}>
+          <span />
+          <b>{analyticsSource?.connected ? "BNB Chain подключён" : "BSC-срез недоступен"}</b>
+          {analyticsSource?.updatedAt ? <small>{new Date(analyticsSource.updatedAt).toLocaleString("ru-RU")}</small> : null}
         </div>
       </div>
 
@@ -72,7 +78,7 @@ function CrmCommandDashboard({
           </div>
           <div className="analytics-crm-analytics-main">
             <div>
-              <span className="analytics-crm-analytics-label">Пул системы</span>
+              <span className="analytics-crm-analytics-label">Объём открытых циклов</span>
               <strong className={`analytics-crm-flow-value analytics-crm-flow-value-${analyticsFlowToneToken}`}>{analyticsTitle}</strong>
             </div>
           </div>

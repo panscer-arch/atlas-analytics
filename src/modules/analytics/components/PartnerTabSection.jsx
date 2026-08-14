@@ -7,12 +7,14 @@ import TabSummary from "./TabSummary";
 import Wrapper from "./Wrapper";
 import TrafficSourcesChart from "../charts/TrafficSourcesChart";
 import formatCurrency from "../utils/formatCurrency";
+import LimitedAnalyticsTab from "./LimitedAnalyticsTab";
 
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
 }
 
 export default function PartnerTabSection({ partnerData }) {
+  if (partnerData.limited) return <LimitedAnalyticsTab kicker="Партнёрская структура" data={partnerData} metricsTitle="Агрегированная партнёрская нагрузка" />;
   const partnerDiagnostics = partnerData.diagnostics || {};
 
   return (

@@ -10,6 +10,7 @@ export default function CrmDashboardTab({
   analyticsCoverageValue,
   analyticsSignals,
   analyticsPulseRows,
+  analyticsSource,
   taskTotals,
   taskWidgets,
   crmTaskStats,
@@ -36,6 +37,7 @@ export default function CrmDashboardTab({
         analyticsCoverageValue={analyticsCoverageValue}
         analyticsSignals={analyticsSignals}
         analyticsPulseRows={analyticsPulseRows}
+        analyticsSource={analyticsSource}
         taskTotals={taskTotals}
         taskWidgets={taskWidgets}
         crmTaskStats={crmTaskStats}

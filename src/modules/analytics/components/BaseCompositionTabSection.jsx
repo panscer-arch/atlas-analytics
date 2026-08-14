@@ -6,8 +6,10 @@ import SectionHeading from "./SectionHeading";
 import TabSummary from "./TabSummary";
 import Wrapper from "./Wrapper";
 import TrafficSourcesChart from "../charts/TrafficSourcesChart";
+import LimitedAnalyticsTab from "./LimitedAnalyticsTab";
 
 export default function BaseCompositionTabSection({ baseCompositionData }) {
+  if (baseCompositionData.limited) return <LimitedAnalyticsTab kicker="Состав базы" data={baseCompositionData} metricsTitle="On-chain состав базы" />;
   return (
     <>
       <Wrapper as="section" marginTop="lg">

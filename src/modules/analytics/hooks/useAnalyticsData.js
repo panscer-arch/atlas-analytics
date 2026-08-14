@@ -14,5 +14,6 @@ export default function useAnalyticsData() {
         source: filters.source,
       }),
     retry: false,
+    refetchInterval: (query) => (query.state.data?.onChain?.connected ? 10 * 60 * 1000 : 15 * 1000),
   });
 }

@@ -132,9 +132,25 @@ const analyticsPage = await readFile(
   new URL("../src/modules/analytics/AnalyticsPage.jsx", import.meta.url),
   "utf8",
 );
-assert.match(analyticsPage, /\{ id: "session", label: "Сессия" \}/);
-assert.match(analyticsPage, /\{ id: "expenses", label: "Расходы" \}/);
+assert.doesNotMatch(analyticsPage, /\{ id: "session", label: "Сессия" \}/);
+assert.doesNotMatch(analyticsPage, /\{ id: "expenses", label: "Расходы" \}/);
 assert.match(analyticsPage, /expenses: "expenses"/);
+assert.match(analyticsPage, /onSessionOpen=\{\(\) => handleMainTabChange\("session"\)\}/);
+assert.match(analyticsPage, /onExpensesOpen=\{\(\) => handleMainTabChange\("expenses"\)\}/);
+
+const analyticsHeader = await readFile(
+  new URL("../src/modules/analytics/components/AnalyticsHeader.jsx", import.meta.url),
+  "utf8",
+);
+assert.match(analyticsHeader, /HeaderTool label="Сессия"/);
+assert.match(analyticsHeader, /HeaderTool label="Расходы"/);
+
+const analyticsMainPanel = await readFile(
+  new URL("../src/modules/analytics/components/AnalyticsMainPanel.jsx", import.meta.url),
+  "utf8",
+);
+assert.match(analyticsMainPanel, /if \(activeTab === "session"\) return <WorkSessionQueue/);
+assert.match(analyticsMainPanel, /if \(activeTab === "expenses"\)/);
 
 const expenseBoard = await readFile(
   new URL("../src/modules/analytics/components/ExpensesBoard.jsx", import.meta.url),
@@ -166,4 +182,4 @@ assert.match(contentApi, /ATLAS_FINANCE_PASSWORD/);
 assert.match(contentApi, /\/api\/finance\/browser-session/);
 assert.match(contentApi, /expenseCenterMutationQueue/);
 
-console.log("Expense center verified: data model, recurrence, summaries, routing, password access, and Session preservation.");
+console.log("Expense center verified: data model, recurrence, summaries, header routing, password access, and Session preservation.");
