@@ -64,12 +64,19 @@ try {
   const initial = await request();
   assert(initial.body.items.length >= 20, "initial_seed_missing");
 
+  const topLevel = await request("?scope=top");
+  assert(topLevel.status === 200, "top_level_scope_failed");
+  assert(topLevel.body.items.every((item) => !item.parentId), "child_product_leaked_into_top_level_scope");
+  assert(topLevel.body.items.length < initial.body.items.length, "top_level_scope_did_not_hide_children");
+  assert(topLevel.body.counts.total === topLevel.body.items.length, "top_level_count_mismatch");
+
   const created = await request("", {
     method: "POST",
     body: JSON.stringify({
       name: "Products Registry Verification",
       shortDescription: "Автоматическая проверочная карточка.<script>alert(1)</script>",
       itemType: "PRODUCT",
+      parentId: "supersus",
       lifecycleStage: "IDEA",
       deliveryState: "NOT_STARTED",
       availability: "NONE",
@@ -151,6 +158,8 @@ try {
     body: JSON.stringify({ actorName: "Verification", version: 4 }),
   });
   assert(archived.status === 200 && archived.body.item.lifecycleStage === "ARCHIVED", "archive_failed");
+  const parentAfterArchive = await request("/supersus");
+  assert(!parentAfterArchive.body.item.children.some((item) => item.id === product.id), "archived_child_visible_in_parent");
 
   const restored = await request(`/${product.id}/restore`, {
     method: "POST",
@@ -218,6 +227,8 @@ try {
   console.log(JSON.stringify({
     ok: true,
     seedProducts: initial.body.items.length,
+    topLevelProducts: topLevel.body.items.length,
+    childProductsHiddenFromPortfolio: true,
     optimisticLock: true,
     requiredVersion: true,
     parentCycleGuard: true,
@@ -226,6 +237,7 @@ try {
     xssSanitization: true,
     originGuard: true,
     archiveRestore: true,
+    archivedChildrenHidden: true,
     searchAndFilters: true,
     restartPersistence: true,
     markdownExport: true,

@@ -297,7 +297,7 @@ function getDetails(state, product) {
     links: state.links.filter((item) => item.productId === product.id),
     entries: state.entries.filter((item) => item.productId === product.id).sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)),
     auditEvents: state.auditEvents.filter((item) => item.productId === product.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    children: state.products.filter((item) => item.parentId === product.id).map((item) => ({ id: item.id, slug: item.slug, name: item.name, itemType: item.itemType })),
+    children: state.products.filter((item) => item.parentId === product.id && !item.archivedAt).map((item) => ({ id: item.id, slug: item.slug, name: item.name, itemType: item.itemType })),
   };
 }
 
@@ -314,6 +314,7 @@ function filterProducts(state, params) {
     linksByProduct.get(item.productId).push(item);
   }
   let items = state.products.map((item) => ({ ...item, links: linksByProduct.get(item.id) || [], isStale: stale(item) }));
+  if (params.get("scope") === "top") items = items.filter((item) => !item.parentId);
   const view = params.get("view") || "all";
   if (view !== "archive") items = items.filter((item) => !item.archivedAt);
   if (view === "active") items = items.filter((item) => ["ACTIVE", "AT_RISK", "WAITING", "BLOCKED"].includes(item.deliveryState));
@@ -337,8 +338,9 @@ function filterProducts(state, params) {
   return items;
 }
 
-function counts(state) {
-  const current = state.products.filter((item) => !item.archivedAt);
+function counts(state, params = new URLSearchParams()) {
+  const topLevelOnly = params.get("scope") === "top";
+  const current = state.products.filter((item) => !item.archivedAt && (!topLevelOnly || !item.parentId));
   return {
     total: current.length,
     active: current.filter((item) => ["ACTIVE", "AT_RISK", "WAITING", "BLOCKED"].includes(item.deliveryState)).length,
@@ -441,7 +443,7 @@ export async function createProductsRequestHandler({ storeDir }) {
         const state = await repository.readState();
         const owners = [...new Set(state.products.map((item) => item.owner).filter(Boolean))].sort();
         const executors = [...new Set(state.products.map((item) => item.executor).filter(Boolean))].sort();
-        sendJson(response, 200, { ok: true, items: filterProducts(state, url.searchParams), counts: counts(state), facets: { owners, executors }, enums: PRODUCT_ENUMS, storageMode: repository.mode });
+        sendJson(response, 200, { ok: true, items: filterProducts(state, url.searchParams), counts: counts(state, url.searchParams), facets: { owners, executors }, enums: PRODUCT_ENUMS, storageMode: repository.mode });
         return true;
       }
 

@@ -21,7 +21,9 @@ async function request(path = "", options = {}) {
 }
 
 export function listProducts(params) {
-  const query = params instanceof URLSearchParams ? params.toString() : new URLSearchParams(params || {}).toString();
+  const queryParams = new URLSearchParams(params instanceof URLSearchParams ? params : params || {});
+  queryParams.set("scope", "top");
+  const query = queryParams.toString();
   return request(query ? `?${query}` : "");
 }
 
