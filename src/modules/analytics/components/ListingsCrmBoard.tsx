@@ -64,6 +64,7 @@ const RECORD_STATUSES = [
 const NAV = [
   { id: "overview", label: "Обзор", icon: "⌂" },
   { id: "instructions", label: "Инструкции", icon: "?" },
+  { id: "contacts", label: "Контакты", icon: "◎" },
   { id: "today", label: "Мой день", icon: "✓" },
   { id: "team", label: "Команда", icon: "◉" },
   { id: "records", label: "Все записи", icon: "≡" },
@@ -88,7 +89,19 @@ const RECORD_CATEGORIES = [
   { id: "other", label: "Контроль и прочее", short: "Прочее", description: "Служебные карточки и ручная классификация", icon: "O" },
 ] as const;
 
+const NETWORKER_CATEGORIES = [
+  { id: "mlmLeader", label: "Топ-лидер MLM", short: "Лидер" },
+  { id: "directSelling", label: "Руководитель direct selling", short: "Direct selling" },
+  { id: "connector", label: "Отраслевой коннектор", short: "Коннектор" },
+  { id: "mentor", label: "Бизнес-ментор / коуч", short: "Ментор" },
+  { id: "community", label: "Владелец сообщества", short: "Сообщество" },
+  { id: "facebook", label: "Facebook-группа", short: "Facebook" },
+  { id: "digital", label: "Digital-предприниматель", short: "Digital" },
+  { id: "other", label: "Другой контакт", short: "Другой" },
+] as const;
+
 type RecordCategoryId = typeof RECORD_CATEGORIES[number]["id"];
+type NetworkerCategoryId = typeof NETWORKER_CATEGORIES[number]["id"];
 
 function recordCategoryId(record: CrmRecord): RecordCategoryId {
   const source = String(record.source || "").toLowerCase();
@@ -96,7 +109,7 @@ function recordCategoryId(record: CrmRecord): RecordCategoryId {
   const name = String(record.name || "").toLowerCase();
   const haystack = `${source} ${type} ${name}`;
   if (/hyip|хайп|monitor/.test(haystack)) return "hyip";
-  if (/new member|premium member|business connector|коннектор|коуч|coach|тренер|сетев(ой|ик)|network leader|community leader|подкаст/.test(haystack)) return "contacts";
+  if (/new member|premium member|business connector|коннектор|коуч|coach|тренер|сетев(ой|ик)|network leader|community leader|top leader|топ-лидер|direct selling|прям(ые|ых) продаж|facebook-групп|digital-предпринимател|владелец сообщества|подкаст/.test(haystack)) return "contacts";
   if (source.includes("mlm-каналы") || /mlm|direct selling|network marketing|referral marketplace|партнерск.*каталог/.test(haystack)) return "mlm";
   if (source.startsWith("листинги") || /dapp|web3 app|web3 project|wallet|кошельк|on-chain|ончейн|defi|project directory|product hunt|discovery platform/.test(haystack)) return "dapp";
   if (source === "pr" || source.includes("collaborator") || /article|стать|media|медиа|press|editorial|publication|публикац|guest|op-ed/.test(haystack)) return "articles";
@@ -108,6 +121,23 @@ function recordCategoryId(record: CrmRecord): RecordCategoryId {
 function recordCategory(record: CrmRecord) {
   const id = recordCategoryId(record);
   return RECORD_CATEGORIES.find((category) => category.id === id) || RECORD_CATEGORIES.at(-1)!;
+}
+
+function networkerCategoryId(record: CrmRecord): NetworkerCategoryId {
+  const value = `${record.type || ""} ${record.summary || ""}`.toLowerCase();
+  if (/facebook-групп|facebook group/.test(value)) return "facebook";
+  if (/direct selling|прям(ые|ых) продаж|президент|president/.test(value)) return "directSelling";
+  if (/топ-лидер|top leader|network leader|сетевик/.test(value)) return "mlmLeader";
+  if (/коннектор|association|ассоциац/.test(value)) return "connector";
+  if (/ментор|коуч|coach|trainer|тренер/.test(value)) return "mentor";
+  if (/сообществ|community|групп/.test(value)) return "community";
+  if (/digital|цифров|предпринимател/.test(value)) return "digital";
+  return "other";
+}
+
+function networkerCategory(record: CrmRecord) {
+  const id = networkerCategoryId(record);
+  return NETWORKER_CATEGORIES.find((category) => category.id === id) || NETWORKER_CATEGORIES.at(-1)!;
 }
 
 function localDate(days = 0) {
@@ -155,6 +185,9 @@ function ListingsCrmWorkspace() {
   const [view, setView] = useState("overview");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<RecordCategoryId | "all">("all");
+  const [contactQuery, setContactQuery] = useState("");
+  const [networkerCategoryFilter, setNetworkerCategoryFilter] = useState<NetworkerCategoryId | "all">("all");
+  const [contactStatusFilter, setContactStatusFilter] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CrmRecord | null>(null);
   const [currentMemberId, setCurrentMemberId] = useState(() => localStorage.getItem(MEMBER_KEY) || "");
@@ -226,6 +259,22 @@ function ListingsCrmWorkspace() {
     count: data.records.filter((record) => recordCategoryId(record) === category.id).length,
     active: data.records.filter((record) => recordCategoryId(record) === category.id && !["Закрыто", "Опубликовано", "Архив"].includes(record.status)).length,
   })), [data.records]);
+  const allContacts = useMemo(
+    () => data.records.filter((record) => recordCategoryId(record) === "contacts"),
+    [data.records],
+  );
+  const contactCategorySummary = useMemo(() => NETWORKER_CATEGORIES.map((category) => ({
+    ...category,
+    count: allContacts.filter((record) => networkerCategoryId(record) === category.id).length,
+  })), [allContacts]);
+  const contactRecords = useMemo(() => {
+    const needle = contactQuery.trim().toLowerCase();
+    return [...allContacts]
+      .filter((record) => networkerCategoryFilter === "all" || networkerCategoryId(record) === networkerCategoryFilter)
+      .filter((record) => contactStatusFilter === "all" || record.status === contactStatusFilter)
+      .filter((record) => !needle || [record.name, record.source, record.type, record.summary, record.benefit, record.action].join(" ").toLowerCase().includes(needle))
+      .sort((a, b) => a.priority.localeCompare(b.priority) || a.name.localeCompare(b.name, "ru"));
+  }, [allContacts, contactQuery, contactStatusFilter, networkerCategoryFilter]);
   const draftTaskOwnerIds = draft
     ? [...new Set(activeTasks.filter((task) => task.recordId === draft.id && task.assigneeId).map((task) => task.assigneeId as string))]
     : [];
@@ -288,6 +337,18 @@ function ListingsCrmWorkspace() {
     const record = payload.record || payload.data?.record;
     if (record?.id) setSelectedId(record.id);
   }, "Новая карточка создана");
+
+  const addContact = () => run(async () => {
+    const payload = await createListingsRecord(currentMemberId, {
+      source: "Контакты", name: "Новый контакт", type: "Топ-лидер MLM", priority: "B",
+      status: "Не обработано", owner: currentMember?.name || "Команда", ownerId: currentMemberId,
+      dueDate: "", action: "Проверить профиль, актуальность и подготовить персональное знакомство",
+      summary: "", benefit: "", price: "", notes: "", channel: "LinkedIn", link: "",
+      firstContact: "", platformAccess: EMPTY_ACCESS, correspondence: [],
+    });
+    const record = payload.record || payload.data?.record;
+    if (record?.id) setSelectedId(record.id);
+  }, "Новый контакт создан");
 
   const saveRecord = () => {
     if (!draft) return;
@@ -354,13 +415,13 @@ function ListingsCrmWorkspace() {
   return <main className="app-shell">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">A</div><div><strong>ATLAS</strong><span>TEAM CRM</span></div></div>
-      <nav><p className="nav-caption">СОВМЕСТНАЯ РАБОТА</p>{NAV.map((item) => <button key={item.id} className={view === item.id ? "nav-item active" : "nav-item"} onClick={() => setView(item.id)}><span>{item.icon}</span>{item.label}{item.id === "today" && (myTasks.length + freeTasks.length) > 0 && <b>{myTasks.length + freeTasks.length}</b>}</button>)}</nav>
+      <nav><p className="nav-caption">СОВМЕСТНАЯ РАБОТА</p>{NAV.map((item) => <button key={item.id} className={view === item.id ? "nav-item active" : "nav-item"} onClick={() => setView(item.id)}><span>{item.icon}</span>{item.label}{item.id === "today" && (myTasks.length + freeTasks.length) > 0 && <b>{myTasks.length + freeTasks.length}</b>}{item.id === "contacts" && allContacts.length > 0 && <b>{allContacts.length}</b>}</button>)}</nav>
       <div className="sidebar-foot"><div className="sync-dot" /><div><strong>Общая база</strong><span>Обновление каждые 15 сек.</span></div></div>
     </aside>
     <section className="workspace">
       <header className="topbar">
         <div><h1>{title}</h1><p className="topbar-subtitle">Одна очередь, отдельные ответственные, без двойной работы</p></div>
-        <div className="top-actions"><div className="save-state"><i />{notice}</div><label className="member-select"><span>Я работаю как</span><select value={currentMemberId} onChange={(event) => chooseMember(event.target.value)}><option value="">Выбрать сотрудника</option>{data.members.filter((member) => member.active).map((member) => <option key={member.id} value={member.id}>{member.name} · {ROLE_LABELS[member.role] || member.role}</option>)}</select></label><button className="button secondary" onClick={addRecord}>＋ Карточка</button></div>
+        <div className="top-actions"><div className="save-state"><i />{notice}</div><label className="member-select"><span>Я работаю как</span><select value={currentMemberId} onChange={(event) => chooseMember(event.target.value)}><option value="">Выбрать сотрудника</option>{data.members.filter((member) => member.active).map((member) => <option key={member.id} value={member.id}>{member.name} · {ROLE_LABELS[member.role] || member.role}</option>)}</select></label><button className="button secondary" onClick={view === "contacts" ? addContact : addRecord}>{view === "contacts" ? "＋ Контакт" : "＋ Карточка"}</button></div>
       </header>
       {error && <div className="alert"><strong>Внимание:</strong> {error}{conflictRecord && <button className="conflict-action" onClick={() => { setData((current) => ({ ...current, records: current.records.map((record) => record.id === conflictRecord.id ? conflictRecord : record) })); setDraft(structuredClone(conflictRecord)); setConflictRecord(null); setError(""); }}>Загрузить версию коллеги</button>}<button onClick={() => { setError(""); setConflictRecord(null); }}>×</button></div>}
       {loading ? <div className="loading"><div className="loader" /><p>Открываю общую CRM…</p></div> : <>
@@ -377,6 +438,16 @@ function ListingsCrmWorkspace() {
         </section><section className="board category-breakdown"><div className="board-head"><div><h3>Разбивка по категориям</h3><p>Каждое направление считается отдельно — нажмите, чтобы открыть его карточки</p></div></div><div className="category-grid">{categorySummary.map((category) => <button key={category.id} className="category-card" onClick={() => openCategory(category.id)}><span className={`category-icon category-${category.id}`}>{category.icon}</span><span className="category-copy"><strong>{category.label}</strong><small>{category.description}</small></span><span className="category-total"><b>{category.count}</b><small>{category.active} активных</small></span><span className="category-arrow">→</span></button>)}</div></section></>}
 
         {view === "instructions" && <ListingsInstructions />}
+
+        {view === "contacts" && <section className="contacts-workspace">
+          <section className="contact-category-grid" aria-label="Категории сетевиков">
+            <button className={networkerCategoryFilter === "all" ? "contact-category active" : "contact-category"} onClick={() => setNetworkerCategoryFilter("all")}><span>Все контакты</span><strong>{allContacts.length}</strong></button>
+            {contactCategorySummary.map((category) => <button key={category.id} className={networkerCategoryFilter === category.id ? "contact-category active" : "contact-category"} onClick={() => setNetworkerCategoryFilter(category.id)}><span>{category.label}</span><strong>{category.count}</strong></button>)}
+          </section>
+          <section className="board contacts-board"><div className="board-head"><div><h3>Сетевики и бизнес-коннекторы</h3><p>{contactRecords.length} из {allContacts.length} контактов · изменения сохраняются в общей CRM</p></div><div className="filters"><select value={contactStatusFilter} onChange={(event) => setContactStatusFilter(event.target.value)}><option value="all">Все статусы</option>{RECORD_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}</select><label className="search"><span>⌕</span><input value={contactQuery} onChange={(event) => setContactQuery(event.target.value)} placeholder="Имя, страна, категория" /></label></div></div>
+            <div className="table-wrap"><table className="contacts-table"><thead><tr><th>Контакт</th><th>Категория сетевика</th><th>Страна / канал</th><th>Статус</th><th>Следующий шаг</th><th /></tr></thead><tbody>{contactRecords.map((record) => { const category = networkerCategory(record); return <tr key={record.id} onClick={() => setSelectedId(record.id)}><td data-label="Контакт"><div className="record-name"><span>{record.name.slice(0, 1)}</span><div><strong>{record.name}</strong><small>{record.benefit || record.link || "Аудитория не указана"}</small></div></div></td><td data-label="Категория"><span className={`networker-category networker-${category.id}`}>{category.label}</span></td><td data-label="Страна / канал"><strong className="contact-source">{record.source || "Не указано"}</strong><small className="contact-channel">{record.channel || "Канал не указан"}</small></td><td data-label="Статус"><span className={`status tone-${toneFor(record.status)}`}><i />{record.status}</span><small className="contact-priority">Приоритет {record.priority}</small></td><td data-label="Следующий шаг"><p className="action-text">{record.action || "Не задан"}</p></td><td className="contact-open"><button className="row-arrow" aria-label={`Открыть ${record.name}`}>→</button></td></tr>; })}</tbody></table>{contactRecords.length === 0 && <div className="empty">По выбранным фильтрам контактов нет</div>}</div>
+          </section>
+        </section>}
 
         {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div>{canCoordinate && <button className="button primary" onClick={generatePlan}>Обновить план</button>}</div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
 

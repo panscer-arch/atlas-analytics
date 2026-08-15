@@ -171,6 +171,7 @@ jobs:
           scp_to_vps server/products/001_products_registry.sql /tmp/atlas-products-registry.sql
           scp_to_vps server/listings-crm/listings-crm.mjs /tmp/atlas-listings-crm.mjs
           scp_to_vps server/listings-crm/001_listings_crm.sql /tmp/atlas-listings-crm.sql
+          scp_to_vps server/listings-crm/listings-contact-seeds.json /tmp/atlas-listings-contact-seeds.json
           scp_to_vps scripts/backup-products-registry.mjs /tmp/atlas-products-backup.mjs
           scp_to_vps src/modules/analytics/data/listingsCrmInitialData.json /tmp/atlas-listings-crm-initial.json
 
@@ -207,6 +208,7 @@ jobs:
           sudo mv /tmp/atlas-products-registry.sql /opt/atlas-content-api/products/001_products_registry.sql
           sudo mv /tmp/atlas-listings-crm.mjs /opt/atlas-content-api/listings-crm/listings-crm.mjs
           sudo mv /tmp/atlas-listings-crm.sql /opt/atlas-content-api/listings-crm/001_listings_crm.sql
+          sudo mv /tmp/atlas-listings-contact-seeds.json /opt/atlas-content-api/listings-crm/listings-contact-seeds.json
           sudo mv /tmp/atlas-products-backup.mjs /opt/atlas-content-api/backup-products-registry.mjs
           sudo npm install --prefix /opt/atlas-content-api --omit=dev --no-audit --no-fund pg@8.22.0
           if ! command -v psql >/dev/null 2>&1; then

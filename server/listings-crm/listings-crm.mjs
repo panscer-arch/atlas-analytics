@@ -324,7 +324,48 @@ async function readLegacy(legacyFilePath) {
   }
 }
 
-function createFileRepository(storeDir, legacyFilePath) {
+async function mergeContactSeeds(state, contactSeedFilePath) {
+  if (!contactSeedFilePath) return 0;
+  let payload;
+  try {
+    payload = JSON.parse(await readFile(contactSeedFilePath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return 0;
+    throw error;
+  }
+
+  const seeds = Array.isArray(payload?.records) ? payload.records : [];
+  const existingIds = new Set(state.records.map((record) => record.id));
+  const existingDedupeKeys = new Set(state.records.map((record) => record.dedupeKey).filter(Boolean));
+  const timestamp = nowIso();
+  let added = 0;
+
+  for (const source of seeds) {
+    const id = normalizeText(source?.id, 200);
+    if (!id || existingIds.has(id)) continue;
+    const normalized = normalizeRecordInput(source);
+    if (normalized.dedupeKey && existingDedupeKeys.has(normalized.dedupeKey)) continue;
+    const record = {
+      ...source,
+      ...normalized,
+      id,
+      version: 1,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    state.records.push(record);
+    existingIds.add(id);
+    if (record.dedupeKey) existingDedupeKeys.add(record.dedupeKey);
+    added += 1;
+  }
+
+  if (added) {
+    state.audit.push(createAudit("workspace", "listings-contacts", "CONTACT_SEED_IMPORT", null, null, null, { recordCount: added }));
+  }
+  return added;
+}
+
+function createFileRepository(storeDir, legacyFilePath, contactSeedFilePath) {
   const filePath = path.join(storeDir, "listings-team-crm-v1.json");
   let queue = Promise.resolve();
 
@@ -342,10 +383,12 @@ function createFileRepository(storeDir, legacyFilePath) {
       if (!Array.isArray(state.members) || !Array.isArray(state.records) || !Array.isArray(state.tasks) || !Array.isArray(state.audit)) {
         throw new Error("invalid_listings_crm_store");
       }
+      if (await mergeContactSeeds(state, contactSeedFilePath)) await persist(state);
       return state;
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
       const state = normalizeLegacyState(await readLegacy(legacyFilePath));
+      await mergeContactSeeds(state, contactSeedFilePath);
       await persist(state);
       return state;
     }
@@ -365,7 +408,7 @@ function createFileRepository(storeDir, legacyFilePath) {
   return { mode: "file", readState, mutate };
 }
 
-async function createPostgresRepository(connectionString, legacyFilePath) {
+async function createPostgresRepository(connectionString, legacyFilePath, contactSeedFilePath) {
   const { Pool } = await import("pg");
   const pool = new Pool({ connectionString, max: Number(process.env.ATLAS_LISTINGS_CRM_PG_POOL || 6) });
   const migrationPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "001_listings_crm.sql");
@@ -408,9 +451,10 @@ async function createPostgresRepository(connectionString, legacyFilePath) {
     await seedClient.query("BEGIN");
     await seedClient.query("SELECT pg_advisory_xact_lock(hashtext('atlas_listings_team_crm'))");
     const current = await readState(seedClient);
-    if (!current.members.length && !current.records.length) {
-      await persist(seedClient, normalizeLegacyState(await readLegacy(legacyFilePath)));
-    }
+    const shouldInitialize = !current.members.length && !current.records.length;
+    const nextState = shouldInitialize ? normalizeLegacyState(await readLegacy(legacyFilePath)) : current;
+    const addedContacts = await mergeContactSeeds(nextState, contactSeedFilePath);
+    if (shouldInitialize || addedContacts) await persist(seedClient, nextState);
     await seedClient.query("COMMIT");
   } catch (error) {
     await seedClient.query("ROLLBACK");
@@ -440,9 +484,14 @@ async function createPostgresRepository(connectionString, legacyFilePath) {
   return { mode: "postgres", readState, mutate, close: () => pool.end() };
 }
 
-export async function createListingsCrmRepository({ storeDir, legacyFilePath, connectionString = process.env.ATLAS_LISTINGS_CRM_DATABASE_URL } = {}) {
-  if (connectionString) return createPostgresRepository(connectionString, legacyFilePath);
-  return createFileRepository(storeDir, legacyFilePath);
+export async function createListingsCrmRepository({
+  storeDir,
+  legacyFilePath,
+  contactSeedFilePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "listings-contact-seeds.json"),
+  connectionString = process.env.ATLAS_LISTINGS_CRM_DATABASE_URL,
+} = {}) {
+  if (connectionString) return createPostgresRepository(connectionString, legacyFilePath, contactSeedFilePath);
+  return createFileRepository(storeDir, legacyFilePath, contactSeedFilePath);
 }
 
 function sendJson(response, status, value, extraHeaders = {}) {
@@ -668,8 +717,8 @@ function patchTask(state, task, body, actorMemberId) {
   return task;
 }
 
-export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath, authorize = async () => false, connectionString } = {}) {
-  const repository = await createListingsCrmRepository({ storeDir, legacyFilePath, connectionString });
+export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath, contactSeedFilePath, authorize = async () => false, connectionString } = {}) {
+  const repository = await createListingsCrmRepository({ storeDir, legacyFilePath, contactSeedFilePath, connectionString });
   return async function handleListingsCrmRequest(request, response, url) {
     const routePrefix = ["/api/marketing/listings-crm", "/api/listings-crm"]
       .find((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`));

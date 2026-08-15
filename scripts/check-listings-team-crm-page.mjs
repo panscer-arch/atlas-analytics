@@ -17,6 +17,7 @@ const members = [
 const records = [
   { id: "r1", name: "DApp Directory", source: "Листинги", type: "DApp listing", status: "В работе", priority: "A", owner: "Анна", ownerId: "operator-1", dueDate: "2026-08-14", action: "Подготовить данные для формы", link: "https://example.com", notes: "", summary: "", price: "Бесплатно", channel: "Form", firstContact: "2026-08-12", benefit: "", updatedAt: "2026-08-15T10:00:00Z", version: 2, proofs: [], platformAccess: { loginUrl: "https://example.com/login", workspaceUrl: "https://example.com/dashboard", submissionUrl: "https://example.com/dashboard/new", publishedUrl: "", accountLogin: "editor@atlas-system.tech", authMethod: "Email + пароль", accessOwner: "Анна", twoFactorOwner: "Ирина", recoveryContact: "security@atlas-system.tech", passwordManagerItem: "DApp Directory · Atlas", passwordManagerUrl: "https://vault.example/items/dapp-directory", lastVerifiedAt: "2026-08-15", notes: "Редактор доступен после входа" }, correspondence: [{ id: "m1", occurredAt: "2026-08-12T09:30", kind: "SUBMISSION", channel: "Form", sender: "Анна · Atlas System", recipient: "DApp Directory editorial", subject: "Atlas listing submission", message: "Заявка отправлена через форму публикации.", outcome: "Получен номер заявки A-42", threadUrl: "https://example.com/dashboard/submissions/A-42", attachmentUrl: "https://docs.example/atlas", followUpDate: "2026-08-18", createdBy: "Анна", createdAt: "2026-08-12T09:30:00Z" }] },
   { id: "r2", name: "MLM Community", source: "Партнёрства", type: "MLM platform", status: "Ожидаем ответ", priority: "B", owner: "Борис", ownerId: "operator-2", dueDate: "2026-08-15", action: "Проверить входящий ответ", link: "https://mlm.example", notes: "", summary: "", price: "", channel: "Email", firstContact: "", benefit: "", updatedAt: "2026-08-15T10:10:00Z", version: 1, proofs: [] },
+  { id: "r3", name: "Caio Carneiro", source: "Бразилия", type: "Топ-лидер MLM", status: "Готовим обращение", priority: "A", owner: "Команда", ownerId: "", dueDate: "", action: "Изучить свежие публикации", link: "https://br.linkedin.com/in/caiocarneirooficial", notes: "", summary: "Эксперт по прямым продажам", price: "", channel: "LinkedIn", firstContact: "", benefit: "236 тыс. подписчиков", updatedAt: "2026-08-15T10:20:00Z", version: 1, proofs: [] },
 ];
 const tasks = [
   { id: "t1", recordId: "r1", title: "DApp-каталог: DApp Directory", category: "LISTING_DAPP", status: "CLAIMED", priority: "A", points: 2, assigneeId: "operator-1", dueDate: "2026-08-14", nextAction: "Подготовить данные для формы", version: 1 },
@@ -121,6 +122,12 @@ try {
       }
       await page.screenshot({ path: `${outputDir}/listings-team-crm-overview-desktop.png`, fullPage: true });
     }
+    await crm.locator(".nav-item").filter({ hasText: "Контакты" }).click();
+    await page.getByText("Сетевики и бизнес-коннекторы", { exact: true }).waitFor();
+    await page.getByText("Caio Carneiro", { exact: true }).waitFor();
+    await crm.getByRole("button", { name: /Топ-лидер MLM/ }).click();
+    if (await crm.locator(".contacts-table tbody tr").count() !== 1) throw new Error(`${viewport.name}: networker category filter did not narrow the contacts table`);
+    await page.screenshot({ path: `${outputDir}/listings-team-crm-contacts-${viewport.name}.png`, fullPage: true });
     await crm.locator(".nav-item").filter({ hasText: "Команда" }).click();
     await page.getByText("Свободная очередь", { exact: true }).waitFor();
     await crm.locator(".nav-item").filter({ hasText: "Все записи" }).click();
