@@ -104,11 +104,51 @@ try {
   assert.equal(created.body.record.version, 1);
 
   const recordId = created.body.record.id;
+  const rawCredential = await call(handler, "PATCH", `/api/listings-crm/records/${recordId}`, {
+    platformAccess: { accountLogin: "editor@atlas-system.tech", password: "must-not-be-stored" },
+  }, { "if-match": '"1"', "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(rawCredential.status, 400, "raw passwords are rejected instead of being stored in the CRM");
+  assert.equal(rawCredential.body.error, "raw_credentials_not_allowed");
+
   const updated = await call(handler, "PATCH", `/api/listings-crm/records/${recordId}`, {
     status: "В работе",
+    platformAccess: {
+      loginUrl: "https://unique.example/login",
+      workspaceUrl: "https://unique.example/dashboard",
+      submissionUrl: "https://unique.example/dashboard/new-article",
+      publishedUrl: "https://unique.example/articles/atlas",
+      accountLogin: "editor@atlas-system.tech",
+      authMethod: "Email + пароль",
+      accessOwner: "Оператор листингов 1",
+      twoFactorOwner: "Дежурный координатор",
+      recoveryContact: "security@atlas-system.tech",
+      passwordManagerItem: "Unique directory · Atlas editorial",
+      passwordManagerUrl: "https://vault.example/items/unique-directory",
+      lastVerifiedAt: "2026-08-15",
+      notes: "Редактор статей доступен после входа",
+    },
+    correspondence: [
+      {
+        id: "submission-1", occurredAt: "2026-08-14T09:30", kind: "SUBMISSION", channel: "Form",
+        sender: "Atlas System", recipient: "Editorial team", subject: "Atlas article submission",
+        message: "Заявка и статья отправлены через форму.", outcome: "Получен номер заявки A-42",
+        threadUrl: "https://unique.example/dashboard/submissions/A-42", attachmentUrl: "https://docs.example/atlas-article",
+        followUpDate: "2026-08-18", createdBy: "Оператор листингов 1",
+      },
+      {
+        id: "incoming-1", occurredAt: "2026-08-15T10:15", kind: "INCOMING", channel: "Email",
+        sender: "Editor", recipient: "Atlas System", subject: "Re: Atlas article submission",
+        message: "Редактор запросил уточнения.", outcome: "Подготовить ответ",
+      },
+    ],
   }, { "if-match": '"1"', "x-atlas-member-id": "listings-operator-1" });
   assert.equal(updated.status, 200);
   assert.equal(updated.body.record.version, 2);
+  assert.equal(updated.body.record.platformAccess.accountLogin, "editor@atlas-system.tech");
+  assert.equal(updated.body.record.platformAccess.passwordManagerItem, "Unique directory · Atlas editorial");
+  assert.equal(updated.body.record.correspondence.length, 2, "the complete dated correspondence timeline is stored");
+  assert.equal(updated.body.record.correspondence[0].kind, "SUBMISSION", "the chronology is sorted oldest first");
+  assert.equal(updated.body.record.firstContact, "2026-08-14", "the first application date is derived from the earliest timeline event");
 
   const stale = await call(handler, "PATCH", `/api/listings-crm/records/${recordId}`, {
     status: "Закрыто",
@@ -199,6 +239,9 @@ try {
   for (const required of ["LEGACY_IMPORT", "RECORD_CREATE", "RECORD_UPDATE", "RECORD_ARCHIVE", "PLAN_GENERATE", "TASK_CLAIM", "TASK_RELEASE", "TASK_UPDATE"]) {
     assert.ok(actions.has(required), `audit contains ${required}`);
   }
+  const serializedAudit = JSON.stringify(audit.body.events);
+  assert.doesNotMatch(serializedAudit, /editor@atlas-system\.tech/, "access identifiers are not duplicated into the audit log");
+  assert.doesNotMatch(serializedAudit, /Редактор запросил уточнения/, "message bodies are not duplicated into the audit log");
 
   const persisted = JSON.parse(await readFile(path.join(storeDir, "listings-team-crm-v1.json"), "utf8"));
   assert.equal(persisted.records.find((record) => record.id === recordId).status, "Архив");

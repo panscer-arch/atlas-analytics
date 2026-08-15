@@ -18,6 +18,7 @@ const RECORD_FIELDS = [
   "source", "name", "type", "priority", "status", "owner", "ownerMemberId", "dueDate", "firstContact",
   "action", "summary", "benefit", "price", "notes", "channel", "link", "paymentAmount", "paymentOptions",
   "paymentReference", "paymentInstructions", "proofs", "placementStart", "placementTerm", "renewalDate", "renewalNotes",
+  "platformAccess", "correspondence",
 ];
 
 const SEED_MEMBERS = [
@@ -91,6 +92,67 @@ function sanitizeProofs(value) {
   }).filter((proof) => proof.url);
 }
 
+function sanitizePlatformAccess(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const forbiddenKeys = ["password", "passphrase", "secret", "token", "otp", "recoveryCode", "backupCode"];
+  if (forbiddenKeys.some((key) => Object.prototype.hasOwnProperty.call(source, key))) {
+    throw Object.assign(new Error("raw_credentials_not_allowed"), { status: 400 });
+  }
+  return {
+    loginUrl: validateUrl(source.loginUrl),
+    workspaceUrl: validateUrl(source.workspaceUrl),
+    submissionUrl: validateUrl(source.submissionUrl),
+    publishedUrl: validateUrl(source.publishedUrl),
+    accountLogin: normalizeText(source.accountLogin, 320),
+    authMethod: normalizeText(source.authMethod, 160),
+    accessOwner: normalizeText(source.accessOwner, 240),
+    twoFactorOwner: normalizeText(source.twoFactorOwner, 240),
+    recoveryContact: normalizeText(source.recoveryContact, 320),
+    passwordManagerItem: normalizeText(source.passwordManagerItem, 500),
+    passwordManagerUrl: validateUrl(source.passwordManagerUrl),
+    lastVerifiedAt: normalizeDate(source.lastVerifiedAt, "access_last_verified_at"),
+    notes: normalizeText(source.notes, 5_000),
+  };
+}
+
+function normalizeCorrespondenceTimestamp(value) {
+  const normalized = normalizeText(value, 32);
+  if (!normalized) return "";
+  if (!/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?$/.test(normalized)) {
+    throw Object.assign(new Error("invalid_correspondence_timestamp"), { status: 400 });
+  }
+  const candidate = normalized.length === 10 ? `${normalized}T12:00:00Z` : `${normalized}:00Z`;
+  if (Number.isNaN(Date.parse(candidate))) {
+    throw Object.assign(new Error("invalid_correspondence_timestamp"), { status: 400 });
+  }
+  return normalized;
+}
+
+function sanitizeCorrespondence(value) {
+  if (!Array.isArray(value)) return [];
+  const allowedKinds = new Set(["SUBMISSION", "INCOMING", "OUTGOING", "STATUS"]);
+  return value.slice(0, 200).map((item) => {
+    const kind = normalizeText(item?.kind, 40).toUpperCase() || "STATUS";
+    if (!allowedKinds.has(kind)) throw Object.assign(new Error("invalid_correspondence_kind"), { status: 400 });
+    return {
+      id: normalizeText(item?.id, 160) || randomUUID(),
+      occurredAt: normalizeCorrespondenceTimestamp(item?.occurredAt),
+      kind,
+      channel: normalizeText(item?.channel, 160),
+      sender: normalizeText(item?.sender, 320),
+      recipient: normalizeText(item?.recipient, 320),
+      subject: normalizeText(item?.subject, 500),
+      message: normalizeText(item?.message, 20_000),
+      outcome: normalizeText(item?.outcome, 5_000),
+      threadUrl: validateUrl(item?.threadUrl),
+      attachmentUrl: validateUrl(item?.attachmentUrl),
+      followUpDate: normalizeDate(item?.followUpDate, "correspondence_follow_up_date"),
+      createdBy: normalizeText(item?.createdBy, 160),
+      createdAt: normalizeText(item?.createdAt, 80) || nowIso(),
+    };
+  }).sort((a, b) => (a.occurredAt || "9999").localeCompare(b.occurredAt || "9999"));
+}
+
 function normalizeProfileUrl(value) {
   try {
     const parsed = new URL(value);
@@ -161,6 +223,15 @@ function normalizeRecordInput(input, current = {}) {
   next.placementTerm = normalizeText(next.placementTerm, 2_000);
   next.renewalDate = normalizeDate(next.renewalDate, "renewal_date");
   next.renewalNotes = normalizeText(next.renewalNotes, 5_000);
+  next.platformAccess = Object.prototype.hasOwnProperty.call(input, "platformAccess")
+    ? sanitizePlatformAccess(input.platformAccess)
+    : sanitizePlatformAccess(current.platformAccess);
+  next.correspondence = Object.prototype.hasOwnProperty.call(input, "correspondence")
+    ? sanitizeCorrespondence(input.correspondence)
+    : sanitizeCorrespondence(current.correspondence);
+  if (!next.firstContact && next.correspondence.length) {
+    next.firstContact = next.correspondence.map((item) => item.occurredAt.slice(0, 10)).filter(Boolean).sort()[0] || "";
+  }
   next.canonicalDomain = normalizeDomain(next.link);
   next.dedupeKey = recordDedupeKey(next);
   if (next.legacyDuplicate) next.dedupeKey = "";
@@ -175,7 +246,7 @@ function auditSnapshot(value) {
   if (value == null) return null;
   if (Array.isArray(value)) return value.slice(0, 50).map(auditSnapshot);
   if (typeof value !== "object") return typeof value === "string" ? value.slice(0, 2_000) : value;
-  const hidden = new Set(["proofs", "paymentOptions", "paymentReference", "paymentInstructions", "notes"]);
+  const hidden = new Set(["proofs", "paymentOptions", "paymentReference", "paymentInstructions", "notes", "platformAccess", "correspondence"]);
   return Object.fromEntries(Object.entries(value)
     .filter(([key]) => !hidden.has(key))
     .map(([key, entry]) => [key, auditSnapshot(entry)]));
