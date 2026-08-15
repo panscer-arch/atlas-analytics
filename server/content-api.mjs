@@ -21,6 +21,7 @@ import {
 } from "./marketing-dashboard-monitor.mjs";
 import { getGoogleAnalyticsOverview } from "./google-analytics.mjs";
 import { createProductsRequestHandler } from "./products/products-registry.mjs";
+import { createListingsCrmRequestHandler } from "./listings-crm/listings-crm.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
@@ -4660,11 +4661,17 @@ await mkdir(STORE_DIR, { recursive: true });
 const handleProductsRequest = await createProductsRequestHandler({
   storeDir: process.env.ATLAS_PRODUCTS_STORE_DIR || path.join(STORE_DIR, "products"),
 });
+const handleListingsCrmRequest = await createListingsCrmRequestHandler({
+  storeDir: process.env.ATLAS_LISTINGS_CRM_STORE_DIR || path.join(STORE_DIR, "listings-crm"),
+  legacyFilePath: filePathForKey("atlas.analytics.listingsCrm.v1"),
+  authorize: hasMarketingWriteSession,
+});
 
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
 
+    if (await handleListingsCrmRequest(request, response, url)) return;
     if (await handleProductsRequest(request, response, url)) return;
 
     if (url.pathname === "/api/content/health") {

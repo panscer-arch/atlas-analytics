@@ -1,50 +1,56 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import initialData from "../data/listingsCrmInitialData.json";
 import crmCss from "./ListingsCrmBoard.css?raw";
-import { loadServerContentResult, saveServerContentResult } from "../services/contentStore";
+import {
+  archiveListingsRecord,
+  claimListingsTask,
+  createListingsRecord,
+  generateListingsPlan,
+  loadListingsCrm,
+  patchListingsRecord,
+  patchListingsTask,
+  releaseListingsTask,
+} from "../services/listingsTeamCrmApi";
 
-const CRM_CONTENT_KEY = "atlas.analytics.listingsCrm.v1";
-
-type ProofItem = {
-  id: string; url: string; fileName: string; createdAt: string; note: string;
-};
-
+type Member = { id: string; name: string; role: string; active: boolean; capacity?: number };
+type ProofItem = { id: string; url: string; fileName: string; createdAt: string; note: string };
 type CrmRecord = {
-  id: string; source: string; name: string; type: string; priority: string;
-  status: string; owner: string; dueDate: string; firstContact: string;
-  action: string; summary: string; benefit: string; price: string;
-  notes: string; channel: string; link: string; updatedAt: string;
-  paymentAmount?: string; paymentOptions?: string; paymentReference?: string;
-  paymentInstructions?: string;
-  proofs?: ProofItem[];
+  id: string; source: string; name: string; type: string; priority: string; status: string;
+  owner: string; ownerId?: string; dueDate: string; firstContact: string; action: string;
+  summary: string; benefit: string; price: string; notes: string; channel: string; link: string;
+  updatedAt: string; version: number; paymentAmount?: string; paymentOptions?: string;
+  paymentReference?: string; paymentInstructions?: string; proofs?: ProofItem[];
   placementStart?: string; placementTerm?: string; renewalDate?: string; renewalNotes?: string;
 };
-
-type CrmData = {
-  meta: { project: string; generatedAt: string; timezone: string; sourceSpreadsheet: string; recordCount: number };
-  records: CrmRecord[];
+type WorkTask = {
+  id: string; recordId?: string; title: string; category: string; status: string; priority: string;
+  points: number; assigneeId?: string | null; dueDate: string; nextAction?: string; version: number;
 };
+type AuditEvent = { id: string; action: string; actorName?: string; memberName?: string; entityName?: string; createdAt: string };
+type Bootstrap = { members: Member[]; records: CrmRecord[]; tasks: WorkTask[]; audit: AuditEvent[] };
 
-const EMPTY_DATA: CrmData = {
-  meta: { project: "Atlas System", generatedAt: "", timezone: "Europe/Moscow", sourceSpreadsheet: "", recordCount: 0 },
-  records: [],
-};
-
-const STATUSES = [
+const EMPTY: Bootstrap = { members: [], records: [], tasks: [], audit: [] };
+const MEMBER_KEY = "atlas.listings.crm.member.v1";
+const RECORD_STATUSES = [
   "Не обработано", "Требует проверки", "Готовим обращение", "Отправлено — ждём ответ",
-  "Ожидаем ответ", "Ожидаем оплату", "Проверка публикации",
-  "Запланировано позже", "В работе", "Опубликовано", "Блокер", "Закрыто",
+  "Ожидаем ответ", "Ожидаем оплату", "Проверка публикации", "Запланировано позже",
+  "В работе", "Опубликовано", "Блокер", "Закрыто",
 ];
-
 const NAV = [
   { id: "overview", label: "Обзор", icon: "⌂" },
-  { id: "today", label: "План дня", icon: "✓" },
-  { id: "listings", label: "Листинги", icon: "◇" },
-  { id: "promo", label: "Промо-каналы", icon: "↗" },
-  { id: "partners", label: "Партнёрства", icon: "◎" },
-  { id: "all", label: "Все записи", icon: "≡" },
+  { id: "today", label: "Мой день", icon: "✓" },
+  { id: "team", label: "Команда", icon: "◉" },
+  { id: "records", label: "Все записи", icon: "≡" },
+  { id: "activity", label: "Журнал", icon: "↺" },
 ];
+const TASK_LABELS: Record<string, string> = {
+  READY: "Свободна", CLAIMED: "Взята", IN_PROGRESS: "В работе", WAITING_EXTERNAL: "Ждём ответ",
+  REVIEW: "На проверке", BLOCKED: "Блокер", DONE: "Готово", CANCELLED: "Отменена",
+};
+const ROLE_LABELS: Record<string, string> = {
+  LISTINGS_OPERATOR: "Листинги", RELATIONSHIP_OPERATOR: "Контакты",
+  DUTY_COORDINATOR: "Координатор", RESERVE: "Резерв",
+};
 
 function localDate(days = 0) {
   const date = new Date();
@@ -56,466 +62,238 @@ function shortDate(value: string) {
   if (!value) return "Без даты";
   const normalized = value.includes(".") ? value.split(".").reverse().join("-") : value;
   const date = new Date(normalized + (normalized.length === 10 ? "T12:00:00" : ""));
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
-}
-
-function urlFromText(value: string) {
-  return value.match(/https?:\/\/[^\s]+/)?.[0] || "";
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
 }
 
 function toneFor(status: string) {
   const value = status.toLowerCase();
-  if (value.includes("опублик") || value.includes("в работе")) return "green";
-  if (value.includes("закры") || value.includes("блок")) return "red";
-  if (value.includes("оплат")) return "violet";
-  if (value.includes("отправ") || value.includes("ожида") || value.includes("провер")) return "amber";
+  if (value.includes("done") || value.includes("готов") || value.includes("опублик") || value.includes("in_progress") || value.includes("в работе")) return "green";
+  if (value.includes("cancel") || value.includes("закры") || value.includes("блок")) return "red";
+  if (value.includes("оплат") || value.includes("review")) return "violet";
+  if (value.includes("wait") || value.includes("ожида") || value.includes("провер") || value.includes("claim")) return "amber";
   return "gray";
 }
 
-function priorityValue(priority: string) {
-  if (priority === "P0" || priority === "A") return 0;
-  if (priority === "P1" || priority === "B") return 1;
-  if (priority === "P2" || priority === "C") return 2;
-  if (priority === "P3") return 3;
-  const numeric = Number(priority);
-  return Number.isFinite(numeric) ? 100 - numeric : 50;
-}
-
-function isAwaitingResponse(status: string) {
-  return /жд[её]м|ожида/i.test(status);
+function normalizeBootstrap(payload: any): Bootstrap {
+  const value = payload?.data || payload || {};
+  return {
+    members: Array.isArray(value.members) ? value.members : [],
+    records: Array.isArray(value.records) ? value.records.filter((record: any) => !record.archivedAt && record.status !== "Архив").map((record: any) => ({ ...record, version: Number(record.version || 1) })) : [],
+    tasks: Array.isArray(value.tasks) ? value.tasks.map((task: any) => ({ ...task, version: Number(task.version || 1), points: Number(task.points || 1) })) : [],
+    audit: Array.isArray(value.audit) ? value.audit : Array.isArray(value.events) ? value.events : [],
+  };
 }
 
 function ListingsCrmWorkspace() {
-  const [data, setData] = useState<CrmData>(EMPTY_DATA);
+  const [data, setData] = useState<Bootstrap>(EMPTY);
   const [view, setView] = useState("overview");
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Все статусы");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<CrmRecord | null>(null);
+  const [currentMemberId, setCurrentMemberId] = useState(() => localStorage.getItem(MEMBER_KEY) || "");
   const [loading, setLoading] = useState(true);
-  const [dirty, setDirty] = useState(false);
-  const [saveState, setSaveState] = useState("Сохранено");
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [proofState, setProofState] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("Подключение к общей CRM…");
+  const [error, setError] = useState("");
+  const [conflictRecord, setConflictRecord] = useState<CrmRecord | null>(null);
 
-  useEffect(() => {
-    loadServerContentResult(CRM_CONTENT_KEY)
-      .then((result) => {
-        if (result.ok && result.exists && result.value?.records) {
-          setData(result.value);
-          return;
-        }
-        setData(initialData as CrmData);
-        setSaveState(result.ok ? "Готово к первому сохранению" : "Открыта резервная копия");
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const today = localDate(0);
-  const tomorrow = localDate(1);
-  const selected = data.records.find((item) => item.id === selectedId) ?? null;
-  const selectedProofs = selected?.proofs || [];
-  const primaryProof = selectedProofs.length > 0 ? selectedProofs[selectedProofs.length - 1] : null;
-  const primaryProofLink = primaryProof ? urlFromText(primaryProof.note) || selected?.link || "" : "";
-
-  const scopeRecords = useMemo(() => {
-    let records = [...data.records];
-    if (view === "today") records = records.filter((item) => item.dueDate === today || item.dueDate === tomorrow);
-    if (view === "listings") records = records.filter((item) => item.source === "Листинги");
-    if (view === "promo") records = records.filter((item) => item.source === "Промо");
-    if (view === "partners") records = records.filter((item) => item.source === "Партнёрства");
-    if (query.trim()) {
-      const needle = query.toLowerCase();
-      records = records.filter((item) =>
-        [item.name, item.status, item.action, item.notes, item.type].join(" ").toLowerCase().includes(needle)
-      );
-    }
-    if (status !== "Все статусы") records = records.filter((item) => item.status === status);
-    const sorted = records.sort((a, b) =>
-      (a.dueDate || "9999").localeCompare(b.dueDate || "9999") ||
-      priorityValue(a.priority) - priorityValue(b.priority)
-    );
-    return view === "overview" ? sorted.slice(0, 15) : sorted;
-  }, [data.records, view, query, status, today, tomorrow]);
-
-  const stats = useMemo(() => ({
-    total: data.records.length,
-    today: data.records.filter((item) => item.dueDate === today).length,
-    tomorrow: data.records.filter((item) => item.dueDate === tomorrow).length,
-    waiting: data.records.filter((item) => isAwaitingResponse(item.status)).length,
-    payment: data.records.filter((item) => /оплат/i.test(item.status)).length,
-    published: data.records.filter((item) => /опублик/i.test(item.status)).length,
-    renewals: data.records.filter((item) => {
-      if (!item.renewalDate) return false;
-      const days = (new Date(item.renewalDate).getTime() - new Date(today).getTime()) / 86400000;
-      return days >= 0 && days <= 30;
-    }).length,
-  }), [data.records, today, tomorrow]);
-
-  const updateRecord = (id: string, field: keyof CrmRecord, value: string) => {
-    setData((current) => ({
-      ...current,
-      records: current.records.map((item) =>
-        item.id === id ? { ...item, [field]: value, updatedAt: new Date().toISOString() } : item
-      ),
-    }));
-    setDirty(true);
-    setSaveState("Есть изменения");
-  };
-
-  const copyText = async (field: string, value: string) => {
-    if (!value) return;
-    await navigator.clipboard.writeText(value);
-    setCopiedField(field);
-    window.setTimeout(() => setCopiedField(null), 1600);
-  };
-
-  const uploadProof = async (file: File) => {
-    if (!selected || !file.type.startsWith("image/")) return;
-    setProofState("Загружаю скриншот…");
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const proof: ProofItem = {
-        id: crypto.randomUUID(),
-        url: dataUrl,
-        fileName: file.name,
-        createdAt: new Date().toISOString(),
-        note: "Скриншот размещённого листинга",
-      };
-      const nextData = {
-        ...data,
-        meta: { ...data.meta, generatedAt: new Date().toISOString() },
-        records: data.records.map((item) =>
-          item.id === selected.id ? { ...item, proofs: [...(item.proofs || []), proof], updatedAt: new Date().toISOString() } : item
-        ),
-      };
-      const saveResult = await saveServerContentResult(CRM_CONTENT_KEY, nextData);
-      if (!saveResult.ok) throw new Error();
-      setData(nextData);
-      setDirty(false);
-      setSaveState("Сохранено в CRM");
-      setProofState("Скриншот добавлен");
-    } catch {
-      setProofState("Не удалось добавить скриншот");
-    }
-  };
-
-  const updateProof = (recordId: string, proofId: string, note: string) => {
-    setData((current) => ({
-      ...current,
-      records: current.records.map((item) =>
-        item.id === recordId
-          ? { ...item, proofs: (item.proofs || []).map((proof) => proof.id === proofId ? { ...proof, note } : proof) }
-          : item
-      ),
-    }));
-    setDirty(true);
-    setSaveState("Есть изменения");
-  };
-
-  const removeProof = async (recordId: string, proof: ProofItem) => {
-    if (!window.confirm("Удалить этот скриншот?")) return;
-    setData((current) => ({
-      ...current,
-      records: current.records.map((item) =>
-        item.id === recordId ? { ...item, proofs: (item.proofs || []).filter((entry) => entry.id !== proof.id) } : item
-      ),
-    }));
-    setDirty(true);
-    setSaveState("Есть изменения");
-  };
-
-  const save = async () => {
-    setSaveState("Сохраняю…");
-    const payload = { ...data, meta: { ...data.meta, recordCount: data.records.length, generatedAt: new Date().toISOString() } };
-    try {
-      const result = await saveServerContentResult(CRM_CONTENT_KEY, payload);
-      if (!result.ok) throw new Error();
+      const payload = normalizeBootstrap(await loadListingsCrm(currentMemberId));
       setData(payload);
-      setDirty(false);
-      setSaveState("Сохранено в CRM");
-    } catch {
-      setSaveState("Не удалось сохранить");
+      setError("");
+      setNotice("Данные синхронизированы");
+      if (!currentMemberId && payload.members.length) {
+        const member = payload.members.find((item) => item.active) || payload.members[0];
+        setCurrentMemberId(member.id);
+        localStorage.setItem(MEMBER_KEY, member.id);
+      }
+    } catch (requestError: any) {
+      setError(requestError?.status === 401 ? "Нужен доступ к закрытому разделу маркетинга" : "CRM временно недоступна");
+      setNotice("Нет соединения");
+    } finally {
+      setLoading(false);
     }
+  }, [currentMemberId]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const timer = window.setInterval(() => { if (!draft && !busy) refresh(true); }, 15_000);
+    return () => window.clearInterval(timer);
+  }, [refresh, draft, busy]);
+
+  const today = localDate();
+  const currentMember = data.members.find((item) => item.id === currentMemberId) || null;
+  const canCoordinate = currentMember?.role === "DUTY_COORDINATOR";
+  const selected = data.records.find((item) => item.id === selectedId) || null;
+  const memberById = useMemo(() => new Map(data.members.map((member) => [member.id, member])), [data.members]);
+  const recordById = useMemo(() => new Map(data.records.map((record) => [record.id, record])), [data.records]);
+
+  useEffect(() => { setDraft(selected ? structuredClone(selected) : null); }, [selectedId, selected?.version]);
+
+  const activeTasks = useMemo(() => data.tasks.filter((task) => !["DONE", "CANCELLED"].includes(task.status) && (!task.recordId || recordById.has(task.recordId))), [data.tasks, recordById]);
+  const myTasks = useMemo(() => activeTasks.filter((task) => task.assigneeId === currentMemberId), [activeTasks, currentMemberId]);
+  const freeTasks = useMemo(() => activeTasks.filter((task) => !task.assigneeId && (task.dueDate || today) <= today), [activeTasks, today]);
+  const overdue = activeTasks.filter((task) => task.dueDate && task.dueDate < today).length;
+  const teamPoints = data.tasks.filter((task) => task.dueDate === today && task.status === "DONE").reduce((sum, task) => sum + task.points, 0);
+  const teamCapacity = data.members.filter((member) => member.active).reduce((sum, member) => sum + Number(member.capacity || 5), 0) || 15;
+
+  const records = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return [...data.records]
+      .filter((record) => !needle || [record.name, record.source, record.type, record.status, record.action].join(" ").toLowerCase().includes(needle))
+      .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
+  }, [data.records, query]);
+  const draftTaskOwnerIds = draft
+    ? [...new Set(activeTasks.filter((task) => task.recordId === draft.id && task.assigneeId).map((task) => task.assigneeId as string))]
+    : [];
+  const canEditDraft = Boolean(draft && (canCoordinate || (
+    (!draft.ownerId || draft.ownerId === currentMemberId)
+    && (draftTaskOwnerIds.length === 0 || (draftTaskOwnerIds.length === 1 && draftTaskOwnerIds[0] === currentMemberId))
+  )));
+
+  const chooseMember = (id: string) => {
+    setCurrentMemberId(id);
+    localStorage.setItem(MEMBER_KEY, id);
+    setNotice("Рабочий профиль выбран");
   };
 
-  const addRecord = () => {
-    const item: CrmRecord = {
-      id: "manual-" + crypto.randomUUID(),
-      source: view === "listings" ? "Листинги" : view === "partners" ? "Партнёрства" : "Промо",
-      name: "Новая задача", type: "", priority: "A", status: "Не обработано",
-      owner: "Atlas Partnerships", dueDate: tomorrow, firstContact: "", action: "",
-      summary: "", benefit: "", price: "", notes: "", channel: "", link: "",
-      paymentAmount: "", paymentOptions: "", paymentReference: "", paymentInstructions: "",
-      proofs: [],
-      placementStart: "", placementTerm: "Срок размещения не подтверждён", renewalDate: "",
-      renewalNotes: "Уточнить срок и условия продления у площадки.",
-      updatedAt: new Date().toISOString(),
-    };
-    setData((current) => ({ ...current, records: [item, ...current.records] }));
-    setSelectedId(item.id);
-    setDirty(true);
-    setSaveState("Есть изменения");
+  const run = async (operation: () => Promise<any>, success: string) => {
+    setBusy(true); setError("");
+    try { await operation(); setNotice(success); await refresh(true); }
+    catch (requestError: any) {
+      const code = String(requestError?.payload?.code || requestError?.message || "");
+      if (code.includes("VERSION")) {
+        setConflictRecord(requestError?.payload?.current || null);
+        setError("Карточку уже изменил коллега. Ваш черновик сохранён на экране — сравните его с новой версией.");
+      } else {
+        const forbidden = code.includes("FORBIDDEN") || code.includes("COORDINATOR_REQUIRED");
+        setError(code.includes("ALREADY_CLAIMED")
+          ? "Коллега уже взял эту задачу. Список обновлён."
+          : forbidden ? "Действие доступно владельцу карточки или дежурному координатору." : "Не удалось выполнить действие");
+        await refresh(true);
+      }
+    } finally { setBusy(false); }
   };
 
-  const removeRecord = (id: string) => {
-    if (!window.confirm("Удалить эту запись из CRM?")) return;
-    setData((current) => ({ ...current, records: current.records.filter((item) => item.id !== id) }));
-    setSelectedId(null);
-    setDirty(true);
-    setSaveState("Есть изменения");
+  const claim = (task: WorkTask) => {
+    if (!currentMemberId) { setError("Сначала выберите себя в правом верхнем углу"); return; }
+    run(() => claimListingsTask(currentMemberId, task.id), "Задача закреплена за вами");
   };
 
-  const title = NAV.find((item) => item.id === view)?.label ?? "Обзор";
-
-  return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">A</div>
-          <div><strong>ATLAS</strong><span>PARTNERS CRM</span></div>
-        </div>
-        <nav>
-          <p className="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</p>
-          {NAV.map((item) => (
-            <button key={item.id} className={view === item.id ? "nav-item active" : "nav-item"} onClick={() => setView(item.id)}>
-              <span>{item.icon}</span>{item.label}
-              {item.id === "today" && stats.tomorrow > 0 && <b>{stats.tomorrow}</b>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-foot">
-          <div className="sync-dot" />
-          <div><strong>Закрытый режим</strong><span>Доступ только для команды</span></div>
-        </div>
-      </aside>
-
-      <section className="workspace">
-        <header className="topbar">
-          <div>
-            <h1>{title}</h1>
-            <p className="topbar-subtitle">Листинги, реклама и партнёрства Atlas System</p>
-          </div>
-          <div className="top-actions">
-            <div className={dirty ? "save-state dirty" : "save-state"}><i /> {saveState}</div>
-            <button className="button secondary" onClick={addRecord}>＋ Новая задача</button>
-            <button className="button primary" onClick={save} disabled={!dirty}>Сохранить</button>
-          </div>
-        </header>
-
-        {loading ? (
-          <div className="loading"><div className="loader" /><p>Открываю защищённую базу Atlas…</p></div>
-        ) : (
-          <>
-            <section className="metrics">
-              <article><span>Задачи на завтра</span><strong>{stats.tomorrow}</strong><small>проверить {shortDate(tomorrow)}</small></article>
-              <article><span>Ждём ответ</span><strong>{stats.waiting}</strong><small>контролировать почту</small></article>
-              <article><span>Ждут оплату</span><strong>{stats.payment}</strong><small>сверить реквизиты</small></article>
-              <article><span>Продлить в 30 дней</span><strong>{stats.renewals}</strong><small>ближайшие продления</small></article>
-            </section>
-
-            <section className="board">
-              <div className="board-head">
-                <div><h3>{view === "overview" ? "Ближайшие задачи" : title}</h3><p>{scopeRecords.length} записей показано</p></div>
-                <div className="filters">
-                  <label className="search"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по CRM" /></label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                    <option>Все статусы</option>{STATUSES.map((item) => <option key={item}>{item}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Проект / площадка</th><th>Направление</th><th>Статус</th><th>Следующее действие</th><th>Пруф</th><th>Продление</th><th>Контроль</th><th /></tr></thead>
-                  <tbody>
-                    {scopeRecords.map((item) => (
-                      <tr key={item.id} onClick={() => setSelectedId(item.id)}>
-                        <td><div className="record-name"><span>{item.name.slice(0, 1)}</span><div><strong>{item.name}</strong><small>{item.type || item.channel || "Без категории"}</small></div></div></td>
-                        <td><span className="source-label">{item.source}</span><small className="priority">{item.priority}</small></td>
-                        <td><span className={"status tone-" + toneFor(item.status)}><i />{item.status}</span></td>
-                        <td><p className="action-text">{item.action || "Следующее действие не задано"}</p></td>
-                        <td>
-                          {(item.proofs || []).length > 0
-                            ? <span className="proof-badge ready"><i />{(item.proofs || []).length} пруф.</span>
-                            : item.source === "Листинги"
-                              ? <span className="proof-badge"><i />Пруфа нет</span>
-                              : <span className="not-applicable">—</span>}
-                        </td>
-                        <td><span className={item.renewalDate ? "renewal-date" : "renewal-date unknown"}>{item.renewalDate ? shortDate(item.renewalDate) : "Уточнить"}</span></td>
-                        <td><span className={item.dueDate === today || item.dueDate === tomorrow ? "due urgent" : "due"}>{shortDate(item.dueDate)}</span></td>
-                        <td><button className="row-arrow">→</button></td>
-                      </tr>
-                    ))}
-                    {scopeRecords.length === 0 && <tr><td colSpan={8}><div className="empty">По этим фильтрам записей нет</div></td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </>
-        )}
-      </section>
-
-      {selected && (
-        <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setSelectedId(null)}>
-          <aside className="drawer">
-            <div className="drawer-head">
-              <div><span className="source-label">{selected.source}</span><small>{selected.priority}</small></div>
-              <button onClick={() => setSelectedId(null)}>×</button>
-            </div>
-            <h2>{selected.name}</h2><p className="drawer-type">{selected.type}</p>
-
-            {/оплат/i.test(selected.status) && (
-              <section className="payment-panel">
-                <div className="payment-head">
-                  <div><span>Оплата</span><h3>Реквизиты и инструкция</h3></div>
-                  <b>Сверить перед переводом</b>
-                </div>
-                <div className="payment-grid">
-                  <label>
-                    <span className="field-caption"><span>Сумма</span><button type="button" className="copy-button" onClick={() => copyText("amount", selected.paymentAmount || "")}><i />{copiedField === "amount" ? "Скопировано" : "Копировать"}</button></span>
-                    <input value={selected.paymentAmount || ""} onChange={(e) => updateRecord(selected.id, "paymentAmount", e.target.value)} />
-                  </label>
-                  <label>
-                    <span className="field-caption"><span>Назначение / Reference</span><button type="button" className="copy-button" onClick={() => copyText("reference", selected.paymentReference || "")}><i />{copiedField === "reference" ? "Скопировано" : "Копировать"}</button></span>
-                    <input value={selected.paymentReference || ""} onChange={(e) => updateRecord(selected.id, "paymentReference", e.target.value)} />
-                  </label>
-                  <label className="wide">
-                    <span className="field-caption"><span>Сети и адреса</span><button type="button" className="copy-button" onClick={() => copyText("options", selected.paymentOptions || "")}><i />{copiedField === "options" ? "Скопировано" : "Копировать"}</button></span>
-                    <textarea rows={4} value={selected.paymentOptions || ""} onChange={(e) => updateRecord(selected.id, "paymentOptions", e.target.value)} />
-                  </label>
-                  <label className="wide">
-                    <span className="field-caption"><span>Что проверить и сделать после оплаты</span><button type="button" className="copy-button" onClick={() => copyText("instructions", selected.paymentInstructions || "")}><i />{copiedField === "instructions" ? "Скопировано" : "Копировать"}</button></span>
-                    <textarea rows={4} value={selected.paymentInstructions || ""} onChange={(e) => updateRecord(selected.id, "paymentInstructions", e.target.value)} />
-                  </label>
-                </div>
-              </section>
-            )}
-
-            {(selected.source === "Листинги" || selectedProofs.length > 0 || /опублик/i.test(selected.status)) && (
-              <section className="proof-section">
-                <div className="proof-head">
-                  <div>
-                    <span>Подтверждение</span>
-                    <h3>Пруф размещения</h3>
-                    <p>Скриншоты и прямые ссылки для коллег.</p>
-                  </div>
-                  <label className="upload-button">
-                    {primaryProof ? "Заменить скрин" : "＋ Добавить скрин"}
-                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) uploadProof(file);
-                      event.target.value = "";
-                    }} />
-                  </label>
-                </div>
-                {proofState && <p className="proof-state">{proofState}</p>}
-                {primaryProof ? (
-                  <>
-                    <article className="proof-primary">
-                      <a className="proof-primary-image" href={primaryProof.url} target="_blank" rel="noreferrer">
-                        <img src={primaryProof.url} alt={"Подтверждение размещения " + selected.name} />
-                      </a>
-                      <div className="proof-primary-info">
-                        <span className="verified-label">✓ Пруф есть</span>
-                        <strong>Проверено {shortDate(primaryProof.createdAt.slice(0, 10))}</strong>
-                        <label>Короткая заметка<input value={primaryProof.note} onChange={(event) => updateProof(selected.id, primaryProof.id, event.target.value)} /></label>
-                        <div className="proof-primary-actions">
-                          <a href={primaryProof.url} download={primaryProof.fileName}>Скачать пруф</a>
-                          {primaryProofLink && <a href={primaryProofLink} target="_blank" rel="noreferrer">Открыть публикацию</a>}
-                          <button type="button" onClick={() => removeProof(selected.id, primaryProof)}>Удалить</button>
-                        </div>
-                      </div>
-                    </article>
-                    {selectedProofs.length > 1 && (
-                      <details className="proof-history">
-                        <summary>История скриншотов ({selectedProofs.length - 1})</summary>
-                        <div>
-                          {selectedProofs.slice(0, -1).reverse().map((proof) => (
-                            <article key={proof.id}>
-                              <img src={proof.url} alt="" />
-                              <span>{shortDate(proof.createdAt.slice(0, 10))}</span>
-                              <small>{proof.note}</small>
-                              <a href={proof.url} target="_blank" rel="noreferrer">Открыть</a>
-                              {urlFromText(proof.note) && <a href={urlFromText(proof.note)} target="_blank" rel="noreferrer">Публикация</a>}
-                              <button type="button" onClick={() => removeProof(selected.id, proof)}>Удалить</button>
-                            </article>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                  </>
-                ) : (
-                  <div className="proof-empty">
-                    <span>□</span>
-                    <div><strong>Пруфа пока нет</strong><p>После публикации добавьте один основной скриншот.</p></div>
-                  </div>
-                )}
-                {/опублик/i.test(selected.status) && !primaryProof && <div className="proof-reminder">Для статуса «Опубликовано» нужно добавить скриншот подтверждения.</div>}
-              </section>
-            )}
-
-            <section className="renewal-panel">
-              <div className="renewal-head">
-                <div><span>Размещение</span><h3>Срок и продление</h3></div>
-                {!selected.renewalDate && <b>Срок нужно уточнить</b>}
-              </div>
-              <div className="renewal-grid">
-                <label>Дата начала<input type="date" value={selected.placementStart || ""} onChange={(e) => updateRecord(selected.id, "placementStart", e.target.value)} /></label>
-                <label>Дата продления<input type="date" value={selected.renewalDate || ""} onChange={(e) => updateRecord(selected.id, "renewalDate", e.target.value)} /></label>
-                <label className="wide">Срок размещения<input value={selected.placementTerm || ""} onChange={(e) => updateRecord(selected.id, "placementTerm", e.target.value)} /></label>
-                <label className="wide">Условия продления<textarea rows={3} value={selected.renewalNotes || ""} onChange={(e) => updateRecord(selected.id, "renewalNotes", e.target.value)} /></label>
-              </div>
-            </section>
-
-            <div className="section-title"><span>Основная информация</span></div>
-            <div className="form-grid">
-              <label>Статус<select value={selected.status} onChange={(e) => updateRecord(selected.id, "status", e.target.value)}>{STATUSES.map((item) => <option key={item}>{item}</option>)}</select></label>
-              <label>Дата контроля<input type="date" value={selected.dueDate} onChange={(e) => updateRecord(selected.id, "dueDate", e.target.value)} /></label>
-              <label className="wide">Следующее действие<textarea rows={3} value={selected.action} onChange={(e) => updateRecord(selected.id, "action", e.target.value)} /></label>
-              <label>Ответственный<input value={selected.owner} onChange={(e) => updateRecord(selected.id, "owner", e.target.value)} /></label>
-              <label>Цена / формат<input value={selected.price} onChange={(e) => updateRecord(selected.id, "price", e.target.value)} /></label>
-              <label className="wide">Кратко о площадке<textarea rows={3} value={selected.summary} onChange={(e) => updateRecord(selected.id, "summary", e.target.value)} /></label>
-              <label className="wide notes-field">
-                <span className="field-caption"><span>Заметки и переписка</span><button type="button" className="copy-button" onClick={() => copyText("notes", selected.notes)}><i />{copiedField === "notes" ? "Скопировано" : "Копировать"}</button></span>
-                <textarea rows={7} value={selected.notes} onChange={(e) => updateRecord(selected.id, "notes", e.target.value)} />
-              </label>
-              <label className="wide">Ссылка<input value={selected.link} onChange={(e) => updateRecord(selected.id, "link", e.target.value)} /></label>
-            </div>
-            <div className="drawer-actions">
-              <button className="danger-link" onClick={() => removeRecord(selected.id)}>Удалить</button>
-              {selected.link && <a className="button secondary" href={selected.link} target="_blank" rel="noreferrer">Открыть сайт ↗</a>}
-              <button className="button primary" onClick={save}>Сохранить изменения</button>
-            </div>
-          </aside>
-        </div>
-      )}
-    </main>
+  const updateTaskStatus = (task: WorkTask, status: string) => run(
+    () => patchListingsTask(currentMemberId, task.id, task.version, { status }),
+    status === "DONE" ? "Задача завершена" : "Статус обновлён",
   );
+
+  const release = (task: WorkTask) => run(() => releaseListingsTask(currentMemberId, task.id, task.version), "Задача возвращена в общую очередь");
+  const generatePlan = () => run(() => generateListingsPlan(currentMemberId, today), "План дня сформирован без дублей");
+
+  const addRecord = () => run(async () => {
+    const payload = await createListingsRecord(currentMemberId, {
+      source: "Листинги", name: "Новая площадка", type: "DApp listing", priority: "B",
+      status: "Не обработано", owner: currentMember?.name || "Команда", ownerId: currentMemberId,
+      dueDate: today, action: "Проверить площадку и условия размещения", summary: "", benefit: "",
+      price: "", notes: "", channel: "", link: "", firstContact: "",
+    });
+    const record = payload.record || payload.data?.record;
+    if (record?.id) setSelectedId(record.id);
+  }, "Новая карточка создана");
+
+  const saveRecord = () => {
+    if (!draft) return;
+    const { id, version, updatedAt: _updatedAt, proofs: _proofs, ...changes } = draft;
+    run(async () => {
+      await patchListingsRecord(currentMemberId, id, version, changes);
+      setDraft(null); setSelectedId(null);
+    }, "Карточка сохранена");
+  };
+
+  const archiveRecord = () => {
+    if (!draft || !window.confirm("Переместить карточку в архив? История сохранится.")) return;
+    run(async () => { await archiveListingsRecord(currentMemberId, draft.id, draft.version); setDraft(null); setSelectedId(null); }, "Карточка перемещена в архив");
+  };
+
+  const renderTask = (task: WorkTask) => {
+    const record = task.recordId ? recordById.get(task.recordId) : null;
+    const owner = task.assigneeId ? memberById.get(task.assigneeId) : null;
+    const canManageTask = task.assigneeId === currentMemberId || canCoordinate;
+    return <article className="task-card" key={task.id}>
+      <div className="task-card-head"><span className="task-category">{task.category || record?.type || "Задача"}</span><b>{task.points} б.</b></div>
+      <h4>{task.title || record?.name || "Рабочая задача"}</h4>
+      <p>{task.nextAction || record?.action || "Следующий шаг не указан"}</p>
+      <div className="task-meta"><span className={`status tone-${toneFor(task.status)}`}><i />{TASK_LABELS[task.status] || task.status}</span><time className={task.dueDate < today ? "overdue" : ""}>{shortDate(task.dueDate)}</time></div>
+      <div className="task-owner">{owner ? <><span className="member-avatar">{owner.name.slice(0, 1)}</span><strong>{owner.name}</strong></> : <span>Свободная задача</span>}</div>
+      <div className="task-actions">
+        {record && <button onClick={() => setSelectedId(record.id)}>Карточка</button>}
+        {!task.assigneeId && <button className="primary-mini" disabled={busy} onClick={() => claim(task)}>Взять</button>}
+        {task.assigneeId && canManageTask && task.status !== "IN_PROGRESS" && <button className="primary-mini" onClick={() => updateTaskStatus(task, "IN_PROGRESS")}>Начать</button>}
+        {task.assigneeId && canManageTask && task.status === "IN_PROGRESS" && <button className="primary-mini" onClick={() => updateTaskStatus(task, "DONE")}>Готово</button>}
+        {task.assigneeId && canManageTask && !["DONE", "WAITING_EXTERNAL"].includes(task.status) && <button onClick={() => release(task)}>Вернуть</button>}
+      </div>
+    </article>;
+  };
+
+  const title = NAV.find((item) => item.id === view)?.label || "Обзор";
+  return <main className="app-shell">
+    <aside className="sidebar">
+      <div className="brand"><div className="brand-mark">A</div><div><strong>ATLAS</strong><span>TEAM CRM</span></div></div>
+      <nav><p className="nav-caption">СОВМЕСТНАЯ РАБОТА</p>{NAV.map((item) => <button key={item.id} className={view === item.id ? "nav-item active" : "nav-item"} onClick={() => setView(item.id)}><span>{item.icon}</span>{item.label}{item.id === "today" && (myTasks.length + freeTasks.length) > 0 && <b>{myTasks.length + freeTasks.length}</b>}</button>)}</nav>
+      <div className="sidebar-foot"><div className="sync-dot" /><div><strong>Общая база</strong><span>Обновление каждые 15 сек.</span></div></div>
+    </aside>
+    <section className="workspace">
+      <header className="topbar">
+        <div><h1>{title}</h1><p className="topbar-subtitle">Одна очередь, отдельные ответственные, без двойной работы</p></div>
+        <div className="top-actions"><div className="save-state"><i />{notice}</div><label className="member-select"><span>Я работаю как</span><select value={currentMemberId} onChange={(event) => chooseMember(event.target.value)}><option value="">Выбрать сотрудника</option>{data.members.filter((member) => member.active).map((member) => <option key={member.id} value={member.id}>{member.name} · {ROLE_LABELS[member.role] || member.role}</option>)}</select></label><button className="button secondary" onClick={addRecord}>＋ Карточка</button></div>
+      </header>
+      {error && <div className="alert"><strong>Внимание:</strong> {error}{conflictRecord && <button className="conflict-action" onClick={() => { setData((current) => ({ ...current, records: current.records.map((record) => record.id === conflictRecord.id ? conflictRecord : record) })); setDraft(structuredClone(conflictRecord)); setConflictRecord(null); setError(""); }}>Загрузить версию коллеги</button>}<button onClick={() => { setError(""); setConflictRecord(null); }}>×</button></div>}
+      {loading ? <div className="loading"><div className="loader" /><p>Открываю общую CRM…</p></div> : <>
+        <section className="metrics">
+          <article><span>Мои активные</span><strong>{myTasks.length}</strong><small>задачи текущего профиля</small></article>
+          <article><span>Свободные сегодня</span><strong>{freeTasks.length}</strong><small>можно взять без пересечений</small></article>
+          <article><span>Просрочено</span><strong>{overdue}</strong><small>включено в план дня</small></article>
+          <article><span>Прогресс команды</span><strong>{teamPoints}/{teamCapacity}</strong><small>баллов сегодня</small></article>
+        </section>
+
+        {view === "overview" && <section className="dashboard-grid">
+          <section className="board focus-panel"><div className="board-head"><div><h3>Что требует внимания</h3><p>Сначала ответы и просроченные обязательства</p></div>{canCoordinate ? <button className="button primary" onClick={generatePlan}>Сформировать план</button> : <span className="coordinator-note">План формирует координатор</span>}</div><div className="task-grid">{[...myTasks, ...freeTasks].slice(0, 6).map(renderTask)}{myTasks.length + freeTasks.length === 0 && <div className="empty">Очередь пуста — координатор сформирует план дня</div>}</div></section>
+          <section className="board team-summary"><div className="board-head"><div><h3>Команда</h3><p>Загрузка активных сотрудников</p></div></div>{data.members.filter((member) => member.active).map((member) => { const tasks = activeTasks.filter((task) => task.assigneeId === member.id); const points = tasks.reduce((sum, task) => sum + task.points, 0); return <div className="member-row" key={member.id}><span className="member-avatar">{member.name.slice(0, 1)}</span><div><strong>{member.name}</strong><small>{ROLE_LABELS[member.role] || member.role}</small></div><b>{points}/{member.capacity || 5}</b></div>; })}</section>
+        </section>}
+
+        {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div>{canCoordinate && <button className="button primary" onClick={generatePlan}>Обновить план</button>}</div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
+
+        {view === "team" && <section className="team-board">{data.members.filter((member) => member.active).map((member) => <section className="team-column" key={member.id}><header><span className="member-avatar">{member.name.slice(0, 1)}</span><div><h3>{member.name}</h3><p>{ROLE_LABELS[member.role] || member.role}</p></div><b>{activeTasks.filter((task) => task.assigneeId === member.id).reduce((sum, task) => sum + task.points, 0)}/{member.capacity || 5}</b></header><div>{activeTasks.filter((task) => task.assigneeId === member.id).map(renderTask)}{activeTasks.every((task) => task.assigneeId !== member.id) && <div className="empty compact">Нет активных задач</div>}</div></section>)}<section className="team-column unassigned"><header><div><h3>Свободная очередь</h3><p>Берёт только один сотрудник</p></div><b>{freeTasks.length}</b></header><div>{freeTasks.map(renderTask)}</div></section></section>}
+
+        {view === "records" && <section className="board"><div className="board-head"><div><h3>Площадки и контакты</h3><p>{records.length} карточек в общей базе</p></div><label className="search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по CRM" /></label></div><div className="table-wrap"><table><thead><tr><th>Площадка / контакт</th><th>Категория</th><th>Статус</th><th>Ответственный</th><th>Следующий шаг</th><th>Контроль</th><th /></tr></thead><tbody>{records.map((record) => <tr key={record.id} onClick={() => setSelectedId(record.id)}><td><div className="record-name"><span>{record.name.slice(0, 1)}</span><div><strong>{record.name}</strong><small>{record.link || "Ссылка не указана"}</small></div></div></td><td><span className="source-label">{record.source}</span><small className="priority">{record.type}</small></td><td><span className={`status tone-${toneFor(record.status)}`}><i />{record.status}</span></td><td>{record.ownerId && memberById.get(record.ownerId)?.name || record.owner || "Команда"}</td><td><p className="action-text">{record.action || "Не задан"}</p></td><td><span className={record.dueDate < today ? "due urgent" : "due"}>{shortDate(record.dueDate)}</span></td><td><button className="row-arrow">→</button></td></tr>)}</tbody></table></div></section>}
+
+        {view === "activity" && <section className="board"><div className="board-head"><div><h3>Журнал изменений</h3><p>Кто, когда и что изменил</p></div></div><div className="activity-list">{data.audit.map((event) => <article key={event.id}><span className="member-avatar">{(event.actorName || event.memberName || "A").slice(0, 1)}</span><div><strong>{event.actorName || event.memberName || "Команда Atlas"}</strong><p>{event.action}{event.entityName ? ` · ${event.entityName}` : ""}</p></div><time>{new Date(event.createdAt).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}</time></article>)}{data.audit.length === 0 && <div className="empty">Изменения появятся после первой операции</div>}</div></section>}
+      </>}
+    </section>
+
+    {draft && <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setSelectedId(null)}><aside className="drawer"><div className="drawer-head"><div><span className="source-label">{draft.source}</span><small>Версия {draft.version}</small></div><button onClick={() => setSelectedId(null)}>×</button></div><h2>{draft.name}</h2><p className="drawer-type">{canEditDraft ? "Изменения сохраняются только в этой карточке" : "Карточка закреплена за коллегой и открыта только для просмотра"}</p>
+      <fieldset className="drawer-fieldset" disabled={!canEditDraft}><div className="section-title"><span>Основная информация</span></div><div className="form-grid">
+        <label className="wide">Название<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
+        <label>Статус<select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>{RECORD_STATUSES.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label>Дата контроля<input type="date" value={draft.dueDate || ""} onChange={(event) => setDraft({ ...draft, dueDate: event.target.value })} /></label>
+        <label>Категория<input value={draft.type || ""} onChange={(event) => setDraft({ ...draft, type: event.target.value })} /></label>
+        <label>Ответственный<select value={draft.ownerId || ""} onChange={(event) => { const member = memberById.get(event.target.value); setDraft({ ...draft, ownerId: event.target.value, owner: member?.name || "Команда" }); }}><option value="">Команда</option>{data.members.filter((member) => member.active && (canCoordinate || member.id === currentMemberId)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
+        <label className="wide">Следующее действие<textarea rows={3} value={draft.action || ""} onChange={(event) => setDraft({ ...draft, action: event.target.value })} /></label>
+        <label>Цена / формат<input value={draft.price || ""} onChange={(event) => setDraft({ ...draft, price: event.target.value })} /></label>
+        <label>Канал связи<input value={draft.channel || ""} onChange={(event) => setDraft({ ...draft, channel: event.target.value })} /></label>
+        <label className="wide">Ссылка<input value={draft.link || ""} onChange={(event) => setDraft({ ...draft, link: event.target.value })} /></label>
+        <label className="wide">Описание<textarea rows={3} value={draft.summary || ""} onChange={(event) => setDraft({ ...draft, summary: event.target.value })} /></label>
+        <label className="wide notes-field">Заметки и переписка<textarea rows={7} value={draft.notes || ""} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
+      </div></fieldset>
+      <section className="proof-section"><div className="proof-head"><div><span>Подтверждение</span><h3>Пруфы</h3><p>Старые подтверждения доступны для просмотра.</p></div><span className="proof-storage-note">Новое файловое хранилище готовится</span></div>{(draft.proofs || []).length ? <div className="proof-grid">{(draft.proofs || []).map((proof) => <article className="proof-card" key={proof.id}><a className="proof-image" href={proof.url} target="_blank" rel="noreferrer"><img src={proof.url} alt="Пруф" /></a><div className="proof-body"><strong>{proof.fileName}</strong></div></article>)}</div> : <div className="proof-empty"><span>□</span><div><strong>Пруфов пока нет</strong><p>Добавление файлов будет включено после защищённого upload-модуля.</p></div></div>}</section>
+      <div className="drawer-actions">{canEditDraft && <button className="danger-link" onClick={archiveRecord}>В архив</button>}{draft.link && <a className="button secondary" href={draft.link} target="_blank" rel="noreferrer">Открыть сайт ↗</a>}{canEditDraft && <button className="button primary" disabled={busy} onClick={saveRecord}>{busy ? "Сохраняю…" : "Сохранить карточку"}</button>}</div>
+    </aside></div>}
+  </main>;
 }
 
 export default function ListingsCrmBoard() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
-
-  useEffect(() => {
-    if (!hostRef.current) return;
-    setShadowRoot(hostRef.current.shadowRoot || hostRef.current.attachShadow({ mode: "open" }));
-  }, []);
-
-  return (
-    <div ref={hostRef} className="analytics-listings-crm-host">
-      {shadowRoot && createPortal(
-        <>
-          <style>{crmCss}</style>
-          <ListingsCrmWorkspace />
-        </>,
-        shadowRoot,
-      )}
-    </div>
-  );
+  useEffect(() => { if (hostRef.current) setShadowRoot(hostRef.current.shadowRoot || hostRef.current.attachShadow({ mode: "open" })); }, []);
+  return <div ref={hostRef} className="analytics-listings-crm-host">{shadowRoot && createPortal(<><style>{crmCss}</style><ListingsCrmWorkspace /></>, shadowRoot)}</div>;
 }
