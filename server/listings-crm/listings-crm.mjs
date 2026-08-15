@@ -77,13 +77,43 @@ export function normalizeDomain(value) {
 
 function sanitizeProofs(value) {
   if (!Array.isArray(value)) return [];
-  return value.slice(0, 30).map((proof) => ({
-    id: normalizeText(proof?.id, 160) || randomUUID(),
-    url: normalizeText(proof?.url, 400_000),
-    fileName: normalizeText(proof?.fileName, 240),
-    createdAt: normalizeText(proof?.createdAt, 80),
-    note: normalizeText(proof?.note, 2_000),
-  })).filter((proof) => proof.url);
+  return value.slice(0, 30).map((proof) => {
+    const url = String(proof?.url ?? "").replace(/\0/g, "").trim();
+    if (url.length > 10 * 1024 * 1024) throw Object.assign(new Error("proof_too_large"), { status: 413 });
+    if (url && !/^https?:\/\//i.test(url) && !/^data:image\/(png|jpeg|webp|gif);base64,/i.test(url) && !url.startsWith("/")) {
+      throw Object.assign(new Error("unsafe_proof_url"), { status: 400 });
+    }
+    return {
+      id: normalizeText(proof?.id, 160) || randomUUID(), url,
+      fileName: normalizeText(proof?.fileName, 240), createdAt: normalizeText(proof?.createdAt, 80),
+      note: normalizeText(proof?.note, 2_000),
+    };
+  }).filter((proof) => proof.url);
+}
+
+function normalizeProfileUrl(value) {
+  try {
+    const parsed = new URL(value);
+    parsed.search = "";
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "").toLowerCase();
+    return `${parsed.hostname}${parsed.pathname}`;
+  } catch {
+    return "";
+  }
+}
+
+function recordDedupeKey(record) {
+  const kind = `${record.source || ""} ${record.type || ""} ${record.channel || ""}`.toLowerCase();
+  const contact = /партн|contact|connector|coach|linkedin|facebook|instagram|twitter|social|соцсет/.test(kind);
+  if (contact) {
+    const profile = normalizeProfileUrl(record.link);
+    return profile ? `contact|${profile}` : "";
+  }
+  return record.canonicalDomain
+    ? `listing|${record.canonicalDomain}|${normalizeText(record.type || record.source, 300).toLowerCase()}`
+    : "";
 }
 
 function normalizeLegacyDate(value, year = "2026") {
@@ -122,15 +152,15 @@ function normalizeRecordInput(input, current = {}) {
   next.paymentOptions = normalizeText(next.paymentOptions, 3_000);
   next.paymentReference = normalizeText(next.paymentReference, 1_000);
   next.paymentInstructions = normalizeText(next.paymentInstructions, 5_000);
-  next.proofs = sanitizeProofs(next.proofs);
+  next.proofs = Object.prototype.hasOwnProperty.call(input, "proofs")
+    ? sanitizeProofs(input.proofs)
+    : Array.isArray(current.proofs) ? current.proofs : [];
   next.placementStart = normalizeDate(next.placementStart, "placement_start");
   next.placementTerm = normalizeText(next.placementTerm, 2_000);
   next.renewalDate = normalizeDate(next.renewalDate, "renewal_date");
   next.renewalNotes = normalizeText(next.renewalNotes, 5_000);
   next.canonicalDomain = normalizeDomain(next.link);
-  next.dedupeKey = next.canonicalDomain
-    ? `${next.canonicalDomain}|${normalizeText(next.type || next.source, 300).toLowerCase()}`
-    : "";
+  next.dedupeKey = recordDedupeKey(next);
   if (next.legacyDuplicate) next.dedupeKey = "";
   return next;
 }
@@ -166,6 +196,14 @@ function requireActor(request, state) {
   const memberId = actorFromRequest(request, state);
   if (!memberId) throw Object.assign(new Error("member_identity_required"), { status: 401 });
   return memberId;
+}
+
+function actorMember(request, state) {
+  return assertMember(state, requireActor(request, state));
+}
+
+function isCoordinator(member) {
+  return member?.role === "DUTY_COORDINATOR";
 }
 
 function normalizeLegacyState(legacy) {
@@ -578,9 +616,13 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
       if (request.method === "POST" && resource === "records" && !id) {
         const body = await readJsonBody(request);
         const result = await repository.mutate((state) => {
-          const actorMemberId = requireActor(request, state);
+          const actor = actorMember(request, state);
+          const actorMemberId = actor.id;
           const normalized = normalizeRecordInput(body);
           if (normalized.ownerMemberId) assertMember(state, normalized.ownerMemberId);
+          if (normalized.ownerMemberId && normalized.ownerMemberId !== actorMemberId && !isCoordinator(actor)) {
+            throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
+          }
           assertUniqueDomain(state, normalized);
           const timestamp = nowIso();
           const record = { ...normalized, id: randomUUID(), version: 1, createdAt: timestamp, updatedAt: timestamp };
@@ -596,12 +638,19 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
         const body = await readJsonBody(request);
         const version = expectedVersion(request, body);
         const result = await repository.mutate((state) => {
-          const actorMemberId = requireActor(request, state);
+          const actor = actorMember(request, state);
+          const actorMemberId = actor.id;
           const record = findRecord(state, id);
+          if (record.ownerMemberId && record.ownerMemberId !== actorMemberId && !isCoordinator(actor)) {
+            throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
+          }
           assertVersion(record, version);
           const before = clone(record);
           const normalized = normalizeRecordInput(body, record);
           if (normalized.ownerMemberId) assertMember(state, normalized.ownerMemberId);
+          if (normalized.ownerMemberId && normalized.ownerMemberId !== actorMemberId && !isCoordinator(actor)) {
+            throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
+          }
           assertUniqueDomain(state, normalized, record.id);
           Object.assign(record, normalized, { version: record.version + 1, updatedAt: nowIso() });
           state.audit.push(createAudit("record", record.id, "RECORD_UPDATE", actorMemberId, before, record));
@@ -615,8 +664,12 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
         const body = await readJsonBody(request);
         const version = expectedVersion(request, body);
         const result = await repository.mutate((state) => {
-          const actorMemberId = requireActor(request, state);
+          const actor = actorMember(request, state);
+          const actorMemberId = actor.id;
           const record = findRecord(state, id);
+          if (record.ownerMemberId && record.ownerMemberId !== actorMemberId && !isCoordinator(actor)) {
+            throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
+          }
           assertVersion(record, version);
           const before = clone(record);
           record.archivedAt = nowIso();
@@ -667,8 +720,12 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
         const body = await readJsonBody(request);
         const version = expectedVersion(request, body);
         const result = await repository.mutate((state) => {
-          const actorMemberId = requireActor(request, state);
+          const actor = actorMember(request, state);
+          const actorMemberId = actor.id;
           const task = findTask(state, id);
+          if ((!task.assigneeId || task.assigneeId !== actorMemberId) && !isCoordinator(actor)) {
+            throw Object.assign(new Error("task_owner_forbidden"), { status: 403 });
+          }
           assertVersion(task, version);
           const before = clone(task);
           task.assigneeId = null;
@@ -687,8 +744,12 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
         const body = await readJsonBody(request);
         const version = expectedVersion(request, body);
         const result = await repository.mutate((state) => {
-          const actorMemberId = requireActor(request, state);
+          const actor = actorMember(request, state);
+          const actorMemberId = actor.id;
           const task = findTask(state, id);
+          if ((!task.assigneeId || task.assigneeId !== actorMemberId) && !isCoordinator(actor)) {
+            throw Object.assign(new Error("task_owner_forbidden"), { status: 403 });
+          }
           assertVersion(task, version);
           return patchTask(state, task, body, actorMemberId);
         });
@@ -699,7 +760,11 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
       if (request.method === "POST" && resource === "plan" && id === "generate") {
         const body = await readJsonBody(request);
         const date = normalizeDate(body.date || moscowDate(), "plan_date", { required: true });
-        const result = await repository.mutate((state) => generateDailyPlan(state, date, requireActor(request, state)));
+        const result = await repository.mutate((state) => {
+          const actor = actorMember(request, state);
+          if (!isCoordinator(actor)) throw Object.assign(new Error("coordinator_required"), { status: 403 });
+          return generateDailyPlan(state, date, actor.id);
+        });
         sendJson(response, 200, { ok: true, date, ...result, serverTime: nowIso() });
         return true;
       }

@@ -8,10 +8,11 @@ import { createListingsCrmRequestHandler } from "../server/listings-crm/listings
 const root = await mkdtemp(path.join(tmpdir(), "atlas-listings-crm-"));
 const legacyFilePath = path.join(root, "legacy.json");
 const storeDir = path.join(root, "store");
+const legacyProofUrl = `data:image/png;base64,${"a".repeat(410_000)}`;
 
 await writeFile(legacyFilePath, JSON.stringify({
   records: [
-    { id: "hyip-overdue", source: "Листинги", name: "HYIP Monitor Example", type: "HYIP monitor", status: "Ожидаем ответ", priority: "P0", dueDate: "2026-08-10", link: "https://example.org/listing", action: "Сделать follow-up" },
+    { id: "hyip-overdue", source: "Листинги", name: "HYIP Monitor Example", type: "HYIP monitor", status: "Ожидаем ответ", priority: "P0", dueDate: "2026-08-10", link: "https://example.org/listing", action: "Сделать follow-up", proofs: [{ id: "legacy-proof", url: legacyProofUrl, fileName: "proof.png", createdAt: "2026-08-10T12:00:00Z", note: "Legacy proof" }] },
     { id: "dapp-overdue", source: "Листинги", name: "DApp Example", type: "DApp catalog", status: "Не обработано", priority: "P0", dueDate: "2026-08-11", link: "https://dapp.example/listing" },
     { id: "article-overdue", source: "PR", name: "Article Example", type: "Article catalog", status: "Не обработано", priority: "P1", dueDate: "2026-08-12", link: "https://article.example/listing" },
     { id: "mlm-overdue", source: "Листинги", name: "MLM Example", type: "MLM platform", status: "Не обработано", priority: "P1", dueDate: "2026-08-13", link: "https://mlm.example/listing" },
@@ -62,6 +63,7 @@ try {
   assert.equal(bootstrap.body.members.filter((member) => member.active).length, 3);
   assert.equal(bootstrap.body.records.length, 4, "legacy records are imported on an empty store");
   assert.equal(bootstrap.body.storageMode, "file");
+  assert.equal(bootstrap.body.records.find((record) => record.id === "hyip-overdue").proofs[0].url.length, legacyProofUrl.length, "legacy proof data is never truncated during migration");
 
   const missingMemberIdentity = await call(handler, "POST", "/api/listings-crm/records", {
     name: "Anonymous write", source: "Листинги", link: "https://anonymous.example",
@@ -82,6 +84,19 @@ try {
   }, { "x-atlas-member-id": "listings-operator-1" });
   assert.equal(otherCategory.status, 201, "one domain may expose different legitimate listing products");
 
+  const contactOne = await call(handler, "POST", "/api/listings-crm/records", {
+    name: "Connector One", source: "Партнёрства", type: "Business Connector", link: "https://linkedin.com/in/connector-one",
+  }, { "x-atlas-member-id": "listings-operator-1" });
+  const contactTwo = await call(handler, "POST", "/api/listings-crm/records", {
+    name: "Connector Two", source: "Партнёрства", type: "Business Connector", link: "https://www.linkedin.com/in/connector-two/?trk=public",
+  }, { "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(contactOne.status, 201);
+  assert.equal(contactTwo.status, 201, "different profiles on one social domain are allowed");
+  const duplicateContact = await call(handler, "POST", "/api/listings-crm/records", {
+    name: "Connector One duplicate", source: "Партнёрства", type: "Business Connector", link: "https://www.linkedin.com/in/connector-one/?utm_source=test",
+  }, { "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(duplicateContact.status, 409, "the same normalized social profile is blocked");
+
   const created = await call(handler, "POST", "/api/listings-crm/records", {
     name: "Unique directory", source: "Листинги", link: "https://unique.example/catalog", dueDate: "2026-08-15",
   }, { "x-atlas-member-id": "listings-operator-1" });
@@ -97,9 +112,26 @@ try {
 
   const stale = await call(handler, "PATCH", `/api/listings-crm/records/${recordId}`, {
     status: "Закрыто",
-  }, { "if-match": '"1"', "x-atlas-member-id": "listings-operator-2" });
+  }, { "if-match": '"1"', "x-atlas-member-id": "listings-operator-1" });
   assert.equal(stale.status, 409);
   assert.equal(stale.body.error, "version_conflict", "stale editors must not overwrite current work");
+
+  const owned = await call(handler, "POST", "/api/listings-crm/records", {
+    name: "Owned listing", source: "Листинги", type: "DApp listing", link: "https://owned.example/catalog",
+    ownerId: "listings-operator-1",
+  }, { "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(owned.status, 201);
+  const foreignRecordEdit = await call(handler, "PATCH", `/api/listings-crm/records/${owned.body.record.id}`, {
+    status: "В работе",
+  }, { "if-match": '"1"', "x-atlas-member-id": "listings-operator-2" });
+  assert.equal(foreignRecordEdit.status, 403, "an operator cannot edit a colleague's owned record");
+  const foreignRecordAssign = await call(handler, "PATCH", `/api/listings-crm/records/${recordId}`, {
+    ownerId: "listings-operator-2",
+  }, { "if-match": '"2"', "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(foreignRecordAssign.status, 403, "an operator cannot assign a record to another employee");
+
+  const operatorPlan = await call(handler, "POST", "/api/listings-crm/plan/generate", { date: "2026-08-15" }, { "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(operatorPlan.status, 403, "only the duty coordinator can generate the shared plan");
 
   const plan = await call(handler, "POST", "/api/listings-crm/plan/generate", { date: "2026-08-15" }, { "x-atlas-member-id": "duty-coordinator" });
   assert.equal(plan.status, 200);
@@ -125,6 +157,10 @@ try {
   });
   assert.equal(released.status, 200);
   assert.equal(released.body.task.assigneeId, null, "a task can be released");
+  const unclaimedBypass = await call(handler, "PATCH", `/api/listings-crm/tasks/${contested.id}`, {
+    status: "IN_PROGRESS",
+  }, { "if-match": `"${released.body.task.version}"`, "x-atlas-member-id": "listings-operator-1" });
+  assert.equal(unclaimedBypass.status, 403, "an operator must atomically claim a free task before changing it");
 
   const claims = await Promise.all([
     call(handler, "POST", `/api/listings-crm/tasks/${contested.id}/claim`, { memberId: "listings-operator-1", version: released.body.task.version }, { "x-atlas-member-id": "listings-operator-1" }),
@@ -133,6 +169,10 @@ try {
   assert.deepEqual(claims.map((result) => result.status).sort(), [200, 409], "only one concurrent claimant wins");
 
   const winner = claims.find((result) => result.status === 200).body.task;
+  const foreignTaskEdit = await call(handler, "PATCH", `/api/listings-crm/tasks/${winner.id}`, {
+    status: "IN_PROGRESS",
+  }, { "if-match": `"${winner.version}"`, "x-atlas-member-id": winner.assigneeId === "listings-operator-1" ? "listings-operator-2" : "listings-operator-1" });
+  assert.equal(foreignTaskEdit.status, 403, "an operator cannot update another employee's task");
   const handedOff = await call(handler, "PATCH", `/api/listings-crm/tasks/${winner.id}`, {
     assigneeId: "duty-coordinator", status: "IN_PROGRESS", notes: "Передано координатору",
   }, { "if-match": `"${winner.version}"`, "x-atlas-member-id": winner.assigneeId });

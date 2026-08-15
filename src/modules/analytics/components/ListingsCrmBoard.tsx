@@ -125,6 +125,7 @@ function ListingsCrmWorkspace() {
 
   const today = localDate();
   const currentMember = data.members.find((item) => item.id === currentMemberId) || null;
+  const canCoordinate = currentMember?.role === "DUTY_COORDINATOR";
   const selected = data.records.find((item) => item.id === selectedId) || null;
   const memberById = useMemo(() => new Map(data.members.map((member) => [member.id, member])), [data.members]);
   const recordById = useMemo(() => new Map(data.records.map((record) => [record.id, record])), [data.records]);
@@ -144,6 +145,7 @@ function ListingsCrmWorkspace() {
       .filter((record) => !needle || [record.name, record.source, record.type, record.status, record.action].join(" ").toLowerCase().includes(needle))
       .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
   }, [data.records, query]);
+  const canEditDraft = Boolean(draft && (!draft.ownerId || draft.ownerId === currentMemberId || canCoordinate));
 
   const chooseMember = (id: string) => {
     setCurrentMemberId(id);
@@ -160,7 +162,10 @@ function ListingsCrmWorkspace() {
         setConflictRecord(requestError?.payload?.current || null);
         setError("Карточку уже изменил коллега. Ваш черновик сохранён на экране — сравните его с новой версией.");
       } else {
-        setError(code.includes("ALREADY_CLAIMED") ? "Коллега уже взял эту задачу. Список обновлён." : "Не удалось выполнить действие");
+        const forbidden = code.includes("FORBIDDEN") || code.includes("COORDINATOR_REQUIRED");
+        setError(code.includes("ALREADY_CLAIMED")
+          ? "Коллега уже взял эту задачу. Список обновлён."
+          : forbidden ? "Действие доступно владельцу карточки или дежурному координатору." : "Не удалось выполнить действие");
         await refresh(true);
       }
     } finally { setBusy(false); }
@@ -192,7 +197,7 @@ function ListingsCrmWorkspace() {
 
   const saveRecord = () => {
     if (!draft) return;
-    const { id, version, updatedAt: _updatedAt, ...changes } = draft;
+    const { id, version, updatedAt: _updatedAt, proofs: _proofs, ...changes } = draft;
     run(async () => {
       await patchListingsRecord(currentMemberId, id, version, changes);
       setDraft(null); setSelectedId(null);
@@ -245,11 +250,11 @@ function ListingsCrmWorkspace() {
         </section>
 
         {view === "overview" && <section className="dashboard-grid">
-          <section className="board focus-panel"><div className="board-head"><div><h3>Что требует внимания</h3><p>Сначала ответы и просроченные обязательства</p></div><button className="button primary" onClick={generatePlan}>Сформировать план</button></div><div className="task-grid">{[...myTasks, ...freeTasks].slice(0, 6).map(renderTask)}{myTasks.length + freeTasks.length === 0 && <div className="empty">Очередь пуста — сформируйте план дня</div>}</div></section>
+          <section className="board focus-panel"><div className="board-head"><div><h3>Что требует внимания</h3><p>Сначала ответы и просроченные обязательства</p></div>{canCoordinate ? <button className="button primary" onClick={generatePlan}>Сформировать план</button> : <span className="coordinator-note">План формирует координатор</span>}</div><div className="task-grid">{[...myTasks, ...freeTasks].slice(0, 6).map(renderTask)}{myTasks.length + freeTasks.length === 0 && <div className="empty">Очередь пуста — координатор сформирует план дня</div>}</div></section>
           <section className="board team-summary"><div className="board-head"><div><h3>Команда</h3><p>Загрузка активных сотрудников</p></div></div>{data.members.filter((member) => member.active).map((member) => { const tasks = activeTasks.filter((task) => task.assigneeId === member.id); const points = tasks.reduce((sum, task) => sum + task.points, 0); return <div className="member-row" key={member.id}><span className="member-avatar">{member.name.slice(0, 1)}</span><div><strong>{member.name}</strong><small>{ROLE_LABELS[member.role] || member.role}</small></div><b>{points}/{member.capacity || 5}</b></div>; })}</section>
         </section>}
 
-        {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div><button className="button primary" onClick={generatePlan}>Обновить план</button></div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
+        {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div>{canCoordinate && <button className="button primary" onClick={generatePlan}>Обновить план</button>}</div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
 
         {view === "team" && <section className="team-board">{data.members.filter((member) => member.active).map((member) => <section className="team-column" key={member.id}><header><span className="member-avatar">{member.name.slice(0, 1)}</span><div><h3>{member.name}</h3><p>{ROLE_LABELS[member.role] || member.role}</p></div><b>{activeTasks.filter((task) => task.assigneeId === member.id).reduce((sum, task) => sum + task.points, 0)}/{member.capacity || 5}</b></header><div>{activeTasks.filter((task) => task.assigneeId === member.id).map(renderTask)}{activeTasks.every((task) => task.assigneeId !== member.id) && <div className="empty compact">Нет активных задач</div>}</div></section>)}<section className="team-column unassigned"><header><div><h3>Свободная очередь</h3><p>Берёт только один сотрудник</p></div><b>{freeTasks.length}</b></header><div>{freeTasks.map(renderTask)}</div></section></section>}
 
@@ -259,22 +264,22 @@ function ListingsCrmWorkspace() {
       </>}
     </section>
 
-    {draft && <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setSelectedId(null)}><aside className="drawer"><div className="drawer-head"><div><span className="source-label">{draft.source}</span><small>Версия {draft.version}</small></div><button onClick={() => setSelectedId(null)}>×</button></div><h2>{draft.name}</h2><p className="drawer-type">Изменения сохраняются только в этой карточке</p>
-      <div className="section-title"><span>Основная информация</span></div><div className="form-grid">
+    {draft && <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setSelectedId(null)}><aside className="drawer"><div className="drawer-head"><div><span className="source-label">{draft.source}</span><small>Версия {draft.version}</small></div><button onClick={() => setSelectedId(null)}>×</button></div><h2>{draft.name}</h2><p className="drawer-type">{canEditDraft ? "Изменения сохраняются только в этой карточке" : "Карточка закреплена за коллегой и открыта только для просмотра"}</p>
+      <fieldset className="drawer-fieldset" disabled={!canEditDraft}><div className="section-title"><span>Основная информация</span></div><div className="form-grid">
         <label className="wide">Название<input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
         <label>Статус<select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })}>{RECORD_STATUSES.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label>Дата контроля<input type="date" value={draft.dueDate || ""} onChange={(event) => setDraft({ ...draft, dueDate: event.target.value })} /></label>
         <label>Категория<input value={draft.type || ""} onChange={(event) => setDraft({ ...draft, type: event.target.value })} /></label>
-        <label>Ответственный<select value={draft.ownerId || ""} onChange={(event) => { const member = memberById.get(event.target.value); setDraft({ ...draft, ownerId: event.target.value, owner: member?.name || "Команда" }); }}><option value="">Команда</option>{data.members.filter((member) => member.active).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
+        <label>Ответственный<select value={draft.ownerId || ""} onChange={(event) => { const member = memberById.get(event.target.value); setDraft({ ...draft, ownerId: event.target.value, owner: member?.name || "Команда" }); }}><option value="">Команда</option>{data.members.filter((member) => member.active && (canCoordinate || member.id === currentMemberId)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
         <label className="wide">Следующее действие<textarea rows={3} value={draft.action || ""} onChange={(event) => setDraft({ ...draft, action: event.target.value })} /></label>
         <label>Цена / формат<input value={draft.price || ""} onChange={(event) => setDraft({ ...draft, price: event.target.value })} /></label>
         <label>Канал связи<input value={draft.channel || ""} onChange={(event) => setDraft({ ...draft, channel: event.target.value })} /></label>
         <label className="wide">Ссылка<input value={draft.link || ""} onChange={(event) => setDraft({ ...draft, link: event.target.value })} /></label>
         <label className="wide">Описание<textarea rows={3} value={draft.summary || ""} onChange={(event) => setDraft({ ...draft, summary: event.target.value })} /></label>
         <label className="wide notes-field">Заметки и переписка<textarea rows={7} value={draft.notes || ""} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
-      </div>
+      </div></fieldset>
       <section className="proof-section"><div className="proof-head"><div><span>Подтверждение</span><h3>Пруфы</h3><p>Старые подтверждения доступны для просмотра.</p></div><span className="proof-storage-note">Новое файловое хранилище готовится</span></div>{(draft.proofs || []).length ? <div className="proof-grid">{(draft.proofs || []).map((proof) => <article className="proof-card" key={proof.id}><a className="proof-image" href={proof.url} target="_blank" rel="noreferrer"><img src={proof.url} alt="Пруф" /></a><div className="proof-body"><strong>{proof.fileName}</strong></div></article>)}</div> : <div className="proof-empty"><span>□</span><div><strong>Пруфов пока нет</strong><p>Добавление файлов будет включено после защищённого upload-модуля.</p></div></div>}</section>
-      <div className="drawer-actions"><button className="danger-link" onClick={archiveRecord}>В архив</button>{draft.link && <a className="button secondary" href={draft.link} target="_blank" rel="noreferrer">Открыть сайт ↗</a>}<button className="button primary" disabled={busy} onClick={saveRecord}>{busy ? "Сохраняю…" : "Сохранить карточку"}</button></div>
+      <div className="drawer-actions">{canEditDraft && <button className="danger-link" onClick={archiveRecord}>В архив</button>}{draft.link && <a className="button secondary" href={draft.link} target="_blank" rel="noreferrer">Открыть сайт ↗</a>}{canEditDraft && <button className="button primary" disabled={busy} onClick={saveRecord}>{busy ? "Сохраняю…" : "Сохранить карточку"}</button>}</div>
     </aside></div>}
   </main>;
 }
