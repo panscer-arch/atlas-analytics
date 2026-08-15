@@ -6,21 +6,30 @@ HTTPS и временный server-side Basic Auth. Это не production login
 
 ## Deployment snapshot 2026-08-15
 
-- hostname: `https://finance-staging.atlas-system.xyz`;
-- release: `20260815T142737`;
-- server path: `/opt/atlas-admin-finance-staging/releases/20260815T142737`;
-- API image: `sha256:8ca414c483158eb2caf48a4bc3bfdaa06db0192901db07d56357c3598e08dfab`;
-- web image: `sha256:d6752bbcf544858b8c8d0a5b49911060c79f8a6d9f02d90f0a69c11d2af7cc8a`;
+- public hostname: `https://finance-staging.atlas-system.xyz`;
+- current public DNS target: `145.223.90.93` (previous staging host);
+- prepared Hostinger target: `200.141.9.121`, commit
+  `8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
+- Hostinger release:
+  `/opt/atlas-admin-finance-staging/releases/20260815T155500-8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
+- Hostinger API image:
+  `sha256:12a8648600e893edc6c4d817189431e9211152515a8884618ae6dd179d6c1ba0`;
+- Hostinger web image:
+  `sha256:924b105a6a20e5ce5d9b92ecefe13fbea9654644fa050a5378be6e5495d55ab8`;
+- Hostinger web is bound only to `127.0.0.1:8088`; public `:8088` is not
+  reachable. The temporary port-80 vhost serves only ACME challenges and
+  returns `404` for application paths until DNS and TLS are switched;
 - authenticated readiness `200`, source status `partial`, BSC block
-  `116095873`;
+  `116109659` during browser QA;
 - unauthenticated requests to both `/admin/overview` and `/admin/flows` return
   `401`; after authentication `/admin/overview` redirects client-side to the
   first available MVP screen `/admin/flows`; API POST returns `403`;
-- automated browser QA passed all six available routes (five MVP screens plus
-  Methodology), all Flows periods, cycle filters and claims controls on desktop
-  and `390x844` mobile viewport without horizontal page overflow or application
-  console errors;
-- authoritative Dynadot DNS and public resolvers return `145.223.90.93`;
+- Hostinger browser QA passed all six available routes (five MVP screens plus
+  Methodology) on desktop `1440x1000` and mobile `390x844` without horizontal
+  page overflow, failed API requests or application console errors;
+- authoritative Dynadot DNS and public resolvers still return `145.223.90.93`.
+  DNS cutover, Let's Encrypt issuance and external Basic Auth smoke remain a
+  separate final gate;
 - production Support/Chatwoot Compose was not changed or restarted.
 
 This snapshot is not `LIVE` and is not independent owner acceptance. Финансовые данные остаются
