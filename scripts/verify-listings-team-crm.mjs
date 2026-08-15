@@ -141,6 +141,14 @@ try {
     const load = plan.body.tasks.filter((task) => task.assigneeId === member.id).reduce((sum, task) => sum + task.points, 0);
     assert.ok(load <= member.capacityPoints, `member ${member.id} is not overloaded`);
   }
+  const linkedTask = plan.body.tasks.find((task) => task.recordId && task.assigneeId);
+  const linkedState = await call(handler, "GET", "/api/listings-crm/bootstrap");
+  const linkedRecord = linkedState.body.records.find((record) => record.id === linkedTask.recordId);
+  const otherOperatorId = ["listings-operator-1", "listings-operator-2"].find((id) => id !== linkedTask.assigneeId);
+  const linkedRecordCollision = await call(handler, "PATCH", `/api/listings-crm/records/${linkedRecord.id}`, {
+    status: "В работе",
+  }, { "if-match": `"${linkedRecord.version}"`, "x-atlas-member-id": otherOperatorId });
+  assert.equal(linkedRecordCollision.status, 403, "an active task assignment locks even an unowned legacy record to its assignee");
 
   const repeatedPlan = await call(handler, "POST", "/api/listings-crm/plan/generate", { date: "2026-08-15" }, { "x-atlas-member-id": "duty-coordinator" });
   assert.equal(repeatedPlan.status, 200);

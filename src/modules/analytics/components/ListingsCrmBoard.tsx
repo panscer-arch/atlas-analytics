@@ -145,7 +145,13 @@ function ListingsCrmWorkspace() {
       .filter((record) => !needle || [record.name, record.source, record.type, record.status, record.action].join(" ").toLowerCase().includes(needle))
       .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
   }, [data.records, query]);
-  const canEditDraft = Boolean(draft && (!draft.ownerId || draft.ownerId === currentMemberId || canCoordinate));
+  const draftTaskOwnerId = draft
+    ? activeTasks.find((task) => task.recordId === draft.id && task.assigneeId)?.assigneeId || null
+    : null;
+  const canEditDraft = Boolean(draft && (canCoordinate || (
+    (!draft.ownerId || draft.ownerId === currentMemberId)
+    && (!draftTaskOwnerId || draftTaskOwnerId === currentMemberId)
+  )));
 
   const chooseMember = (id: string) => {
     setCurrentMemberId(id);
@@ -212,6 +218,7 @@ function ListingsCrmWorkspace() {
   const renderTask = (task: WorkTask) => {
     const record = task.recordId ? recordById.get(task.recordId) : null;
     const owner = task.assigneeId ? memberById.get(task.assigneeId) : null;
+    const canManageTask = task.assigneeId === currentMemberId || canCoordinate;
     return <article className="task-card" key={task.id}>
       <div className="task-card-head"><span className="task-category">{task.category || record?.type || "Задача"}</span><b>{task.points} б.</b></div>
       <h4>{task.title || record?.name || "Рабочая задача"}</h4>
@@ -221,9 +228,9 @@ function ListingsCrmWorkspace() {
       <div className="task-actions">
         {record && <button onClick={() => setSelectedId(record.id)}>Карточка</button>}
         {!task.assigneeId && <button className="primary-mini" disabled={busy} onClick={() => claim(task)}>Взять</button>}
-        {task.assigneeId === currentMemberId && task.status !== "IN_PROGRESS" && <button className="primary-mini" onClick={() => updateTaskStatus(task, "IN_PROGRESS")}>Начать</button>}
-        {task.assigneeId === currentMemberId && task.status === "IN_PROGRESS" && <button className="primary-mini" onClick={() => updateTaskStatus(task, "DONE")}>Готово</button>}
-        {task.assigneeId === currentMemberId && !["DONE", "WAITING_EXTERNAL"].includes(task.status) && <button onClick={() => release(task)}>Вернуть</button>}
+        {task.assigneeId && canManageTask && task.status !== "IN_PROGRESS" && <button className="primary-mini" onClick={() => updateTaskStatus(task, "IN_PROGRESS")}>Начать</button>}
+        {task.assigneeId && canManageTask && task.status === "IN_PROGRESS" && <button className="primary-mini" onClick={() => updateTaskStatus(task, "DONE")}>Готово</button>}
+        {task.assigneeId && canManageTask && !["DONE", "WAITING_EXTERNAL"].includes(task.status) && <button onClick={() => release(task)}>Вернуть</button>}
       </div>
     </article>;
   };

@@ -106,9 +106,11 @@ function normalizeProfileUrl(value) {
 
 function recordDedupeKey(record) {
   const kind = `${record.source || ""} ${record.type || ""} ${record.channel || ""}`.toLowerCase();
-  const contact = /партн|contact|connector|coach|linkedin|facebook|instagram|twitter|social|соцсет/.test(kind);
+  const profile = normalizeProfileUrl(record.link);
+  const profileHost = profile.split("/")[0];
+  const socialHosts = new Set(["linkedin.com", "facebook.com", "instagram.com", "x.com", "twitter.com", "t.me", "telegram.me"]);
+  const contact = socialHosts.has(profileHost) || /партн|контакт|contact|connector|coach|linkedin|facebook|instagram|twitter|social|соцсет/.test(kind);
   if (contact) {
-    const profile = normalizeProfileUrl(record.link);
     return profile ? `contact|${profile}` : "";
   }
   return record.canonicalDomain
@@ -457,6 +459,19 @@ function findTask(state, id) {
   return task;
 }
 
+function assertRecordAccess(state, record, actor) {
+  if (isCoordinator(actor)) return;
+  if (record.ownerMemberId && record.ownerMemberId !== actor.id) {
+    throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
+  }
+  const activeAssignees = new Set(state.tasks
+    .filter((task) => task.recordId === record.id && task.assigneeId && !["DONE", "CANCELLED"].includes(task.status))
+    .map((task) => task.assigneeId));
+  if (activeAssignees.size && !activeAssignees.has(actor.id)) {
+    throw Object.assign(new Error("record_task_owner_forbidden"), { status: 403 });
+  }
+}
+
 function decorateAudit(state, events) {
   const memberById = new Map(state.members.map((member) => [member.id, member]));
   const recordById = new Map(state.records.map((record) => [record.id, record]));
@@ -641,9 +656,7 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
           const actor = actorMember(request, state);
           const actorMemberId = actor.id;
           const record = findRecord(state, id);
-          if (record.ownerMemberId && record.ownerMemberId !== actorMemberId && !isCoordinator(actor)) {
-            throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
-          }
+          assertRecordAccess(state, record, actor);
           assertVersion(record, version);
           const before = clone(record);
           const normalized = normalizeRecordInput(body, record);
@@ -667,9 +680,7 @@ export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath
           const actor = actorMember(request, state);
           const actorMemberId = actor.id;
           const record = findRecord(state, id);
-          if (record.ownerMemberId && record.ownerMemberId !== actorMemberId && !isCoordinator(actor)) {
-            throw Object.assign(new Error("record_owner_forbidden"), { status: 403 });
-          }
+          assertRecordAccess(state, record, actor);
           assertVersion(record, version);
           const before = clone(record);
           record.archivedAt = nowIso();
