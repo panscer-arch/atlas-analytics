@@ -15,7 +15,7 @@ const members = [
   { id: "coordinator", name: "Ирина", role: "Координатор", active: true, capacity: 5 },
 ];
 const records = [
-  { id: "r1", name: "DApp Directory", source: "Листинги", type: "DApp listing", status: "В работе", priority: "A", owner: "Анна", ownerId: "operator-1", dueDate: "2026-08-14", action: "Подготовить данные для формы", link: "https://example.com", notes: "", summary: "", price: "Бесплатно", channel: "Form", firstContact: "", benefit: "", updatedAt: "2026-08-15T10:00:00Z", version: 2, proofs: [] },
+  { id: "r1", name: "DApp Directory", source: "Листинги", type: "DApp listing", status: "В работе", priority: "A", owner: "Анна", ownerId: "operator-1", dueDate: "2026-08-14", action: "Подготовить данные для формы", link: "https://example.com", notes: "", summary: "", price: "Бесплатно", channel: "Form", firstContact: "2026-08-12", benefit: "", updatedAt: "2026-08-15T10:00:00Z", version: 2, proofs: [], platformAccess: { loginUrl: "https://example.com/login", workspaceUrl: "https://example.com/dashboard", submissionUrl: "https://example.com/dashboard/new", publishedUrl: "", accountLogin: "editor@atlas-system.tech", authMethod: "Email + пароль", accessOwner: "Анна", twoFactorOwner: "Ирина", recoveryContact: "security@atlas-system.tech", passwordManagerItem: "DApp Directory · Atlas", passwordManagerUrl: "https://vault.example/items/dapp-directory", lastVerifiedAt: "2026-08-15", notes: "Редактор доступен после входа" }, correspondence: [{ id: "m1", occurredAt: "2026-08-12T09:30", kind: "SUBMISSION", channel: "Form", sender: "Анна · Atlas System", recipient: "DApp Directory editorial", subject: "Atlas listing submission", message: "Заявка отправлена через форму публикации.", outcome: "Получен номер заявки A-42", threadUrl: "https://example.com/dashboard/submissions/A-42", attachmentUrl: "https://docs.example/atlas", followUpDate: "2026-08-18", createdBy: "Анна", createdAt: "2026-08-12T09:30:00Z" }] },
   { id: "r2", name: "MLM Community", source: "Партнёрства", type: "MLM platform", status: "Ожидаем ответ", priority: "B", owner: "Борис", ownerId: "operator-2", dueDate: "2026-08-15", action: "Проверить входящий ответ", link: "https://mlm.example", notes: "", summary: "", price: "", channel: "Email", firstContact: "", benefit: "", updatedAt: "2026-08-15T10:10:00Z", version: 1, proofs: [] },
 ];
 const tasks = [
@@ -38,7 +38,12 @@ try {
     const servedTasks = viewport.name === "desktop" ? [] : tasks;
     const consoleErrors = [];
     page.on("console", (message) => {
-      if (message.type() === "error" && !message.text().startsWith("Failed to load resource: the server responded with a status of 404")) {
+      const sourceUrl = message.location().url || "";
+      const unrelatedApiFailure = ["/api/content/", "/api/contracts/atlas-flows", "/api/marketing/browser-session"]
+        .some((path) => sourceUrl.includes(path));
+      if (message.type() === "error"
+        && !message.text().startsWith("Failed to load resource: the server responded with a status of 404")
+        && !unrelatedApiFailure) {
         consoleErrors.push(message.text());
       }
     });
@@ -105,6 +110,15 @@ try {
     await crm.locator(".category-filter").selectOption("all");
     await page.getByText("DApp Directory", { exact: true }).first().click();
     await page.getByText("Изменения сохраняются только в этой карточке", { exact: true }).waitFor();
+    await page.getByText("Вход и место размещения", { exact: true }).waitFor();
+    await page.getByText("Хронология переписки", { exact: true }).waitFor();
+    await page.getByText("Пароль не вставлять в CRM", { exact: true }).waitFor();
+    await page.getByText("Заявка отправлена через форму публикации.", { exact: true }).waitFor();
+    if (await crm.locator('.drawer input[type="password"]').count()) throw new Error(`${viewport.name}: the listings card exposes a raw password field`);
+    if (await crm.locator(".timeline-item").count() !== 1) throw new Error(`${viewport.name}: the saved correspondence chronology is missing`);
+    await crm.getByRole("button", { name: "＋ Добавить событие" }).click();
+    if (await crm.locator(".timeline-item").count() !== 2) throw new Error(`${viewport.name}: a new correspondence event cannot be added`);
+    await page.screenshot({ path: `${outputDir}/listings-team-crm-access-history-${viewport.name}.png`, fullPage: true });
     await page.locator(".drawer-head button").click();
     await page.screenshot({ path: `${outputDir}/listings-team-crm-${viewport.name}.png`, fullPage: true });
     const overflow = await page.evaluate(() => {

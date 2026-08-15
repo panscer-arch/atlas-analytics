@@ -15,6 +15,18 @@ import {
 
 type Member = { id: string; name: string; role: string; active: boolean; capacity?: number };
 type ProofItem = { id: string; url: string; fileName: string; createdAt: string; note: string };
+type PlatformAccess = {
+  loginUrl: string; workspaceUrl: string; submissionUrl: string; publishedUrl: string;
+  accountLogin: string; authMethod: string; accessOwner: string; twoFactorOwner: string;
+  recoveryContact: string; passwordManagerItem: string; passwordManagerUrl: string;
+  lastVerifiedAt: string; notes: string;
+};
+type CorrespondenceItem = {
+  id: string; occurredAt: string; kind: "SUBMISSION" | "INCOMING" | "OUTGOING" | "STATUS";
+  channel: string; sender: string; recipient: string; subject: string; message: string;
+  outcome: string; threadUrl: string; attachmentUrl: string; followUpDate: string;
+  createdBy: string; createdAt: string;
+};
 type CrmRecord = {
   id: string; source: string; name: string; type: string; priority: string; status: string;
   owner: string; ownerId?: string; dueDate: string; firstContact: string; action: string;
@@ -22,6 +34,7 @@ type CrmRecord = {
   updatedAt: string; version: number; paymentAmount?: string; paymentOptions?: string;
   paymentReference?: string; paymentInstructions?: string; proofs?: ProofItem[];
   placementStart?: string; placementTerm?: string; renewalDate?: string; renewalNotes?: string;
+  platformAccess?: PlatformAccess; correspondence?: CorrespondenceItem[];
 };
 type WorkTask = {
   id: string; recordId?: string; title: string; category: string; status: string; priority: string;
@@ -32,6 +45,17 @@ type Bootstrap = { members: Member[]; records: CrmRecord[]; tasks: WorkTask[]; a
 
 const EMPTY: Bootstrap = { members: [], records: [], tasks: [], audit: [] };
 const MEMBER_KEY = "atlas.listings.crm.member.v1";
+const EMPTY_ACCESS: PlatformAccess = {
+  loginUrl: "", workspaceUrl: "", submissionUrl: "", publishedUrl: "", accountLogin: "",
+  authMethod: "", accessOwner: "", twoFactorOwner: "", recoveryContact: "",
+  passwordManagerItem: "", passwordManagerUrl: "", lastVerifiedAt: "", notes: "",
+};
+const CORRESPONDENCE_KINDS = [
+  { id: "SUBMISSION", label: "Подали заявку" },
+  { id: "INCOMING", label: "Получили ответ" },
+  { id: "OUTGOING", label: "Ответили мы" },
+  { id: "STATUS", label: "Статус / событие" },
+] as const;
 const RECORD_STATUSES = [
   "Не обработано", "Требует проверки", "Готовим обращение", "Отправлено — ждём ответ",
   "Ожидаем ответ", "Ожидаем оплату", "Проверка публикации", "Запланировано позже",
@@ -90,6 +114,14 @@ function localDate(days = 0) {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date.toLocaleDateString("sv-SE", { timeZone: "Europe/Moscow" });
+}
+
+function localDateTime() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date()).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
 function shortDate(value: string) {
@@ -165,7 +197,15 @@ function ListingsCrmWorkspace() {
   const memberById = useMemo(() => new Map(data.members.map((member) => [member.id, member])), [data.members]);
   const recordById = useMemo(() => new Map(data.records.map((record) => [record.id, record])), [data.records]);
 
-  useEffect(() => { setDraft(selected ? structuredClone(selected) : null); }, [selectedId, selected?.version]);
+  useEffect(() => {
+    if (!selected) { setDraft(null); return; }
+    const clone = structuredClone(selected);
+    setDraft({
+      ...clone,
+      platformAccess: { ...EMPTY_ACCESS, ...(clone.platformAccess || {}) },
+      correspondence: Array.isArray(clone.correspondence) ? clone.correspondence : [],
+    });
+  }, [selectedId, selected?.version]);
 
   const activeTasks = useMemo(() => data.tasks.filter((task) => !["DONE", "CANCELLED"].includes(task.status) && (!task.recordId || recordById.has(task.recordId))), [data.tasks, recordById]);
   const myTasks = useMemo(() => activeTasks.filter((task) => task.assigneeId === currentMemberId), [activeTasks, currentMemberId]);
@@ -243,6 +283,7 @@ function ListingsCrmWorkspace() {
       status: "Не обработано", owner: currentMember?.name || "Команда", ownerId: currentMemberId,
       dueDate: today, action: "Проверить площадку и условия размещения", summary: "", benefit: "",
       price: "", notes: "", channel: "", link: "", firstContact: "",
+      platformAccess: EMPTY_ACCESS, correspondence: [],
     });
     const record = payload.record || payload.data?.record;
     if (record?.id) setSelectedId(record.id);
@@ -260,6 +301,33 @@ function ListingsCrmWorkspace() {
   const archiveRecord = () => {
     if (!draft || !window.confirm("Переместить карточку в архив? История сохранится.")) return;
     run(async () => { await archiveListingsRecord(currentMemberId, draft.id, draft.version); setDraft(null); setSelectedId(null); }, "Карточка перемещена в архив");
+  };
+
+  const updateAccess = (field: keyof PlatformAccess, value: string) => {
+    if (!draft) return;
+    setDraft({ ...draft, platformAccess: { ...EMPTY_ACCESS, ...(draft.platformAccess || {}), [field]: value } });
+  };
+
+  const addCorrespondence = () => {
+    if (!draft) return;
+    const item: CorrespondenceItem = {
+      id: globalThis.crypto?.randomUUID?.() || `message-${Date.now()}`,
+      occurredAt: localDateTime(), kind: "SUBMISSION", channel: draft.channel || "Email",
+      sender: currentMember?.name || "Atlas System", recipient: "", subject: "", message: "",
+      outcome: "", threadUrl: "", attachmentUrl: "", followUpDate: "",
+      createdBy: currentMember?.name || "Atlas System", createdAt: new Date().toISOString(),
+    };
+    setDraft({ ...draft, correspondence: [...(draft.correspondence || []), item] });
+  };
+
+  const updateCorrespondence = (id: string, field: keyof CorrespondenceItem, value: string) => {
+    if (!draft) return;
+    setDraft({ ...draft, correspondence: (draft.correspondence || []).map((item) => item.id === id ? { ...item, [field]: value } : item) });
+  };
+
+  const removeCorrespondence = (id: string) => {
+    if (!draft || !window.confirm("Удалить событие из хронологии?")) return;
+    setDraft({ ...draft, correspondence: (draft.correspondence || []).filter((item) => item.id !== id) });
   };
 
   const renderTask = (task: WorkTask) => {
@@ -330,12 +398,43 @@ function ListingsCrmWorkspace() {
         <label className="wide">Следующее действие<textarea rows={3} value={draft.action || ""} onChange={(event) => setDraft({ ...draft, action: event.target.value })} /></label>
         <label>Цена / формат<input value={draft.price || ""} onChange={(event) => setDraft({ ...draft, price: event.target.value })} /></label>
         <label>Канал связи<input value={draft.channel || ""} onChange={(event) => setDraft({ ...draft, channel: event.target.value })} /></label>
-        <label className="wide">Ссылка<input value={draft.link || ""} onChange={(event) => setDraft({ ...draft, link: event.target.value })} /></label>
+        <label className="wide">Основная ссылка площадки<input value={draft.link || ""} onChange={(event) => setDraft({ ...draft, link: event.target.value })} /></label>
         <label className="wide">Описание<textarea rows={3} value={draft.summary || ""} onChange={(event) => setDraft({ ...draft, summary: event.target.value })} /></label>
-        <label className="wide notes-field">Заметки и переписка<textarea rows={7} value={draft.notes || ""} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
+        <label className="wide notes-field">Общие заметки<textarea rows={4} value={draft.notes || ""} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
       </div></fieldset>
+      <section className="access-section"><div className="access-head"><div><span>ДОСТУП К ПЛОЩАДКЕ</span><h3>Вход и место размещения</h3><p>Логин хранится в карточке. Сам пароль — только в корпоративном менеджере паролей.</p></div><div className="access-links">{draft.platformAccess?.loginUrl && <a href={draft.platformAccess.loginUrl} target="_blank" rel="noreferrer">Вход ↗</a>}{draft.platformAccess?.workspaceUrl && <a href={draft.platformAccess.workspaceUrl} target="_blank" rel="noreferrer">Кабинет ↗</a>}{draft.platformAccess?.submissionUrl && <a href={draft.platformAccess.submissionUrl} target="_blank" rel="noreferrer">Размещение ↗</a>}</div></div>
+        <div className="credential-rule"><strong>Пароль не вставлять в CRM</strong><span>Укажите название записи и защищённую ссылку на 1Password, Bitwarden или другой корпоративный vault.</span></div>
+        <fieldset className="drawer-fieldset" disabled={!canEditDraft}><div className="access-grid">
+          <label className="wide">URL страницы входа<input type="url" value={draft.platformAccess?.loginUrl || ""} onChange={(event) => updateAccess("loginUrl", event.target.value)} placeholder="https://platform.com/login" /></label>
+          <label className="wide">URL рабочего кабинета<input type="url" value={draft.platformAccess?.workspaceUrl || ""} onChange={(event) => updateAccess("workspaceUrl", event.target.value)} placeholder="Точный раздел аккаунта" /></label>
+          <label className="wide">URL формы / редактора публикации<input type="url" value={draft.platformAccess?.submissionUrl || ""} onChange={(event) => updateAccess("submissionUrl", event.target.value)} placeholder="Куда заходить для новой статьи" /></label>
+          <label className="wide">URL опубликованной статьи<input type="url" value={draft.platformAccess?.publishedUrl || ""} onChange={(event) => updateAccess("publishedUrl", event.target.value)} placeholder="Заполняется после публикации" /></label>
+          <label>Логин / email аккаунта<input value={draft.platformAccess?.accountLogin || ""} onChange={(event) => updateAccess("accountLogin", event.target.value)} autoComplete="off" /></label>
+          <label>Способ входа<select value={draft.platformAccess?.authMethod || ""} onChange={(event) => updateAccess("authMethod", event.target.value)}><option value="">Не указан</option><option>Email + пароль</option><option>Google SSO</option><option>Apple SSO</option><option>Telegram</option><option>Magic link</option><option>Другой</option></select></label>
+          <label>Владелец доступа<input value={draft.platformAccess?.accessOwner || ""} onChange={(event) => updateAccess("accessOwner", event.target.value)} placeholder="Кто отвечает за аккаунт" /></label>
+          <label>Владелец 2FA<input value={draft.platformAccess?.twoFactorOwner || ""} onChange={(event) => updateAccess("twoFactorOwner", event.target.value)} placeholder="У кого устройство / код" /></label>
+          <label className="wide">Recovery email / ответственный<input value={draft.platformAccess?.recoveryContact || ""} onChange={(event) => updateAccess("recoveryContact", event.target.value)} /></label>
+          <label>Запись в менеджере паролей<input value={draft.platformAccess?.passwordManagerItem || ""} onChange={(event) => updateAccess("passwordManagerItem", event.target.value)} placeholder="Например: Medium · Atlas PR" /></label>
+          <label>Ссылка на запись в vault<input type="url" value={draft.platformAccess?.passwordManagerUrl || ""} onChange={(event) => updateAccess("passwordManagerUrl", event.target.value)} placeholder="https://…" /></label>
+          <label>Доступ проверен<input type="date" value={draft.platformAccess?.lastVerifiedAt || ""} onChange={(event) => updateAccess("lastVerifiedAt", event.target.value)} /></label>
+          <label className="wide">Примечание по доступу<textarea rows={3} value={draft.platformAccess?.notes || ""} onChange={(event) => updateAccess("notes", event.target.value)} placeholder="Ограничения роли, язык кабинета, кто восстанавливает доступ" /></label>
+        </div></fieldset>
+      </section>
+      <section className="correspondence-section"><div className="correspondence-head"><div><span>ИСТОРИЯ КОНТАКТА</span><h3>Хронология переписки</h3><p>Подача заявки, входящие ответы и наши сообщения сохраняются отдельными событиями по датам.</p></div>{canEditDraft && <button type="button" onClick={addCorrespondence}>＋ Добавить событие</button>}</div>
+        <fieldset className="drawer-fieldset" disabled={!canEditDraft}><div className="timeline">{(draft.correspondence || []).length ? (draft.correspondence || []).map((item, index) => <article className={`timeline-item kind-${item.kind.toLowerCase()}`} key={item.id}><div className="timeline-rail"><span>{index + 1}</span><i /></div><div className="timeline-card"><header><select value={item.kind} onChange={(event) => updateCorrespondence(item.id, "kind", event.target.value)}>{CORRESPONDENCE_KINDS.map((kind) => <option value={kind.id} key={kind.id}>{kind.label}</option>)}</select><input aria-label="Дата события" type="datetime-local" value={item.occurredAt || ""} onChange={(event) => updateCorrespondence(item.id, "occurredAt", event.target.value)} />{canEditDraft && <button type="button" className="remove-event" onClick={() => removeCorrespondence(item.id)}>Удалить</button>}</header><div className="timeline-grid">
+            <label>Канал<input value={item.channel || ""} onChange={(event) => updateCorrespondence(item.id, "channel", event.target.value)} placeholder="Email, форма, Telegram…" /></label>
+            <label>От кого<input value={item.sender || ""} onChange={(event) => updateCorrespondence(item.id, "sender", event.target.value)} /></label>
+            <label>Кому<input value={item.recipient || ""} onChange={(event) => updateCorrespondence(item.id, "recipient", event.target.value)} /></label>
+            <label className="wide">Тема / краткое название<input value={item.subject || ""} onChange={(event) => updateCorrespondence(item.id, "subject", event.target.value)} /></label>
+            <label className="wide">Что написали или получили<textarea rows={5} value={item.message || ""} onChange={(event) => updateCorrespondence(item.id, "message", event.target.value)} /></label>
+            <label className="wide">Результат / что договорились<textarea rows={2} value={item.outcome || ""} onChange={(event) => updateCorrespondence(item.id, "outcome", event.target.value)} /></label>
+            <label>Ссылка на письмо / тред<input type="url" value={item.threadUrl || ""} onChange={(event) => updateCorrespondence(item.id, "threadUrl", event.target.value)} /></label>
+            <label>Ссылка на вложение<input type="url" value={item.attachmentUrl || ""} onChange={(event) => updateCorrespondence(item.id, "attachmentUrl", event.target.value)} /></label>
+            <label>Следующий контакт<input type="date" value={item.followUpDate || ""} onChange={(event) => updateCorrespondence(item.id, "followUpDate", event.target.value)} /></label>
+          </div>{(item.threadUrl || item.attachmentUrl) && <footer>{item.threadUrl && <a href={item.threadUrl} target="_blank" rel="noreferrer">Открыть переписку ↗</a>}{item.attachmentUrl && <a href={item.attachmentUrl} target="_blank" rel="noreferrer">Открыть вложение ↗</a>}<span>Добавил: {item.createdBy || "Команда"}</span></footer>}</div></article>) : <div className="timeline-empty"><strong>История пока пустая</strong><p>Первым событием добавьте дату подачи заявки или первого обращения.</p></div>}</div></fieldset>
+      </section>
       <section className="proof-section"><div className="proof-head"><div><span>Подтверждение</span><h3>Пруфы</h3><p>Старые подтверждения доступны для просмотра.</p></div><span className="proof-storage-note">Новое файловое хранилище готовится</span></div>{(draft.proofs || []).length ? <div className="proof-grid">{(draft.proofs || []).map((proof) => <article className="proof-card" key={proof.id}><a className="proof-image" href={proof.url} target="_blank" rel="noreferrer"><img src={proof.url} alt="Пруф" /></a><div className="proof-body"><strong>{proof.fileName}</strong></div></article>)}</div> : <div className="proof-empty"><span>□</span><div><strong>Пруфов пока нет</strong><p>Добавление файлов будет включено после защищённого upload-модуля.</p></div></div>}</section>
-      <div className="drawer-actions">{canEditDraft && <button className="danger-link" onClick={archiveRecord}>В архив</button>}{draft.link && <a className="button secondary" href={draft.link} target="_blank" rel="noreferrer">Открыть сайт ↗</a>}{canEditDraft && <button className="button primary" disabled={busy} onClick={saveRecord}>{busy ? "Сохраняю…" : "Сохранить карточку"}</button>}</div>
+      <div className="drawer-actions">{canEditDraft && <button className="danger-link" onClick={archiveRecord}>В архив</button>}{draft.link && <a className="button secondary" href={draft.link} target="_blank" rel="noreferrer">Открыть сайт ↗</a>}{draft.platformAccess?.publishedUrl && <a className="button secondary" href={draft.platformAccess.publishedUrl} target="_blank" rel="noreferrer">Открыть статью ↗</a>}{canEditDraft && <button className="button primary" disabled={busy} onClick={saveRecord}>{busy ? "Сохраняю…" : "Сохранить карточку"}</button>}</div>
     </aside></div>}
   </main>;
 }
