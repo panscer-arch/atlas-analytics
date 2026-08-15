@@ -25,6 +25,8 @@
     "test:expenses": "node scripts/verify-expense-center.mjs && node scripts/verify-finance-access.mjs",
     "test:ga4": "node scripts/verify-google-analytics.mjs",
     "test:products": "node scripts/verify-products-registry.mjs",
+    "test:listings-crm": "node scripts/verify-listings-team-crm.mjs",
+    "check:listings-crm": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules node scripts/check-listings-team-crm-page.mjs",
     "preview": "vite preview",
     "check:local": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-local-page.mjs",
     "check:boards": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-analytics-boards.mjs",

@@ -1,19 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const contentApiTarget = process.env.VITE_DEV_CONTENT_API_TARGET || "http://127.0.0.1:8787";
+
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api/products": "http://127.0.0.1:8787",
-      "/api/content": "http://127.0.0.1:8787",
-      "/api/funnel": "http://127.0.0.1:8787",
-      "/api/contracts": "http://127.0.0.1:8787",
-      "/api/outreach": "http://127.0.0.1:8787",
-      "/api/telegram": "http://127.0.0.1:8787",
-      "/api/pools": "http://127.0.0.1:8787",
-      "/api/youtrack": "http://127.0.0.1:8787",
-      "/api/marketing": "http://127.0.0.1:8787",
+      "/api/products": contentApiTarget,
+      "/api/content": contentApiTarget,
+      "/api/funnel": contentApiTarget,
+      "/api/contracts": contentApiTarget,
+      "/api/outreach": contentApiTarget,
+      "/api/telegram": contentApiTarget,
+      "/api/pools": contentApiTarget,
+      "/api/youtrack": contentApiTarget,
+      "/api/marketing": contentApiTarget,
     },
   },
   preview: {

@@ -14,6 +14,10 @@
   --red-soft: #fdecec;
   --violet: #7052c7;
   --violet-soft: #f1edff;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 * { box-sizing: border-box; }
@@ -413,6 +417,7 @@ tbody tr:hover { background: #fafbff; }
 }
 
 @media (max-width: 700px) {
+  :host { width: 100vw; max-width: 100vw; }
   .app-shell { display: block; }
   .sidebar {
     position: fixed; top: auto; bottom: 0; width: 100%; height: 62px;
@@ -496,9 +501,67 @@ td { padding: 16px; }
 .form-grid select, .form-grid input, .form-grid textarea { padding: 12px; font-size: 16px; line-height: 1.45; }
 .danger-link { font-size: 14px; }
 
+/* Team CRM v2 */
+.member-select { min-width: 215px; display: grid; gap: 3px; }
+.member-select > span { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.member-select select { height: 40px; padding: 0 34px 0 11px; border: 1px solid #dfe1e6; border-radius: 8px; background: white; color: #30343b; font-size: 13px; font-weight: 650; }
+.alert { margin: -4px 0 14px; padding: 12px 14px; display: flex; align-items: center; gap: 6px; border: 1px solid #f1c8c8; border-radius: 9px; background: var(--red-soft); color: #843737; font-size: 13px; }
+.alert button { margin-left: auto; border: 0; background: transparent; color: inherit; font-size: 19px; }
+.alert .conflict-action { min-height: 31px; padding: 6px 10px; border: 1px solid #dcaeae; border-radius: 7px; background: white; font-size: 11px; font-weight: 750; }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, .72fr); gap: 14px; }
+.focus-panel { min-width: 0; }
+.task-grid { padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.task-card { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.task-card-head, .task-meta, .task-owner, .task-actions { display: flex; align-items: center; }
+.task-card-head { justify-content: space-between; gap: 9px; }
+.task-category { max-width: 75%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--blue); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.task-card-head b { padding: 4px 7px; border-radius: 6px; background: var(--blue-soft); color: var(--blue); font-size: 11px; }
+.task-card h4 { margin: 12px 0 5px; font-size: 15px; line-height: 1.25; }
+.task-card > p { min-height: 36px; margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.task-meta { justify-content: space-between; gap: 8px; }
+.task-meta time { color: var(--muted); font-size: 11px; }
+.task-meta time.overdue { color: var(--red); font-weight: 800; }
+.task-owner { min-height: 29px; gap: 7px; margin-top: 12px; padding-top: 11px; border-top: 1px solid #eef0f2; color: var(--muted); font-size: 11px; }
+.task-owner strong { color: var(--text); font-size: 12px; }
+.member-avatar { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(145deg, #6876f8, #4655df); color: white; font-size: 11px; font-weight: 800; }
+.task-actions { flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.task-actions button { min-height: 30px; padding: 6px 9px; border: 1px solid #dfe1e6; border-radius: 7px; background: white; color: #545a65; font-size: 11px; font-weight: 700; }
+.task-actions .primary-mini { border-color: var(--blue); background: var(--blue); color: white; }
+.team-summary .board-head { margin-bottom: 4px; }
+.member-row { margin: 0 15px; padding: 14px 4px; display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 9px; border-bottom: 1px solid #eef0f2; }
+.member-row:last-child { border-bottom: 0; }
+.member-row strong, .member-row small { display: block; }
+.member-row strong { font-size: 13px; }
+.member-row small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.member-row > b { color: var(--blue); font-size: 12px; }
+.task-sections { display: grid; gap: 22px; padding: 18px; }
+.task-sections > div > h3 { margin: 0 0 -4px 2px; font-size: 16px; }
+.task-sections .task-grid { padding: 14px 0 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.team-board { overflow-x: auto; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(270px, 1fr); gap: 12px; padding-bottom: 8px; }
+.team-column { min-height: 460px; border: 1px solid var(--line); border-radius: 11px; background: #fdfdfe; }
+.team-column > header { min-height: 74px; padding: 14px; display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 9px; border-bottom: 1px solid var(--line); }
+.team-column > header h3, .team-column > header p { margin: 0; }
+.team-column > header h3 { font-size: 14px; }
+.team-column > header p { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.team-column > header > b { color: var(--blue); font-size: 12px; }
+.team-column > div { padding: 10px; display: grid; gap: 9px; }
+.team-column .task-card { padding: 12px; }
+.team-column .task-card > p { min-height: auto; }
+.team-column.unassigned { background: #f7f8ff; border-color: #dfe2ff; }
+.team-column.unassigned > header { grid-template-columns: 1fr auto; }
+.empty.compact { padding: 28px 8px; }
+.activity-list article { padding: 15px 19px; display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 11px; border-top: 1px solid #eef0f2; }
+.activity-list article:first-child { border-top: 0; }
+.activity-list strong { font-size: 13px; }
+.activity-list p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.activity-list time { color: var(--muted); font-size: 11px; }
+.proof-storage-note { max-width: 210px; padding: 8px 10px; border-radius: 7px; background: #edf1f0; color: #647069; font-size: 11px; font-weight: 700; text-align: center; }
+
 @media (max-width: 980px) {
   .nav-item { font-size: 0; }
   .nav-item > span { font-size: 22px; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .task-sections .task-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 700px) {
@@ -508,4 +571,11 @@ td { padding: 16px; }
   .metrics span { font-size: 13px; }
   .metrics strong { font-size: 34px; }
   .metrics small { font-size: 11px; }
+  .member-select { min-width: 150px; }
+  .member-select > span, .save-state { display: none; }
+  .member-select select { width: 150px; }
+  .task-grid, .task-sections .task-grid { grid-template-columns: 1fr; }
+  .team-board { grid-auto-columns: 86vw; }
+  .activity-list article { grid-template-columns: 30px 1fr; }
+  .activity-list time { grid-column: 2; }
 }
