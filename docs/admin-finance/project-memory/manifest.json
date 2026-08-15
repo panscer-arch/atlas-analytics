@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-14",
+  "status": "mvp_foundation_in_progress",
+  "targetInternalLaunch": "2026-08-12",
+  "mvpRoutes": [
+    "/admin/reconciliation",
+    "/admin/flows",
+    "/admin/liquidity",
+    "/admin/cycles",
+    "/admin/claims"
+  ],
+  "fullProductRoutes": [
+    "/admin/overview",
+    "/admin/flows",
+    "/admin/cycles",
+    "/admin/forecast",
+    "/admin/claims",
+    "/admin/participants",
+    "/admin/company-revenue",
+    "/admin/head-account",
+    "/admin/liquidity",
+    "/admin/traffic",
+    "/admin/campaigns",
+    "/admin/reconciliation",
+    "/admin/risks",
+    "/admin/methodology"
+  ],
+  "fixedRules": {
+    "partnerRewardMoments": ["creation", "streamed"],
+    "partnerRewardRuleset": "atlas-level-2026-08-12",
+    "partnerRewardSeparateFromDelta": true,
+    "platformFeeInsideGross": true,
+    "demoAllowedInProduction": false
+  },
+  "requiredReading": [
+    "START-HERE.md",
+    "CURRENT-STATE.md",
+    "MVP-PLAN.md",
+    "CHANGELOG.md"
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "atlas.forecast-input.v1",
+  "sourceSnapshotId": "provider-snapshot-2026-08-06-001",
+  "generatedAt": "2026-08-06T12:05:00.000Z",
+  "perimeter": "payout_contract",
+  "payoutContractAddress": "0x1111111111111111111111111111111111111111",
+  "token": {
+    "address": "0x55d398326f99059ff775485246999027b3197955",
+    "symbol": "USDT",
+    "decimals": 18
+  },
+  "checkpoint": {
+    "chainId": 56,
+    "asOf": "2026-08-06T12:00:00.000Z",
+    "blockNumber": 114353100,
+    "blockHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+    "confirmations": 20,
+    "finality": "finalized",
+    "liquidityVerification": "independent_rpc"
+  },
+  "reservePolicy": {
+    "version": "reserve-policy-test-v1",
+    "status": "approved",
+    "approvedAt": "2026-08-06T11:00:00.000Z",
+    "reserveTargetRaw": "25000000000000000000000"
+  },
+  "forecastPolicy": {
+    "version": "committed-forecast-test-v1",
+    "status": "approved",
+    "approvedAt": "2026-08-06T11:00:00.000Z",
+    "scenario": "committed",
+    "unconfirmedFutureInflow": "exclude"
+  },
+  "openingLiquidityRaw": "100000000000000000000000",
+  "buckets": [
+    {
+      "id": "91000000-0000-4000-8000-000000000001",
+      "bucketStart": "2026-08-06T12:00:00.000Z",
+      "bucketEnd": "2026-08-07T12:00:00.000Z",
+      "cycleCount": 10,
+      "pendingPartnerCreationCount": 2,
+      "principalDueRaw": "10000000000000000000000",
+      "grossDelta": {
+        "grossRaw": "2000000000000000000000",
+        "netRaw": "1800000000000000000000",
+        "platformFeeRaw": "200000000000000000000",
+        "otherDeductionsRaw": "0"
+      },
+      "partnerRewardStreamed": {
+        "grossRaw": "1000000000000000000000",
+        "netRaw": "900000000000000000000",
+        "platformFeeRaw": "100000000000000000000",
+        "otherDeductionsRaw": "0"
+      },
+      "pendingPartnerRewardAtCreation": {
+        "grossRaw": "200000000000000000000",
+        "netRaw": "180000000000000000000",
+        "platformFeeRaw": "20000000000000000000",
+        "otherDeductionsRaw": "0"
+      },
+      "confirmedInflowRaw": "0",
+      "inflowEvidence": [],
+      "sourceRefs": ["cycle:1001", "claim:2001"]
+    },
+    {
+      "id": "91000000-0000-4000-8000-000000000002",
+      "bucketStart": "2026-08-07T12:00:00.000Z",
+      "bucketEnd": "2026-08-13T12:00:00.000Z",
+      "cycleCount": 20,
+      "pendingPartnerCreationCount": 0,
+      "principalDueRaw": "20000000000000000000000",
+      "grossDelta": {
+        "grossRaw": "4000000000000000000000",
+        "netRaw": "3600000000000000000000",
+        "platformFeeRaw": "400000000000000000000",
+        "otherDeductionsRaw": "0"
+      },
+      "partnerRewardStreamed": {
+        "grossRaw": "2000000000000000000000",
+        "netRaw": "1800000000000000000000",
+        "platformFeeRaw": "200000000000000000000",
+        "otherDeductionsRaw": "0"
+      },
+      "pendingPartnerRewardAtCreation": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "confirmedInflowRaw": "5000000000000000000000",
+      "inflowEvidence": ["treasury-transfer:3001"],
+      "sourceRefs": ["cycle-batch:1002", "claim-batch:2002"]
+    },
+    {
+      "id": "91000000-0000-4000-8000-000000000003",
+      "bucketStart": "2026-08-13T12:00:00.000Z",
+      "bucketEnd": "2026-09-05T12:00:00.000Z",
+      "cycleCount": 0,
+      "pendingPartnerCreationCount": 0,
+      "principalDueRaw": "0",
+      "grossDelta": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "partnerRewardStreamed": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "pendingPartnerRewardAtCreation": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "confirmedInflowRaw": "0",
+      "inflowEvidence": [],
+      "sourceRefs": ["maturity-window:30d"]
+    },
+    {
+      "id": "91000000-0000-4000-8000-000000000004",
+      "bucketStart": "2026-09-05T12:00:00.000Z",
+      "bucketEnd": "2026-11-04T12:00:00.000Z",
+      "cycleCount": 0,
+      "pendingPartnerCreationCount": 0,
+      "principalDueRaw": "0",
+      "grossDelta": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "partnerRewardStreamed": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "pendingPartnerRewardAtCreation": {
+        "grossRaw": "0",
+        "netRaw": "0",
+        "platformFeeRaw": "0",
+        "otherDeductionsRaw": "0"
+      },
+      "confirmedInflowRaw": "0",
+      "inflowEvidence": [],
+      "sourceRefs": ["maturity-window:90d"]
+    }
+  ]
+}

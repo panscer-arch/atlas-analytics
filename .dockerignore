@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+!.env.example
+artifacts
+dist
+dist-admin-finance-staging
+node_modules
+npm-debug.log*
+presentation-*.png

@@ -1,0 +1,1839 @@
+openapi: 3.1.0
+info:
+  title: Atlas Admin Finance API
+  version: 1.0.0-draft
+  license:
+    name: Proprietary - Atlas internal use only
+    identifier: LicenseRef-Proprietary
+  summary: Canonical server-side contract for the Atlas internal finance administration.
+  description: |
+    Draft contract for `/api/admin/v1`. It is independent from the legacy
+    `atlas-analytics-api.v0.2.yaml` contract.
+
+    Production use is blocked until all Gate 0 decisions are approved. Demo
+    values from the React interface are not API fixtures and are not financial facts.
+
+    All money uses string atomic units plus token decimals. JavaScript numbers and
+    floating-point JSON values are forbidden for money. Every financial response
+    carries snapshot, source, formula, ruleset and reconciliation metadata.
+servers:
+  - url: /api/admin/v1
+    description: Same-origin BFF namespace
+security:
+  - sessionCookie: []
+tags:
+  - name: Meta
+    description: Contract capabilities and release-gate state.
+  - name: Finance
+    description: Reconciled financial aggregates and cash perimeters.
+  - name: Claims
+    description: Claim obligations, lifecycle and payout components.
+  - name: Forecast
+    description: Versioned liquidity and payout forecasts with backtesting.
+  - name: Participants
+    description: Masked participant economics and authorized drill-down.
+  - name: Growth
+    description: Traffic, funnel and campaign analytics outside the financial ledger.
+  - name: Reconciliation
+    description: Immutable reconciliation runs, exceptions and compensating proposals.
+  - name: Risks
+    description: Source-owned operational and financial risk alerts.
+  - name: Methodology
+    description: Effective-dated perimeters, sources, rulesets and Gate 0 evidence.
+  - name: Security
+    description: Restricted reveal and tamper-evident audit resources.
+  - name: Exports
+    description: Asynchronous, expiring and audited data exports.
+
+paths:
+  /meta:
+    get:
+      tags: [Meta]
+      operationId: getAdminFinanceMeta
+      summary: Return API capabilities, allowed filters and the active contract version.
+      responses:
+        "200":
+          description: API metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/overview:
+    get:
+      tags: [Finance]
+      operationId: getFinanceOverview
+      summary: Return reconciled executive KPIs and compact series.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Perimeter"
+        - $ref: "#/components/parameters/AsOfBlock"
+      responses:
+        "200":
+          description: Multi-perimeter executive snapshot with explicit section ownership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceOverviewResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/cash-movements:
+    get:
+      tags: [Finance]
+      operationId: getCashMovements
+      summary: Return Incoming, Outgoing and Net Flow with cycle and component dimensions.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Perimeter"
+        - $ref: "#/components/parameters/Granularity"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/cycles:
+    get:
+      tags: [Finance]
+      operationId: getFinanceCycles
+      summary: Return canonical cycle lifecycle aggregates and rows.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/platform-fees:
+    get:
+      tags: [Finance]
+      operationId: getPlatformFees
+      summary: Return Platform Fee allocations and cash receipts without gross double counting.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated Platform Fee allocation and receipt lineage.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformFeesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/company-receipts:
+    get:
+      tags: [Finance]
+      operationId: getCompanyReceipts
+      summary: Return Company Treasury cash receipts and Head Account income.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated Company Treasury cash receipts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyReceiptsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/partner-economics:
+    get:
+      tags: [Finance]
+      operationId: getPartnerEconomics
+      summary: Return paid partner rewards and attributed Atlas Head Account referral receipts.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AsOfBlock"
+      responses:
+        "200":
+          description: Reconciled or explicitly partial Partner Capture Rate dataset.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerEconomicsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/company-economics:
+    get:
+      tags: [Finance]
+      operationId: getCompanyEconomics
+      summary: Return reconciled incoming flow and Atlas company cash revenue components.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AsOfBlock"
+      responses:
+        "200":
+          description: Reconciled or explicitly partial Company Revenue control dataset.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyEconomicsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/liquidity/roll-forward:
+    get:
+      tags: [Finance]
+      operationId: getLiquidityRollForward
+      summary: Return opening, inflow, outflow, adjustment and closing balances.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Perimeter"
+        - $ref: "#/components/parameters/Granularity"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /finance/balances:
+    get:
+      tags: [Finance]
+      operationId: getFinanceBalances
+      summary: Return canonical balances, restrictions, reserve and independent LP valuation.
+      parameters:
+        - $ref: "#/components/parameters/Perimeter"
+        - $ref: "#/components/parameters/AsOfBlock"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /claims:
+    get:
+      tags: [Claims]
+      operationId: listClaims
+      summary: List obligations and claim lifecycle records.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/ClaimStatus"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Claim page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /claims/{claimId}:
+    get:
+      tags: [Claims]
+      operationId: getClaim
+      summary: Return one claim, payout components and source lineage.
+      parameters:
+        - $ref: "#/components/parameters/ClaimId"
+      responses:
+        "200":
+          description: Claim detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /forecast/snapshots/latest:
+    get:
+      tags: [Forecast]
+      operationId: getLatestForecastSnapshot
+      summary: Return the newest immutable forecast snapshot for a scenario.
+      parameters:
+        - $ref: "#/components/parameters/ForecastScenario"
+        - $ref: "#/components/parameters/Perimeter"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /forecast/snapshots/{snapshotId}:
+    get:
+      tags: [Forecast]
+      operationId: getForecastSnapshot
+      summary: Return a reproducible snapshot by immutable ID.
+      parameters:
+        - $ref: "#/components/parameters/SnapshotId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /forecast/buckets:
+    get:
+      tags: [Forecast]
+      operationId: getForecastBuckets
+      summary: Return sequential balance and obligation buckets.
+      parameters:
+        - $ref: "#/components/parameters/SnapshotIdQuery"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          description: Sequential forecast buckets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastBucketsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /forecast/items:
+    get:
+      tags: [Forecast]
+      operationId: getForecastItems
+      summary: Drill a forecast bucket down to cycles, claims and payout components.
+      parameters:
+        - $ref: "#/components/parameters/SnapshotIdQuery"
+        - name: bucketId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /forecast/backtesting:
+    get:
+      tags: [Forecast]
+      operationId: getForecastBacktesting
+      summary: Return immutable forecast-versus-actual evaluation.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/ForecastScenario"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /participants/search:
+    get:
+      tags: [Participants]
+      operationId: searchParticipants
+      summary: Search by normalized wallet, participant ID, referral URL or exact head-account branch ordinal.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Values shorter than three characters are accepted only as an exact numeric direct-branch ordinal.
+          schema: { type: string, minLength: 1, maxLength: 180 }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /participants/{participantId}:
+    get:
+      tags: [Participants]
+      operationId: getParticipant
+      summary: Return a masked participant profile and aggregate economics.
+      parameters:
+        - $ref: "#/components/parameters/ParticipantId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /participants/{participantId}/{resource}:
+    get:
+      tags: [Participants]
+      operationId: getParticipantResource
+      summary: Return first-line, structure, cycles or payout rows for a participant.
+      parameters:
+        - $ref: "#/components/parameters/ParticipantId"
+        - name: resource
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [first-line, structure, cycles, payouts]
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /participants/{participantId}/wallet-reveal:
+    post:
+      tags: [Security]
+      operationId: revealParticipantWallet
+      summary: Reveal a wallet for an authorized purpose and a short TTL.
+      description: Requires `wallet.reveal`, fresh MFA step-up and an audit event.
+      parameters:
+        - $ref: "#/components/parameters/ParticipantId"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Reason"
+        - $ref: "#/components/parameters/StepUpGrant"
+      responses:
+        "200":
+          description: Short-lived reveal result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletRevealResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /head-account/summary:
+    get:
+      tags: [Finance]
+      operationId: getHeadAccountSummary
+      summary: Return status, qualification, expiry and verified income.
+      parameters:
+        - $ref: "#/components/parameters/AsOfBlock"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /head-account/branches:
+    get:
+      tags: [Finance]
+      operationId: getHeadAccountBranches
+      summary: Return immutable direct-branch ordinals, versioned status gaps and verified branch receipts.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /analytics/traffic:
+    get:
+      tags: [Growth]
+      operationId: getTrafficAnalytics
+      summary: Return GA4, server-confirmed wallet and on-chain cycle funnel stages.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Granularity"
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /analytics/campaigns:
+    get:
+      tags: [Growth]
+      operationId: getCampaignAnalytics
+      summary: Return spend, pseudonymous cohorts, attribution and confirmed economics.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - name: campaignId
+          in: query
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /management/growth-plan:
+    get:
+      tags: [Growth]
+      operationId: getManagementGrowthPlan
+      summary: Return the immutable proposed or approved management growth-plan version.
+      responses:
+        "200":
+          description: Versioned management scenario. It is not an accounting fact.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagementGrowthPlanResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /reconciliation/runs:
+    get:
+      tags: [Reconciliation]
+      operationId: listReconciliationRuns
+      summary: List immutable reconciliation runs and checkpoints.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /reconciliation/exceptions:
+    get:
+      tags: [Reconciliation]
+      operationId: listReconciliationExceptions
+      summary: List unresolved and historical reconciliation exceptions.
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, acknowledged, resolved, accepted] }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /reconciliation/exceptions/{exceptionId}:
+    get:
+      tags: [Reconciliation]
+      operationId: getReconciliationException
+      summary: Return exception evidence and lineage.
+      parameters:
+        - name: exceptionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /adjustments/proposals:
+    post:
+      tags: [Reconciliation]
+      operationId: createAdjustmentProposal
+      summary: Propose a compensating ledger adjustment without mutating source events.
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Reason"
+        - $ref: "#/components/parameters/StepUpGrant"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustmentProposalInput"
+      responses:
+        "201":
+          description: Proposal created and pending independent approval.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdjustmentProposalResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /adjustments/{adjustmentId}/approve:
+    post:
+      tags: [Reconciliation]
+      operationId: approveAdjustment
+      summary: Approve another actor's adjustment proposal.
+      parameters:
+        - name: adjustmentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Reason"
+        - $ref: "#/components/parameters/StepUpGrant"
+      responses:
+        "200":
+          description: Proposal approved; ledger application remains auditable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdjustmentProposalResponse"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /alerts:
+    get:
+      tags: [Risks]
+      operationId: listRiskAlerts
+      summary: List source-owned alerts without recalculating canonical metrics.
+      parameters:
+        - name: severity
+          in: query
+          schema: { type: string, enum: [critical, high, medium, info] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, acknowledged, closed, accepted] }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Alert page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /alerts/{alertId}/acknowledge:
+    post:
+      tags: [Risks]
+      operationId: acknowledgeRiskAlert
+      summary: Record that an operator has seen an alert without closing its source condition.
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Acknowledgement recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /alerts/{alertId}/deliveries:
+    get:
+      tags: [Risks]
+      operationId: listAlertDeliveries
+      summary: Read the immutable delivery journal for one alert.
+      description: Returns scheduled notifications and append-only provider attempts. It never triggers delivery.
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Delivery journal with server-owned statuses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertDeliveriesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /methodology/perimeters:
+    get:
+      tags: [Methodology]
+      operationId: getPerimeterRegistry
+      summary: Return effective-dated financial perimeter definitions.
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /methodology/rulesets:
+    get:
+      tags: [Methodology]
+      operationId: getRulesetRegistry
+      summary: Return formula and ruleset versions with effective block ranges.
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /methodology/sources:
+    get:
+      tags: [Methodology]
+      operationId: getSourceRegistry
+      summary: Return source precedence, freshness and reconciliation health.
+      responses:
+        "200":
+          $ref: "#/components/responses/Dataset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /methodology/gate0:
+    get:
+      tags: [Methodology]
+      operationId: getGateZeroRegister
+      summary: Return the 14 technical Gate 0 decisions and evidence status.
+      responses:
+        "200":
+          description: Gate 0 register.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GateZeroResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /audit:
+    get:
+      tags: [Security]
+      operationId: listAuditEvents
+      summary: Query authorized audit metadata; sensitive payloads remain separately protected.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - name: action
+          in: query
+          schema: { type: string, maxLength: 100 }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Audit page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /exports:
+    post:
+      tags: [Exports]
+      operationId: createExportJob
+      summary: Create an asynchronous, audited and expiring export job.
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Reason"
+        - $ref: "#/components/parameters/StepUpGrant"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportJobInput"
+      responses:
+        "202":
+          description: Export accepted for asynchronous processing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJobResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+  /exports/{jobId}:
+    get:
+      tags: [Exports]
+      operationId: getExportJob
+      summary: Return export status and, when authorized, a one-time download capability.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Export job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJobResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ApiError"
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-atlas_admin_session
+      description: Secure HttpOnly SameSite session issued by the same-origin BFF.
+
+  parameters:
+    From:
+      name: from
+      in: query
+      required: true
+      schema: { type: string, format: date-time }
+    To:
+      name: to
+      in: query
+      required: true
+      schema: { type: string, format: date-time }
+    Perimeter:
+      name: perimeter
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/Perimeter"
+    AsOfBlock:
+      name: asOfBlock
+      in: query
+      schema: { type: integer, format: int64, minimum: 1 }
+    Granularity:
+      name: granularity
+      in: query
+      schema: { type: string, enum: [day, week, month], default: day }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string, maxLength: 500 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+    ClaimStatus:
+      name: status
+      in: query
+      schema:
+        $ref: "#/components/schemas/ClaimStatus"
+    ClaimId:
+      name: claimId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ParticipantId:
+      name: participantId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SnapshotId:
+      name: snapshotId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SnapshotIdQuery:
+      name: snapshotId
+      in: query
+      required: true
+      schema: { type: string, format: uuid }
+    ForecastScenario:
+      name: scenario
+      in: query
+      required: true
+      schema: { type: string, enum: [committed, stress, base] }
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: { type: string, minLength: 32, maxLength: 512 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    Reason:
+      name: X-Atlas-Reason
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 500 }
+    StepUpGrant:
+      name: X-Atlas-Step-Up
+      in: header
+      required: true
+      description: Opaque, single-purpose, short-lived capability bound to actor and session.
+      schema: { type: string, minLength: 32, maxLength: 1024 }
+
+  responses:
+    Dataset:
+      description: Financial dataset with mandatory source and calculation metadata.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DatasetResponse"
+    PaginatedDataset:
+      description: Cursor-paginated dataset.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PaginatedDatasetResponse"
+    ApiError:
+      description: API error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unauthorized:
+      description: Missing, expired or invalid administrative session.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource not found or not visible to the actor.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Conflict:
+      description: Version, idempotency or four-eyes conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  schemas:
+    Perimeter:
+      type: string
+      enum: [payout_contract, atlas_consolidated, company_treasury, participant_economics]
+    SourceStatus:
+      type: string
+      enum: [ready, stale, partial, error, reconciling, reorg]
+    Finality:
+      type: string
+      enum: [provisional, safe, finalized]
+    ReconciliationStatus:
+      type: string
+      enum: [not_run, reconciling, reconciled, exception, blocked]
+    ClaimStatus:
+      type: string
+      enum: [eligible, requested, pending, failed, paid, reversed, expired]
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amountRaw, decimals, tokenAddress, symbol]
+      properties:
+        amountRaw:
+          type: string
+          pattern: "^-?[0-9]+$"
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 36
+        tokenAddress:
+          type: string
+          pattern: "^0x[0-9a-fA-F]{40}$"
+        symbol:
+          type: string
+          minLength: 1
+          maxLength: 24
+        displayAmount:
+          type: string
+          pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+    ForecastBucket:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - snapshotId
+        - bucketStart
+        - bucketEnd
+        - cycleCount
+        - principalDue
+        - grossDeltaDue
+        - partnerRewardDue
+        - pendingPartnerCreationDue
+        - totalOutflowDue
+        - expectedInflow
+        - openingLiquidity
+        - closingLiquidity
+        - reserveTarget
+        - fundingGap
+      properties:
+        id: { type: string, format: uuid }
+        snapshotId: { type: string, format: uuid }
+        bucketStart: { type: string, format: date-time }
+        bucketEnd: { type: string, format: date-time }
+        cycleCount: { type: integer, minimum: 0 }
+        principalDue: { $ref: "#/components/schemas/Money" }
+        grossDeltaDue: { $ref: "#/components/schemas/Money" }
+        partnerRewardDue: { $ref: "#/components/schemas/Money" }
+        pendingPartnerCreationDue: { $ref: "#/components/schemas/Money" }
+        totalOutflowDue: { $ref: "#/components/schemas/Money" }
+        expectedInflow: { $ref: "#/components/schemas/Money" }
+        openingLiquidity: { $ref: "#/components/schemas/Money" }
+        closingLiquidity: { $ref: "#/components/schemas/Money" }
+        reserveTarget: { $ref: "#/components/schemas/Money" }
+        fundingGap: { $ref: "#/components/schemas/Money" }
+        confidenceLow: { $ref: "#/components/schemas/Money" }
+        confidenceHigh: { $ref: "#/components/schemas/Money" }
+    ManagementGrowthPlanMonth:
+      type: object
+      additionalProperties: false
+      required: [monthStart, flowTarget, dailyReference, plannedCompanyRevenue]
+      properties:
+        monthStart: { type: string, format: date }
+        flowTarget: { $ref: "#/components/schemas/Money" }
+        dailyReference: { $ref: "#/components/schemas/Money" }
+        plannedCompanyRevenue: { $ref: "#/components/schemas/Money" }
+    ManagementGrowthPlan:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - version
+        - status
+        - owner
+        - effectiveFrom
+        - monthlyGrowthBasisPoints
+        - plannedCompanyRevenueBasisPoints
+        - dayBasis
+        - source
+        - months
+      properties:
+        id: { type: string, format: uuid }
+        version: { type: string, minLength: 1, maxLength: 100 }
+        status: { type: string, enum: [proposed, approved, retired] }
+        owner: { type: string, minLength: 1, maxLength: 120 }
+        approvedBy: { type: [string, "null"], maxLength: 200 }
+        approvedAt: { type: [string, "null"], format: date-time }
+        effectiveFrom: { type: string, format: date }
+        previousVersionId: { type: [string, "null"], format: uuid }
+        monthlyGrowthBasisPoints: { type: integer, minimum: 0, maximum: 100000 }
+        plannedCompanyRevenueBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        dayBasis: { type: string, enum: [calendar_days, source_30_day_reference] }
+        source: { type: string, minLength: 1, maxLength: 120 }
+        months:
+          type: array
+          minItems: 1
+          maxItems: 36
+          items: { $ref: "#/components/schemas/ManagementGrowthPlanMonth" }
+    ManagementGrowthPlanResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ManagementGrowthPlan" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    PlatformFeeRecord:
+      type: object
+      additionalProperties: false
+      required: [id, occurredAt, sourceMoment, cycleLabel, grossAmount, feeRateBasisPoints, platformFee, allocationTxHash, treasuryReceiptTxHash, blockNumber, status, reconciliationStatus]
+      properties:
+        id: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+        sourceMoment: { type: string, enum: [delta_claim, partner_reward_creation, partner_reward_streamed] }
+        cycleLabel: { type: string, minLength: 1, maxLength: 160 }
+        grossAmount: { $ref: "#/components/schemas/Money" }
+        feeRateBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        platformFee: { $ref: "#/components/schemas/Money" }
+        allocationTxHash: { type: string, pattern: "^0x[0-9a-fA-F]{64}$" }
+        treasuryReceiptTxHash: { type: string, pattern: "^0x[0-9a-fA-F]{64}$" }
+        blockNumber: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [allocated, received, exception] }
+        reconciliationStatus: { $ref: "#/components/schemas/ReconciliationStatus" }
+    PlatformFeesResponse:
+      type: object
+      additionalProperties: false
+      required: [data, page, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/PlatformFeeRecord" }
+        page: { $ref: "#/components/schemas/PageInfo" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    CompanyReceiptRecord:
+      type: object
+      additionalProperties: false
+      required: [id, occurredAt, receiptType, sourceEventId, cycleLabel, amount, txHash, logIndex, blockNumber, finality, reconciliationStatus]
+      properties:
+        id: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+        receiptType: { type: string, enum: [platform_fee_delta, platform_fee_partner, head_account_creation, head_account_streamed] }
+        sourceEventId: { type: [string, "null"], format: uuid }
+        cycleLabel: { type: string, minLength: 1, maxLength: 160 }
+        amount: { $ref: "#/components/schemas/Money" }
+        txHash: { type: string, pattern: "^0x[0-9a-fA-F]{64}$" }
+        logIndex: { type: integer, minimum: 0 }
+        blockNumber: { type: integer, format: int64, minimum: 1 }
+        finality: { $ref: "#/components/schemas/Finality" }
+        reconciliationStatus: { $ref: "#/components/schemas/ReconciliationStatus" }
+    CompanyReceiptsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, page, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/CompanyReceiptRecord" }
+        page: { $ref: "#/components/schemas/PageInfo" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    PartnerEconomicsBucket:
+      type: object
+      additionalProperties: false
+      required: [bucketStart, bucketEnd, grossPartnerRewardsPaid, atlasReferralIncome, captureRateBasisPoints]
+      properties:
+        bucketStart: { type: string, format: date-time }
+        bucketEnd: { type: string, format: date-time }
+        grossPartnerRewardsPaid: { $ref: "#/components/schemas/Money" }
+        atlasReferralIncome: { $ref: "#/components/schemas/Money" }
+        captureRateBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+    PartnerEconomics:
+      type: object
+      additionalProperties: false
+      required:
+        - grossPartnerRewardsPaid
+        - atlasReferralIncome
+        - atlasReferralIncomeAtCreation
+        - atlasReferralIncomeStreamed
+        - captureRateBasisPoints
+        - targetBasisPoints
+        - gapBasisPoints
+        - attributionStatus
+        - series
+      properties:
+        grossPartnerRewardsPaid: { $ref: "#/components/schemas/Money" }
+        atlasReferralIncome: { $ref: "#/components/schemas/Money" }
+        atlasReferralIncomeAtCreation: { $ref: "#/components/schemas/Money" }
+        atlasReferralIncomeStreamed: { $ref: "#/components/schemas/Money" }
+        captureRateBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        targetBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        gapBasisPoints: { type: integer, minimum: -10000, maximum: 10000 }
+        attributionStatus: { type: string, enum: [complete, partial] }
+        series:
+          type: array
+          minItems: 1
+          maxItems: 366
+          items: { $ref: "#/components/schemas/PartnerEconomicsBucket" }
+    PartnerEconomicsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PartnerEconomics" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    CompanyEconomicsBucket:
+      type: object
+      additionalProperties: false
+      required:
+        - bucketStart
+        - bucketEnd
+        - incomingFlow
+        - platformFeeFromDelta
+        - platformFeeFromPartnerReward
+        - platformFeeTotal
+        - headAccountIncomeAtCreation
+        - headAccountIncomeStreamed
+        - headAccountIncome
+        - companyRevenue
+        - companyRevenueRateBasisPoints
+      properties:
+        bucketStart: { type: string, format: date-time }
+        bucketEnd: { type: string, format: date-time }
+        incomingFlow: { $ref: "#/components/schemas/Money" }
+        platformFeeFromDelta: { $ref: "#/components/schemas/Money" }
+        platformFeeFromPartnerReward: { $ref: "#/components/schemas/Money" }
+        platformFeeTotal: { $ref: "#/components/schemas/Money" }
+        headAccountIncomeAtCreation: { $ref: "#/components/schemas/Money" }
+        headAccountIncomeStreamed: { $ref: "#/components/schemas/Money" }
+        headAccountIncome: { $ref: "#/components/schemas/Money" }
+        companyRevenue: { $ref: "#/components/schemas/Money" }
+        companyRevenueRateBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+    CompanyEconomics:
+      type: object
+      additionalProperties: false
+      required:
+        - incomingFlow
+        - platformFeeFromDelta
+        - platformFeeFromPartnerReward
+        - platformFeeTotal
+        - headAccountIncomeAtCreation
+        - headAccountIncomeStreamed
+        - headAccountIncome
+        - companyRevenue
+        - companyRevenueRateBasisPoints
+        - targetBasisPoints
+        - gapBasisPoints
+        - targetRevenue
+        - surplus
+        - shortfall
+        - attributionStatus
+        - series
+      properties:
+        incomingFlow: { $ref: "#/components/schemas/Money" }
+        platformFeeFromDelta: { $ref: "#/components/schemas/Money" }
+        platformFeeFromPartnerReward: { $ref: "#/components/schemas/Money" }
+        platformFeeTotal: { $ref: "#/components/schemas/Money" }
+        headAccountIncomeAtCreation: { $ref: "#/components/schemas/Money" }
+        headAccountIncomeStreamed: { $ref: "#/components/schemas/Money" }
+        headAccountIncome: { $ref: "#/components/schemas/Money" }
+        companyRevenue: { $ref: "#/components/schemas/Money" }
+        companyRevenueRateBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        targetBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        gapBasisPoints: { type: integer, minimum: -10000, maximum: 10000 }
+        targetRevenue: { $ref: "#/components/schemas/Money" }
+        surplus: { $ref: "#/components/schemas/Money" }
+        shortfall: { $ref: "#/components/schemas/Money" }
+        attributionStatus: { type: string, enum: [complete, partial] }
+        series:
+          type: array
+          minItems: 1
+          maxItems: 366
+          items: { $ref: "#/components/schemas/CompanyEconomicsBucket" }
+    CompanyEconomicsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/CompanyEconomics" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ForecastBucketsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/ForecastBucket" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    FinanceOverviewResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FinanceOverviewData"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    FinanceOverviewData:
+      type: object
+      additionalProperties: false
+      required: [coverage, liquidity, obligations, cashFlow, cycles, companyRevenue]
+      properties:
+        coverage:
+          type: object
+          additionalProperties: false
+          required: [from, to]
+          properties:
+            from: { type: string, format: date-time }
+            to: { type: string, format: date-time }
+        liquidity:
+          type: object
+          additionalProperties: false
+          required: [perimeter, availableBalance, reserveSurplus]
+          properties:
+            perimeter: { const: payout_contract }
+            availableBalance: { $ref: "#/components/schemas/Money" }
+            reserveSurplus: { $ref: "#/components/schemas/Money" }
+        obligations:
+          type: object
+          additionalProperties: false
+          required: [perimeter, horizon, eligibleExposure, peakExposure, peakExposureAt, peakFundingGap, coverageRatio, scenario, series]
+          properties:
+            perimeter: { const: payout_contract }
+            horizon: { type: string, pattern: "^P[0-9]+D$" }
+            eligibleExposure: { $ref: "#/components/schemas/Money" }
+            peakExposure: { $ref: "#/components/schemas/Money" }
+            peakExposureAt: { type: string, format: date-time }
+            peakFundingGap: { $ref: "#/components/schemas/Money" }
+            coverageRatio: { type: string, pattern: "^[0-9]+(\\.[0-9]+)?$" }
+            scenario: { type: string, enum: [committed, base, stress] }
+            series:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [bucketStart, principal, grossDelta, partnerReward, pendingAtCreation, total]
+                properties:
+                  bucketStart: { type: string, format: date-time }
+                  principal: { $ref: "#/components/schemas/Money" }
+                  grossDelta: { $ref: "#/components/schemas/Money" }
+                  partnerReward: { $ref: "#/components/schemas/Money" }
+                  pendingAtCreation: { $ref: "#/components/schemas/Money" }
+                  total: { $ref: "#/components/schemas/Money" }
+        cashFlow:
+          type: object
+          additionalProperties: false
+          required: [perimeter, inflow, outflow, netFlow, series]
+          properties:
+            perimeter: { const: atlas_consolidated }
+            inflow: { $ref: "#/components/schemas/Money" }
+            outflow: { $ref: "#/components/schemas/Money" }
+            netFlow: { $ref: "#/components/schemas/Money" }
+            series:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [bucketStart, bucketEnd, inflow, outflow, netFlow]
+                properties:
+                  bucketStart: { type: string, format: date-time }
+                  bucketEnd: { type: string, format: date-time }
+                  inflow: { $ref: "#/components/schemas/Money" }
+                  outflow: { $ref: "#/components/schemas/Money" }
+                  netFlow: { $ref: "#/components/schemas/Money" }
+        cycles:
+          type: object
+          additionalProperties: false
+          required: [perimeter, rows]
+          properties:
+            perimeter: { const: participant_economics }
+            rows:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [productKey, label, openedCount, inflow, shareBps, payoutDue, risk]
+                properties:
+                  productKey: { type: string, maxLength: 100 }
+                  label: { type: string, maxLength: 160 }
+                  openedCount: { type: integer, minimum: 0 }
+                  inflow: { $ref: "#/components/schemas/Money" }
+                  shareBps: { type: integer, minimum: 0, maximum: 10000 }
+                  payoutDue: { $ref: "#/components/schemas/Money" }
+                  risk: { type: string, enum: [normal, medium, concentration] }
+        companyRevenue:
+          type: object
+          additionalProperties: false
+          required: [perimeter, total, platformFee, headAccount, cashTakeRatePercent, components]
+          properties:
+            perimeter: { const: company_treasury }
+            total: { $ref: "#/components/schemas/Money" }
+            platformFee: { $ref: "#/components/schemas/Money" }
+            headAccount: { $ref: "#/components/schemas/Money" }
+            cashTakeRatePercent: { type: string, pattern: "^[0-9]+(\\.[0-9]+)?$" }
+            components:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [type, label, amount, color]
+                properties:
+                  type: { type: string, enum: [platform_fee_delta, platform_fee_partner, head_account] }
+                  label: { type: string, maxLength: 120 }
+                  amount: { $ref: "#/components/schemas/Money" }
+                  color: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+    ResponseMeta:
+      type: object
+      additionalProperties: false
+      required:
+        - perimeter
+        - currency
+        - from
+        - to
+        - asOfBlockNumber
+        - asOfBlockHash
+        - finality
+        - freshnessSeconds
+        - partial
+        - sourceStatus
+        - formulaVersion
+        - rulesetVersion
+        - reconciliationStatus
+        - requestId
+      properties:
+        perimeter:
+          $ref: "#/components/schemas/Perimeter"
+        currency: { type: string, minLength: 1, maxLength: 24 }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        asOfBlockNumber: { type: integer, format: int64, minimum: 1 }
+        asOfBlockHash: { type: string, pattern: "^0x[0-9a-fA-F]{64}$" }
+        finality:
+          $ref: "#/components/schemas/Finality"
+        freshnessSeconds: { type: integer, minimum: 0 }
+        partial: { type: boolean }
+        partialReasons:
+          type: array
+          maxItems: 30
+          items: { type: string, maxLength: 240 }
+        sourceStatus:
+          $ref: "#/components/schemas/SourceStatus"
+        formulaVersion: { type: string, minLength: 1, maxLength: 100 }
+        rulesetVersion: { type: string, minLength: 1, maxLength: 100 }
+        reconciliationStatus:
+          $ref: "#/components/schemas/ReconciliationStatus"
+        requestId: { type: string, minLength: 8, maxLength: 100 }
+        generatedAt: { type: string, format: date-time }
+    DatasetResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    PageInfo:
+      type: object
+      additionalProperties: false
+      required: [hasMore]
+      properties:
+        nextCursor: { type: [string, "null"] }
+        hasMore: { type: boolean }
+    PaginatedDatasetResponse:
+      type: object
+      additionalProperties: false
+      required: [data, page, meta]
+      properties:
+        data:
+          type: array
+          items: { type: object, additionalProperties: true }
+        page:
+          $ref: "#/components/schemas/PageInfo"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    MetaResponse:
+      type: object
+      additionalProperties: false
+      required: [apiVersion, status, gateZero, capabilities, dataCoverage, snapshot]
+      properties:
+        apiVersion: { type: string, enum: [1.0.0-draft, 1.0.0-alpha] }
+        status: { type: string, enum: [internal_alpha_partial, blocked_gate0, sandbox, production] }
+        gateZero:
+          type: object
+          additionalProperties: false
+          required: [closed, total]
+          properties:
+            closed: { type: integer, minimum: 0, maximum: 14 }
+            total: { const: 14 }
+        capabilities:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        dataCoverage:
+          type: array
+          minItems: 7
+          maxItems: 7
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/DataCoverageItem"
+        snapshot:
+          type: object
+          additionalProperties: false
+          required: [id, asOfBlockNumber, asOfBlockHash, confirmations, generatedAt, sourceStatus]
+          properties:
+            id: { type: string }
+            asOfBlockNumber: { type: integer, minimum: 0 }
+            asOfBlockHash: { type: string, pattern: "^0x[0-9a-fA-F]{64}$" }
+            confirmations: { type: integer, minimum: 0 }
+            generatedAt: { type: string, format: date-time }
+            sourceStatus: { type: string }
+    DataCoverageItem:
+      type: object
+      additionalProperties: false
+      required: [id, label, status, source, affectsRoutes, blocker, nextAction, gateId, owner]
+      properties:
+        id:
+          type: string
+          enum: [cash_flows, liquidity, cycles, claims, payout_forecast, reconciliation, company_revenue]
+        label: { type: string, minLength: 1 }
+        status: { type: string, enum: [available, partial, unavailable] }
+        source: { type: string, minLength: 1 }
+        affectsRoutes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        blocker: { type: string, minLength: 1 }
+        nextAction: { type: string, minLength: 1 }
+        gateId: { type: string, pattern: "^G0-(0[1-9]|1[0-4])$" }
+        owner: { type: string, minLength: 1 }
+    PayoutComponent:
+      type: object
+      additionalProperties: false
+      required: [type, gross, net, platformFee, otherDeductions]
+      properties:
+        type:
+          type: string
+          enum: [principal, delta, partner_reward_creation, partner_reward_streamed]
+        gross:
+          $ref: "#/components/schemas/Money"
+        net:
+          $ref: "#/components/schemas/Money"
+        platformFee:
+          $ref: "#/components/schemas/Money"
+        otherDeductions:
+          $ref: "#/components/schemas/Money"
+        transferIds:
+          type: array
+          items: { type: string, format: uuid }
+    ClaimRecord:
+      type: object
+      additionalProperties: false
+      required: [id, cycleId, participantId, status, eligibleAt, components]
+      properties:
+        id: { type: string, format: uuid }
+        cycleId: { type: string, format: uuid }
+        participantId: { type: string, format: uuid }
+        status:
+          $ref: "#/components/schemas/ClaimStatus"
+        eligibleAt: { type: string, format: date-time }
+        requestedAt: { type: [string, "null"], format: date-time }
+        settledAt: { type: [string, "null"], format: date-time }
+        failureCode: { type: [string, "null"], maxLength: 100 }
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayoutComponent"
+    ClaimsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, page, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimRecord"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ClaimResponse:
+      type: object
+      additionalProperties: false
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ClaimRecord"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    WalletRevealResponse:
+      type: object
+      additionalProperties: false
+      required: [participantId, walletAddress, expiresAt, auditEventId]
+      properties:
+        participantId: { type: string, format: uuid }
+        walletAddress: { type: string, pattern: "^0x[0-9a-fA-F]{40}$" }
+        expiresAt: { type: string, format: date-time }
+        auditEventId: { type: string, format: uuid }
+    AdjustmentProposalInput:
+      type: object
+      additionalProperties: false
+      required: [perimeter, amount, entryType, evidenceIds, expectedVersion]
+      properties:
+        perimeter:
+          $ref: "#/components/schemas/Perimeter"
+        amount:
+          $ref: "#/components/schemas/Money"
+        entryType:
+          type: string
+          enum: [classification_correction, opening_balance, compensating_entry]
+        evidenceIds:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string, format: uuid }
+        expectedVersion: { type: integer, minimum: 1 }
+    AdjustmentProposal:
+      type: object
+      additionalProperties: false
+      required: [id, status, createdBy, createdAt, version]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [proposed, approved, rejected, applied] }
+        createdBy: { type: string, format: uuid }
+        approvedBy: { type: [string, "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        version: { type: integer, minimum: 1 }
+    AdjustmentProposalResponse:
+      type: object
+      additionalProperties: false
+      required: [data, requestId]
+      properties:
+        data:
+          $ref: "#/components/schemas/AdjustmentProposal"
+        requestId: { type: string }
+    Alert:
+      type: object
+      additionalProperties: false
+      required: [id, sourceType, sourceId, severity, status, title, owner, deadline, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        sourceType: { type: string, maxLength: 80 }
+        sourceId: { type: string, maxLength: 160 }
+        severity: { type: string, enum: [critical, high, medium, info] }
+        status: { type: string, enum: [open, acknowledged, closed, accepted] }
+        title: { type: string, maxLength: 240 }
+        observedValue: { type: [string, "null"], maxLength: 120 }
+        threshold: { type: [string, "null"], maxLength: 120 }
+        owner: { type: string, maxLength: 120 }
+        deadline: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        formulaVersion: { type: string, maxLength: 100 }
+        evidenceUrl: { type: string, format: uri-reference }
+    AlertsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, page, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    AlertResponse:
+      type: object
+      additionalProperties: false
+      required: [data, requestId]
+      properties:
+        data:
+          $ref: "#/components/schemas/Alert"
+        requestId: { type: string }
+    NotificationDeliveryAttempt:
+      type: object
+      additionalProperties: false
+      required: [attemptNumber, result, providerRequestKey, startedAt, completedAt]
+      properties:
+        attemptNumber: { type: integer, minimum: 1 }
+        result: { type: string, enum: [delivered, transient_failure, permanent_failure, skipped] }
+        providerRequestKey: { type: string, maxLength: 200 }
+        providerStatus: { type: [integer, "null"], minimum: 100, maximum: 599 }
+        providerMessageId: { type: [string, "null"], maxLength: 240 }
+        errorCode: { type: [string, "null"], maxLength: 120 }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+    AlertDelivery:
+      type: object
+      additionalProperties: false
+      required: [id, alertId, channel, checkpoint, recipientRef, status, scheduledFor, attemptCount, idempotencyKey, attempts]
+      properties:
+        id: { type: string, format: uuid }
+        alertId: { type: string, format: uuid }
+        channel: { type: string, enum: [in_app, telegram, email] }
+        checkpoint: { type: string, enum: [d_7, d_3, d_1, breach] }
+        recipientRef: { type: string, maxLength: 200 }
+        status: { type: string, enum: [scheduled, ready, leased, delivered, retry, failed, blocked, cancelled] }
+        scheduledFor: { type: string, format: date-time }
+        deliveredAt: { type: [string, "null"], format: date-time }
+        attemptCount: { type: integer, minimum: 0 }
+        lastErrorCode: { type: [string, "null"], maxLength: 120 }
+        idempotencyKey: { type: string, pattern: "^[0-9a-f]{64}$" }
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationDeliveryAttempt"
+    AlertDeliveriesResponse:
+      type: object
+      additionalProperties: false
+      required: [data, requestId]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlertDelivery"
+        requestId: { type: string }
+    GateDecision:
+      type: object
+      additionalProperties: false
+      required: [id, title, owner, approver, evidenceRequirement, status]
+      properties:
+        id: { type: string, pattern: "^G0-[0-9]{2}$" }
+        title: { type: string, maxLength: 200 }
+        owner: { type: string, maxLength: 120 }
+        approver: { type: string, maxLength: 120 }
+        evidenceRequirement: { type: string, maxLength: 500 }
+        status: { type: string, enum: [open, in_review, done, rejected] }
+        evidenceUrl: { type: [string, "null"], format: uri-reference }
+        decidedAt: { type: [string, "null"], format: date-time }
+    GateZeroResponse:
+      type: object
+      additionalProperties: false
+      required: [data, closed, total]
+      properties:
+        data:
+          type: array
+          minItems: 14
+          maxItems: 14
+          items:
+            $ref: "#/components/schemas/GateDecision"
+        closed: { type: integer, minimum: 0, maximum: 14 }
+        total: { const: 14 }
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      required: [id, occurredAt, actorId, action, resourceType, requestId, eventHash]
+      properties:
+        id: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+        actorId: { type: string, format: uuid }
+        action: { type: string, maxLength: 100 }
+        resourceType: { type: string, maxLength: 100 }
+        resourceId: { type: [string, "null"], maxLength: 160 }
+        reason: { type: [string, "null"], maxLength: 500 }
+        requestId: { type: string, maxLength: 100 }
+        previousHash: { type: [string, "null"], pattern: "^[0-9a-f]{64}$" }
+        eventHash: { type: string, pattern: "^[0-9a-f]{64}$" }
+    AuditEventsResponse:
+      type: object
+      additionalProperties: false
+      required: [data, page]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+    ExportJobInput:
+      type: object
+      additionalProperties: false
+      required: [dataset, format, filters]
+      properties:
+        dataset:
+          type: string
+          enum: [cash_movements, cycles, claims, participants, company_receipts, reconciliation, audit]
+        format: { type: string, enum: [csv, jsonl] }
+        filters:
+          type: object
+          additionalProperties: true
+        expectedAsOfBlock: { type: integer, format: int64, minimum: 1 }
+    ExportJob:
+      type: object
+      additionalProperties: false
+      required: [id, status, createdAt, expiresAt, auditEventId]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, processing, ready, failed, expired, deleted] }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        rowCount: { type: [integer, "null"], minimum: 0 }
+        auditEventId: { type: string, format: uuid }
+        downloadCapability: { type: [string, "null"], maxLength: 2048 }
+        failureCode: { type: [string, "null"], maxLength: 100 }
+    ExportJobResponse:
+      type: object
+      additionalProperties: false
+      required: [data, requestId]
+      properties:
+        data:
+          $ref: "#/components/schemas/ExportJob"
+        requestId: { type: string }
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, requestId]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string, maxLength: 1000 }
+        code: { type: string, pattern: "^[a-z0-9_]+$" }
+        requestId: { type: string }
+        retryable: { type: boolean }

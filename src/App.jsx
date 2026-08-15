@@ -5,6 +5,7 @@ import { AnalyticsPage, AnalyticsRestoredPage } from "./modules/analytics";
 import AtlasFunnelPilotPage from "./modules/analytics/components/AtlasFunnelPilotPage";
 import { ATLAS_FUNNEL_PILOT_VIEW } from "./modules/analytics/data/atlasFunnelPilotData";
 import { getMarketingContentAccess, unlockMarketingContent } from "./modules/analytics/services/contentStore";
+import AdminFinanceApp from "./modules/admin-finance/AdminFinanceApp";
 
 const ACCESS_STORAGE_KEY = "supersus.access.v2";
 const ACCESS_ATTEMPTS_STORAGE_KEY = "supersus.access.attempts.v1";
@@ -276,7 +277,9 @@ function AccessGate({ children }) {
 function App() {
   const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
   const view = typeof window !== "undefined" ? new URL(window.location.href).searchParams.get("view") : "";
-  const page = view === ATLAS_FUNNEL_PILOT_VIEW
+  const page = pathname.startsWith("/admin")
+    ? <AdminFinanceApp />
+    : view === ATLAS_FUNNEL_PILOT_VIEW
     ? <AtlasFunnelPilotPage />
     : pathname === "/legacy" || pathname === "/analytics"
       ? <AnalyticsRestoredPage />
