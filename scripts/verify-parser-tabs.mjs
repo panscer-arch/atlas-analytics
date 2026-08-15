@@ -8,6 +8,7 @@ const workspaceSource = fs.readFileSync(workspacePath, "utf8");
 const marketingDataPath = path.join(root, "src/modules/analytics/data/marketingDashboardData.js");
 const marketingDataSource = fs.readFileSync(marketingDataPath, "utf8");
 const {
+  MARKETING_DIRECTIONS,
   hydrateMarketingDashboardState,
 } = await import(pathToFileURL(marketingDataPath));
 
@@ -54,6 +55,8 @@ const missingTabs = requiredTabs.filter(([id, label]) => (
 ));
 const missingFiles = requiredFiles.filter((file) => !fs.existsSync(path.join(root, file)));
 const requiredMarketingDirections = [
+  ["mlm", "Знакомые сетевики"],
+  ["mlmIntroductions", "Знакомство с сетевиками"],
   ["events", "Блокчейн-фесты и MLM-мероприятия"],
   ["vacancies", "Работа с базой вакансий"],
 ];
@@ -79,8 +82,45 @@ const legacyCreativeStateLost = (
   migratedDashboard.directions.creatives
   || migratedDashboard.archivedDirections?.creatives?.notes !== "Не удалять"
 );
+const migratedTelegaDashboard = hydrateMarketingDashboardState({
+  directions: {
+    complex: {
+      owner: "Генри",
+      notes: "План Генри",
+      rows: [{ id: "complex-row", name: "Медиапартнёр" }],
+      materials: [{ id: "complex-material", title: "Медиаплан" }],
+    },
+    telega: {
+      owner: "Архивный владелец",
+      notes: "Старые заметки Telega",
+      rows: [{ id: "telega-row", name: "Telegram-канал" }],
+      materials: [{ id: "telega-material", title: "Старый медиакит" }],
+    },
+  },
+});
+const activeDirectionIds = new Set(MARKETING_DIRECTIONS.map((direction) => direction.id));
+const telegaMigrationFailed = (
+  activeDirectionIds.has("telega")
+  || migratedTelegaDashboard.directions.telega
+  || migratedTelegaDashboard.archivedDirections?.telega?.notes !== "Старые заметки Telega"
+  || !migratedTelegaDashboard.directions.complex.rows.some((row) => row.id === "complex-row")
+  || !migratedTelegaDashboard.directions.complex.rows.some((row) => row.id === "telega-row")
+  || !migratedTelegaDashboard.directions.complex.materials.some((material) => material.id === "complex-material")
+  || !migratedTelegaDashboard.directions.complex.materials.some((material) => material.id === "telega-material")
+  || !migratedTelegaDashboard.directions.complex.notes.includes("План Генри")
+  || !migratedTelegaDashboard.directions.complex.notes.includes("Старые заметки Telega")
+);
+const marketingStructureFailed = (
+  MARKETING_DIRECTIONS.find((direction) => direction.id === "mlm")?.sourceKey !== "generic"
+  || MARKETING_DIRECTIONS.find((direction) => direction.id === "mlmIntroductions")?.sourceKey !== "mlm"
+  || MARKETING_DIRECTIONS.find((direction) => direction.id === "email")?.title !== "Email-маркетинг (спам-маркетинг)"
+);
+const rehydratedTelegaDashboard = hydrateMarketingDashboardState(migratedTelegaDashboard);
+const telegaNotesNotIdempotent = (
+  rehydratedTelegaDashboard.directions.complex.notes !== migratedTelegaDashboard.directions.complex.notes
+);
 
-if (missingTabs.length || missingFiles.length || missingMarketingDirections.length || removedMarketingDirectionStillPresent || missingLegacyCreativeRoute || legacyCreativeStateLost) {
+if (missingTabs.length || missingFiles.length || missingMarketingDirections.length || removedMarketingDirectionStillPresent || missingLegacyCreativeRoute || legacyCreativeStateLost || telegaMigrationFailed || marketingStructureFailed || telegaNotesNotIdempotent) {
   console.error("Parser tabs verification failed.");
   if (missingTabs.length) {
     console.error("Missing tabs:");
@@ -102,6 +142,15 @@ if (missingTabs.length || missingFiles.length || missingMarketingDirections.leng
   }
   if (legacyCreativeStateLost) {
     console.error("The retired creatives direction must be archived without remaining active.");
+  }
+  if (telegaMigrationFailed) {
+    console.error("The retired Telega direction must be archived and merged into complex promotion without losing data.");
+  }
+  if (marketingStructureFailed) {
+    console.error("The marketing direction split or email title is incorrect.");
+  }
+  if (telegaNotesNotIdempotent) {
+    console.error("Repeated dashboard hydration must not duplicate Telega migration notes.");
   }
   process.exit(1);
 }
