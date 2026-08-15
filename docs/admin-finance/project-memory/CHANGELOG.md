@@ -18,6 +18,10 @@
 - Статус остаётся `INTERNAL ALPHA · PARTIAL / UNRECONCILED`; Basic Auth не
   считается production MFA/RBAC, а PostgreSQL migration/restore относится к
   следующему этапу R1.1.
+- R1.1 Forecast runtime подключён к Alpha API: latest immutable snapshot,
+  snapshot by ID и последовательные buckets. Runtime выключен в base Compose,
+  включается отдельным fail-closed overlay и требует PostgreSQL TLS CA,
+  allowlisted provider, independent RPC evidence и checkpoint guard.
 
 ## 2026-08-14
 

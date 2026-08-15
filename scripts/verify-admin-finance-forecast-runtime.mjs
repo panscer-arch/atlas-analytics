@@ -97,6 +97,7 @@ assert.equal(queryCalls, 1);
 await runtime.close();
 assert.equal(closed, true);
 assert.equal(createForecastRuntimeFromEnvironment({}), null);
+
 assert.throws(
   () => createForecastRuntimeFromEnvironment({ ATLAS_ADMIN_FINANCE_FORECAST_ENABLED: "true" }),
   /ATLAS_ADMIN_FINANCE_DATABASE_URL is required/,

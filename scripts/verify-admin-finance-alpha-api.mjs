@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createAdminFinanceServer } from "../server/admin-finance-api.mjs";
+import { buildForecastProjection } from "../server/admin-finance/forecast-input-contract.mjs";
 import { OnchainProviderError } from "../server/admin-finance/onchain-provider.mjs";
 
 const sessionToken = "alpha-session-token-0123456789-abcdef";
@@ -75,13 +77,21 @@ const snapshot = {
   reconciliation: { diagnostics: {}, failures: [] },
 };
 
-async function start(sourceProvider) {
+const forecastInput = JSON.parse(await readFile(new URL("../docs/admin-finance/fixtures/forecast-input.v1.valid.json", import.meta.url), "utf8"));
+const forecastProjection = {
+  ...buildForecastProjection(forecastInput),
+  source: { status: "quarantine_validated", receivedAt: "2026-08-14T12:01:00.000Z", endpointHost: "data.atlas-system.io" },
+};
+const forecastRuntime = { getProjection: async () => forecastProjection };
+
+async function start(sourceProvider, options = {}) {
   const server = createAdminFinanceServer({
     mode: "alpha",
     sessionToken,
     cursorSecret,
     allowedOrigins: ["http://127.0.0.1:4186"],
     sourceProvider,
+    forecastRuntime: options.forecastRuntime,
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
@@ -94,7 +104,7 @@ async function request(base, path) {
   });
 }
 
-const healthy = await start({ getSnapshot: async () => snapshot });
+const healthy = await start({ getSnapshot: async () => snapshot }, { forecastRuntime });
 try {
   const live = await fetch(`${healthy.base}/health/live`);
   assert.equal(live.status, 200);
@@ -110,7 +120,8 @@ try {
   assert.equal(meta.snapshot.asOfBlockNumber, snapshot.asOfBlockNumber);
   assert.equal(meta.dataCoverage.length, 7);
   assert.equal(meta.dataCoverage.find((item) => item.id === "cycles").status, "partial");
-  assert.equal(meta.dataCoverage.find((item) => item.id === "payout_forecast").status, "unavailable");
+  assert.equal(meta.dataCoverage.find((item) => item.id === "payout_forecast").status, "partial");
+  assert(meta.capabilities.includes("forecast"));
   assert.equal(meta.dataCoverage.find((item) => item.id === "claims").source, "N/A");
 
   const range = "from=2026-08-05T00%3A00%3A00.000Z&to=2026-08-06T00%3A00%3A00.000Z";
@@ -141,10 +152,31 @@ try {
   assert.equal(overview.data.cycles.rows[0].openedCount, 1);
   assert(!JSON.stringify(overview).includes("demo-reconciliation"));
 
+  const latestForecast = await (await request(healthy.base, "/forecast/snapshots/latest?scenario=committed&perimeter=payout_contract")).json();
+  assert.equal(latestForecast.data.id, forecastProjection.snapshot.id);
+  assert.equal(latestForecast.meta.partial, true);
+  assert(latestForecast.meta.partialReasons.includes("forecast_quarantine_validated_not_ledger_reconciled"));
+  const forecastRange = `from=${encodeURIComponent(forecastProjection.snapshot.asOf)}&to=${encodeURIComponent(forecastProjection.buckets[0].bucketEnd)}`;
+  const forecastBuckets = await (await request(healthy.base, `/forecast/buckets?snapshotId=${forecastProjection.snapshot.id}&${forecastRange}`)).json();
+  assert.equal(forecastBuckets.data.length, 1);
+  assert.equal(forecastBuckets.data[0].snapshotId, forecastProjection.snapshot.id);
+
+  const uncalibrated = await request(healthy.base, "/forecast/snapshots/latest?scenario=base&perimeter=payout_contract");
+  assert.equal(uncalibrated.status, 422);
+
   const forbidden = await request(healthy.base, "/participants/search?q=atlas");
   assert.equal(forbidden.status, 404);
 } finally {
   await new Promise((resolve) => healthy.server.close(resolve));
+}
+
+const forecastDisabled = await start({ getSnapshot: async () => snapshot });
+try {
+  const response = await request(forecastDisabled.base, "/forecast/snapshots/latest?scenario=committed&perimeter=payout_contract");
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).code, "forecast_runtime_disabled");
+} finally {
+  await new Promise((resolve) => forecastDisabled.server.close(resolve));
 }
 
 const failed = await start({

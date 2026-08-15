@@ -65,7 +65,7 @@ export function createForecastRuntimeFromEnvironment(env = process.env, dependen
   if (String(env.ATLAS_ADMIN_FINANCE_FORECAST_ENABLED || "") !== "true") return null;
   return createForecastRuntime({
     databaseUrl: required(env.ATLAS_ADMIN_FINANCE_DATABASE_URL, "ATLAS_ADMIN_FINANCE_DATABASE_URL"),
-    databaseCa: required(env.ATLAS_ADMIN_FINANCE_DATABASE_CA, "ATLAS_ADMIN_FINANCE_DATABASE_CA"),
+    databaseCa: required(dependencies.databaseCa || env.ATLAS_ADMIN_FINANCE_DATABASE_CA, "ATLAS_ADMIN_FINANCE_DATABASE_CA"),
     sourceUrl: required(env.ATLAS_ADMIN_FINANCE_FORECAST_URL, "ATLAS_ADMIN_FINANCE_FORECAST_URL"),
     authorization: required(env.ATLAS_ADMIN_FINANCE_FORECAST_AUTHORIZATION, "ATLAS_ADMIN_FINANCE_FORECAST_AUTHORIZATION"),
     expectedPayoutContract: required(env.ATLAS_ADMIN_FINANCE_PAYOUT_CONTRACT, "ATLAS_ADMIN_FINANCE_PAYOUT_CONTRACT"),

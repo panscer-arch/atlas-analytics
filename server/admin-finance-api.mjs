@@ -1,5 +1,7 @@
 import http from "node:http";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { isAbsolute } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   cashMovementRowsByPerimeter,
@@ -27,6 +29,7 @@ import {
 } from "./admin-finance/demo-data.mjs";
 import { handleAlphaGet, isAlphaPath, AlphaApiProblem } from "./admin-finance/alpha-handler.mjs";
 import { createOnchainAlphaProvider, OnchainProviderError } from "./admin-finance/onchain-provider.mjs";
+import { createForecastRuntimeFromEnvironment } from "./admin-finance/forecast-runtime.mjs";
 
 const BASE_PATH = "/api/admin/v1";
 const SESSION_COOKIE = "__Host-atlas_admin_session";
@@ -67,6 +70,15 @@ function requireSecret(name, value) {
   const normalized = String(value || "");
   if (normalized.length < 32) throw new Error(`${name} must contain at least 32 characters`);
   return normalized;
+}
+
+function loadForecastDatabaseCa(env) {
+  if (String(env.ATLAS_ADMIN_FINANCE_FORECAST_ENABLED || "") !== "true") return undefined;
+  const inline = String(env.ATLAS_ADMIN_FINANCE_DATABASE_CA || "").trim();
+  if (inline) return inline;
+  const path = String(env.ATLAS_ADMIN_FINANCE_DATABASE_CA_FILE || "").trim();
+  if (!isAbsolute(path)) throw new Error("ATLAS_ADMIN_FINANCE_DATABASE_CA_FILE must be an absolute path");
+  return readFileSync(path, "utf8");
 }
 
 function safeEqual(left, right) {
@@ -748,7 +760,9 @@ export function createAdminFinanceServer(options = {}) {
           }
           throw error;
         }
-        result = handleAlphaGet(url, requestId, snapshot, gateZeroDecisions);
+        result = await handleAlphaGet(url, requestId, snapshot, gateZeroDecisions, {
+          forecastRuntime: options.forecastRuntime,
+        });
       } else {
         result = handleGet(url, requestId, cursorSecret);
       }
@@ -786,6 +800,11 @@ function startFromEnvironment() {
     allowedAddresses: String(process.env.ATLAS_ADMIN_FINANCE_CONTRACT_ADDRESSES || "").split(",").map((value) => value.trim()).filter(Boolean),
     minConfirmations: Number(process.env.ATLAS_ADMIN_FINANCE_MIN_CONFIRMATIONS || 12),
   }) : null;
+  const forecastRuntime = mode === "alpha"
+    ? createForecastRuntimeFromEnvironment(process.env, {
+        databaseCa: loadForecastDatabaseCa(process.env),
+      })
+    : null;
   const server = createAdminFinanceServer({
     mode,
     authMode,
@@ -795,7 +814,9 @@ function startFromEnvironment() {
     cursorSecret: process.env.ATLAS_ADMIN_FINANCE_CURSOR_SECRET,
     allowedOrigins,
     sourceProvider,
+    forecastRuntime,
   });
+  if (forecastRuntime) server.on("close", () => { void forecastRuntime.close(); });
   server.listen(port, host, () => {
     console.log(`Atlas Admin Finance ${mode} API listening on http://${host}:${port}${BASE_PATH}`);
   });

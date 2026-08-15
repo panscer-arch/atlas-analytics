@@ -19,6 +19,10 @@
 - production Support/Chatwoot не менялись и не перезапускались;
 - Basic Auth является временной границей Internal Alpha, а не production MFA,
   RBAC или per-user audit.
+- R1.1 Forecast runtime подключён к authenticated Alpha API через отдельный
+  opt-in Compose overlay. Базовый staging оставляет его выключенным; без
+  PostgreSQL, trusted CA и verified provider payload endpoint отвечает fail
+  closed и Forecast не входит в MVP-навигацию.
 
 ## Research update 2026-08-14
 
