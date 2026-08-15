@@ -166,13 +166,13 @@ const MARKETING_YOUTUBE_BOARD_URL = process.env.ATLAS_MARKETING_YOUTUBE_BOARD_UR
 const MARKETING_DASHBOARD_URL = process.env.ATLAS_MARKETING_DASHBOARD_URL
   || "https://supersussystem.com/?board=parser";
 const MARKETING_SOURCE_CONFIGS = [
-  { id: "mlm-sources", directionId: "mlm", label: "MLM-лидеры / источники", key: "atlas.analytics.mlmLeaderOutreach.platforms.v1", nameFields: ["platform", "name"] },
-  { id: "mlm-markets", directionId: "mlm", label: "MLM-компании и рынки", key: "atlas.analytics.mlmLeaders.markets.v1", nameFields: ["company", "association", "name"] },
-  { id: "mlm-bfh", directionId: "mlm", label: "MLM-лидеры BFH", key: "atlas.analytics.mlmLeaders.businessForHome.v1", nameFields: ["name", "company"] },
-  { id: "mlm-direct-sales", directionId: "mlm", label: "MLM-лидеры США / Канада", key: "atlas.analytics.mlmLeaders.directSalesDirectory.v1", nameFields: ["name", "company"] },
+  { id: "mlm-sources", directionId: "mlmIntroductions", label: "MLM-лидеры / источники", key: "atlas.analytics.mlmLeaderOutreach.platforms.v1", nameFields: ["platform", "name"] },
+  { id: "mlm-markets", directionId: "mlmIntroductions", label: "MLM-компании и рынки", key: "atlas.analytics.mlmLeaders.markets.v1", nameFields: ["company", "association", "name"] },
+  { id: "mlm-bfh", directionId: "mlmIntroductions", label: "MLM-лидеры BFH", key: "atlas.analytics.mlmLeaders.businessForHome.v1", nameFields: ["name", "company"] },
+  { id: "mlm-direct-sales", directionId: "mlmIntroductions", label: "MLM-лидеры США / Канада", key: "atlas.analytics.mlmLeaders.directSalesDirectory.v1", nameFields: ["name", "company"] },
   { id: "influencers", directionId: "influencers", label: "Инфлюенсеры", key: "atlas.analytics.influencerProspects.v1", outreachKey: "atlas.analytics.influencerOutreach.queue.v1", nameFields: ["name"] },
   { id: "monitors", directionId: "monitors", label: "HYIP-мониторы", key: "atlas.analytics.hyipParserLeads.v3", outreachKey: "atlas.analytics.hyipOutreach.queue.v1", nameFields: ["name"] },
-  { id: "telega", directionId: "telega", label: "Telegram-каналы", key: "atlas.analytics.telegramParserLeads.v2", outreachKey: "atlas.analytics.telegramOutreach.queue.v2", nameFields: ["name"] },
+  { id: "telega", directionId: "complex", label: "Telegram-каналы", key: "atlas.analytics.telegramParserLeads.v2", outreachKey: "atlas.analytics.telegramOutreach.queue.v2", nameFields: ["name"] },
   { id: "articles", directionId: "articles", label: "Статьи и PR", key: "atlas.analytics.articlePlacement.resources.v1", nameFields: ["name"] },
   { id: "market-segments", directionId: "segments", label: "Сегменты рынка", key: "atlas.analytics.marketSegments.v1", nameFields: ["direction", "name"] },
   { id: "regional-hiring", directionId: "vacancies", label: "База вакансий", key: "atlas.analytics.regionalHiring.platforms.v1", nameFields: ["platform", "name"] },

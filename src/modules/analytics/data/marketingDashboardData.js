@@ -30,7 +30,7 @@ const LEGACY_PIPELINE_STATUSES = {
   "Ответили": "Связались",
   "Договориться": "Переговоры",
 };
-const RETIRED_MARKETING_DIRECTION_IDS = ["creatives"];
+const RETIRED_MARKETING_DIRECTION_IDS = ["creatives", "telega"];
 
 function hydrateRows(rows) {
   return rows.map((row) => ({
@@ -50,18 +50,29 @@ export const MARKETING_DIRECTIONS = [
   {
     id: "mlm",
     order: 1,
-    title: "Знакомые сетевики и MLM-лидеры",
-    shortTitle: "MLM-лидеры",
-    owner: "Назначить",
+    title: "Знакомые сетевики",
+    shortTitle: "Знакомые сетевики",
+    owner: "Rotenberg / David",
     phase: "Сбор базы",
-    description: "Знакомые лидеры, публичные профили, компании и рынки direct selling в одной рабочей базе.",
-    baseTab: "mlmLeaders",
-    sourceKey: "mlm",
+    description: "Личные контакты сетевиков, с которыми уже знакомы Rotenberg и David: договорённости, следующие шаги и результаты.",
+    sourceKey: "generic",
     accent: "mint",
   },
   {
-    id: "influencers",
+    id: "mlmIntroductions",
     order: 2,
+    title: "Знакомство с сетевиками",
+    shortTitle: "Знакомство с сетевиками",
+    owner: "Назначить",
+    phase: "Сбор базы",
+    description: "Новый поиск и первые знакомства с MLM-лидерами и сетевиками: интро, встреча и следующий шаг.",
+    baseTab: "mlmLeaders",
+    sourceKey: "mlm",
+    accent: "green",
+  },
+  {
+    id: "influencers",
+    order: 3,
     title: "Инфлюенсеры",
     shortTitle: "Инфлюенсеры",
     owner: "Костя",
@@ -73,7 +84,7 @@ export const MARKETING_DIRECTIONS = [
   },
   {
     id: "monitors",
-    order: 3,
+    order: 4,
     title: "Иностранные HYIP-мониторы",
     shortTitle: "HYIP-мониторы",
     owner: "Назначить",
@@ -85,26 +96,14 @@ export const MARKETING_DIRECTIONS = [
   },
   {
     id: "complex",
-    order: 4,
+    order: 5,
     title: "Комплексное продвижение",
     shortTitle: "Комплексное продвижение",
     owner: "Генри",
     phase: "Не начато",
-    description: "Медиареклама и комплексные кампании. Наполнение добавим после получения плана от Генри.",
+    description: "Комплексные кампании Генри, включая часть Telegram-рекламы и размещений через Telega.io.",
     sourceKey: "generic",
     accent: "violet",
-  },
-  {
-    id: "telega",
-    order: 5,
-    title: "Telegram-реклама / Telega.io",
-    shortTitle: "Telega.io",
-    owner: "Назначить",
-    phase: "Сбор базы",
-    description: "Закупка рекламы в Telegram-каналах, проверка охватов, цен, администраторов и результатов.",
-    baseTab: "telegram",
-    sourceKey: "telegram",
-    accent: "cyan",
   },
   {
     id: "articles",
@@ -132,11 +131,11 @@ export const MARKETING_DIRECTIONS = [
   {
     id: "email",
     order: 8,
-    title: "Email-маркетинг",
-    shortTitle: "Email-маркетинг",
+    title: "Email-маркетинг (спам-маркетинг)",
+    shortTitle: "Email / спам-маркетинг",
     owner: "Назначить",
     phase: "Сбор базы",
-    description: "Почтовые базы, шаблоны, история отправок и компании, которые могут вести рассылку.",
+    description: "Почтовые базы, шаблоны, история отправок и подрядчики по массовым рассылкам и спам-маркетингу.",
     sourceKey: "generic",
     sourceUrl: EMAIL_AGENCIES_SHEET,
     sourceLabel: "Таблица email-агентств",
@@ -210,6 +209,13 @@ const defaultDirectionContent = {
       { id: "mlm-material-1", title: "Презентация для MLM-лидера", url: "", status: "Подготовить", note: "Короткий лидерский пакет Atlas." },
     ],
   },
+  mlmIntroductions: {
+    notes: "Новые контакты не смешиваем с личной базой Rotenberg и David: фиксируем источник знакомства, интро, первую встречу и следующий шаг.",
+    rows: [],
+    materials: [
+      { id: "mlm-introduction-material-1", title: "Сценарий первого знакомства", url: "", status: "Подготовить", note: "Короткое интро, квалификация контакта и приглашение на встречу." },
+    ],
+  },
   influencers: {
     notes: "",
     rows: [],
@@ -225,9 +231,11 @@ const defaultDirectionContent = {
     ],
   },
   complex: {
-    notes: "Ожидаем структуру комплексного продвижения и медиарекламы от Генри.",
+    notes: "Telegram-реклама теперь ведётся внутри комплексного продвижения Генри вместе с другими медиаканалами.",
     rows: [],
-    materials: [],
+    materials: [
+      { id: "telega-material-1", title: "Telega.io", url: "https://telega.io/", status: "Проверить", note: "Проверить требования, гео, цены и форматы размещения." },
+    ],
   },
   telega: {
     notes: "",
@@ -326,6 +334,24 @@ export function createDefaultMarketingDashboardState() {
   };
 }
 
+function mergeDirectionItems(...lists) {
+  const itemsById = new Map();
+  lists.flat().forEach((item) => {
+    if (!item || typeof item !== "object") return;
+    const key = item.id || JSON.stringify(item);
+    itemsById.set(key, item);
+  });
+  return [...itemsById.values()];
+}
+
+function mergeDirectionNotes(primary = "", secondary = "") {
+  const first = String(primary || "").trim();
+  const second = String(secondary || "").trim();
+  if (!second || first.includes(second)) return first;
+  if (!first || second.includes(first)) return second;
+  return [first, second].filter(Boolean).join("\n\n");
+}
+
 export function hydrateMarketingDashboardState(savedState) {
   const defaults = createDefaultMarketingDashboardState();
   if (!savedState || typeof savedState !== "object") return defaults;
@@ -349,13 +375,36 @@ export function hydrateMarketingDashboardState(savedState) {
       MARKETING_DIRECTIONS.map((direction) => {
         const defaultDirection = defaults.directions[direction.id];
         const savedDirection = savedState.directions?.[direction.id];
+        const legacyTelegaDirection = direction.id === "complex"
+          ? savedState.directions?.telega || archivedDirections.telega
+          : null;
+        const rows = direction.id === "complex"
+          ? mergeDirectionItems(
+            defaultDirection.rows,
+            Array.isArray(legacyTelegaDirection?.rows) ? legacyTelegaDirection.rows : [],
+            Array.isArray(savedDirection?.rows) ? savedDirection.rows : [],
+          )
+          : (Array.isArray(savedDirection?.rows) ? savedDirection.rows : defaultDirection.rows);
+        const materials = direction.id === "complex"
+          ? mergeDirectionItems(
+            defaultDirection.materials,
+            Array.isArray(legacyTelegaDirection?.materials) ? legacyTelegaDirection.materials : [],
+            Array.isArray(savedDirection?.materials) ? savedDirection.materials : [],
+          )
+          : (Array.isArray(savedDirection?.materials) ? savedDirection.materials : defaultDirection.materials);
         return [
           direction.id,
           {
             ...defaultDirection,
             ...(savedDirection && typeof savedDirection === "object" ? savedDirection : {}),
-            rows: hydrateRows(Array.isArray(savedDirection?.rows) ? savedDirection.rows : defaultDirection.rows),
-            materials: Array.isArray(savedDirection?.materials) ? savedDirection.materials : defaultDirection.materials,
+            notes: direction.id === "complex"
+              ? mergeDirectionNotes(
+                mergeDirectionNotes(defaultDirection.notes, savedDirection?.notes),
+                legacyTelegaDirection?.notes,
+              )
+              : (savedDirection?.notes ?? defaultDirection.notes),
+            rows: hydrateRows(rows),
+            materials,
           },
         ];
       }),
