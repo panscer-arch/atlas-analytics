@@ -83,8 +83,17 @@ try {
     await page.getByText("Atlas System: обсуждение развития в [страна/регион]", { exact: true }).waitFor();
     await page.getByText("Официально и проверяемо", { exact: true }).waitFor();
     const firstTemplate = await crm.locator(".template-list details").first().innerText();
-    if (!firstTemplate.includes("менеджер по развитию Atlas System") || !firstTemplate.includes("уполномочен представлять компанию")) {
+    if (!firstTemplate.includes("International Partnerships Executive") || !firstTemplate.includes("уполномочен вести первичные партнёрские переговоры")) {
       throw new Error(`${viewport.name}: the outreach template does not establish the employee's verified role and authority`);
+    }
+    await page.getByText("Одна понятная цепочка ответственности", { exact: true }).waitFor();
+    const partnershipFlow = await crm.locator(".partnership-flow").innerText();
+    for (const role of ["Partnership Research Specialist", "International Partnerships Executive", "Senior International Partnerships Executive", "Head of International Partnerships"]) {
+      if (!partnershipFlow.includes(role)) throw new Error(`${viewport.name}: partnership workflow is missing ${role}`);
+    }
+    const handoff = await crm.locator(".handoff-card").innerText();
+    if (!handoff.includes("Просит особые условия, регион или стратегический статус") || !handoff.includes("Технический, юридический или security-вопрос")) {
+      throw new Error(`${viewport.name}: handoff rules are incomplete`);
     }
     if (viewport.name === "mobile") {
       await crm.locator(".platform-list details").first().locator("summary").click();

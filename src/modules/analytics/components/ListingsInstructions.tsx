@@ -24,6 +24,47 @@ const LEADERS = [
   ["MLM-подрядчики", "CRM, leadgen, дизайн, продакшн и агентства для direct-selling компаний."],
 ];
 
+const PARTNERSHIP_ROLES = [
+  {
+    number: "01",
+    role: "Partnership Research Specialist",
+    title: "Находит и проверяет",
+    action: "Ищет кандидатов в LinkedIn, Facebook, YouTube, X, Telegram и других источниках. Проверяет профиль, страну, аудиторию, контакты и репутационный контекст.",
+    handoff: "Создаёт карточку в CRM и передаёт её International Partnerships Executive.",
+  },
+  {
+    number: "02",
+    role: "International Partnerships Executive",
+    title: "Пишет первым",
+    action: "Отправляет персональное сообщение от имени Atlas, отвечает на первые вопросы и проводит первичную квалификацию. Это основная должность для внешней переписки.",
+    handoff: "Обычный контакт ведёт сам. Заинтересованного сильного лидера передаёт Senior International Partnerships Executive.",
+  },
+  {
+    number: "03",
+    role: "Senior International Partnerships Executive",
+    title: "Ведёт серьёзные переговоры",
+    action: "Проводит углублённый созвон, уточняет рынок, опыт, размер команды, формат сотрудничества и реальные возможности кандидата.",
+    handoff: "Ключевого лидера или запрос на особые условия передаёт Head of International Partnerships.",
+  },
+  {
+    number: "04",
+    role: "Head of International Partnerships",
+    title: "Принимает стратегическое решение",
+    action: "Обсуждает региональный статус, специальные условия, крупные команды и стратегическое партнёрство. При необходимости подключает профильного специалиста Atlas.",
+    handoff: "Возвращает согласованное решение ответственному сотруднику, который фиксирует его и следующий шаг в CRM.",
+  },
+];
+
+const HANDOFF_RULES = [
+  ["Нет ответа", "International Partnerships Executive", "Follow-up на 3–4-й и 7–8-й день. На 14-й день закрыть контакт без давления."],
+  ["Есть интерес, нужны материалы", "International Partnerships Executive", "Отправить только согласованные материалы, назначить дату следующего контакта и сохранить переписку."],
+  ["Готов к созвону или имеет сильную команду", "Senior International Partnerships Executive", "Передать карточку с кратким резюме, ссылками, вопросами лидера и ожидаемым результатом созвона."],
+  ["Просит особые условия, регион или стратегический статус", "Head of International Partnerships", "Не обещать условия самостоятельно. Передать запрос руководителю и дождаться подтверждённого решения."],
+  ["Технический, юридический или security-вопрос", "Профильный специалист через Head", "Не импровизировать. Сохранить вопрос дословно; единым владельцем общения остаётся сотрудник по партнёрствам."],
+];
+
+const TITLES_NOT_TO_USE = ["Executive Director", "Business Connector", "Outreach Manager", "Lead Generation Manager", "MLM Recruiter", "Sales Representative", "Atlas Ambassador"];
+
 const PLATFORM_GUIDES: PlatformGuide[] = [
   { id: "youtube", name: "YouTube", result: "Каналы, ведущие и гости с подтверждаемой аудиторией", steps: [
     "Откройте YouTube и вставьте первый запрос в строку поиска.",
@@ -96,8 +137,8 @@ const AUDIENCE_TEMPLATES: AudienceTemplate[] = [
 ];
 
 const CRM_FIELDS = ["Имя и ссылка", "Страна, город и язык", "Сегмент и текущая роль", "Платформа и поисковый запрос", "Размер аудитории и медиана охвата", "Конкретная причина соответствия", "Email / DM / общий контакт", "Репутационные метки и источники", "Оценка 0–100", "Выбранный оффер", "Ответственный, статус и следующая дата"];
-const AUTHORIZED_ROLE = "менеджер по развитию Atlas System и уполномочен представлять компанию по партнёрским вопросам";
-const EMPLOYEE_SIGNATURE = "[Имя Фамилия]\nМенеджер по развитию Atlas System\nУполномоченный представитель по партнёрствам\nПраво вести переговоры и заключать соглашения — в пределах предоставленных полномочий\n[email@atlas-system.tech]\n[ссылка на профиль сотрудника на сайте Atlas]";
+const AUTHORIZED_ROLE = "International Partnerships Executive в Atlas System и уполномочен вести первичные партнёрские переговоры";
+const EMPLOYEE_SIGNATURE = "[Имя Фамилия]\nInternational Partnerships Executive\nAtlas System\nПервичные партнёрские переговоры и квалификация контактов\n[email@atlas-system.tech]\n[ссылка на подтверждённый профиль сотрудника Atlas]";
 
 function withAuthorizedRole(text: string) {
   return text
@@ -131,14 +172,18 @@ export default function ListingsInstructions() {
 
     <section className="instruction-card"><header><span className="eyebrow">ОЦЕНКА ПРОФИЛЯ</span><h2>Порог принятия решения</h2><p>Оцените профиль до сообщения. Размер аудитории не компенсирует отсутствие соответствия.</p></header><div className="score-list"><div><strong>Релевантность</strong><b>0–25</b><p>MLM, direct selling, Web3, high-risk finance или community building</p></div><div><strong>Живое влияние</strong><b>0–25</b><p>Стабильные просмотры, реакции, ответы и повторяющиеся участники</p></div><div><strong>География</strong><b>0–15</b><p>Нужная страна, язык и подтверждаемая локальная аудитория</p></div><div><strong>Доступ к сообществу</strong><b>0–15</b><p>Команда, группа, канал, клиенты или события — с законным правом контакта</p></div><div><strong>Контактность</strong><b>0–10</b><p>Публичный email, DM, форма, менеджер или общий знакомый</p></div><div><strong>Репутационный контекст</strong><b>0–10</b><p>Метки и жалобы проверены по фактам; сама метка не означает отказ</p></div></div><div className="score-bands"><span><b>75–100</b> написать сегодня</span><span><b>55–74</b> резерв / уточнить</span><span><b>0–54</b> не тратить время</span></div></section>
 
-    <section className="identity-card"><div><span className="eyebrow">КАК ПРЕДСТАВЛЯТЬСЯ</span><h2>Официально и проверяемо</h2><p>В первом сообщении сотрудник сразу обозначает компанию и полномочия. Подпись должна вести на подтверждённый профиль на сайте Atlas.</p></div><div className="signature-box"><div className="template-heading"><span>Подпись сотрудника</span><CopyButton text={EMPLOYEE_SIGNATURE} id="employee-signature" copied={copied} onCopy={copy} /></div><pre>{EMPLOYEE_SIGNATURE}</pre></div></section>
+    <section className="instruction-card partnership-flow"><header><span className="eyebrow">КТО КОМУ ПЕРЕДАЁТ КОНТАКТ</span><h2>Одна понятная цепочка ответственности</h2><p>У карточки всегда один текущий владелец. Передача делается в CRM вместе с контекстом, вопросами лидера и следующим действием.</p></header><div className="partnership-role-flow">{PARTNERSHIP_ROLES.map((item) => <article key={item.role}><span>{item.number}</span><div><b>{item.role}</b><h3>{item.title}</h3><p>{item.action}</p><small><strong>Передача:</strong> {item.handoff}</small></div></article>)}</div></section>
 
-    <section className="instruction-card templates-section"><header><span className="eyebrow">ГОТОВЫЕ ТЕКСТЫ ПО СЕГМЕНТАМ</span><h2>Оффер, первое сообщение и follow-up</h2><p>Во все первые сообщения уже встроена официальная роль менеджера по развитию. Заполните остальные поля в квадратных скобках и используйте только согласованные условия.</p></header><div className="template-list">{AUDIENCE_TEMPLATES.map((template) => <TemplateItem key={template.id} template={template} copied={copied} onCopy={copy} />)}</div></section>
+    <section className="instruction-card handoff-card"><header><span className="eyebrow">КОГДА ПЕРЕДАВАТЬ ДАЛЬШЕ</span><h2>Маршрут по результату разговора</h2><p>Не переносите контакт «на словах»: сначала заполните карточку и только затем смените ответственного.</p></header><div className="handoff-table"><div className="handoff-head"><span>Ситуация</span><span>Кто ведёт дальше</span><span>Что сделать</span></div>{HANDOFF_RULES.map(([situation, owner, action]) => <div key={situation}><strong>{situation}</strong><b>{owner}</b><p>{action}</p></div>)}</div></section>
+
+    <section className="identity-card"><div><span className="eyebrow">КАК ПРЕДСТАВЛЯТЬСЯ</span><h2>Официально и проверяемо</h2><p>Для первого контакта используйте единый титул International Partnerships Executive. Подпись должна вести на подтверждённый профиль сотрудника Atlas.</p></div><div className="signature-box"><div className="template-heading"><span>Подпись сотрудника</span><CopyButton text={EMPLOYEE_SIGNATURE} id="employee-signature" copied={copied} onCopy={copy} /></div><pre>{EMPLOYEE_SIGNATURE}</pre></div><div className="title-warning"><strong>Не использовать как должность сотрудника</strong><p>{TITLES_NOT_TO_USE.join(" · ")}</p></div></section>
+
+    <section className="instruction-card templates-section"><header><span className="eyebrow">ГОТОВЫЕ ТЕКСТЫ ПО СЕГМЕНТАМ</span><h2>Оффер, первое сообщение и follow-up</h2><p>Во все первые сообщения уже встроена официальная роль International Partnerships Executive. Заполните остальные поля в квадратных скобках и используйте только согласованные условия.</p></header><div className="template-list">{AUDIENCE_TEMPLATES.map((template) => <TemplateItem key={template.id} template={template} copied={copied} onCopy={copy} />)}</div></section>
 
     <section className="instruction-card sequence-card"><header><span className="eyebrow">ПОСЛЕДОВАТЕЛЬНОСТЬ КАСАНИЙ</span><h2>Когда писать повторно</h2></header><div className="sequence-grid"><article><b>День 0</b><h3>Первое сообщение</h3><p>Персональная причина + один оффер + просьба разрешить отправить материал.</p></article><article><b>День 3–4</b><h3>Короткий follow-up</h3><p>Уточните формат и предложите одностраничник или сценарий встречи.</p></article><article><b>День 7–8</b><h3>Последняя польза</h3><p>Один материал: схема, on-chain ссылка, тема AMA или план пилота.</p></article><article><b>День 14</b><h3>Закрыть контакт</h3><p>«Если сейчас неактуально, закрою диалог и не буду отвлекать». Затем остановиться.</p></article></div></section>
 
     <section className="context-note"><div><span className="eyebrow">ВНЕШНИЕ МЕТКИ</span><h2>Не исключать автоматически</h2></div><p>Пометка «scam/Ponzi», негативный обзор или конфликт с прежним проектом — повод для углублённой проверки, а не автоматический отказ. Зафиксируйте источник, позицию лидера и подтверждённые действия. Стоп-факторы: доказанный обман, поддельная аудитория, присвоение средств, выдача гарантий, подмена личности или сознательное сокрытие риска.</p></section>
-    <section className="guardrails-card"><div><span className="eyebrow">ПЕРЕД ОТПРАВКОЙ</span><h2>Четыре обязательных правила</h2></div><ul><li>Представляйтесь полностью: имя, «менеджер по развитию Atlas System» и фактические полномочия по партнёрствам.</li><li>Не обещайте «огромный доход», гарантированные выплаты или особые условия без письменного одобрения.</li><li>Не просите передать чужую базу: знакомство и обработка данных — только с согласием контакта.</li><li>Не маскируйте механику: Atlas зависит от дальнейшей активности и притока средств; возможна полная потеря.</li></ul></section>
+    <section className="guardrails-card"><div><span className="eyebrow">ПЕРЕД ОТПРАВКОЙ</span><h2>Четыре обязательных правила</h2></div><ul><li>Представляйтесь полностью: имя, International Partnerships Executive, Atlas System и фактические полномочия.</li><li>Не обещайте «огромный доход», гарантированные выплаты или особые условия без письменного одобрения.</li><li>Не просите передать чужую базу: знакомство и обработка данных — только с согласием контакта.</li><li>Не маскируйте механику: Atlas зависит от дальнейшей активности и притока средств; возможна полная потеря.</li></ul></section>
     <section className="crm-checklist"><div><span className="eyebrow">ПЕРЕД СОХРАНЕНИЕМ</span><h2>Карточка должна быть воспроизводимой</h2></div><div>{CRM_FIELDS.map((item) => <span key={item}>✓ {item}</span>)}</div></section>
   </section>;
 }
