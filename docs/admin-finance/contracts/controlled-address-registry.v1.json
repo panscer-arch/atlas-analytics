@@ -1,0 +1,228 @@
+{
+  "schema": "atlas.admin-finance.controlled-address-registry.v1",
+  "registryVersion": 1,
+  "status": "evidence_ready_owner_approval_pending",
+  "approval": {
+    "approvedForInternalAlphaStaging": false,
+    "approvedAt": null,
+    "approvedBy": null
+  },
+  "network": {
+    "name": "BNB Smart Chain Mainnet",
+    "chainId": 56,
+    "officialReadOnlyRpc": "https://bsc-dataseed.bnbchain.org",
+    "explorer": "https://bscscan.com"
+  },
+  "settlementToken": {
+    "symbol": "USDT",
+    "standard": "BEP-20",
+    "decimals": 18,
+    "address": "0x55d398326f99059fF775485246999027B3197955"
+  },
+  "sharedPosition": {
+    "tokenId": "6928212",
+    "positionManager": "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+    "owner": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+    "tokenApproval": "0x0000000000000000000000000000000000000000",
+    "operatorApprovalVerifiedFor": [
+      "lockup-flow",
+      "daily-flow-v2",
+      "daily-flow-v1-legacy",
+      "transport"
+    ]
+  },
+  "administrativeAddresses": [
+    {
+      "id": "atlas-safe",
+      "role": "contract_owner_and_lp_nft_owner",
+      "address": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+      "accountType": "safe_contract",
+      "threshold": 2,
+      "ownersCount": 3
+    },
+    {
+      "id": "company-treasury",
+      "role": "platform_fee_receiver",
+      "address": "0x20Cdf9839faC80cCDC38CE74D41bD55A93DD87F2",
+      "accountType": "externally_owned_account"
+    },
+    {
+      "id": "distribute-owner",
+      "role": "distribute_administrator",
+      "address": "0x4c7445C39ee62d3F798f9Fd6a61e9399E3dc8Fae",
+      "accountType": "externally_owned_account"
+    }
+  ],
+  "contracts": [
+    {
+      "id": "lockup-flow",
+      "name": "Lockup Flow",
+      "kind": "user_cycle",
+      "lifecycle": "active",
+      "address": "0x8F6daC6F25A5038112E1A01f1cBBD682e4D64889",
+      "includedInAlphaAllowlist": true,
+      "implementationSource": "AuditV5/PancakeVault V5/LockupFlow.sol",
+      "runtimeCodeHash": "0x8930feb692299be713ce28b0b23c6d5242c1daae6a534b51d354a3cb89d9e824",
+      "owner": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "treasury": "0x20Cdf9839faC80cCDC38CE74D41bD55A93DD87F2",
+      "platformFeeRaw": "1000000000000000000000000",
+      "platformFeePrecision": "10000000000000000000000000",
+      "platformFeeBps": 1000,
+      "tokenId": "6928212",
+      "nextOrderIdAtEvidenceBlock": "1017"
+    },
+    {
+      "id": "daily-flow-v2",
+      "name": "Daily Flow V2",
+      "kind": "user_cycle",
+      "lifecycle": "pending_activation",
+      "address": "0x8e61483d45a822cCB59482c47e1b6D28465605EC",
+      "includedInAlphaAllowlist": true,
+      "implementationSource": "AuditV5/PancakeVault V5/DailyFlowV2.sol",
+      "runtimeCodeHash": "0x6d9bcc29c4dc701264b1c731d417e2771ded033c3b95d0436419c336f346f521",
+      "owner": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "treasury": "0x20Cdf9839faC80cCDC38CE74D41bD55A93DD87F2",
+      "platformFeeRaw": "1000000000000000000000000",
+      "platformFeePrecision": "10000000000000000000000000",
+      "platformFeeBps": 1000,
+      "tokenId": "6928212",
+      "nextOrderIdAtEvidenceBlock": "0"
+    },
+    {
+      "id": "daily-flow-v1-legacy",
+      "name": "Daily Flow V1 Legacy",
+      "kind": "user_cycle",
+      "lifecycle": "legacy",
+      "address": "0x8F418e29a32AAB69Abf3DA742c43E7aDfBFbA3c3",
+      "includedInAlphaAllowlist": true,
+      "implementationSource": "AuditV5/PancakeVault V5/DailyFlow.sol",
+      "runtimeCodeHash": "0x5c2d1bc0e495c8b388668da6badd0a085b349920af6317d94aa349c3d1f8aff9",
+      "owner": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "treasury": "0x20Cdf9839faC80cCDC38CE74D41bD55A93DD87F2",
+      "platformFeeRaw": "1000000000000000000000000",
+      "platformFeePrecision": "10000000000000000000000000",
+      "platformFeeBps": 1000,
+      "tokenId": "6928212",
+      "nextOrderIdAtEvidenceBlock": "216"
+    },
+    {
+      "id": "transport",
+      "name": "Transport",
+      "kind": "partner_payout_service",
+      "lifecycle": "active",
+      "address": "0x5a71807861dBFc41aB016271C3191bF96322D42e",
+      "includedInAlphaAllowlist": true,
+      "implementationSource": "AuditV5/PancakeVault V5/Transport.sol",
+      "runtimeCodeHash": "0x1fb2c651926d9c7aa27b66b36441ae6c0b633c927955211c6435c91d8dc30720",
+      "owner": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "treasury": "0x20Cdf9839faC80cCDC38CE74D41bD55A93DD87F2",
+      "platformFeeRaw": "0",
+      "platformFeePrecision": "10000000000000000000000000",
+      "platformFeeBps": 0,
+      "tokenId": "6928212"
+    },
+    {
+      "id": "distribute",
+      "name": "Distribute",
+      "kind": "partner_payout_service",
+      "lifecycle": "active",
+      "address": "0xEF156690b98AEc4F805Ec820268B9092bd83B76f",
+      "includedInAlphaAllowlist": true,
+      "implementationSource": "AuditV5/PancakeVault V5/Distrib.sol",
+      "runtimeCodeHash": "0x1c3109f7c7d1491ab5f9e97a3c24be4e41c85030d2185a61bae40d1b373c8338",
+      "owner": "0x4c7445C39ee62d3F798f9Fd6a61e9399E3dc8Fae",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "treasury": "0x20Cdf9839faC80cCDC38CE74D41bD55A93DD87F2",
+      "platformFeeRaw": "1000000000000000000000000",
+      "platformFeePrecision": "10000000000000000000000000",
+      "platformFeeBps": 1000,
+      "settlementToken": "0x55d398326f99059fF775485246999027B3197955"
+    }
+  ],
+  "externalInfrastructure": [
+    {
+      "id": "pancake-v3-factory",
+      "address": "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
+      "controlledByAtlas": false
+    },
+    {
+      "id": "pancake-v3-position-manager",
+      "address": "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
+      "controlledByAtlas": false
+    },
+    {
+      "id": "pancake-v3-pool-from-audit-spec",
+      "address": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+      "controlledByAtlas": false
+    }
+  ],
+  "evidence": {
+    "auditArchive": {
+      "filename": "AuditV5.zip",
+      "sha256": "82cdd165a4e6344ab567f2772393bd4e3baffead5b5fc0fa57be3a1a8c5fcc0e",
+      "containsDeploymentRegistry": false,
+      "use": "implementation_sources_abis_and_specs"
+    },
+    "officialRegistryPdf": {
+      "url": "https://atlas-system.io/wp-content/uploads/2026/07/atlas-contract-registry-page-en.pdf",
+      "publishedAt": "2026-07-22",
+      "retrievedAt": "2026-08-06T19:12:00.000Z",
+      "sha256": "9f25160e1fa0fbd277f41d62dcd947c7c82d67d78ca70d815c7094059d56d649"
+    },
+    "publicProvider": {
+      "flowsUrl": "https://supersussystem.com/api/contracts/atlas-flows",
+      "balancesUrl": "https://supersussystem.com/api/contracts/atlas-balances",
+      "observedAt": "2026-08-06T19:19:28.610Z"
+    },
+    "independentRpc": {
+      "rpc": "https://bsc-dataseed.bnbchain.org",
+      "blockNumber": 114407352,
+      "blockHash": "0x65b5dcebce99b0103ce6cd52c9c61c113f04301cbf0d5d76446afc258b2bedf8",
+      "blockTimestamp": "2026-08-06T19:15:58.000Z",
+      "checks": [
+        "runtime_code_exists",
+        "owner",
+        "pending_owner",
+        "treasury",
+        "platform_fee",
+        "token_id",
+        "next_order_id",
+        "lp_nft_owner",
+        "lp_nft_operator_approvals"
+      ]
+    }
+  },
+  "knownDrift": [
+    {
+      "id": "daily-flow-owner-after-pdf-publication",
+      "severity": "review",
+      "status": "observed",
+      "field": "daily-flow-v2.owner",
+      "officialPdfValue": "0x7709e4eDcC55714F83027EF39062d7f9761273B6",
+      "onchainValue": "0xB0E4699710f98BB13fDaAB887a5D821eDb5DB559",
+      "interpretation": "Ownership moved to the Atlas 2-of-3 SAFE after the PDF publication date. The current on-chain value is authoritative for runtime monitoring."
+    },
+    {
+      "id": "daily-flow-v2-activation-cutover",
+      "severity": "blocking_for_canonical_history",
+      "status": "unresolved",
+      "field": "daily-flow-v2.lifecycle",
+      "officialPdfValue": "current_user_contract",
+      "publicProviderValue": "pending_activation",
+      "onchainObservation": "nextOrderId=0 at block 114407352; Daily V1 nextOrderId=216",
+      "interpretation": "Daily V1 and V2 must remain separate until the effective activation block and historical perimeter are approved."
+    }
+  ],
+  "unresolved": [
+    "Owner approval of this registry for Internal Alpha staging",
+    "Daily V2 activation block and Daily V1 historical end block",
+    "Deployment block and transaction for each contract",
+    "Reproducible source-to-runtime-bytecode build comparison",
+    "Public or private Dune dashboard URL, query IDs, and API access policy",
+    "Finance perimeter decision for company treasury and partner payout service balances"
+  ]
+}

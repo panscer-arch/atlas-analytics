@@ -37,3 +37,16 @@
 - Какие вкладки, доски и страницы добавлены.
 - Что было задеплоено и по какому URL проверено.
 - Незавершенные задачи пользователя и следующий конкретный шаг.
+
+## Atlas Admin Finance
+
+Перед любой работой с `/admin/*`, `src/modules/admin-finance`,
+`server/admin-finance*` или `docs/admin-finance` обязательно прочитай:
+
+1. `docs/admin-finance/project-memory/START-HERE.md`
+2. `docs/admin-finance/project-memory/CURRENT-STATE.md`
+3. `docs/admin-finance/project-memory/MVP-PLAN.md`
+
+После изменения объёма, бизнес-правил, источников, статуса запуска или следующего
+шага обнови эти документы в том же изменении. Demo/fixture нельзя называть live,
+а успешную сборку нельзя называть production-запуском.

@@ -1,0 +1,74 @@
+name: atlas-admin-finance-staging
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/admin-finance-staging/Dockerfile
+      target: api
+    environment:
+      ATLAS_ADMIN_FINANCE_MODE: alpha
+      ATLAS_ADMIN_FINANCE_AUTH_MODE: session
+      ATLAS_ADMIN_FINANCE_HOST: 0.0.0.0
+      ATLAS_ADMIN_FINANCE_PORT: 8791
+      ATLAS_ADMIN_FINANCE_ALLOWED_ORIGINS: ${ATLAS_ADMIN_FINANCE_STAGING_ORIGIN:?required}
+      ATLAS_ADMIN_FINANCE_CURSOR_SECRET: ${ATLAS_ADMIN_FINANCE_CURSOR_SECRET:?required}
+      ATLAS_ADMIN_FINANCE_SESSION_TOKEN: ${ATLAS_ADMIN_FINANCE_SESSION_TOKEN:?required}
+      ATLAS_ADMIN_FINANCE_FLOW_URL: ${ATLAS_ADMIN_FINANCE_FLOW_URL:-https://supersussystem.com/api/contracts/atlas-flows}
+      ATLAS_ADMIN_FINANCE_BALANCE_URL: ${ATLAS_ADMIN_FINANCE_BALANCE_URL:-https://supersussystem.com/api/contracts/atlas-balances}
+      ATLAS_ADMIN_FINANCE_PROVIDER_HOSTS: ${ATLAS_ADMIN_FINANCE_PROVIDER_HOSTS:-supersussystem.com}
+      ATLAS_ADMIN_FINANCE_RPC_URL: ${ATLAS_ADMIN_FINANCE_RPC_URL:?required}
+      ATLAS_ADMIN_FINANCE_RPC_HOSTS: ${ATLAS_ADMIN_FINANCE_RPC_HOSTS:?required}
+      ATLAS_ADMIN_FINANCE_CONTRACT_ADDRESSES: ${ATLAS_ADMIN_FINANCE_CONTRACT_ADDRESSES:?required}
+      ATLAS_ADMIN_FINANCE_MIN_CONFIRMATIONS: ${ATLAS_ADMIN_FINANCE_MIN_CONFIRMATIONS:-12}
+      # Notification runtime is not part of staging until PostgreSQL migration,
+      # restore drill and channel security review are complete.
+      ATLAS_ADMIN_FINANCE_NOTIFICATIONS_ENABLED: "false"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8791/api/admin/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks: [backend]
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/admin-finance-staging/Dockerfile
+      target: web
+      args:
+        VITE_ADMIN_FINANCE_DATA_SOURCE: api
+        VITE_ADMIN_FINANCE_RELEASE_SCOPE: mvp
+    environment:
+      ATLAS_ADMIN_FINANCE_SESSION_TOKEN: ${ATLAS_ADMIN_FINANCE_SESSION_TOKEN:?required}
+    user: "101:101"
+    ports:
+      - ${ATLAS_ADMIN_FINANCE_STAGING_BIND:-127.0.0.1}:${ATLAS_ADMIN_FINANCE_STAGING_PORT:-8088}:8080
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=101,gid=101,mode=1777
+      - /etc/nginx/conf.d:size=1m,uid=101,gid=101,mode=0755
+      - /var/cache/nginx:size=16m,uid=101,gid=101,mode=0755
+      - /var/run:size=1m,uid=101,gid=101,mode=0755
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend
+
+networks:
+  backend: {}

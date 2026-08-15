@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "admin-finance-schema-v1",
+  "status": "prepared_not_applied",
+  "artifactKind": "baseline",
+  "sourceApplyAllowed": false,
+  "source": "docs/admin-finance/data-model/001_admin_finance_schema.sql",
+  "sha256": "2d7c7fdda8dfcf0412f8536810971c27426e2e632ce80c3da6dfb4368f8fc332",
+  "bytes": 54427,
+  "expectedTableCount": 47,
+  "requires": [
+    "PostgreSQL 16+",
+    "pgcrypto extension",
+    "dedicated migration role",
+    "pre-migration custom-format backup",
+    "tested restore target"
+  ],
+  "notificationRuntime": {
+    "enabledAfterMigration": false,
+    "activationGate": "restore drill + RBAC + channel security review"
+  },
+  "restoreDrill": {
+    "requiresEmptyTarget": true,
+    "requiresDistinctTarget": true,
+    "requiresVerifiedTls": true,
+    "sourceMutationAllowed": false
+  }
+}
