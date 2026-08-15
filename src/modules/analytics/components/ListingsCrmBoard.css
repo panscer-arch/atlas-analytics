@@ -197,6 +197,37 @@ tbody tr:hover { background: #fafbff; }
 .category-partnerships { background: #eaf7f7; color: #287b80; }
 .category-other { background: #f0f1f3; color: #6f747e; }
 
+.contacts-workspace { display: grid; gap: 14px; }
+.contact-category-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+}
+.contact-category {
+  min-width: 0; min-height: 72px; padding: 13px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--panel);
+  color: #5f6570; text-align: left;
+}
+.contact-category:hover { border-color: #cbd1f1; background: #fafbff; }
+.contact-category.active { border-color: var(--blue); background: var(--blue-soft); color: #3542a4; box-shadow: inset 0 0 0 1px var(--blue); }
+.contact-category span { min-width: 0; font-size: 12px; font-weight: 700; line-height: 1.35; }
+.contact-category strong { flex: 0 0 auto; font-size: 21px; letter-spacing: -.04em; }
+.contacts-table { min-width: 1040px; }
+.networker-category {
+  display: inline-flex; min-height: 28px; align-items: center; padding: 5px 9px;
+  border-radius: 7px; background: #f0f1f4; color: #555b66;
+  font-size: 11px; font-weight: 750; line-height: 1.25;
+}
+.networker-mlmLeader { background: #f1edff; color: #7052c7; }
+.networker-directSelling { background: #edf2ff; color: #4263c7; }
+.networker-connector { background: #eaf7f7; color: #287b80; }
+.networker-mentor { background: #fff5d9; color: #8a6100; }
+.networker-community { background: #eef8f4; color: #25875d; }
+.networker-facebook { background: #eef3ff; color: #315bc7; }
+.networker-digital { background: #fff0f5; color: #b84770; }
+.contact-source, .contact-channel, .contact-priority { display: block; }
+.contact-source { font-size: 12px; }
+.contact-channel, .contact-priority { margin-top: 4px; color: var(--muted); font-size: 10px; }
+
 .drawer-backdrop {
   position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end;
   background: rgba(25,28,34,.35);
@@ -443,6 +474,7 @@ tbody tr:hover { background: #fafbff; }
   .nav-item b { display: none; }
   .sidebar-foot { justify-content: center; }
   .metrics { grid-template-columns: 1fr 1fr; }
+  .contact-category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 700px) {
@@ -453,9 +485,9 @@ tbody tr:hover { background: #fafbff; }
     padding: 7px; border: 0; border-top: 1px solid var(--line);
   }
   .brand, .nav-caption, .sidebar-foot { display: none; }
-  nav { display: flex; justify-content: space-around; }
-  .nav-item { width: 48px; }
-  .nav-item:nth-of-type(n+5) { display: none; }
+  nav { display: flex; justify-content: flex-start; gap: 3px; overflow-x: auto; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-item { width: 48px; flex: 0 0 48px; }
   .workspace { padding: 0 13px 78px; }
   .topbar { min-height: 84px; align-items: flex-start; padding-top: 17px; }
   .topbar h1 { font-size: 21px; }
@@ -465,7 +497,25 @@ tbody tr:hover { background: #fafbff; }
   .metrics article { min-height: 92px; padding: 14px; }
   .board-head { align-items: stretch; flex-direction: column; }
   .filters { width: 100%; }
+  .contacts-board .filters { display: grid; grid-template-columns: 1fr; }
   .search { width: auto; flex: 1; }
+  .contact-category-grid {
+    display: flex; gap: 7px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin;
+  }
+  .contact-category { min-width: 160px; min-height: 62px; }
+  .contacts-board .table-wrap { overflow: visible; }
+  .contacts-table { min-width: 0; }
+  .contacts-table thead { display: none; }
+  .contacts-table tbody, .contacts-table tr, .contacts-table td { display: block; width: 100%; }
+  .contacts-table tr { position: relative; padding: 10px 48px 10px 14px; border-top: 1px solid #eef0f2; }
+  .contacts-table td { padding: 9px 0; border: 0; }
+  .contacts-table td::before {
+    display: block; margin-bottom: 6px; color: #969ba5;
+    content: attr(data-label); font-size: 9px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase;
+  }
+  .contacts-table .contact-open { position: absolute; top: 50%; right: 12px; width: 32px; padding: 0; transform: translateY(-50%); }
+  .contacts-table .contact-open::before { display: none; }
+  .contacts-table .action-text { max-width: none; overflow: visible; white-space: normal; }
   .form-grid { grid-template-columns: 1fr; }
   .form-grid label.wide { grid-column: auto; }
   .drawer { padding: 21px 17px 28px; }

@@ -52,11 +52,11 @@ async function call(handler, method, pathname, body, headers = {}) {
 }
 
 try {
-  const deniedHandler = await createListingsCrmRequestHandler({ storeDir: path.join(root, "denied"), legacyFilePath, authorize: async () => false, connectionString: "" });
+  const deniedHandler = await createListingsCrmRequestHandler({ storeDir: path.join(root, "denied"), legacyFilePath, contactSeedFilePath: "", authorize: async () => false, connectionString: "" });
   const denied = await call(deniedHandler, "GET", "/api/listings-crm/bootstrap");
   assert.equal(denied.status, 401, "every CRM route must require the marketing session callback");
 
-  const handler = await createListingsCrmRequestHandler({ storeDir, legacyFilePath, authorize: async () => true, connectionString: "" });
+  const handler = await createListingsCrmRequestHandler({ storeDir, legacyFilePath, contactSeedFilePath: "", authorize: async () => true, connectionString: "" });
   const bootstrap = await call(handler, "GET", "/api/listings-crm/bootstrap");
   assert.equal(bootstrap.status, 200);
   assert.equal(bootstrap.body.members.length, 5, "three active and two reserve members are seeded");
@@ -250,11 +250,22 @@ try {
   const bundledLegacy = JSON.parse(await readFile(bundledLegacyPath, "utf8"));
   const bundledHandler = await createListingsCrmRequestHandler({
     storeDir: path.join(root, "bundled-store"), legacyFilePath: bundledLegacyPath,
-    authorize: async () => true, connectionString: "",
+    contactSeedFilePath: "", authorize: async () => true, connectionString: "",
   });
   const bundledBootstrap = await call(bundledHandler, "GET", "/api/marketing/listings-crm/bootstrap");
   assert.equal(bundledBootstrap.status, 200);
   assert.equal(bundledBootstrap.body.records.length, bundledLegacy.records.length, "the complete bundled legacy CRM imports without dropping records");
+  const contactSeedPath = path.resolve("server/listings-crm/listings-contact-seeds.json");
+  const contactSeeds = JSON.parse(await readFile(contactSeedPath, "utf8"));
+  const contactSeedHandler = await createListingsCrmRequestHandler({
+    storeDir: path.join(root, "contact-seed-store"), legacyFilePath,
+    contactSeedFilePath: contactSeedPath, authorize: async () => true, connectionString: "",
+  });
+  const contactSeedBootstrap = await call(contactSeedHandler, "GET", "/api/marketing/listings-crm/bootstrap");
+  assert.equal(contactSeedBootstrap.body.records.length, 4 + contactSeeds.records.length, "the curated contact registry is merged into an existing listings base");
+  assert.ok(contactSeedBootstrap.body.records.some((record) => record.id === "contact-br-caio-carneiro"), "the Brazil contact seed is available in Listings CRM");
+  const repeatedContactSeedBootstrap = await call(contactSeedHandler, "GET", "/api/marketing/listings-crm/bootstrap");
+  assert.equal(repeatedContactSeedBootstrap.body.records.length, contactSeedBootstrap.body.records.length, "contact seed import is idempotent");
   const sql = await readFile(path.resolve("server/listings-crm/001_listings_crm.sql"), "utf8");
   assert.match(sql, /dedupe_key/, "PostgreSQL uniqueness follows the same record-level dedupe key as the API");
   assert.doesNotMatch(sql, /ON atlas_crm_records \(canonical_domain\)/, "PostgreSQL never collapses distinct social profiles to one hostname");
