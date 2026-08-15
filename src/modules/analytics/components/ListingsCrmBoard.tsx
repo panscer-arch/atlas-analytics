@@ -145,12 +145,12 @@ function ListingsCrmWorkspace() {
       .filter((record) => !needle || [record.name, record.source, record.type, record.status, record.action].join(" ").toLowerCase().includes(needle))
       .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
   }, [data.records, query]);
-  const draftTaskOwnerId = draft
-    ? activeTasks.find((task) => task.recordId === draft.id && task.assigneeId)?.assigneeId || null
-    : null;
+  const draftTaskOwnerIds = draft
+    ? [...new Set(activeTasks.filter((task) => task.recordId === draft.id && task.assigneeId).map((task) => task.assigneeId as string))]
+    : [];
   const canEditDraft = Boolean(draft && (canCoordinate || (
     (!draft.ownerId || draft.ownerId === currentMemberId)
-    && (!draftTaskOwnerId || draftTaskOwnerId === currentMemberId)
+    && (draftTaskOwnerIds.length === 0 || (draftTaskOwnerIds.length === 1 && draftTaskOwnerIds[0] === currentMemberId))
   )));
 
   const chooseMember = (id: string) => {

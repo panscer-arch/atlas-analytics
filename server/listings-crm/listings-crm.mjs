@@ -322,7 +322,7 @@ async function createPostgresRepository(connectionString, legacyFilePath) {
       await client.query("INSERT INTO atlas_crm_members (id, data, updated_at) VALUES ($1, $2::jsonb, $3)", [member.id, JSON.stringify(member), member.updatedAt]);
     }
     for (const record of state.records) {
-      await client.query("INSERT INTO atlas_crm_records (id, canonical_domain, data, updated_at) VALUES ($1, $2, $3::jsonb, $4)", [record.id, record.dedupeKey || null, JSON.stringify(record), record.updatedAt]);
+      await client.query("INSERT INTO atlas_crm_records (id, dedupe_key, data, updated_at) VALUES ($1, $2, $3::jsonb, $4)", [record.id, record.dedupeKey || null, JSON.stringify(record), record.updatedAt]);
     }
     for (const task of state.tasks) {
       await client.query("INSERT INTO atlas_crm_tasks (id, plan_date, record_id, data, updated_at) VALUES ($1, $2, $3, $4::jsonb, $5)", [task.id, task.planDate, task.recordId || null, JSON.stringify(task), task.updatedAt]);
@@ -467,7 +467,7 @@ function assertRecordAccess(state, record, actor) {
   const activeAssignees = new Set(state.tasks
     .filter((task) => task.recordId === record.id && task.assigneeId && !["DONE", "CANCELLED"].includes(task.status))
     .map((task) => task.assigneeId));
-  if (activeAssignees.size && !activeAssignees.has(actor.id)) {
+  if (activeAssignees.size > 1 || (activeAssignees.size === 1 && !activeAssignees.has(actor.id))) {
     throw Object.assign(new Error("record_task_owner_forbidden"), { status: 403 });
   }
 }
@@ -525,8 +525,8 @@ function eligibleRecords(state, date) {
   });
 }
 
-function selectRecordForTemplate(records, template, used, activeWorkKeys) {
-  const available = (record) => !used.has(record.id) && !activeWorkKeys.has(`${record.id}:${template.kind}`);
+function selectRecordForTemplate(records, template, used, activeRecordIds) {
+  const available = (record) => !used.has(record.id) && !activeRecordIds.has(record.id);
   if (template.kind.startsWith("LISTING_")) return records.find((record) => available(record) && classifyRecord(record) === template.kind) || null;
   if (template.kind === "FOLLOW_UP") return records.find((record) => available(record) && /ожида|жд[её]м|follow/i.test(`${record.status} ${record.action}`)) || null;
   if (template.kind === "QA") return records.find((record) => available(record) && record.dueDate) || null;
@@ -538,9 +538,9 @@ function generateDailyPlan(state, date, actorMemberId) {
   if (!activeMembers.length) throw Object.assign(new Error("no_active_members"), { status: 409 });
   const records = eligibleRecords(state, date);
   const used = new Set();
-  const activeWorkKeys = new Set(state.tasks
+  const activeRecordIds = new Set(state.tasks
     .filter((task) => task.recordId && !["DONE", "CANCELLED"].includes(task.status))
-    .map((task) => `${task.recordId}:${task.kind}`));
+    .map((task) => task.recordId));
   const load = new Map(activeMembers.map((member) => [member.id, state.tasks.filter((task) => task.planDate === date && task.assigneeId === member.id && !["DONE", "CANCELLED"].includes(task.status)).reduce((sum, task) => sum + task.points, 0)]));
   const created = [];
   const timestamp = nowIso();
@@ -549,7 +549,7 @@ function generateDailyPlan(state, date, actorMemberId) {
     const key = `${date}:${template.key}`;
     const existing = state.tasks.find((task) => task.planKey === key);
     if (existing) continue;
-    const record = selectRecordForTemplate(records, template, used, activeWorkKeys);
+    const record = selectRecordForTemplate(records, template, used, activeRecordIds);
     if (record) used.add(record.id);
     const assignee = [...activeMembers]
       .filter((member) => (load.get(member.id) || 0) + template.points <= member.capacityPoints)
@@ -564,7 +564,7 @@ function generateDailyPlan(state, date, actorMemberId) {
     };
     if (assignee) load.set(assignee.id, (load.get(assignee.id) || 0) + template.points);
     state.tasks.push(task);
-    if (record) activeWorkKeys.add(`${record.id}:${template.kind}`);
+    if (record) activeRecordIds.add(record.id);
     state.audit.push(createAudit("task", task.id, "PLAN_CREATE", actorMemberId, null, task));
     created.push(task);
   }

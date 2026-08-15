@@ -6,14 +6,16 @@ CREATE TABLE IF NOT EXISTS atlas_crm_members (
 
 CREATE TABLE IF NOT EXISTS atlas_crm_records (
   id text PRIMARY KEY,
-  canonical_domain text NULL,
+  dedupe_key text NULL,
   data jsonb NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS atlas_crm_records_domain_unique
-  ON atlas_crm_records (canonical_domain)
-  WHERE canonical_domain IS NOT NULL AND canonical_domain <> '';
+ALTER TABLE atlas_crm_records ADD COLUMN IF NOT EXISTS dedupe_key text NULL;
+DROP INDEX IF EXISTS atlas_crm_records_domain_unique;
+CREATE UNIQUE INDEX IF NOT EXISTS atlas_crm_records_dedupe_key_unique
+  ON atlas_crm_records (dedupe_key)
+  WHERE dedupe_key IS NOT NULL AND dedupe_key <> '';
 
 CREATE TABLE IF NOT EXISTS atlas_crm_tasks (
   id text PRIMARY KEY,

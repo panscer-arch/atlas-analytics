@@ -212,6 +212,9 @@ try {
   const bundledBootstrap = await call(bundledHandler, "GET", "/api/marketing/listings-crm/bootstrap");
   assert.equal(bundledBootstrap.status, 200);
   assert.equal(bundledBootstrap.body.records.length, bundledLegacy.records.length, "the complete bundled legacy CRM imports without dropping records");
+  const sql = await readFile(path.resolve("server/listings-crm/001_listings_crm.sql"), "utf8");
+  assert.match(sql, /dedupe_key/, "PostgreSQL uniqueness follows the same record-level dedupe key as the API");
+  assert.doesNotMatch(sql, /ON atlas_crm_records \(canonical_domain\)/, "PostgreSQL never collapses distinct social profiles to one hostname");
   console.log("Listings Team CRM verification passed.");
 } finally {
   await rm(root, { recursive: true, force: true });
