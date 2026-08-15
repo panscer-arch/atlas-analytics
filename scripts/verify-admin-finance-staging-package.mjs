@@ -4,9 +4,10 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const read = (name) => readFile(resolve(root, "deploy/admin-finance-staging", name), "utf8");
-const [dockerfile, compose, nginx, hostNginx, example, viteConfig] = await Promise.all([
+const [dockerfile, compose, forecastCompose, nginx, hostNginx, example, viteConfig] = await Promise.all([
   read("Dockerfile"),
   read("compose.yaml"),
+  read("compose.forecast.yaml"),
   read("nginx.conf.template"),
   read("host-nginx.basic-auth.conf.template"),
   read(".env.example"),
@@ -29,9 +30,14 @@ assert(dockerfile.includes("nginxinc/nginx-unprivileged:1.27.4-alpine"));
 assert(!compose.includes("oauth2-proxy"));
 assert(compose.includes("ATLAS_ADMIN_FINANCE_AUTH_MODE: session"));
 assert(compose.includes('ATLAS_ADMIN_FINANCE_NOTIFICATIONS_ENABLED: "false"'));
+assert(!compose.includes("ATLAS_ADMIN_FINANCE_FORECAST_ENABLED"));
 assert(!compose.includes("ATLAS_ADMIN_FINANCE_TELEGRAM_TOKEN"));
 assert(!compose.includes("ATLAS_ADMIN_FINANCE_EMAIL_API_KEY"));
 assert(!compose.includes("ATLAS_ADMIN_FINANCE_MODE: demo"));
+assert(forecastCompose.includes('ATLAS_ADMIN_FINANCE_FORECAST_ENABLED: "true"'));
+assert(forecastCompose.includes("ATLAS_ADMIN_FINANCE_DATABASE_CA_HOST_FILE:?required"));
+assert(forecastCompose.includes("/run/secrets/admin-finance-postgres-ca.pem:ro"));
+assert(!forecastCompose.includes("ATLAS_ADMIN_FINANCE_NOTIFICATIONS_ENABLED"));
 assert(compose.includes("ATLAS_ADMIN_FINANCE_SESSION_TOKEN: ${ATLAS_ADMIN_FINANCE_SESSION_TOKEN:?required}"));
 assert(compose.includes("${ATLAS_ADMIN_FINANCE_STAGING_BIND:-127.0.0.1}"));
 assert(compose.includes("/tmp:size=16m,uid=101,gid=101,mode=1777"));

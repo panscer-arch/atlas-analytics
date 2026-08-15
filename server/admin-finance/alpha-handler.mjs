@@ -5,6 +5,7 @@ const MAX_RANGE_MS = 366 * 24 * 60 * 60 * 1000;
 const PERIMETERS = new Set(["payout_contract", "atlas_consolidated", "company_treasury"]);
 const CLAIM_STATUSES = new Set(["eligible", "requested", "pending", "failed", "paid", "reversed", "expired"]);
 const EXCEPTION_STATUSES = new Set(["open", "acknowledged", "resolved", "accepted"]);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class AlphaApiProblem extends Error {
   constructor(status, code, title, detail = title) {
@@ -171,7 +172,7 @@ function gateOwner(gateZeroDecisions, gateId) {
   return gate?.owner && gate.owner !== "unassigned" ? gate.owner : "Не назначен";
 }
 
-function buildDataCoverage(snapshot, gateZeroDecisions) {
+function buildDataCoverage(snapshot, gateZeroDecisions, forecastConfigured = false) {
   const hasCanonicalLiquidity = snapshot.liquidity?.summary?.canonicalClosing?.available !== false;
   const shared = (gateId) => ({ gateId, owner: gateOwner(gateZeroDecisions, gateId) });
   return [
@@ -220,11 +221,15 @@ function buildDataCoverage(snapshot, gateZeroDecisions) {
     {
       id: "payout_forecast",
       label: "Cash forecast и funding gap",
-      status: "unavailable",
-      source: "N/A",
+      status: forecastConfigured ? "partial" : "unavailable",
+      source: forecastConfigured ? "Quarantined provider + independent RPC + PostgreSQL guard" : "N/A",
       affectsRoutes: ["forecast", "risks"],
-      blocker: "Нет maturity buckets, payout components, reserve policy и claim-delay model.",
-      nextAction: "Закрыть входные данные и утвердить reserve/scenario policy до расчёта cash ladder.",
+      blocker: forecastConfigured
+        ? "Forecast runtime не считается reconciled до контрольной сверки bucket items с event/receipt/transfer."
+        : "Нет maturity buckets, payout components, reserve policy и claim-delay model.",
+      nextAction: forecastConfigured
+        ? "Сверить минимум 10 bucket items и выполнить PostgreSQL restore drill."
+        : "Закрыть входные данные и утвердить reserve/scenario policy до расчёта cash ladder.",
       ...shared("G0-08"),
     },
     {
@@ -260,20 +265,95 @@ export function isAlphaPath(pathname) {
     || pathname === `${BASE_PATH}/reconciliation/runs`
     || pathname === `${BASE_PATH}/reconciliation/exceptions`
     || pathname === `${BASE_PATH}/methodology/gate0`
+    || pathname === `${BASE_PATH}/forecast/snapshots/latest`
+    || pathname === `${BASE_PATH}/forecast/buckets`
     || pathname.startsWith(`${BASE_PATH}/claims/`)
+    || pathname.startsWith(`${BASE_PATH}/forecast/snapshots/`)
     || pathname.startsWith(`${BASE_PATH}/reconciliation/exceptions/`);
 }
 
-export function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions = []) {
+function forecastMeta(projection, requestId, range = null) {
+  const snapshot = projection.snapshot;
+  return {
+    perimeter: snapshot.perimeter,
+    currency: snapshot.openingLiquidity.symbol,
+    from: range?.from || snapshot.asOf,
+    to: range?.to || snapshot.horizonEnd,
+    asOfBlockNumber: snapshot.asOfBlockNumber,
+    asOfBlockHash: snapshot.asOfBlockHash,
+    finality: "finalized",
+    freshnessSeconds: Math.max(0, Math.floor((Date.now() - Date.parse(snapshot.generatedAt)) / 1000)),
+    partial: true,
+    partialReasons: ["forecast_quarantine_validated_not_ledger_reconciled"],
+    sourceStatus: projection.source?.status || "partial",
+    formulaVersion: snapshot.modelVersion,
+    rulesetVersion: snapshot.reservePolicyVersion,
+    reconciliationStatus: "unreconciled",
+    requestId,
+    generatedAt: snapshot.generatedAt,
+  };
+}
+
+async function loadForecastProjection(forecastRuntime) {
+  if (!forecastRuntime) {
+    problem(503, "forecast_runtime_disabled", "Forecast runtime is disabled", "R1.1 forecast remains fail closed until its PostgreSQL and provider inputs are configured.");
+  }
+  try {
+    return await forecastRuntime.getProjection();
+  } catch {
+    problem(503, "forecast_source_unavailable", "Forecast source unavailable", "The forecast payload could not be independently verified and committed.");
+  }
+}
+
+async function handleAlphaForecastGet(url, requestId, forecastRuntime) {
   const path = url.pathname;
+  const projection = await loadForecastProjection(forecastRuntime);
+  if (path === `${BASE_PATH}/forecast/snapshots/latest`) {
+    assertAllowedQuery(url, new Set(["scenario", "perimeter"]));
+    const scenario = requiredQuery(url, "scenario");
+    const perimeter = requiredQuery(url, "perimeter");
+    if (scenario !== "committed") problem(422, "forecast_scenario_not_calibrated", "Forecast scenario is not calibrated");
+    if (perimeter !== "payout_contract") problem(400, "forecast_requires_payout_perimeter", "Invalid forecast perimeter");
+    return { data: projection.snapshot, meta: forecastMeta(projection, requestId) };
+  }
+
+  if (path.startsWith(`${BASE_PATH}/forecast/snapshots/`)) {
+    assertAllowedQuery(url, new Set());
+    const snapshotId = path.slice(`${BASE_PATH}/forecast/snapshots/`.length);
+    if (!UUID_PATTERN.test(snapshotId) || snapshotId !== projection.snapshot.id) problem(404, "resource_not_found", "Resource not found");
+    return { data: projection.snapshot, meta: forecastMeta(projection, requestId) };
+  }
+
+  if (path === `${BASE_PATH}/forecast/buckets`) {
+    assertAllowedQuery(url, new Set(["snapshotId", "from", "to"]));
+    const snapshotId = requiredQuery(url, "snapshotId");
+    if (!UUID_PATTERN.test(snapshotId)) problem(400, "invalid_snapshot_id", "Invalid forecast snapshot ID");
+    if (snapshotId !== projection.snapshot.id) problem(404, "resource_not_found", "Resource not found");
+    const range = parseRange(url);
+    if (Date.parse(range.from) < Date.parse(projection.snapshot.asOf) || Date.parse(range.to) > Date.parse(projection.snapshot.horizonEnd)) {
+      problem(422, "forecast_range_outside_snapshot", "Forecast range is outside the immutable snapshot");
+    }
+    const rows = projection.buckets.filter((row) => availableInRange(row, range));
+    return { data: rows, meta: forecastMeta(projection, requestId, range) };
+  }
+
+  problem(404, "resource_not_found", "Resource not found");
+}
+
+export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions = [], options = {}) {
+  const path = url.pathname;
+  if (path.startsWith(`${BASE_PATH}/forecast/`)) {
+    return handleAlphaForecastGet(url, requestId, options.forecastRuntime);
+  }
   if (path === `${BASE_PATH}/meta`) {
     assertAllowedQuery(url, new Set());
+    const forecastConfigured = Boolean(options.forecastRuntime);
     return {
       apiVersion: "1.0.0-alpha",
       status: "internal_alpha_partial",
       gateZero: { closed: gateZeroDecisions.filter((item) => item.status === "closed").length, total: gateZeroDecisions.length },
-      capabilities: ["reconciliation", "flows", "liquidity", "cycles", "claims", "methodology"],
-      dataCoverage: buildDataCoverage(snapshot, gateZeroDecisions),
+      capabilities: ["reconciliation", "flows", "liquidity", "cycles", "claims", "methodology", ...(forecastConfigured ? ["forecast"] : [])],
+      dataCoverage: buildDataCoverage(snapshot, gateZeroDecisions, forecastConfigured),
       snapshot: {
         id: snapshot.id,
         asOfBlockNumber: snapshot.asOfBlockNumber,

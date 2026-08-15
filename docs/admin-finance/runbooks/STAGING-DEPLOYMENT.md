@@ -163,3 +163,32 @@ Runner не выполняет SQL на source. Он снимает custom-forma
 `pg_restore --list`, отдельная restore-база и сверка схемы/47 таблиц после
 восстановления. Notification runtime остаётся disabled даже после успешной
 миграции до отдельного channel security review.
+
+## R1.1 Forecast runtime
+
+Forecast API подключён к Alpha server, но в базовом Compose остаётся выключен
+и работает fail closed. Он включается только явным overlay после PostgreSQL
+restore drill и проверки provider contract:
+
+```bash
+docker compose \
+  --env-file /run/secrets/atlas-admin-finance-staging.env \
+  -f deploy/admin-finance-staging/compose.yaml \
+  -f deploy/admin-finance-staging/compose.forecast.yaml \
+  config
+```
+
+Overlay требует dedicated PostgreSQL URL, абсолютный host path к trusted CA,
+allowlisted provider endpoint и server-only Authorization. Он не включает
+Telegram/email и не публикует PostgreSQL или Admin API host ports. При
+отсутствии любого значения Compose завершается до запуска.
+
+После включения доступны authenticated read-only endpoints:
+
+- `GET /api/admin/v1/forecast/snapshots/latest`;
+- `GET /api/admin/v1/forecast/snapshots/{snapshotId}`;
+- `GET /api/admin/v1/forecast/buckets`.
+
+Ответы остаются `PARTIAL / UNRECONCILED`, пока минимум 10 bucket items не
+прослежены до event, receipt и transfer evidence. Ошибка provider, RPC,
+checkpoint guard или PostgreSQL возвращает `503`; fixture не подставляется.
