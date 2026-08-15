@@ -51,6 +51,38 @@ const ROLE_LABELS: Record<string, string> = {
   LISTINGS_OPERATOR: "Листинги", RELATIONSHIP_OPERATOR: "Контакты",
   DUTY_COORDINATOR: "Координатор", RESERVE: "Резерв",
 };
+const RECORD_CATEGORIES = [
+  { id: "hyip", label: "HYIP-мониторы", short: "Мониторы", description: "Мониторинги и профильные каталоги", icon: "H" },
+  { id: "dapp", label: "DApp / Web3-листинги", short: "DApp / Web3", description: "Каталоги, кошельки и discovery-площадки", icon: "D" },
+  { id: "articles", label: "Статьи и медиа", short: "Статьи / медиа", description: "PR, гостевые статьи и бесплатные публикации", icon: "A" },
+  { id: "mlm", label: "MLM-площадки", short: "MLM", description: "Каталоги, ассоциации и отраслевые ресурсы", icon: "M" },
+  { id: "contacts", label: "Коннекторы и лидеры", short: "Контакты", description: "Сетевики, коучи и business connectors", icon: "C" },
+  { id: "promo", label: "Реклама и агентства", short: "Реклама", description: "Платные каналы, агентства и рекламные сети", icon: "P" },
+  { id: "partnerships", label: "События и партнёрства", short: "Партнёрства", description: "Конференции, сообщества и коллаборации", icon: "E" },
+  { id: "other", label: "Контроль и прочее", short: "Прочее", description: "Служебные карточки и ручная классификация", icon: "O" },
+] as const;
+
+type RecordCategoryId = typeof RECORD_CATEGORIES[number]["id"];
+
+function recordCategoryId(record: CrmRecord): RecordCategoryId {
+  const source = String(record.source || "").toLowerCase();
+  const type = String(record.type || "").toLowerCase();
+  const name = String(record.name || "").toLowerCase();
+  const haystack = `${source} ${type} ${name}`;
+  if (/hyip|хайп|monitor/.test(haystack)) return "hyip";
+  if (/new member|premium member|business connector|коннектор|коуч|coach|тренер|сетев(ой|ик)|network leader|community leader|подкаст/.test(haystack)) return "contacts";
+  if (source.includes("mlm-каналы") || /mlm|direct selling|network marketing|referral marketplace|партнерск.*каталог/.test(haystack)) return "mlm";
+  if (source.startsWith("листинги") || /dapp|web3 app|web3 project|wallet|кошельк|on-chain|ончейн|defi|project directory|product hunt|discovery platform/.test(haystack)) return "dapp";
+  if (source === "pr" || source.includes("collaborator") || /article|стать|media|медиа|press|editorial|publication|публикац|guest|op-ed/.test(haystack)) return "articles";
+  if (source === "промо" || source.includes("telegram-реклама") || /агентств|advert|реклам|sponsored|баннер/.test(haystack)) return "promo";
+  if (source === "партнёрства" || /event|событ|conference|конференц|congress|community|партн[её]р/.test(haystack)) return "partnerships";
+  return "other";
+}
+
+function recordCategory(record: CrmRecord) {
+  const id = recordCategoryId(record);
+  return RECORD_CATEGORIES.find((category) => category.id === id) || RECORD_CATEGORIES.at(-1)!;
+}
 
 function localDate(days = 0) {
   const date = new Date();
@@ -88,6 +120,7 @@ function ListingsCrmWorkspace() {
   const [data, setData] = useState<Bootstrap>(EMPTY);
   const [view, setView] = useState("overview");
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<RecordCategoryId | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CrmRecord | null>(null);
   const [currentMemberId, setCurrentMemberId] = useState(() => localStorage.getItem(MEMBER_KEY) || "");
@@ -142,9 +175,15 @@ function ListingsCrmWorkspace() {
   const records = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return [...data.records]
+      .filter((record) => categoryFilter === "all" || recordCategoryId(record) === categoryFilter)
       .filter((record) => !needle || [record.name, record.source, record.type, record.status, record.action].join(" ").toLowerCase().includes(needle))
       .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
-  }, [data.records, query]);
+  }, [categoryFilter, data.records, query]);
+  const categorySummary = useMemo(() => RECORD_CATEGORIES.map((category) => ({
+    ...category,
+    count: data.records.filter((record) => recordCategoryId(record) === category.id).length,
+    active: data.records.filter((record) => recordCategoryId(record) === category.id && !["Закрыто", "Опубликовано", "Архив"].includes(record.status)).length,
+  })), [data.records]);
   const draftTaskOwnerIds = draft
     ? [...new Set(activeTasks.filter((task) => task.recordId === draft.id && task.assigneeId).map((task) => task.assigneeId as string))]
     : [];
@@ -157,6 +196,12 @@ function ListingsCrmWorkspace() {
     setCurrentMemberId(id);
     localStorage.setItem(MEMBER_KEY, id);
     setNotice("Рабочий профиль выбран");
+  };
+
+  const openCategory = (id: RecordCategoryId) => {
+    setCategoryFilter(id);
+    setQuery("");
+    setView("records");
   };
 
   const run = async (operation: () => Promise<any>, success: string) => {
@@ -256,16 +301,16 @@ function ListingsCrmWorkspace() {
           <article><span>Прогресс команды</span><strong>{teamPoints}/{teamCapacity}</strong><small>баллов сегодня</small></article>
         </section>
 
-        {view === "overview" && <section className="dashboard-grid">
+        {view === "overview" && <><section className="dashboard-grid">
           <section className="board focus-panel"><div className="board-head"><div><h3>Что требует внимания</h3><p>Сначала ответы и просроченные обязательства</p></div>{canCoordinate ? <button className="button primary" onClick={generatePlan}>Сформировать план</button> : <span className="coordinator-note">План формирует координатор</span>}</div><div className="task-grid">{[...myTasks, ...freeTasks].slice(0, 6).map(renderTask)}{myTasks.length + freeTasks.length === 0 && <div className="empty database-ready"><div><strong>В базе уже {data.records.length} записей</strong><p>Карточки на месте. Дневной план задач ещё не сформирован.</p></div><button className="button secondary" onClick={() => setView("records")}>Открыть все записи</button></div>}</div></section>
           <section className="board team-summary"><div className="board-head"><div><h3>Команда</h3><p>Загрузка активных сотрудников</p></div></div>{data.members.filter((member) => member.active).map((member) => { const tasks = activeTasks.filter((task) => task.assigneeId === member.id); const points = tasks.reduce((sum, task) => sum + task.points, 0); return <div className="member-row" key={member.id}><span className="member-avatar">{member.name.slice(0, 1)}</span><div><strong>{member.name}</strong><small>{ROLE_LABELS[member.role] || member.role}</small></div><b>{points}/{member.capacity || 5}</b></div>; })}</section>
-        </section>}
+        </section><section className="board category-breakdown"><div className="board-head"><div><h3>Разбивка по категориям</h3><p>Каждое направление считается отдельно — нажмите, чтобы открыть его карточки</p></div></div><div className="category-grid">{categorySummary.map((category) => <button key={category.id} className="category-card" onClick={() => openCategory(category.id)}><span className={`category-icon category-${category.id}`}>{category.icon}</span><span className="category-copy"><strong>{category.label}</strong><small>{category.description}</small></span><span className="category-total"><b>{category.count}</b><small>{category.active} активных</small></span><span className="category-arrow">→</span></button>)}</div></section></>}
 
         {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div>{canCoordinate && <button className="button primary" onClick={generatePlan}>Обновить план</button>}</div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
 
         {view === "team" && <section className="team-board">{data.members.filter((member) => member.active).map((member) => <section className="team-column" key={member.id}><header><span className="member-avatar">{member.name.slice(0, 1)}</span><div><h3>{member.name}</h3><p>{ROLE_LABELS[member.role] || member.role}</p></div><b>{activeTasks.filter((task) => task.assigneeId === member.id).reduce((sum, task) => sum + task.points, 0)}/{member.capacity || 5}</b></header><div>{activeTasks.filter((task) => task.assigneeId === member.id).map(renderTask)}{activeTasks.every((task) => task.assigneeId !== member.id) && <div className="empty compact">Нет активных задач</div>}</div></section>)}<section className="team-column unassigned"><header><div><h3>Свободная очередь</h3><p>Берёт только один сотрудник</p></div><b>{freeTasks.length}</b></header><div>{freeTasks.map(renderTask)}</div></section></section>}
 
-        {view === "records" && <section className="board"><div className="board-head"><div><h3>Площадки и контакты</h3><p>{records.length} карточек в общей базе</p></div><label className="search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по CRM" /></label></div><div className="table-wrap"><table><thead><tr><th>Площадка / контакт</th><th>Категория</th><th>Статус</th><th>Ответственный</th><th>Следующий шаг</th><th>Контроль</th><th /></tr></thead><tbody>{records.map((record) => <tr key={record.id} onClick={() => setSelectedId(record.id)}><td><div className="record-name"><span>{record.name.slice(0, 1)}</span><div><strong>{record.name}</strong><small>{record.link || "Ссылка не указана"}</small></div></div></td><td><span className="source-label">{record.source}</span><small className="priority">{record.type}</small></td><td><span className={`status tone-${toneFor(record.status)}`}><i />{record.status}</span></td><td>{record.ownerId && memberById.get(record.ownerId)?.name || record.owner || "Команда"}</td><td><p className="action-text">{record.action || "Не задан"}</p></td><td><span className={record.dueDate < today ? "due urgent" : "due"}>{shortDate(record.dueDate)}</span></td><td><button className="row-arrow">→</button></td></tr>)}</tbody></table></div></section>}
+        {view === "records" && <section className="board"><div className="board-head"><div><h3>Площадки и контакты</h3><p>{records.length} из {data.records.length} карточек</p></div><div className="filters"><select className="category-filter" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as RecordCategoryId | "all")}><option value="all">Все категории</option>{categorySummary.map((category) => <option key={category.id} value={category.id}>{category.label} · {category.count}</option>)}</select><label className="search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по CRM" /></label></div></div><div className="table-wrap"><table><thead><tr><th>Площадка / контакт</th><th>Категория</th><th>Статус</th><th>Ответственный</th><th>Следующий шаг</th><th>Контроль</th><th /></tr></thead><tbody>{records.map((record) => { const category = recordCategory(record); return <tr key={record.id} onClick={() => setSelectedId(record.id)}><td><div className="record-name"><span>{record.name.slice(0, 1)}</span><div><strong>{record.name}</strong><small>{record.link || "Ссылка не указана"}</small></div></div></td><td><span className="source-label">{category.short}</span><small className="priority">{record.type}</small></td><td><span className={`status tone-${toneFor(record.status)}`}><i />{record.status}</span></td><td>{record.ownerId && memberById.get(record.ownerId)?.name || record.owner || "Команда"}</td><td><p className="action-text">{record.action || "Не задан"}</p></td><td><span className={record.dueDate < today ? "due urgent" : "due"}>{shortDate(record.dueDate)}</span></td><td><button className="row-arrow">→</button></td></tr>; })}</tbody></table>{records.length === 0 && <div className="empty">В этой категории карточек пока нет</div>}</div></section>}
 
         {view === "activity" && <section className="board"><div className="board-head"><div><h3>Журнал изменений</h3><p>Кто, когда и что изменил</p></div></div><div className="activity-list">{data.audit.map((event) => <article key={event.id}><span className="member-avatar">{(event.actorName || event.memberName || "A").slice(0, 1)}</span><div><strong>{event.actorName || event.memberName || "Команда Atlas"}</strong><p>{event.action}{event.entityName ? ` · ${event.entityName}` : ""}</p></div><time>{new Date(event.createdAt).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}</time></article>)}{data.audit.length === 0 && <div className="empty">Изменения появятся после первой операции</div>}</div></section>}
       </>}

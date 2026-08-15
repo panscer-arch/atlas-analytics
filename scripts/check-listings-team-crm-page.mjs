@@ -65,10 +65,20 @@ try {
     }
     if (viewport.name === "desktop") {
       await page.getByText(`В базе уже ${records.length} записей`, { exact: true }).waitFor();
+      await page.getByText("Разбивка по категориям", { exact: true }).waitFor();
+      const categoryBreakdown = await crm.locator(".category-breakdown").innerText();
+      if (!categoryBreakdown.includes("DApp / Web3-листинги") || !categoryBreakdown.includes("MLM-площадки")) {
+        throw new Error("desktop: category breakdown is missing the core listing directions");
+      }
+      await page.screenshot({ path: `${outputDir}/listings-team-crm-overview-desktop.png`, fullPage: true });
     }
     await crm.locator(".nav-item").filter({ hasText: "Команда" }).click();
     await page.getByText("Свободная очередь", { exact: true }).waitFor();
     await crm.locator(".nav-item").filter({ hasText: "Все записи" }).click();
+    await crm.locator(".category-filter").selectOption("dapp");
+    await page.getByText("DApp Directory", { exact: true }).waitFor();
+    if (await page.getByText("MLM Community", { exact: true }).count()) throw new Error(`${viewport.name}: category filter did not narrow the records table`);
+    await crm.locator(".category-filter").selectOption("all");
     await page.getByText("DApp Directory", { exact: true }).first().click();
     await page.getByText("Изменения сохраняются только в этой карточке", { exact: true }).waitFor();
     await page.locator(".drawer-head button").click();
