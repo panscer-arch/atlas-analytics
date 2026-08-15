@@ -557,6 +557,10 @@ td { padding: 16px; }
 .activity-list time { color: var(--muted); font-size: 11px; }
 .proof-storage-note { max-width: 210px; padding: 8px 10px; border-radius: 7px; background: #edf1f0; color: #647069; font-size: 11px; font-weight: 700; text-align: center; }
 .coordinator-note { color: var(--muted); font-size: 11px; font-weight: 700; }
+.database-ready { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; text-align: left; }
+.database-ready strong { display: block; color: var(--text); font-size: 15px; }
+.database-ready p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.database-ready .button { flex: 0 0 auto; }
 .drawer-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .drawer-fieldset:disabled { opacity: .72; }
 
@@ -581,4 +585,5 @@ td { padding: 16px; }
   .team-board { grid-auto-columns: 86vw; }
   .activity-list article { grid-template-columns: 30px 1fr; }
   .activity-list time { grid-column: 2; }
+  .database-ready { align-items: stretch; flex-direction: column; }
 }
