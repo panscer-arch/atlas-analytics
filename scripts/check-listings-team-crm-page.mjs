@@ -77,6 +77,17 @@ try {
     if (await crm.locator(".platform-list details").count() !== 7 || await crm.locator(".template-list details").count() !== 9) {
       throw new Error(`${viewport.name}: detailed platform guides or audience templates are incomplete`);
     }
+    const keywordLibrary = crm.locator('[data-testid="listings-keyword-library"]');
+    await page.getByText("Расширенные ключевики для поиска лидеров", { exact: true }).waitFor();
+    if (await keywordLibrary.getByRole("tab").count() !== 3) throw new Error(`${viewport.name}: the full keyword library does not expose all three source packages`);
+    await keywordLibrary.locator(".keyword-sections summary").filter({ hasText: "4. Семантическое ядро: роли" }).waitFor();
+    await keywordLibrary.getByRole("tab", { name: /Региональные языки/ }).click();
+    await keywordLibrary.locator(".keyword-sections summary").filter({ hasText: "Бразильский португальский" }).waitFor();
+    await keywordLibrary.getByLabel("Поиск по полной библиотеке ключевиков").fill("líder de equipe");
+    await page.getByText(/líder de equipe/).first().waitFor();
+    await page.screenshot({ path: `${outputDir}/listings-keyword-library-${viewport.name}.png`, fullPage: true });
+    await keywordLibrary.getByRole("tab", { name: /Поиск по площадкам/ }).click();
+    await keywordLibrary.locator(".keyword-sections summary").filter({ hasText: "Google и" }).waitFor();
     await crm.locator(".platform-list details").first().locator("summary").click();
     await page.getByText('"network marketing leader" [country]', { exact: true }).waitFor();
     await crm.locator(".template-list details").first().locator("summary").click();
