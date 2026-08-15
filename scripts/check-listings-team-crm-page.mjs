@@ -64,10 +64,26 @@ try {
       throw new Error(`${viewport.name}: overview hides the ${records.length} imported CRM records behind zero task metrics`);
     }
     await crm.locator(".nav-item").filter({ hasText: "Инструкции" }).click();
-    await page.getByText("Как находить и проверять лидеров", { exact: true }).waitFor();
+    await page.getByText("Поиск лидеров: от ключевика до первого сообщения", { exact: true }).waitFor();
     const instructions = await crm.locator(".instructions-page").innerText();
-    if (!instructions.includes("Не исключать автоматически") || !instructions.includes("зависимость результата от притока средств")) {
+    if (!instructions.includes("Не исключать автоматически") || !instructions.includes("Atlas зависит от дальнейшей активности и притока средств")) {
       throw new Error(`${viewport.name}: simplified instructions or risk disclosure are missing`);
+    }
+    if (await crm.locator(".platform-list details").count() !== 7 || await crm.locator(".template-list details").count() !== 9) {
+      throw new Error(`${viewport.name}: detailed platform guides or audience templates are incomplete`);
+    }
+    await crm.locator(".platform-list details").first().locator("summary").click();
+    await page.getByText('"network marketing leader" [country]', { exact: true }).waitFor();
+    await crm.locator(".template-list details").first().locator("summary").click();
+    await page.getByText("Atlas System: обсуждение развития в [страна/регион]", { exact: true }).waitFor();
+    await page.getByText("Официально и проверяемо", { exact: true }).waitFor();
+    const firstTemplate = await crm.locator(".template-list details").first().innerText();
+    if (!firstTemplate.includes("менеджер по развитию Atlas System") || !firstTemplate.includes("уполномочен представлять компанию")) {
+      throw new Error(`${viewport.name}: the outreach template does not establish the employee's verified role and authority`);
+    }
+    if (viewport.name === "mobile") {
+      await crm.locator(".platform-list details").first().locator("summary").click();
+      await crm.locator(".template-list details").first().locator("summary").click();
     }
     await page.screenshot({ path: `${outputDir}/listings-team-crm-instructions-${viewport.name}.png`, fullPage: true });
     await crm.locator(".nav-item").filter({ hasText: "Обзор" }).click();
