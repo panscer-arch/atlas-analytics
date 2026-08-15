@@ -580,6 +580,14 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   });
 
   useEffect(() => {
+    if (activeTab !== "listings" || typeof document === "undefined") return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector(".analytics-listings-crm-host")?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || initialRawBoard === initialBoard) return;
     const url = new URL(window.location.href);
     url.searchParams.set("board", initialBoard);

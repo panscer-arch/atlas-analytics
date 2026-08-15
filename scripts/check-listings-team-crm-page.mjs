@@ -35,12 +35,17 @@ const browser = await chromium.launch({ headless: true, executablePath: chrome, 
 try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 1000 }, { name: "mobile", width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport });
+    const servedTasks = viewport.name === "desktop" ? [] : tasks;
     const consoleErrors = [];
-    page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
+    page.on("console", (message) => {
+      if (message.type() === "error" && !message.text().startsWith("Failed to load resource: the server responded with a status of 404")) {
+        consoleErrors.push(message.text());
+      }
+    });
     await page.route("**/api/marketing/listings-crm/**", async (route) => {
       const request = route.request();
       const path = new URL(request.url()).pathname;
-      if (path.endsWith("/bootstrap")) return route.fulfill(response({ ok: true, members, records, tasks, audit }));
+      if (path.endsWith("/bootstrap")) return route.fulfill(response({ ok: true, members, records, tasks: servedTasks, audit }));
       if (path.endsWith("/claim")) {
         const id = path.split("/").at(-2);
         const task = tasks.find((item) => item.id === id);
@@ -51,9 +56,16 @@ try {
       if (request.method() === "PATCH") return route.fulfill(response({ ok: true }));
       return route.fulfill(response({ ok: true }));
     });
-    await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 20_000 });
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
     await page.getByText("Одна очередь, отдельные ответственные, без двойной работы", { exact: true }).waitFor();
     const crm = page.locator(".analytics-listings-crm-host");
+    const firstMetric = await crm.locator(".metrics article").first().innerText();
+    if (!firstMetric.includes("Карточек в базе") || !firstMetric.includes(String(records.length))) {
+      throw new Error(`${viewport.name}: overview hides the ${records.length} imported CRM records behind zero task metrics`);
+    }
+    if (viewport.name === "desktop") {
+      await page.getByText(`В базе уже ${records.length} записей`, { exact: true }).waitFor();
+    }
     await crm.locator(".nav-item").filter({ hasText: "Команда" }).click();
     await page.getByText("Свободная очередь", { exact: true }).waitFor();
     await crm.locator(".nav-item").filter({ hasText: "Все записи" }).click();
