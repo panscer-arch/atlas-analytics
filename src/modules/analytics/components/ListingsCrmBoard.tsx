@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import crmCss from "./ListingsCrmBoard.css?raw";
+import ListingsInstructions from "./ListingsInstructions";
 import {
   archiveListingsRecord,
   claimListingsTask,
@@ -38,6 +39,7 @@ const RECORD_STATUSES = [
 ];
 const NAV = [
   { id: "overview", label: "Обзор", icon: "⌂" },
+  { id: "instructions", label: "Инструкции", icon: "?" },
   { id: "today", label: "Мой день", icon: "✓" },
   { id: "team", label: "Команда", icon: "◉" },
   { id: "records", label: "Все записи", icon: "≡" },
@@ -305,6 +307,8 @@ function ListingsCrmWorkspace() {
           <section className="board focus-panel"><div className="board-head"><div><h3>Что требует внимания</h3><p>Сначала ответы и просроченные обязательства</p></div>{canCoordinate ? <button className="button primary" onClick={generatePlan}>Сформировать план</button> : <span className="coordinator-note">План формирует координатор</span>}</div><div className="task-grid">{[...myTasks, ...freeTasks].slice(0, 6).map(renderTask)}{myTasks.length + freeTasks.length === 0 && <div className="empty database-ready"><div><strong>В базе уже {data.records.length} записей</strong><p>Карточки на месте. Дневной план задач ещё не сформирован.</p></div><button className="button secondary" onClick={() => setView("records")}>Открыть все записи</button></div>}</div></section>
           <section className="board team-summary"><div className="board-head"><div><h3>Команда</h3><p>Загрузка активных сотрудников</p></div></div>{data.members.filter((member) => member.active).map((member) => { const tasks = activeTasks.filter((task) => task.assigneeId === member.id); const points = tasks.reduce((sum, task) => sum + task.points, 0); return <div className="member-row" key={member.id}><span className="member-avatar">{member.name.slice(0, 1)}</span><div><strong>{member.name}</strong><small>{ROLE_LABELS[member.role] || member.role}</small></div><b>{points}/{member.capacity || 5}</b></div>; })}</section>
         </section><section className="board category-breakdown"><div className="board-head"><div><h3>Разбивка по категориям</h3><p>Каждое направление считается отдельно — нажмите, чтобы открыть его карточки</p></div></div><div className="category-grid">{categorySummary.map((category) => <button key={category.id} className="category-card" onClick={() => openCategory(category.id)}><span className={`category-icon category-${category.id}`}>{category.icon}</span><span className="category-copy"><strong>{category.label}</strong><small>{category.description}</small></span><span className="category-total"><b>{category.count}</b><small>{category.active} активных</small></span><span className="category-arrow">→</span></button>)}</div></section></>}
+
+        {view === "instructions" && <ListingsInstructions />}
 
         {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div>{canCoordinate && <button className="button primary" onClick={generatePlan}>Обновить план</button>}</div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
 

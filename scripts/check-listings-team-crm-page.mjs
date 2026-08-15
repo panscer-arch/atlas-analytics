@@ -63,6 +63,14 @@ try {
     if (!firstMetric.includes("Карточек в базе") || !firstMetric.includes(String(records.length))) {
       throw new Error(`${viewport.name}: overview hides the ${records.length} imported CRM records behind zero task metrics`);
     }
+    await crm.locator(".nav-item").filter({ hasText: "Инструкции" }).click();
+    await page.getByText("Как находить и проверять лидеров", { exact: true }).waitFor();
+    const instructions = await crm.locator(".instructions-page").innerText();
+    if (!instructions.includes("Не исключать автоматически") || !instructions.includes("зависимость результата от притока средств")) {
+      throw new Error(`${viewport.name}: simplified instructions or risk disclosure are missing`);
+    }
+    await page.screenshot({ path: `${outputDir}/listings-team-crm-instructions-${viewport.name}.png`, fullPage: true });
+    await crm.locator(".nav-item").filter({ hasText: "Обзор" }).click();
     if (viewport.name === "desktop") {
       await page.getByText(`В базе уже ${records.length} записей`, { exact: true }).waitFor();
       await page.getByText("Разбивка по категориям", { exact: true }).waitFor();
