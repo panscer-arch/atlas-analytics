@@ -10,6 +10,14 @@
   для временного HTTPS `:8443`.
 - Повторно пройдены Admin Finance tests, dedicated staging build, build
   isolation check и production dependency audit.
+- Переведена пользовательская терминология пяти MVP-вкладок: внутренние
+  `claimable`, `exposure`, `provider aggregate`, `roll-forward` и похожие
+  термины заменены понятными операционными формулировками без изменения
+  контрактов API, CSV и финансовой арифметики.
+- Исправлен рендер частичных API-ответов Liquidity/Reconciliation: отсутствие
+  разбивки по контрактам или матрицы покрытия теперь даёт явное состояние
+  `данные не переданы`, а не падение React. API desktop/mobile QA прошла без
+  console errors и page overflow.
 
 ## 2026-08-15
 

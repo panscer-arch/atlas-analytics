@@ -13,6 +13,13 @@
 - `npm run test:admin-finance`, dedicated staging build и проверка её
   изоляции прошли; production dependency audit не нашёл
   известных vulnerabilities;
+- пять MVP-вкладок получили понятную русскую операционную терминологию без
+  изменения API-полей и расчётов; Forecast в интерфейсе называется календарём
+  будущих обязательств, а Claims — заявками и выплатами;
+- Liquidity и Reconciliation больше не падают на частичном ответе источника:
+  отсутствующие balances/dataCoverage отображаются как явный пробел данных;
+  локальная browser QA API-режима прошла на пяти вкладках и mobile без console
+  errors и горизонтального overflow;
 - в ветку перенесены точный Hostinger migration snapshot и изолированный
   Nginx vhost для временного `:8443`.
 

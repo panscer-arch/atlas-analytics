@@ -70,22 +70,22 @@ const sectionMeta = {
   },
   flows: {
     title: "Денежные потоки",
-    subtitle: "Входящие и исходящие переводы, Net Flow и распределение по циклам · UTC",
+    subtitle: "Входящие и исходящие переводы, чистый поток и распределение по циклам · UTC",
     contour: "consolidated",
   },
   cycles: {
     title: "Циклы",
-    subtitle: "All-time циклы, claimable now и maximum exposure · UTC",
+    subtitle: "Созданные, открытые и закрытые циклы, доступные к запросу суммы и максимальная нагрузка · UTC",
     contour: "contracts",
   },
   forecast: {
-    title: "Прогноз выплат",
-    subtitle: "Кассовая нагрузка и потребность в ликвидности на горизонте до 90 дней · UTC",
+    title: "Календарь будущих обязательств",
+    subtitle: "Ожидаемая нагрузка на контракт и потребность в ликвидности на срок до 90 дней · UTC",
     contour: "payout",
   },
   claims: {
-    title: "Claims и выплаты",
-    subtitle: "Операционный реестр обязательств, запросов и расчетов · UTC",
+    title: "Заявки и выплаты",
+    subtitle: "Реестр обязательств, запросов на выплату и фактических расчётов · UTC",
     contour: "payout",
   },
   participants: {
@@ -105,7 +105,7 @@ const sectionMeta = {
   },
   liquidity: {
     title: "Ликвидность",
-    subtitle: "Денежные остатки, резерв, cash ladder и LP-контроль · UTC",
+    subtitle: "Денежные остатки, обязательный резерв и контроль покрытия · UTC",
     contour: "payout",
   },
   traffic: {
@@ -120,7 +120,7 @@ const sectionMeta = {
   },
   reconciliation: {
     title: "Сверка данных",
-    subtitle: "Event → receipt → transfer → economic payout → ledger · UTC",
+    subtitle: "Событие контракта → транзакция → перевод → состав выплаты → учёт · UTC",
     contour: "consolidated",
   },
   risks: {
@@ -266,11 +266,11 @@ export default function AdminFinanceApp() {
               <span className="sr-only">Контур данных</span>
               <select defaultValue={meta.contour} key={meta.contour} disabled={adminFinanceSource.apiEnabled} title={adminFinanceSource.apiEnabled ? "Контуры заданы секциями API snapshot" : undefined}>
                 <option value="multi">Обзор: несколько контуров</option>
-                <option value="payout">Контур: Payout Contract</option>
-                <option value="consolidated">Контур: Atlas Consolidated</option>
+                <option value="payout">Контур: контракт выплат</option>
+                <option value="consolidated">Контур: внешние потоки Atlas</option>
                 <option value="contracts">Контракты: Все версии</option>
-                <option value="treasury">Контур: Company Treasury</option>
-                <option value="head">Контур: Head Account</option>
+                <option value="treasury">Контур: казна компании</option>
+                <option value="head">Контур: головной аккаунт</option>
               </select>
               <ChevronDown size={15} aria-hidden="true" />
             </label>

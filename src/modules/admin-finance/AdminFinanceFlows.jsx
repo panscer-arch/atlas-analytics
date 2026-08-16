@@ -125,10 +125,10 @@ function FlowMethodology({ onClose, apiMeta }) {
           <button type="button" onClick={onClose} aria-label="Закрыть"><X size={19} /></button>
         </div>
         <dl>
-          <div><dt>Payout Contract</dt><dd>Все token transfers выбранного контракта, включая движение на контролируемый treasury.</dd></div>
-          <div><dt>Atlas Consolidated</dt><dd>Только внешнее движение группы Atlas. Переводы между контролируемыми адресами исключаются.</dd></div>
-          <div><dt>Company Treasury</dt><dd>Фактически поступившие Platform Fee и вознаграждения Head Account до OPEX и налогов.</dd></div>
-          <div><dt>Net Flow</dt><dd>External Incoming минус External Outgoing в одном контуре, токене, периоде и временной зоне.</dd></div>
+          <div><dt>Контракт выплат</dt><dd>Все переводы токенов выбранного контракта, включая движение в казну компании.</dd></div>
+          <div><dt>Внешние потоки Atlas</dt><dd>Только движение денег между Atlas и внешними участниками. Внутренние переводы исключаются.</dd></div>
+          <div><dt>Казна компании</dt><dd>Фактически поступившие Platform Fee и вознаграждения головного аккаунта до операционных расходов и налогов.</dd></div>
+          <div><dt>Чистый поток</dt><dd>Внешние поступления минус внешние выплаты в одном контуре, токене, периоде и временной зоне.</dd></div>
         </dl>
         <p className="af-modal-warning"><Info size={16} /> {apiMeta ? `Admin API · блок ${apiMeta.asOfBlockNumber} · ${apiMeta.finality} · reconciliation ${apiMeta.reconciliationStatus}.` : "Production-показатель считается сверенным только после сопоставления ledger и token transfer до утвержденного блока finality."}</p>
       </section>
@@ -190,9 +190,9 @@ export default function AdminFinanceFlows() {
     if (flowRequest.status !== "ready") return null;
     const { consolidated, payoutContract, companyTreasury, overview } = flowRequest.data;
     const rows = consolidated.data;
-    const consolidatedPerimeter = aggregatePerimeter(consolidated, "Atlas Consolidated", "Только внешние потоки группы Atlas. Внутренние переводы исключены.");
-    const payoutPerimeter = aggregatePerimeter(payoutContract, "Payout Contract", "Все движения контракта, включая переводы на контролируемый treasury.");
-    const treasuryPerimeter = aggregatePerimeter(companyTreasury, "Company Treasury", "Фактически полученный доход компании до OPEX и налогов.");
+    const consolidatedPerimeter = aggregatePerimeter(consolidated, "Внешние потоки Atlas", "Только внешние поступления и выплаты. Внутренние переводы исключены.");
+    const payoutPerimeter = aggregatePerimeter(payoutContract, "Контракт выплат", "Все движения контракта, включая переводы в казну компании.");
+    const treasuryPerimeter = aggregatePerimeter(companyTreasury, "Казна компании", "Фактически полученный доход компании до операционных расходов и налогов.");
     const internalRaw = BigInt(payoutPerimeter.outgoing.amountRaw) - BigInt(consolidatedPerimeter.outgoing.amountRaw);
     const internal = { ...consolidatedPerimeter.outgoing, amountRaw: internalRaw.toString(), displayAmount: undefined };
     return {
@@ -275,8 +275,8 @@ export default function AdminFinanceFlows() {
       <section className="af-metrics af-metrics-five" aria-label="Показатели денежных потоков">
         <Metric accent="#503021" label="Внешний входящий поток" tag={apiMode ? "API" : "+12.8%"} tagTone="brown" value={displayMoney(totals.incoming)} note={apiMode ? `${visibleSeries.length} доступных временных bucket` : "573 цикла: 153 Smart Cycle + 420 Launch"} />
         <Metric accent="#ff8716" label="Исходящий поток" tag={apiMode ? "API DATA" : "DEMO"} tagTone="orange" value={displayMoney(totals.outgoing)} note={apiMode ? "Внешние выплаты Atlas Consolidated" : "Principal + Net Delta + Partner"} />
-        <Metric accent="#239a77" label="Net Flow" tag={apiMode ? "API" : "69.5%"} tagTone="green" value={displayMoney(totals.net, { signed: true })} note={`Период: ${visiblePeriodLabel.toLowerCase()}`} good />
-        {apiMode ? <Metric accent="#4e76d0" label="Partner / Incoming" tag="UNAVAILABLE" tagTone="blue" value="N/A" unit="" note="Нужна сверенная payout component dimension" /> : <Metric accent="#4e76d0" label="Partner / Incoming" tag="RATE" tagTone="blue" value={(totals.partner / totals.incoming * 100).toFixed(2)} unit="%" note={`${formatMoney(totals.partner)} выплачено партнерам`} />}
+        <Metric accent="#239a77" label="Чистый поток" tag={apiMode ? "API" : "69.5%"} tagTone="green" value={displayMoney(totals.net, { signed: true })} note={`Период: ${visiblePeriodLabel.toLowerCase()}`} good />
+        {apiMode ? <Metric accent="#4e76d0" label="Доля партнёрских выплат" tag="НЕТ ДАННЫХ" tagTone="blue" value="N/A" unit="" note="Нужна сверенная разбивка состава выплат" /> : <Metric accent="#4e76d0" label="Доля партнёрских выплат" tag="ДОЛЯ" tagTone="blue" value={(totals.partner / totals.incoming * 100).toFixed(2)} unit="%" note={`${formatMoney(totals.partner)} выплачено партнерам`} />}
         <Metric accent="#7a5bb8" label="Внутренние переводы" tag="EXCLUDED" tagTone="violet" value={displayMoney(totals.internal)} note="Исключены только из consolidated flow" />
       </section>
 
@@ -314,7 +314,7 @@ export default function AdminFinanceFlows() {
                 </article>
               );
             })}
-            <div className="af-exclusion-note">{apiMode ? `${formatWireMoney(totals.internal)} исключено при переходе от Payout Contract к Atlas Consolidated.` : "$2,460 переведено между payout contract и treasury. Движение видно в первом контуре, но исключено из Atlas Consolidated."}</div>
+            <div className="af-exclusion-note">{apiMode ? `${formatWireMoney(totals.internal)} исключено из внешних потоков Atlas как внутренний перевод.` : "$2,460 переведено между контрактом выплат и казной. Движение видно в первом контуре, но исключено из внешних потоков Atlas."}</div>
           </div>
         </section>
       </div>
@@ -335,8 +335,8 @@ export default function AdminFinanceFlows() {
         </section>
 
         <section className="af-panel">
-          <PanelHeader title="Waterfall исходящего потока" subtitle="Фактические внешние выплаты · Atlas Consolidated" action={<Tag tone={apiMode ? "orange" : "green"}>{apiMode ? "WAITING DIMENSION" : "DEMO"}</Tag>} />
-          {apiMode ? <div className="af-data-unavailable"><AlertCircle size={22}/><strong>Компоненты выплат пока недоступны</strong><p>Общий Outgoing получен из API, но Principal, Delta и Partner нельзя раскладывать до появления сверенной payout component dimension.</p><a href="/admin/methodology#gate">Открыть Gate 0</a></div> : <div className="af-waterfall">
+          <PanelHeader title="Состав исходящего потока" subtitle="Фактические внешние выплаты Atlas" action={<Tag tone={apiMode ? "orange" : "green"}>{apiMode ? "НЕТ РАЗБИВКИ" : "DEMO"}</Tag>} />
+          {apiMode ? <div className="af-data-unavailable"><AlertCircle size={22}/><strong>Состав выплат пока недоступен</strong><p>Общая исходящая сумма получена из API, но её нельзя разложить на возврат вклада, Delta и партнёрские выплаты до получения сверенной разбивки.</p><a href="/admin/methodology#gate">Открыть Gate 0</a></div> : <div className="af-waterfall">
             <div className="af-waterfall-total"><span>Всего выплачено</span><strong>{formatMoney(totals.outgoing)}</strong></div>
             <div className="af-waterfall-track">{outgoingWaterfall.map((item) => <i key={item.name} style={{ width: `${item.value / 5612 * 100}%`, background: item.color }} />)}</div>
             <div className="af-waterfall-list">
