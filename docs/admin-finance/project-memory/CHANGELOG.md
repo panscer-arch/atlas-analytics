@@ -1,5 +1,16 @@
 # Project Memory Changelog
 
+## 2026-08-16
+
+- Собрана чистая Admin Finance ветка поверх актуального `origin/main`
+  без захвата посторонних dirty changes.
+- Объединена Vite-конфигурация свежего `main` и выделенной
+  Admin Finance staging entry point.
+- Зафиксированы фактический Hostinger migration snapshot и host Nginx vhost
+  для временного HTTPS `:8443`.
+- Повторно пройдены Admin Finance tests, dedicated staging build, build
+  isolation check и production dependency audit.
+
 ## 2026-08-15
 
 - Развёрнут закрытый read-only Internal Alpha staging на

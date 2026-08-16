@@ -1,6 +1,20 @@
 # Current State
 
-Обновлено: 15.08.2026. Статус: `MVP-1 STAGING DEPLOYED · INTERNAL ALPHA PARTIAL`.
+Обновлено: 16.08.2026. Статус: `MVP-1 STAGING DEPLOYED · INTERNAL ALPHA PARTIAL`.
+
+## Git reconciliation 2026-08-16
+
+- подтверждённая Admin Finance цепочка перенесена поверх свежего
+  `origin/main` в чистую ветку `codex/admin-finance-r1-1-20260816`;
+- основное грязное рабочее дерево с Hermes, Products и маркетингом не
+  изменялось;
+- конфликт Vite разрешён с сохранением новых Content API routes и
+  выделенной Admin Finance entry point;
+- `npm run test:admin-finance`, dedicated staging build и проверка её
+  изоляции прошли; production dependency audit не нашёл
+  известных vulnerabilities;
+- в ветку перенесены точный Hostinger migration snapshot и изолированный
+  Nginx vhost для временного `:8443`.
 
 ## Staging update 2026-08-15
 

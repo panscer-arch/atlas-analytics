@@ -4,32 +4,61 @@
 HTTPS и временный server-side Basic Auth. Это не production login: MFA, RBAC и
 индивидуальные аккаунты остаются обязательными перед production.
 
+## Migration snapshot 2026-08-16
+
+- temporary hostname: `https://finance-staging.atlas-system.xyz:8443`;
+- host: `200.141.9.121`, application bind remains loopback-only on
+  `127.0.0.1:8088`;
+- release:
+  `20260815T155500-8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
+- server path:
+  `/opt/atlas-admin-finance-staging/releases/20260815T155500-8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
+- API image:
+  `sha256:12a8648600e893edc6c4d817189431e9211152515a8884618ae6dd179d6c1ba0`;
+- web image:
+  `sha256:924b105a6a20e5ce5d9b92ecefe13fbea9654644fa050a5378be6e5495d55ab8`;
+- API container is healthy; internal readiness returns `200`, source status
+  `partial`, BSC block `116225941`;
+- authoritative Dynadot DNS, Google Public DNS and Cloudflare DNS return
+  `200.141.9.121` for `finance-staging.atlas-system.xyz`;
+- public TLS on `8443` validates successfully and an unauthenticated request to
+  `/admin/overview` returns `401` with the expected security headers;
+- authenticated external smoke tests return `200` for all five MVP routes
+  (`reconciliation`, `flows`, `liquidity`, `cycles`, `claims`) and
+  `methodology`; API readiness returns `200`, and a POST to the readiness
+  endpoint returns `403`;
+- the existing server-side Basic Auth file was copied without changing its
+  credentials and its checksum was verified during migration. The temporary
+  smoke-test account was removed and the original file was restored byte for
+  byte. A fresh owner/browser acceptance on the new host is still required;
+- the host's existing Cloudflare-only policy for ports `80/443` was preserved
+  because other projects share this VPS. Standard `:443` remains blocked for
+  direct non-Cloudflare traffic, so `8443` is a temporary isolated staging
+  endpoint, not the final public URL;
+- no existing Nginx virtual host, Cloudflare-origin rule or neighboring Docker
+  project was removed or restarted.
+
+This migration snapshot is `PARTIAL_AUTHENTICATED`, not `LIVE`. Standard HTTPS
+on `443`, owner UAT, controlled address approval, reconciliation and
+production-grade MFA/RBAC remain release gates.
+
 ## Deployment snapshot 2026-08-15
 
-- public hostname: `https://finance-staging.atlas-system.xyz`;
-- current public DNS target: `145.223.90.93` (previous staging host);
-- prepared Hostinger target: `200.141.9.121`, commit
-  `8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
-- Hostinger release:
-  `/opt/atlas-admin-finance-staging/releases/20260815T155500-8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
-- Hostinger API image:
-  `sha256:12a8648600e893edc6c4d817189431e9211152515a8884618ae6dd179d6c1ba0`;
-- Hostinger web image:
-  `sha256:924b105a6a20e5ce5d9b92ecefe13fbea9654644fa050a5378be6e5495d55ab8`;
-- Hostinger web is bound only to `127.0.0.1:8088`; public `:8088` is not
-  reachable. The temporary port-80 vhost serves only ACME challenges and
-  returns `404` for application paths until DNS and TLS are switched;
+- hostname: `https://finance-staging.atlas-system.xyz`;
+- release: `20260815T142737`;
+- server path: `/opt/atlas-admin-finance-staging/releases/20260815T142737`;
+- API image: `sha256:8ca414c483158eb2caf48a4bc3bfdaa06db0192901db07d56357c3598e08dfab`;
+- web image: `sha256:d6752bbcf544858b8c8d0a5b49911060c79f8a6d9f02d90f0a69c11d2af7cc8a`;
 - authenticated readiness `200`, source status `partial`, BSC block
-  `116109659` during browser QA;
+  `116095873`;
 - unauthenticated requests to both `/admin/overview` and `/admin/flows` return
   `401`; after authentication `/admin/overview` redirects client-side to the
   first available MVP screen `/admin/flows`; API POST returns `403`;
-- Hostinger browser QA passed all six available routes (five MVP screens plus
-  Methodology) on desktop `1440x1000` and mobile `390x844` without horizontal
-  page overflow, failed API requests or application console errors;
-- authoritative Dynadot DNS and public resolvers still return `145.223.90.93`.
-  DNS cutover, Let's Encrypt issuance and external Basic Auth smoke remain a
-  separate final gate;
+- automated browser QA passed all six available routes (five MVP screens plus
+  Methodology), all Flows periods, cycle filters and claims controls on desktop
+  and `390x844` mobile viewport without horizontal page overflow or application
+  console errors;
+- authoritative Dynadot DNS and public resolvers return `145.223.90.93`;
 - production Support/Chatwoot Compose was not changed or restarted.
 
 This snapshot is not `LIVE` and is not independent owner acceptance. Финансовые данные остаются
