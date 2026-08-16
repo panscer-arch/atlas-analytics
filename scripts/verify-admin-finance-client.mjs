@@ -145,11 +145,15 @@ const result = await client.getCashMovements({
   to: "2026-08-05T00:00:00Z",
   perimeter: "payout_contract",
   limit: 10,
+  asOfBlock: validMeta.asOfBlockNumber,
+  asOfBlockHash: validMeta.asOfBlockHash,
 });
 assert.equal(result.data[0].externalIn.amountRaw, "1000000");
 assert.equal(calls.length, 1);
 assert.match(calls[0].url, /^\/api\/admin\/v1\/finance\/cash-movements\?/);
 assert.match(calls[0].url, /perimeter=payout_contract/);
+assert.match(calls[0].url, /asOfBlock=54721008/);
+assert.match(calls[0].url, /asOfBlockHash=0x[a-f0-9]{64}/);
 assert.equal(calls[0].options.credentials, "include");
 assert.equal(calls[0].options.method, "GET");
 
@@ -403,7 +407,7 @@ const metaClient = createAdminFinanceClient({
       gateId: "G0-07",
       owner: "Не назначен",
     })),
-    snapshot: { id: "snapshot-test" },
+    snapshot: { id: "snapshot-test", asOfBlockNumber: validMeta.asOfBlockNumber, asOfBlockHash: validMeta.asOfBlockHash },
   }),
 });
 assert.equal((await metaClient.getMeta()).dataCoverage.length, 7);

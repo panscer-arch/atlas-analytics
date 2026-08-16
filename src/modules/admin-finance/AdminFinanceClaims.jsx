@@ -157,7 +157,7 @@ export default function AdminFinanceClaims() {
   const effectiveSelectedId = selectedId && sourceRows.some((row) => row.id === selectedId) ? selectedId : firstVisibleId;
   const detailRequest = useAdminFinanceClaimDetail(effectiveSelectedId);
 
-  if (!claimsRequest.apiEnabled) return <StaticClaims />;
+  if (!__ADMIN_FINANCE_API_ONLY__ && !claimsRequest.apiEnabled) return <StaticClaims />;
   if (claimsRequest.status !== "ready") return <ClaimsRequestState request={claimsRequest} />;
 
   const meta = claimsRequest.data.meta;
@@ -193,23 +193,8 @@ export default function AdminFinanceClaims() {
     setAge("all");
   }
 
-  function exportCsv() {
-    const escape = (value) => `"${String(value).replaceAll('"', '""')}"`;
-    const csvRows = [
-      ["claim_id", "participant_id", "cycle_id", "status", "eligible_at", "requested_at", "settled_at", "gross_need", "platform_fee", "transfer_count", "failure_code"],
-      ...filtered.map((row) => [row.id, row.participantId, row.cycleId, row.status, row.eligibleAt, row.requestedAt || "", row.settledAt || "", atomicDecimal(row.grossNeed), atomicDecimal(row.platformFee), row.transferCount, row.failureCode || ""]),
-    ];
-    const blob = new Blob([csvRows.map((row) => row.map(escape).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `atlas-claims-${asOfDate}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
-
   return <div className="af-content af-claims-content">
-    <div className="af-claims-toolbar"><div className="af-claim-tabs" role="tablist">{dynamicTabs.map(([id, label, count]) => <button role="tab" aria-selected={status === id} className={status === id ? "active" : ""} type="button" onClick={() => setStatus(id)} key={id}>{label} · {count}</button>)}</div><label className="af-date-control"><CalendarDays size={15} /><span>Срез</span><input type="date" value={asOfDate} onChange={(event) => setAsOfDate(event.target.value)} /></label><div className="af-page-actions"><button className="af-export-action" type="button" onClick={exportCsv}><Download size={15} />Экспорт</button><button className="primary" type="button" onClick={claimsRequest.reload}><RefreshCw size={15} />Обновить</button></div></div>
+    <div className="af-claims-toolbar"><div className="af-claim-tabs" role="tablist">{dynamicTabs.map(([id, label, count]) => <button role="tab" aria-selected={status === id} className={status === id ? "active" : ""} type="button" onClick={() => setStatus(id)} key={id}>{label} · {count}</button>)}</div><label className="af-date-control"><CalendarDays size={15} /><span>Срез</span><input type="date" value={asOfDate} onChange={(event) => setAsOfDate(event.target.value)} /></label><div className="af-page-actions"><button className="primary" type="button" onClick={claimsRequest.reload}><RefreshCw size={15} />Обновить</button></div></div>
     <div className={`af-quality-notice ${meta.partial ? "is-partial" : ""}`}><span><AlertCircle size={13} /></span><p><strong>{meta.partial ? "Частичное покрытие источника." : "Источник сверён."}</strong> Блок {meta.asOfBlockNumber.toLocaleString("en-US")} · {meta.finality} · цепочка переводов и история сроков обработки неполные.</p><b>{meta.reconciliationStatus}</b></div>
     <div className="af-claims-info"><Info size={20} /><p><strong>Заявка с ошибкой остаётся открытым обязательством.</strong> Сумма исключается из нагрузки только после подтверждённой выплаты, отмены или истечения срока. Platform Fee удерживается внутри Gross.</p><button type="button" onClick={() => setMethodologyOpen(true)}>Методика</button></div>
     <section className="af-metrics af-metrics-five"><Metric accent="#ff8716" label="Открытые обязательства" tag={`${openRows.length}`} tagTone="orange" value={formatWireMoney(sumClaims(openRows))} note="Доступно + запрошено + в обработке + ошибки" /><Metric accent="#7a5bb8" label="Доступно к запросу" tag={`${eligibleRows.length}`} tagTone="violet" value={formatWireMoney(sumClaims(eligibleRows))} note="Сумма на текущем срезе" /><Metric accent="#4e76d0" label="В обработке" tag={`${processingRows.length}`} tagTone="blue" value={formatWireMoney(sumClaims(processingRows))} note="Запрошено или транзакция обрабатывается" /><Metric accent="#cf534c" label="Ошибки" tag="ТРЕБУЕТ ДЕЙСТВИЯ" tagTone="red" value={formatWireMoney(sumClaims(failedRows))} note={`${failedRows.length} обязательство остаётся открытым`} noteTone="risk" /><Metric accent="#239a77" label="Медианное время до выплаты" tag="N/A" tagTone="green" value="N/A" note="Недостаточно истории выплат для проверки модели" /></section>

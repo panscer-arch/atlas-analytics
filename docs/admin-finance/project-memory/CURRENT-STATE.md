@@ -16,6 +16,13 @@
 - пять MVP-вкладок получили понятную русскую операционную терминологию без
   изменения API-полей и расчётов; Forecast в интерфейсе называется календарём
   будущих обязательств, а Claims — заявками и выплатами;
+- выделена отдельная API-only точка входа Internal Alpha: staging bundle
+  содержит только пять MVP-вкладок и не включает full-product routes,
+  демонстрационные финансовые наборы, CSV export или write actions;
+- верхний уровень MVP фиксирует block number + block hash на время открытой
+  страницы; переходы между пятью вкладками выполняются без reload, а каждый
+  API-запрос передаёт тот же snapshot pin. При смене snapshot сервер отвечает
+  `409 snapshot_changed`, поэтому смешанный финансовый экран не рендерится;
 - Liquidity и Reconciliation больше не падают на частичном ответе источника:
   отсутствующие balances/dataCoverage отображаются как явный пробел данных;
   локальная browser QA API-режима прошла на пяти вкладках и mobile без console
@@ -103,7 +110,8 @@
   и блокировка остальных маршрутов;
 - отдельный `alpha` Admin API без fallback на demo;
 - пять MVP-вкладок Reconciliation, Flows, Liquidity, Cycles и Claims работают
-  в API mode на одном versioned on-chain snapshot;
+  в API mode на одном pinned versioned on-chain snapshot в рамках открытой
+  страницы; номер блока и hash проверяются сервером;
 - Cycles разделяет all-time created/open/closed, claimable now и
   source-reported maximum exposure на 7/30 дней; эти load aggregates не
   выдаются за cash-out forecast;
@@ -287,6 +295,11 @@ smoke: Alpha readiness и `/meta` вернули HTTP 200, provider snapshot б�
 недоступном API: `/admin/reconciliation` открывает пять MVP-пунктов, не содержит
 старый password gateway, не имеет page overflow и fail closed без demo. Smoke
 screenshots находятся в `artifacts/admin-finance-staging`.
+
+Локальная сборка от 16.08.2026 дополнительно имеет bundle regression gate:
+отложенные full-product routes, demo-маркеры, CSV filenames, export labels и
+write-action selectors считаются ошибкой сборки. Эти изменения пока находятся
+в draft PR и не развёрнуты на Hostinger/staging.
 
 ## Текущий рабочий этап
 

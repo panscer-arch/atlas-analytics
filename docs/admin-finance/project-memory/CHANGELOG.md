@@ -18,6 +18,14 @@
   разбивки по контрактам или матрицы покрытия теперь даёт явное состояние
   `данные не переданы`, а не падение React. API desktop/mobile QA прошла без
   console errors и page overflow.
+- Добавлена отдельная API-only MVP entry point. Dedicated staging bundle
+  содержит только Reconciliation, Flows, Liquidity, Cycles и Claims; full
+  routes, demo financial datasets, CSV export и write actions исключаются и
+  блокируются regression-тестом сборки.
+- MVP shell сохраняет pinned block number/hash при переходах между пятью
+  вкладками без полной перезагрузки. Flows и Reconciliation закрепляют все
+  составные запросы тем же snapshot; Alpha API fail closed отвечает
+  `409 snapshot_changed` при несовпадении блока или hash.
 
 ## 2026-08-15
 

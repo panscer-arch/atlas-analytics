@@ -374,6 +374,12 @@ function validateAlphaMeta(payload) {
       code: "invalid_alpha_meta_response",
     });
   }
+  if (!Number.isSafeInteger(payload.snapshot.asOfBlockNumber) || payload.snapshot.asOfBlockNumber < 1
+    || !/^0x[0-9a-f]{64}$/i.test(payload.snapshot.asOfBlockHash || "")) {
+    throw new AdminFinanceApiError("Admin Alpha snapshot identity is invalid.", {
+      code: "invalid_alpha_meta_response",
+    });
+  }
   const seen = new Set();
   payload.dataCoverage.forEach((item) => {
     const required = ["id", "label", "status", "source", "affectsRoutes", "blocker", "nextAction", "gateId", "owner"];
@@ -771,7 +777,7 @@ export function createAdminFinanceClient(options = {}) {
     getCompanyReceipts: async (query, options) => validateCompanyReceipts(await get("/finance/company-receipts", query, options)),
     getCycles: async (query, options) => validateCycles(await get("/finance/cycles", query, options)),
     getClaims: async (query, options) => validateClaims(await get("/claims", query, options)),
-    getClaim: async (claimId, options) => validateClaims(await get(`/claims/${encodeURIComponent(claimId)}`, undefined, options), { single: true }),
+    getClaim: async (claimId, query = {}, options) => validateClaims(await get(`/claims/${encodeURIComponent(claimId)}`, query, options), { single: true }),
     searchParticipants: async (query, options) => validateParticipantSearch(await get("/participants/search", query, options)),
     getParticipant: async (participantId, options) => validateParticipantProfile(await get(`/participants/${encodeURIComponent(participantId)}`, undefined, options)),
     getParticipantFirstLine: async (participantId, query, options) => validateParticipantFirstLine(await get(`/participants/${encodeURIComponent(participantId)}/first-line`, query, options)),

@@ -129,6 +129,16 @@ try {
   assert.equal(cash.data[0].netFlow.amountRaw, "-1000000000000000000");
   assert.equal(cash.meta.partial, true);
 
+  const snapshotPin = `asOfBlock=${snapshot.asOfBlockNumber}&asOfBlockHash=${encodeURIComponent(snapshot.asOfBlockHash)}`;
+  const pinnedCashResponse = await request(healthy.base, `/finance/cash-movements?${range}&perimeter=atlas_consolidated&granularity=day&limit=100&${snapshotPin}`);
+  assert.equal(pinnedCashResponse.status, 200);
+  const incompletePinResponse = await request(healthy.base, `/finance/cash-movements?${range}&perimeter=atlas_consolidated&asOfBlock=${snapshot.asOfBlockNumber}`);
+  assert.equal(incompletePinResponse.status, 400);
+  assert.equal((await incompletePinResponse.json()).code, "invalid_snapshot_pin");
+  const changedSnapshotResponse = await request(healthy.base, `/finance/cash-movements?${range}&perimeter=atlas_consolidated&asOfBlock=${snapshot.asOfBlockNumber}&asOfBlockHash=${encodeURIComponent(`0x${"ef".repeat(32)}`)}`);
+  assert.equal(changedSnapshotResponse.status, 409);
+  assert.equal((await changedSnapshotResponse.json()).code, "snapshot_changed");
+
   const liquidity = await (await request(healthy.base, `/finance/liquidity/roll-forward?${range}&perimeter=payout_contract&granularity=day`)).json();
   assert.equal(liquidity.data.summary.canonicalClosing.amountRaw, "3000000000000000000");
   assert.equal(liquidity.data.summary.openingBalance.available, false);

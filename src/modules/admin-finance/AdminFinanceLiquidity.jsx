@@ -85,7 +85,7 @@ export default function AdminFinanceLiquidity() {
     return { from: from.toISOString(), to: to.toISOString() };
   }, []);
   const request = useAdminFinanceLiquidity({ ...range, perimeter: "payout_contract", granularity: "day" });
-  return request.apiEnabled ? <ApiLiquidity request={request}/> : <StaticAdminFinanceLiquidity/>;
+  return __ADMIN_FINANCE_API_ONLY__ || request.apiEnabled ? <ApiLiquidity request={request}/> : <StaticAdminFinanceLiquidity/>;
 }
 
 function StaticAdminFinanceLiquidity() {

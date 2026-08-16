@@ -181,7 +181,7 @@ export default function AdminFinanceCycles() {
   const query = useMemo(() => reportRange(period, asOfDate), [asOfDate, period]);
   const cyclesRequest = useAdminFinanceCycles(query);
 
-  if (!cyclesRequest.apiEnabled) return <StaticCycles />;
+  if (!__ADMIN_FINANCE_API_ONLY__ && !cyclesRequest.apiEnabled) return <StaticCycles />;
   if (cyclesRequest.status !== "ready") return <CyclesRequestState request={cyclesRequest} />;
 
   const source = cyclesRequest.data;
@@ -217,27 +217,12 @@ export default function AdminFinanceCycles() {
     share: totalOpen ? `${(((Number.isInteger(row.openCount) ? row.openCount : Math.max(0, row.openedCount - row.closedCount)) / totalOpen) * 100).toFixed(1)}%` : "0.0%",
   }));
 
-  function exportCsv() {
-    const escape = (value) => `"${String(value).replaceAll('"', '""')}"`;
-    const csvRows = [
-      ["product_key", "label", "created_all_time", "open_now", "closed_all_time", "principal_volume_all_time", "claimable_count", "claimable_now", "next_7_days_load", "next_30_days_load", "remaining_load", "ruleset_version"],
-      ...visibleRows.map((row) => [row.productKey, row.label, row.openedCount, row.openCount ?? "N/A", row.closedCount, atomicDecimal(row.principal), row.claimableCount ?? "N/A", atomicDecimal(row.claimableNow), atomicDecimal(row.next7DaysLoad), atomicDecimal(row.next30DaysLoad), atomicDecimal(row.projectedMaturityOutflow), row.rulesetVersion]),
-    ];
-    const blob = new Blob([csvRows.map((row) => row.map(escape).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `atlas-cycles-${asOfDate}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
-
   return <div className="af-content">
     <div className="af-cycle-toolbar">
       <div className="af-periods">{overviewPeriods.map((item) => <button type="button" className={period === item.id ? "active" : ""} onClick={() => setPeriod(item.id)} key={item.id}>{item.label}</button>)}</div>
       <label className="af-filter-select"><span>Тип:</span><select value={type} onChange={(event) => setType(event.target.value)}><option value="all">Все циклы</option>{rows.map((row) => <option value={row.productKey} key={row.productKey}>{row.label}</option>)}</select></label>
       <label className="af-date-control"><CalendarDays size={15} /><span>Срез на дату</span><input type="date" value={asOfDate} onChange={(event) => setAsOfDate(event.target.value)} /></label>
-      <div className="af-page-actions"><button type="button" onClick={() => setRulesOpen(true)}><BookOpenCheck size={15} />Правила циклов</button><button className="primary af-export-action" type="button" onClick={exportCsv}><Download size={15} />Экспорт</button></div>
+      <div className="af-page-actions"><button type="button" onClick={() => setRulesOpen(true)}><BookOpenCheck size={15} />Правила циклов</button></div>
     </div>
 
     <div className={`af-quality-notice ${meta.partial ? "is-partial" : ""}`}><span><AlertCircle size={13} /></span><p><strong>{meta.partial ? "Частичное покрытие источника." : "Источник сверён."}</strong> Блок {meta.asOfBlockNumber.toLocaleString("en-US")} · {meta.finality} · {meta.sourceStatus}. Количества и объёмы ниже показаны за всё время; точные даты возникновения обязательств пока не переданы.</p><b>{meta.reconciliationStatus}</b></div>

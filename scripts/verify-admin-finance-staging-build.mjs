@@ -23,11 +23,27 @@ for (const forbidden of [
   "Неверный пароль",
   "Сервер сохранения недоступен",
   "supersus-access",
+  "Доход компании",
+  "Участники и лидеры",
+  "Кампании и когорты",
+  "Контроль рисков",
+  "atlas-money-flows",
+  "atlas-cycles-",
+  "atlas-claims-",
+  "atlas-liquidity-",
+  "DEMO TARGET",
+  "Демонстрационный запуск",
+  "af-write-action",
+  "Экспорт",
 ]) {
-  assert(!javascript.includes(forbidden), `Legacy access gateway leaked into staging bundle: ${forbidden}`);
+  assert(!javascript.includes(forbidden), `Forbidden full/demo/write capability leaked into staging bundle: ${forbidden}`);
 }
 
-assert(javascript.includes("Финансовый контроль"), "Admin Finance application is missing from staging bundle");
+for (const section of ["Сверка данных", "Денежные потоки", "Ликвидность", "Циклы", "Заявки и выплаты"]) {
+  assert(javascript.includes(section), `MVP section is missing from staging bundle: ${section}`);
+}
 assert(javascript.includes("INTERNAL ALPHA"), "MVP release marker is missing from staging bundle");
+assert(javascript.includes("pushState"), "MVP navigation must preserve the pinned snapshot without full-page reloads");
+assert(javascript.includes("asOfBlockHash"), "Block hash snapshot pin is missing from the MVP client");
 
 console.log("Admin Finance dedicated staging build checks passed.");

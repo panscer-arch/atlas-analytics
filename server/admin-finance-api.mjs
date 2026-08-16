@@ -186,6 +186,18 @@ function assertAllowedQuery(url, allowed) {
   }
 }
 
+function assertDemoSnapshotPin(url) {
+  const requestedBlock = url.searchParams.get("asOfBlock");
+  const requestedHash = url.searchParams.get("asOfBlockHash");
+  if (!requestedBlock && !requestedHash) return;
+  if (!requestedBlock || !/^[0-9]+$/.test(requestedBlock) || !requestedHash || !/^0x[0-9a-f]{64}$/i.test(requestedHash)) {
+    throw new ApiProblem(400, "invalid_snapshot_pin", "Invalid snapshot pin", "Both asOfBlock and asOfBlockHash are required.");
+  }
+  if (Number(requestedBlock) !== demoSnapshot.asOfBlockNumber || requestedHash.toLowerCase() !== demoSnapshot.asOfBlockHash.toLowerCase()) {
+    throw new ApiProblem(409, "snapshot_changed", "Financial snapshot changed", "Reload the complete screen to obtain one consistent snapshot.");
+  }
+}
+
 function requiredQuery(url, name) {
   const value = url.searchParams.get(name);
   if (!value) throw new ApiProblem(400, "missing_query_parameter", "Missing query parameter", `Query parameter '${name}' is required.`);
@@ -436,16 +448,13 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path === `${BASE_PATH}/finance/overview`) {
-    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "asOfBlock"]));
+    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "asOfBlock", "asOfBlockHash"]));
     const range = parseDateRange(url);
     const perimeter = parsePerimeter(url);
     if (perimeter !== "atlas_consolidated") {
       throw new ApiProblem(400, "overview_requires_consolidated_perimeter", "Invalid overview perimeter", "Use atlas_consolidated; every overview section declares its own financial perimeter.");
     }
-    const asOfBlock = url.searchParams.get("asOfBlock");
-    if (asOfBlock && (!/^[0-9]+$/.test(asOfBlock) || Number(asOfBlock) !== demoSnapshot.asOfBlockNumber)) {
-      throw new ApiProblem(422, "snapshot_not_available", "Requested snapshot is not available", "The demo API exposes one finalized snapshot only.");
-    }
+    assertDemoSnapshotPin(url);
     const coverageFrom = Date.parse(financeOverview.coverage.from);
     const coverageTo = Date.parse(financeOverview.coverage.to);
     const partial = Date.parse(range.from) < coverageFrom || Date.parse(range.to) > coverageTo;
@@ -459,9 +468,10 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path === `${BASE_PATH}/finance/cash-movements`) {
-    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity", "cursor", "limit", "asOfBlock", "asOfBlockHash"]));
     const range = parseDateRange(url);
     const perimeter = parsePerimeter(url);
+    assertDemoSnapshotPin(url);
     const granularity = url.searchParams.get("granularity") || "day";
     if (!new Set(["day", "week", "month"]).has(granularity)) throw new ApiProblem(400, "invalid_granularity", "Invalid granularity");
     const availableRows = cashMovementRowsByPerimeter[perimeter] || [];
@@ -483,9 +493,10 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path === `${BASE_PATH}/finance/liquidity/roll-forward`) {
-    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity"]));
+    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity", "asOfBlock", "asOfBlockHash"]));
     const range = parseDateRange(url);
     const perimeter = parsePerimeter(url);
+    assertDemoSnapshotPin(url);
     const granularity = url.searchParams.get("granularity") || "day";
     if (!new Set(["day", "week", "month"]).has(granularity)) throw new ApiProblem(400, "invalid_granularity", "Invalid granularity");
     return dataset(liquidityRollForward, requestId, { range, perimeter, reconciliationStatus: "exception" });
@@ -558,8 +569,9 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path === `${BASE_PATH}/finance/cycles`) {
-    assertAllowedQuery(url, new Set(["from", "to", "asOfBlock", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["from", "to", "asOfBlock", "asOfBlockHash", "cursor", "limit"]));
     const range = parseDateRange(url);
+    assertDemoSnapshotPin(url);
     return paginatedDataset(paginate(cycleRows, url, `cycles:${range.from}:${range.to}`, cursorSecret), requestId, {
       range,
       perimeter: "participant_economics",
@@ -569,8 +581,9 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path === `${BASE_PATH}/claims`) {
-    assertAllowedQuery(url, new Set(["from", "to", "status", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["from", "to", "status", "cursor", "limit", "asOfBlock", "asOfBlockHash"]));
     const range = parseDateRange(url);
+    assertDemoSnapshotPin(url);
     const status = url.searchParams.get("status");
     if (status && !VALID_CLAIM_STATUSES.has(status)) throw new ApiProblem(400, "invalid_claim_status", "Invalid claim status");
     const inRange = claimRows.filter((claim) => Date.parse(claim.eligibleAt) >= Date.parse(range.from) && Date.parse(claim.eligibleAt) < Date.parse(range.to));
@@ -584,7 +597,8 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path.startsWith(`${BASE_PATH}/claims/`)) {
-    assertAllowedQuery(url, new Set());
+    assertAllowedQuery(url, new Set(["asOfBlock", "asOfBlockHash"]));
+    assertDemoSnapshotPin(url);
     const id = path.slice(`${BASE_PATH}/claims/`.length);
     if (!UUID_PATTERN.test(id)) throw new ApiProblem(404, "resource_not_found", "Resource not found");
     const claim = claimRows.find((item) => item.id === id);
@@ -650,12 +664,14 @@ function handleGet(url, requestId, cursorSecret) {
   }
 
   if (path === `${BASE_PATH}/reconciliation/runs`) {
-    assertAllowedQuery(url, new Set(["cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["cursor", "limit", "asOfBlock", "asOfBlockHash"]));
+    assertDemoSnapshotPin(url);
     return paginatedDataset(paginate(reconciliationRuns, url, "reconciliation:runs", cursorSecret), requestId, { reconciliationStatus: "exception" });
   }
 
   if (path === `${BASE_PATH}/reconciliation/exceptions`) {
-    assertAllowedQuery(url, new Set(["status", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["status", "cursor", "limit", "asOfBlock", "asOfBlockHash"]));
+    assertDemoSnapshotPin(url);
     const status = url.searchParams.get("status");
     if (status && !VALID_EXCEPTION_STATUSES.has(status)) {
       throw new ApiProblem(400, "invalid_exception_status", "Invalid reconciliation exception status");

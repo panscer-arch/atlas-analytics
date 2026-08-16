@@ -34,6 +34,18 @@ function assertAllowedQuery(url, allowed) {
   }
 }
 
+function assertSnapshotPin(url, snapshot) {
+  const requestedBlock = url.searchParams.get("asOfBlock");
+  const requestedHash = url.searchParams.get("asOfBlockHash");
+  if (!requestedBlock && !requestedHash) return;
+  if (!requestedBlock || !/^[0-9]+$/.test(requestedBlock) || !requestedHash || !/^0x[0-9a-f]{64}$/i.test(requestedHash)) {
+    problem(400, "invalid_snapshot_pin", "Invalid snapshot pin", "Both asOfBlock and asOfBlockHash are required.");
+  }
+  if (Number(requestedBlock) !== snapshot.asOfBlockNumber || requestedHash.toLowerCase() !== snapshot.asOfBlockHash.toLowerCase()) {
+    problem(409, "snapshot_changed", "Financial snapshot changed", "Reload the complete screen to obtain one consistent snapshot.");
+  }
+}
+
 function requiredQuery(url, name) {
   const value = url.searchParams.get(name);
   if (!value) problem(400, "missing_query_parameter", "Missing query parameter", `Query parameter '${name}' is required.`);
@@ -366,19 +378,19 @@ export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions
   }
 
   if (path === `${BASE_PATH}/finance/overview`) {
-    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "asOfBlock"]));
+    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "asOfBlock", "asOfBlockHash"]));
     const range = parseRange(url);
     const perimeter = parsePerimeter(url);
     if (perimeter !== "atlas_consolidated") problem(400, "overview_requires_consolidated_perimeter", "Invalid overview perimeter");
-    const requestedBlock = url.searchParams.get("asOfBlock");
-    if (requestedBlock && Number(requestedBlock) !== snapshot.asOfBlockNumber) problem(422, "snapshot_not_available", "Requested snapshot is not available");
+    assertSnapshotPin(url, snapshot);
     return dataset(buildOverview(snapshot), snapshot, requestId, { range, perimeter });
   }
 
   if (path === `${BASE_PATH}/finance/cash-movements`) {
-    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity", "cursor", "limit", "asOfBlock", "asOfBlockHash"]));
     const range = parseRange(url);
     const perimeter = parsePerimeter(url);
+    assertSnapshotPin(url, snapshot);
     const granularity = url.searchParams.get("granularity") || "day";
     if (granularity !== "day") problem(422, "granularity_not_available", "Only daily source buckets are available in Internal Alpha");
     const rows = (snapshot.cashMovementsByPerimeter[perimeter] || []).filter((row) => availableInRange(row, range));
@@ -386,9 +398,10 @@ export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions
   }
 
   if (path === `${BASE_PATH}/finance/liquidity/roll-forward`) {
-    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity"]));
+    assertAllowedQuery(url, new Set(["from", "to", "perimeter", "granularity", "asOfBlock", "asOfBlockHash"]));
     const range = parseRange(url);
     const perimeter = parsePerimeter(url);
+    assertSnapshotPin(url, snapshot);
     if ((url.searchParams.get("granularity") || "day") !== "day") problem(422, "granularity_not_available", "Only the current checkpoint is available in Internal Alpha");
     return dataset(snapshot.liquidity, snapshot, requestId, {
       range,
@@ -398,10 +411,9 @@ export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions
   }
 
   if (path === `${BASE_PATH}/finance/cycles`) {
-    assertAllowedQuery(url, new Set(["from", "to", "asOfBlock", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["from", "to", "asOfBlock", "asOfBlockHash", "cursor", "limit"]));
     const range = parseRange(url);
-    const requestedBlock = url.searchParams.get("asOfBlock");
-    if (requestedBlock && Number(requestedBlock) !== snapshot.asOfBlockNumber) problem(422, "snapshot_not_available", "Requested snapshot is not available");
+    assertSnapshotPin(url, snapshot);
     return paginated(snapshot.cycles, snapshot, requestId, {
       range,
       perimeter: "participant_economics",
@@ -411,8 +423,9 @@ export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions
   }
 
   if (path === `${BASE_PATH}/claims`) {
-    assertAllowedQuery(url, new Set(["from", "to", "status", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["from", "to", "status", "cursor", "limit", "asOfBlock", "asOfBlockHash"]));
     const range = parseRange(url);
+    assertSnapshotPin(url, snapshot);
     const status = url.searchParams.get("status");
     if (status && !CLAIM_STATUSES.has(status)) problem(400, "invalid_claim_status", "Invalid claim status");
     return paginated([], snapshot, requestId, {
@@ -426,7 +439,8 @@ export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions
   if (path.startsWith(`${BASE_PATH}/claims/`)) problem(404, "resource_not_found", "Resource not found");
 
   if (path === `${BASE_PATH}/reconciliation/runs`) {
-    assertAllowedQuery(url, new Set(["cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["cursor", "limit", "asOfBlock", "asOfBlockHash"]));
+    assertSnapshotPin(url, snapshot);
     return paginated([buildRun(snapshot)], snapshot, requestId, {
       perimeter: "payout_contract",
       limit: parseLimit(url),
@@ -434,7 +448,8 @@ export async function handleAlphaGet(url, requestId, snapshot, gateZeroDecisions
   }
 
   if (path === `${BASE_PATH}/reconciliation/exceptions`) {
-    assertAllowedQuery(url, new Set(["status", "cursor", "limit"]));
+    assertAllowedQuery(url, new Set(["status", "cursor", "limit", "asOfBlock", "asOfBlockHash"]));
+    assertSnapshotPin(url, snapshot);
     const status = url.searchParams.get("status");
     if (status && !EXCEPTION_STATUSES.has(status)) problem(400, "invalid_exception_status", "Invalid reconciliation exception status");
     const exceptions = buildExceptions(snapshot).filter((item) => !status || item.status === status);

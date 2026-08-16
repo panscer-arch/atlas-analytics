@@ -26,6 +26,10 @@ function adminFinanceFallback(enabled) {
 export default defineConfig(() => {
   const localCaptureSession = process.env.ATLAS_ADMIN_FINANCE_CAPTURE_SESSION;
   const adminFinanceEntry = process.env.VITE_APP_ENTRY === "admin-finance";
+  const adminFinanceMvp = process.env.VITE_ADMIN_FINANCE_RELEASE_SCOPE === "mvp";
+  const adminFinanceApiOnly = adminFinanceEntry
+    && adminFinanceMvp
+    && process.env.VITE_ADMIN_FINANCE_DATA_SOURCE === "api";
   const adminFinanceProxy = localCaptureSession
     ? {
         target: "http://127.0.0.1:8791",
@@ -39,6 +43,16 @@ export default defineConfig(() => {
 
   return {
     plugins: [adminFinanceFallback(adminFinanceEntry), react()],
+    define: {
+      __ADMIN_FINANCE_API_ONLY__: JSON.stringify(adminFinanceApiOnly),
+    },
+    resolve: {
+      alias: {
+        "#admin-finance-app": resolve(process.cwd(), adminFinanceMvp
+          ? "src/modules/admin-finance/AdminFinanceMvpApp.jsx"
+          : "src/modules/admin-finance/AdminFinanceApp.jsx"),
+      },
+    },
     build: adminFinanceEntry
       ? {
           rollupOptions: {

@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import AdminFinanceApp from "./modules/admin-finance/AdminFinanceApp";
+import AdminFinanceApp from "#admin-finance-app";
 import "./modules/admin-finance/styles/admin-finance-entry.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(

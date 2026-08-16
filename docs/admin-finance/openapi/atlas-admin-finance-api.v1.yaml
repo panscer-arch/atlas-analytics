@@ -73,6 +73,7 @@ paths:
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/Perimeter"
         - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           description: Multi-perimeter executive snapshot with explicit section ownership.
@@ -97,6 +98,8 @@ paths:
         - $ref: "#/components/parameters/Granularity"
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           $ref: "#/components/responses/PaginatedDataset"
@@ -114,6 +117,7 @@ paths:
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
       responses:
@@ -222,6 +226,8 @@ paths:
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/Perimeter"
         - $ref: "#/components/parameters/Granularity"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           $ref: "#/components/responses/Dataset"
@@ -257,6 +263,8 @@ paths:
         - $ref: "#/components/parameters/ClaimStatus"
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           description: Claim page.
@@ -276,6 +284,8 @@ paths:
       summary: Return one claim, payout components and source lineage.
       parameters:
         - $ref: "#/components/parameters/ClaimId"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           description: Claim detail.
@@ -562,6 +572,8 @@ paths:
       parameters:
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           $ref: "#/components/responses/PaginatedDataset"
@@ -581,6 +593,8 @@ paths:
           schema: { type: string, enum: [open, acknowledged, resolved, accepted] }
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/AsOfBlock"
+        - $ref: "#/components/parameters/AsOfBlockHash"
       responses:
         "200":
           $ref: "#/components/responses/PaginatedDataset"
@@ -901,7 +915,13 @@ components:
     AsOfBlock:
       name: asOfBlock
       in: query
+      description: Must be supplied together with asOfBlockHash to pin a financial snapshot.
       schema: { type: integer, format: int64, minimum: 1 }
+    AsOfBlockHash:
+      name: asOfBlockHash
+      in: query
+      description: Must match asOfBlock; a mismatch fails closed and requires a complete screen reload.
+      schema: { type: string, pattern: "^0x[0-9a-fA-F]{64}$" }
     Granularity:
       name: granularity
       in: query

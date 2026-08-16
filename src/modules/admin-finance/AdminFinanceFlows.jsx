@@ -30,11 +30,18 @@ import {
   formatMoney,
   moneyPerimeters,
   outgoingWaterfall,
-  overviewPeriods,
 } from "./data/overviewData";
 
 const scales = { "7d": 0.42, "1m": 1, "3m": 3.15, "6m": 6.25, "1y": 12.4, all: 17.8 };
 const periodDays = { "7d": 7, "1m": 30, "3m": 90, "6m": 180, "1y": 365, all: 366 };
+const periodOptions = [
+  { id: "7d", label: "Неделя" },
+  { id: "1m", label: "Месяц" },
+  { id: "3m", label: "3 месяца" },
+  { id: "6m", label: "Полгода" },
+  { id: "1y", label: "Год" },
+  { id: "all", label: "Всё время" },
+];
 
 function reportRange(period, asOfDate) {
   const to = new Date(`${asOfDate}T00:00:00.000Z`);
@@ -110,7 +117,10 @@ function FlowTooltip({ active, payload, label, apiMode }) {
       <strong>{label}</strong>
       {payload.map((item) => {
         const wireValue = item.payload?.[`${item.dataKey}Money`];
-        return <span key={item.dataKey} style={{ color: item.color }}>{item.name}: {apiMode && wireValue ? formatWireMoney(wireValue) : formatMoney(item.value)}</span>;
+        const value = __ADMIN_FINANCE_API_ONLY__
+          ? formatWireMoney(wireValue)
+          : apiMode && wireValue ? formatWireMoney(wireValue) : formatMoney(item.value);
+        return <span key={item.dataKey} style={{ color: item.color }}>{item.name}: {value}</span>;
       })}
     </div>
   );
@@ -173,12 +183,12 @@ export default function AdminFinanceFlows() {
     demoDate: "2026-08-04",
   }));
   const [methodologyOpen, setMethodologyOpen] = useState(false);
-  const scale = scales[period];
-  const periodLabel = overviewPeriods.find((item) => item.id === period)?.label || "Месяц";
+  const scale = __ADMIN_FINANCE_API_ONLY__ ? 1 : scales[period];
+  const periodLabel = periodOptions.find((item) => item.id === period)?.label || "Месяц";
   const query = useMemo(() => reportRange(period, asOfDate), [asOfDate, period]);
   const flowRequest = useAdminFinanceFlows(query);
 
-  const demoTotals = useMemo(() => ({
+  const demoTotals = useMemo(() => __ADMIN_FINANCE_API_ONLY__ ? null : ({
     incoming: Math.round(18420 * scale),
     outgoing: Math.round(5612 * scale),
     net: Math.round(12808 * scale),
@@ -220,7 +230,7 @@ export default function AdminFinanceFlows() {
 
   if (flowRequest.apiEnabled && flowRequest.status !== "ready") return <FlowRequestState request={flowRequest} />;
 
-  const apiMode = Boolean(apiView);
+  const apiMode = __ADMIN_FINANCE_API_ONLY__ || Boolean(apiView);
   const sourceMeta = apiView?.meta;
   const totals = apiMode ? apiView.totals : demoTotals;
   const visibleSeries = apiMode ? apiView.series : flowSeries;
@@ -231,10 +241,7 @@ export default function AdminFinanceFlows() {
   const visiblePeriodLabel = sourceMeta?.partial ? "доступный срез" : periodLabel;
 
   function exportCsv() {
-    const rows = apiMode ? [
-      ["bucket_start", "bucket_end", "perimeter", "external_in", "external_out", "net_flow", "block", "source_status"],
-      ...flowRequest.data.consolidated.data.map((row) => [row.bucketStart, row.bucketEnd, "atlas_consolidated", atomicDecimal(row.externalIn), atomicDecimal(row.externalOut), atomicDecimal(row.netFlow), sourceMeta.asOfBlockNumber, sourceMeta.sourceStatus]),
-    ] : [
+    const rows = [
       ["metric", "period", "cycle", "token", "value", "status"],
       ["external_incoming", periodLabel, cycle, token, totals.incoming, "DEMO"],
       ["external_outgoing", periodLabel, cycle, token, totals.outgoing, "DEMO"],
@@ -255,14 +262,14 @@ export default function AdminFinanceFlows() {
     <div className="af-content">
       <div className="af-flow-toolbar">
         <div className="af-periods" aria-label="Период отчета">
-          {overviewPeriods.map((item) => <button className={period === item.id ? "active" : ""} type="button" onClick={() => setPeriod(item.id)} key={item.id}>{item.label}</button>)}
+          {periodOptions.map((item) => <button className={period === item.id ? "active" : ""} type="button" onClick={() => setPeriod(item.id)} key={item.id}>{item.label}</button>)}
         </div>
         <label className="af-filter-select" title="Фильтр применяется к таблице разбивки циклов"><span>Таблица:</span><select value={cycle} onChange={(event) => setCycle(event.target.value)}><option value="all">Все циклы</option>{apiMode ? allCycleRows.map((row) => <option value={row.productKey} key={row.productKey}>{row.name}</option>) : <><option value="daily_200_100">Daily 200 · $100</option><option value="lockup_30_100">Lockup 30 · $100</option><option value="daily_200_10000">Daily 200 · $10,000</option><option value="launch">Launch</option></>}</select></label>
         <label className="af-filter-select"><span>Токен:</span><select value={token} onChange={(event) => setToken(event.target.value)}><option>USDT</option><option disabled>USDC</option></select></label>
         <label className="af-date-control"><CalendarDays size={15} /><span>Срез на дату</span><input type="date" value={asOfDate} onChange={(event) => setAsOfDate(event.target.value)} /></label>
         <div className="af-page-actions">
           <button type="button" onClick={() => setMethodologyOpen(true)}><BookOpenCheck size={15} />Методика</button>
-          <button className="primary af-export-action" type="button" onClick={exportCsv}><Download size={15} />Экспорт</button>
+          {apiMode ? null : <button className="primary af-export-action" type="button" onClick={exportCsv}><Download size={15} />Экспорт</button>}
         </div>
       </div>
 

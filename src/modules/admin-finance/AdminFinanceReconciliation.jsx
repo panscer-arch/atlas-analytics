@@ -64,7 +64,7 @@ function ApiReconciliation({ request }) {
 
 export default function AdminFinanceReconciliation() {
   const request = useAdminFinanceReconciliation();
-  return request.apiEnabled ? <ApiReconciliation request={request}/> : <StaticAdminFinanceReconciliation/>;
+  return __ADMIN_FINANCE_API_ONLY__ || request.apiEnabled ? <ApiReconciliation request={request}/> : <StaticAdminFinanceReconciliation/>;
 }
 
 function StaticAdminFinanceReconciliation() {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { adminFinanceApi, AdminFinanceApiError } from "./adminFinanceApi";
 import { adminFinanceApiEnabled, adminFinanceDisabled } from "./adminFinanceConfig";
 
@@ -42,6 +42,51 @@ function useAdminFinanceRequest(loader) {
 
 const loadMeta = (options) => adminFinanceApi.getMeta(options);
 const loadGateZero = (options) => adminFinanceApi.getGateZero(options);
+const AdminFinanceSnapshotContext = createContext(null);
+
+function snapshotPinFromSnapshot(snapshot) {
+  if (!Number.isSafeInteger(snapshot?.asOfBlockNumber) || !/^0x[0-9a-f]{64}$/i.test(snapshot?.asOfBlockHash || "")) {
+    throw new AdminFinanceApiError("Admin API did not provide a valid snapshot pin.", {
+      code: "invalid_snapshot_pin",
+    });
+  }
+  return {
+    asOfBlock: snapshot.asOfBlockNumber,
+    asOfBlockHash: snapshot.asOfBlockHash,
+  };
+}
+
+function snapshotPinFromMeta(alphaMeta) {
+  return snapshotPinFromSnapshot(alphaMeta?.snapshot);
+}
+
+export function AdminFinanceSnapshotProvider({ alphaMeta, children }) {
+  const value = useMemo(() => alphaMeta || null, [
+    alphaMeta?.snapshot?.asOfBlockNumber,
+    alphaMeta?.snapshot?.asOfBlockHash,
+  ]);
+  return createElement(AdminFinanceSnapshotContext.Provider, { value }, children);
+}
+
+function useAdminFinanceSharedMeta() {
+  return useContext(AdminFinanceSnapshotContext);
+}
+
+function optionalSnapshotPin(alphaMeta) {
+  return alphaMeta ? snapshotPinFromMeta(alphaMeta) : {};
+}
+
+function assertPinnedResponses(pin, responses) {
+  const mismatch = responses.find((response) => response?.meta?.asOfBlockNumber !== pin.asOfBlock
+    || response?.meta?.asOfBlockHash?.toLowerCase() !== pin.asOfBlockHash.toLowerCase());
+  if (mismatch) {
+    throw new AdminFinanceApiError("Admin API returned mixed financial snapshots.", {
+      code: "snapshot_mismatch",
+      requestId: mismatch?.meta?.requestId,
+      retryable: true,
+    });
+  }
+}
 
 export function useAdminFinanceMeta() {
   return useAdminFinanceRequest(loadMeta);
@@ -89,68 +134,85 @@ export function useAdminFinanceCompanyRevenueEvents(query) {
 
 export function useAdminFinanceOverview(query) {
   const { from, to, perimeter = "atlas_consolidated", asOfBlock } = query;
-  const loader = useCallback((options) => adminFinanceApi.getFinanceOverview({ from, to, perimeter, asOfBlock }, options), [asOfBlock, from, perimeter, to]);
+  const sharedMeta = useAdminFinanceSharedMeta();
+  const sharedPin = optionalSnapshotPin(sharedMeta);
+  const loader = useCallback((options) => adminFinanceApi.getFinanceOverview({ from, to, perimeter, asOfBlock, ...sharedPin }, options), [asOfBlock, from, perimeter, sharedPin.asOfBlock, sharedPin.asOfBlockHash, to]);
   return useAdminFinanceRequest(loader);
 }
 
 export function useAdminFinanceFlows(query) {
   const { from, to, granularity = "day" } = query;
+  const sharedMeta = useAdminFinanceSharedMeta();
   const loader = useCallback(async (options) => {
-    const common = { from, to, granularity, limit: 500 };
+    const alphaMeta = sharedMeta || await adminFinanceApi.getMeta(options);
+    const pin = snapshotPinFromMeta(alphaMeta);
+    const common = { from, to, granularity, limit: 500, ...pin };
     const [consolidated, payoutContract, companyTreasury, overview] = await Promise.all([
       adminFinanceApi.getCashMovements({ ...common, perimeter: "atlas_consolidated" }, options),
       adminFinanceApi.getCashMovements({ ...common, perimeter: "payout_contract" }, options),
       adminFinanceApi.getCashMovements({ ...common, perimeter: "company_treasury" }, options),
-      adminFinanceApi.getFinanceOverview({ from, to, perimeter: "atlas_consolidated" }, options),
+      adminFinanceApi.getFinanceOverview({ from, to, perimeter: "atlas_consolidated", ...pin }, options),
     ]);
-    return { consolidated, payoutContract, companyTreasury, overview };
-  }, [from, granularity, to]);
+    assertPinnedResponses(pin, [consolidated, payoutContract, companyTreasury, overview]);
+    return { consolidated, payoutContract, companyTreasury, overview, alphaMeta };
+  }, [from, granularity, sharedMeta, to]);
   return useAdminFinanceRequest(loader);
 }
 
 export function useAdminFinanceCycles(query) {
   const { from, to, asOfBlock } = query;
+  const sharedMeta = useAdminFinanceSharedMeta();
+  const sharedPin = optionalSnapshotPin(sharedMeta);
   const loader = useCallback(
-    (options) => adminFinanceApi.getCycles({ from, to, asOfBlock, limit: 100 }, options),
-    [asOfBlock, from, to],
+    (options) => adminFinanceApi.getCycles({ from, to, asOfBlock, limit: 100, ...sharedPin }, options),
+    [asOfBlock, from, sharedPin.asOfBlock, sharedPin.asOfBlockHash, to],
   );
   return useAdminFinanceRequest(loader);
 }
 
 export function useAdminFinanceClaims(query) {
   const { from, to } = query;
+  const sharedMeta = useAdminFinanceSharedMeta();
+  const sharedPin = optionalSnapshotPin(sharedMeta);
   const loader = useCallback(
-    (options) => adminFinanceApi.getClaims({ from, to, limit: 100 }, options),
-    [from, to],
+    (options) => adminFinanceApi.getClaims({ from, to, limit: 100, ...sharedPin }, options),
+    [from, sharedPin.asOfBlock, sharedPin.asOfBlockHash, to],
   );
   return useAdminFinanceRequest(loader);
 }
 
 export function useAdminFinanceLiquidity(query) {
   const { from, to, perimeter = "payout_contract", granularity = "day" } = query;
+  const sharedMeta = useAdminFinanceSharedMeta();
+  const sharedPin = optionalSnapshotPin(sharedMeta);
   const loader = useCallback(
-    (options) => adminFinanceApi.getLiquidityRollForward({ from, to, perimeter, granularity }, options),
-    [from, granularity, perimeter, to],
+    (options) => adminFinanceApi.getLiquidityRollForward({ from, to, perimeter, granularity, ...sharedPin }, options),
+    [from, granularity, perimeter, sharedPin.asOfBlock, sharedPin.asOfBlockHash, to],
   );
   return useAdminFinanceRequest(loader);
 }
 
 export function useAdminFinanceReconciliation() {
+  const sharedMeta = useAdminFinanceSharedMeta();
   const loader = useCallback(async (options) => {
-    const [runs, exceptions, alphaMeta] = await Promise.all([
-      adminFinanceApi.getReconciliationRuns({ limit: 100 }, options),
-      adminFinanceApi.getReconciliationExceptions({ status: "open", limit: 100 }, options),
-      adminFinanceApi.getMeta(options),
+    const alphaMeta = sharedMeta || await adminFinanceApi.getMeta(options);
+    const pin = snapshotPinFromMeta(alphaMeta);
+    const [runs, exceptions] = await Promise.all([
+      adminFinanceApi.getReconciliationRuns({ limit: 100, ...pin }, options),
+      adminFinanceApi.getReconciliationExceptions({ status: "open", limit: 100, ...pin }, options),
     ]);
+    assertPinnedResponses(pin, [runs, exceptions]);
     return { runs, exceptions, alphaMeta };
-  }, []);
+  }, [sharedMeta]);
   return useAdminFinanceRequest(loader);
 }
 
 export function useAdminFinanceClaimDetail(claimId) {
+  const sharedMeta = useAdminFinanceSharedMeta();
+  const sharedPin = optionalSnapshotPin(sharedMeta);
   const loader = useCallback(
-    (options) => claimId ? adminFinanceApi.getClaim(claimId, options) : Promise.resolve(null),
-    [claimId],
+    (options) => claimId ? adminFinanceApi.getClaim(claimId, sharedPin, options) : Promise.resolve(null),
+    [claimId, sharedPin.asOfBlock, sharedPin.asOfBlockHash],
   );
   return useAdminFinanceRequest(loader);
 }
