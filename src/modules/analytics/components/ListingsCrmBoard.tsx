@@ -307,6 +307,8 @@ function ListingsCrmWorkspace() {
         const forbidden = code.includes("FORBIDDEN") || code.includes("COORDINATOR_REQUIRED");
         setError(code.includes("ALREADY_CLAIMED")
           ? "Коллега уже взял эту задачу. Список обновлён."
+          : code.includes("MEMBER_NOT_FOUND")
+            ? "У карточки указан устаревший ответственный. Обновите страницу и выберите сотрудника заново."
           : forbidden ? "Действие доступно владельцу карточки или дежурному координатору." : "Не удалось выполнить действие");
         await refresh(true);
       }

@@ -14,7 +14,7 @@ await writeFile(legacyFilePath, JSON.stringify({
   records: [
     { id: "hyip-overdue", source: "Листинги", name: "HYIP Monitor Example", type: "HYIP monitor", status: "Ожидаем ответ", priority: "P0", dueDate: "2026-08-10", link: "https://example.org/listing", action: "Сделать follow-up", proofs: [{ id: "legacy-proof", url: legacyProofUrl, fileName: "proof.png", createdAt: "2026-08-10T12:00:00Z", note: "Legacy proof" }] },
     { id: "dapp-overdue", source: "Листинги", name: "DApp Example", type: "DApp catalog", status: "Не обработано", priority: "P0", dueDate: "2026-08-11", link: "https://dapp.example/listing" },
-    { id: "article-overdue", source: "PR", name: "Article Example", type: "Article catalog", status: "Не обработано", priority: "P1", dueDate: "2026-08-12", link: "https://article.example/listing" },
+    { id: "article-overdue", source: "PR", name: "Article Example", type: "Article catalog", status: "Не обработано", priority: "P1", dueDate: "2026-08-12", link: "https://article.example/listing", owner: "Atlas Partnerships", ownerId: "atlas-partnerships" },
     { id: "mlm-overdue", source: "Листинги", name: "MLM Example", type: "MLM platform", status: "Не обработано", priority: "P1", dueDate: "2026-08-13", link: "https://mlm.example/listing" },
   ],
 }), "utf8");
@@ -64,6 +64,19 @@ try {
   assert.equal(bootstrap.body.records.length, 4, "legacy records are imported on an empty store");
   assert.equal(bootstrap.body.storageMode, "file");
   assert.equal(bootstrap.body.records.find((record) => record.id === "hyip-overdue").proofs[0].url.length, legacyProofUrl.length, "legacy proof data is never truncated during migration");
+  const repairedLegacyOwner = bootstrap.body.records.find((record) => record.id === "article-overdue");
+  assert.equal(repairedLegacyOwner.owner, "Atlas Partnerships", "the legacy owner label is preserved");
+  assert.equal(repairedLegacyOwner.ownerId, null, "a legacy free-form owner id is not treated as a team member relation");
+  assert.equal(repairedLegacyOwner.ownerMemberId, null);
+
+  const legacyOwnerUpdate = await call(handler, "PATCH", "/api/listings-crm/records/article-overdue", {
+    status: "Опубликовано",
+    owner: repairedLegacyOwner.owner,
+    ownerId: repairedLegacyOwner.ownerId,
+    ownerMemberId: repairedLegacyOwner.ownerMemberId,
+  }, { "if-match": `"${repairedLegacyOwner.version}"`, "x-atlas-member-id": "duty-coordinator" });
+  assert.equal(legacyOwnerUpdate.status, 200, "legacy records remain editable after owner migration");
+  assert.equal(legacyOwnerUpdate.body.record.status, "Опубликовано");
 
   const missingMemberIdentity = await call(handler, "POST", "/api/listings-crm/records", {
     name: "Anonymous write", source: "Листинги", link: "https://anonymous.example",

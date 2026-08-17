@@ -279,6 +279,24 @@ function isCoordinator(member) {
   return member?.role === "DUTY_COORDINATOR";
 }
 
+function repairLegacyOwnerReferences(state) {
+  const memberIds = new Set((state.members || []).map((member) => member.id));
+  let repaired = 0;
+  for (const record of state.records || []) {
+    const ownerMemberId = normalizeText(record.ownerMemberId ?? record.ownerId, 160);
+    if (!ownerMemberId || memberIds.has(ownerMemberId)) continue;
+    // The legacy board used ownerId for free-form team labels (for example,
+    // "atlas-partnerships"). The team CRM uses the same property for a real
+    // member id, so keeping a legacy label here makes every PATCH fail with
+    // member_not_found. Preserve the human-readable owner field and clear only
+    // the invalid relation.
+    record.ownerMemberId = null;
+    record.ownerId = null;
+    repaired += 1;
+  }
+  return repaired;
+}
+
 function normalizeLegacyState(legacy) {
   const timestamp = nowIso();
   const sourceRecords = Array.isArray(legacy?.records) ? legacy.records : Array.isArray(legacy?.value?.records) ? legacy.value.records : [];
@@ -310,6 +328,7 @@ function normalizeLegacyState(legacy) {
     };
   });
   const state = { members: seedMembers(timestamp), records, tasks: [], audit: [] };
+  repairLegacyOwnerReferences(state);
   state.audit.push(createAudit("workspace", "listings-crm", "LEGACY_IMPORT", null, null, null, { recordCount: records.length }));
   return state;
 }
@@ -383,7 +402,9 @@ function createFileRepository(storeDir, legacyFilePath, contactSeedFilePath) {
       if (!Array.isArray(state.members) || !Array.isArray(state.records) || !Array.isArray(state.tasks) || !Array.isArray(state.audit)) {
         throw new Error("invalid_listings_crm_store");
       }
-      if (await mergeContactSeeds(state, contactSeedFilePath)) await persist(state);
+      const repairedOwners = repairLegacyOwnerReferences(state);
+      const addedContacts = await mergeContactSeeds(state, contactSeedFilePath);
+      if (repairedOwners || addedContacts) await persist(state);
       return state;
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
@@ -453,8 +474,9 @@ async function createPostgresRepository(connectionString, legacyFilePath, contac
     const current = await readState(seedClient);
     const shouldInitialize = !current.members.length && !current.records.length;
     const nextState = shouldInitialize ? normalizeLegacyState(await readLegacy(legacyFilePath)) : current;
+    const repairedOwners = repairLegacyOwnerReferences(nextState);
     const addedContacts = await mergeContactSeeds(nextState, contactSeedFilePath);
-    if (shouldInitialize || addedContacts) await persist(seedClient, nextState);
+    if (shouldInitialize || repairedOwners || addedContacts) await persist(seedClient, nextState);
     await seedClient.query("COMMIT");
   } catch (error) {
     await seedClient.query("ROLLBACK");
@@ -469,6 +491,7 @@ async function createPostgresRepository(connectionString, legacyFilePath, contac
       await client.query("BEGIN");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('atlas_listings_team_crm'))");
       const state = await readState(client);
+      repairLegacyOwnerReferences(state);
       const result = await operation(state);
       await persist(client, state);
       await client.query("COMMIT");
