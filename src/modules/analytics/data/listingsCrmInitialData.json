@@ -4223,7 +4223,7 @@
       "summary": "TechStory — англоязычное технологическое издание из Индии о стартапах, бизнесе, AI, технологиях и криптовалютах. Представитель Techstory Media спросил, хотим ли мы публикацию в понедельник, но отдельно сообщил, что активного заказа пока нет.",
       "benefit": "Доступ к англоязычной технологической и стартап-аудитории, включая предпринимателей, руководителей, инвесторов и пользователей, интересующихся Crypto/Web3. Может дать индексируемую статью и дополнительный международный медиаслед Atlas.",
       "price": "$90 — платная публикация через Collaborator.",
-      "notes": "09.08.2026 в корпоративной почте partners@atlas-system.io получены сообщения Techstory Media: «You haven't placed any order yet» и «You want it to be published on monday?». 10.08.2026 Collaborator сообщил о размещении статьи. 17.08.2026 публичная страница проверена: заголовок корректный, anchor «Atlas System» ведёт на https://atlas-system.io/, rel не содержит nofollow или sponsored, robots — index/follow, canonical корректный. Сделка Collaborator ID 2725173 принята вручную и получила статус «Размещено».",
+      "notes": "09.08.2026 в корпоративной почте partners@atlas-system.io получены сообщения Techstory Media: «You haven't placed any order yet» и «You want it to be published on monday?». 10.08.2026 Collaborator сообщил о размещении статьи. 17.08.2026 публичная страница проверена: заголовок корректный, anchor «Atlas System» ведёт на https://atlas-system.io/, rel не содержит nofollow или sponsored, robots — index/follow, canonical корректный. Сделка Collaborator ID 2725173 принята вручную и получила статус «Размещено». В 16:02 Collaborator Support письменно подтвердил: anchor и ссылка корректны, сделка уже закрыта.",
       "channel": "Collaborator message / official media site",
       "link": "https://techstory.in/smart-contract-transparency/",
       "updatedAt": "2026-08-17T16:16:47+03:00",
@@ -4246,6 +4246,23 @@
         "lastVerifiedAt": "2026-08-17",
         "notes": "Сделка Collaborator ID 2725173. Пароль хранить только в корпоративном менеджере паролей."
       },
+      "correspondence": [
+        {
+          "id": "techstory-collaborator-support-2026-08-17",
+          "occurredAt": "2026-08-17T16:02",
+          "kind": "INCOMING",
+          "channel": "Email",
+          "sender": "Collaborator Support",
+          "recipient": "Atlas Partners",
+          "subject": "Re: Techstory Media deal ID 2725173 — anchor verification",
+          "message": "Collaborator Support подтвердил, что anchor и ссылка корректны, а сделка уже закрыта.",
+          "outcome": "Дополнительный ответ не требуется; публикация и закрытие сделки подтверждены.",
+          "threadUrl": "",
+          "attachmentUrl": "",
+          "followUpDate": "",
+          "createdBy": "Atlas Partnerships"
+        }
+      ],
       "proofs": []
     },
     {
