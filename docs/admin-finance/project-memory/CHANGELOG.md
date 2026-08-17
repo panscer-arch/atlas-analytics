@@ -2,6 +2,33 @@
 
 ## 2026-08-17
 
+- Подготовлен отдельный Compose project
+  `atlas-admin-finance-staging-database` для PostgreSQL 16 source и
+  одноразового restore target. Он не публикует host ports, использует только
+  project-scoped internal network/volumes, не подключается к `infra-postgres`
+  и держит restore data на ограниченном `tmpfs`. Образы PostgreSQL и Node
+  drill runtime закреплены официальными manifest digests.
+- Database bootstrap использует четыре file-based secrets: source owner,
+  read-only backup role, restore bootstrap admin и отдельный non-superuser
+  restore owner. CA private key удаляется после выпуска TLS-сертификатов с SAN
+  `source`/`restore`; helper получает только backup и restore-owner credentials.
+  Пароли ролей не передаются через argv `psql`, backup role принудительно имеет
+  `default_transaction_read_only=on`, а повторно используемые сертификаты
+  проверяются на SAN, срок действия и совпадение с private key. Одинаковые
+  owner/helper passwords отклоняются; backup role не получает sequence
+  `USAGE/UPDATE` и не может состоять в других ролях.
+  До DDL проверяются checksum/размер manifest-bound baseline, а source health
+  требует точный table-list hash и schema marker.
+- Restore runner теперь до backup проверяет role flags, отсутствие write/create
+  прав source, отсутствие PUBLIC ACL и отличие PostgreSQL `system_identifier`;
+  после restore повторно применяет PUBLIC-deny policy и сравнивает
+  не только 47 имён таблиц, но и SHA-256 полного schema-only dump. Каждый
+  subprocess ограничен timeout и объёмом captured output. Backup helper также
+  использует exclusive lock, 512 MiB file limit и 2 GiB total volume budget.
+- Effective `docker compose config --format json` проверен на Finance VPS через
+  временный `/tmp` package без `up`, pull, build или создания Docker resources.
+  Реальные PostgreSQL containers/volumes, baseline apply и restore drill ещё не
+  запускались; общий Support/Chatwoot PostgreSQL не изменялся.
 - Restore-drill runner усилен manifest-bound проверкой source-схемы: до
   `pg_dump` он требует точного списка всех 47 `schema.table` текущего baseline,
   а не только совпадающего количества, и fail closed останавливается после

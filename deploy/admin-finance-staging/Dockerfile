@@ -43,3 +43,16 @@ COPY server/admin-finance ./server/admin-finance
 USER node
 EXPOSE 8791
 CMD ["node", "server/admin-finance-api.mjs"]
+
+FROM node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94 AS node-runtime
+
+FROM postgres:16.10-bookworm@sha256:38471f330eb885e04de130b768d6db4e10469e2311879c7e5c699f6d2d8a1c74 AS database-drill
+WORKDIR /app
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY scripts/admin-finance-staging-db-drill.mjs ./scripts/admin-finance-staging-db-drill.mjs
+COPY server/admin-finance/staging-database-drill.mjs ./server/admin-finance/staging-database-drill.mjs
+COPY deploy/admin-finance-staging/migrations/manifest.v1.json ./deploy/admin-finance-staging/migrations/manifest.v1.json
+COPY deploy/admin-finance-staging/database-drill-entrypoint.sh ./deploy/admin-finance-staging/database-drill-entrypoint.sh
+COPY docs/admin-finance/data-model/001_admin_finance_schema.sql ./docs/admin-finance/data-model/001_admin_finance_schema.sql
+USER postgres
+ENTRYPOINT ["/bin/sh", "/app/deploy/admin-finance-staging/database-drill-entrypoint.sh"]

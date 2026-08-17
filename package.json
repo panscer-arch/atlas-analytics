@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "api:admin-finance": "node server/admin-finance-api.mjs",
-    "test:admin-finance": "npm run test:admin-finance-context && npm run test:admin-finance-address-registry && npm run test:admin-finance-contracts && npm run test:admin-finance-forecast-input && npm run test:admin-finance-forecast-semantics && npm run test:admin-finance-daily-obligations && npm run test:admin-finance-reserve-plan && npm run test:admin-finance-reserve-outbox && npm run test:admin-finance-notification-runtime && npm run test:admin-finance-notification-shadow && npm run test:admin-finance-forecast-evidence && npm run test:admin-finance-forecast-source && npm run test:admin-finance-forecast-runtime && npm run test:admin-finance-provider && npm run test:admin-finance-alpha-api && npm run test:admin-finance-api && npm run test:admin-finance-proxy-auth && npm run test:admin-finance-migration-manifest && npm run test:admin-finance-staging-db-drill && npm run test:admin-finance-staging-package && npm run test:admin-finance-client",
+    "test:admin-finance": "npm run test:admin-finance-context && npm run test:admin-finance-address-registry && npm run test:admin-finance-contracts && npm run test:admin-finance-forecast-input && npm run test:admin-finance-forecast-semantics && npm run test:admin-finance-daily-obligations && npm run test:admin-finance-reserve-plan && npm run test:admin-finance-reserve-outbox && npm run test:admin-finance-notification-runtime && npm run test:admin-finance-notification-shadow && npm run test:admin-finance-forecast-evidence && npm run test:admin-finance-forecast-source && npm run test:admin-finance-forecast-runtime && npm run test:admin-finance-provider && npm run test:admin-finance-alpha-api && npm run test:admin-finance-api && npm run test:admin-finance-proxy-auth && npm run test:admin-finance-migration-manifest && npm run test:admin-finance-staging-db-drill && npm run test:admin-finance-staging-database-stack && npm run test:admin-finance-staging-package && npm run test:admin-finance-client",
     "test:admin-finance-context": "node scripts/verify-admin-finance-context.mjs",
     "test:admin-finance-address-registry": "node scripts/verify-admin-finance-address-registry.mjs",
     "test:admin-finance-api": "node scripts/verify-admin-finance-api.mjs",
@@ -13,6 +13,7 @@
     "test:admin-finance-staging-package": "node scripts/verify-admin-finance-staging-package.mjs",
     "test:admin-finance-migration-manifest": "node scripts/verify-admin-finance-migration-manifest.mjs",
     "test:admin-finance-staging-db-drill": "node scripts/verify-admin-finance-staging-db-drill.mjs",
+    "test:admin-finance-staging-database-stack": "node scripts/verify-admin-finance-staging-database-stack.mjs",
     "admin-finance:db-restore-preflight": "node scripts/admin-finance-staging-db-drill.mjs",
     "test:admin-finance-client": "node scripts/verify-admin-finance-client.mjs",
     "test:admin-finance-contracts": "node scripts/verify-admin-finance-contracts.mjs",

@@ -206,6 +206,51 @@ archive list, требует полностью пустой список user t
 имён таблиц после восстановления. Notification runtime остаётся disabled даже
 после успешной миграции до отдельного channel security review.
 
+### Isolated Finance database stack
+
+`compose.database.yaml` является отдельным Compose project и не должен
+объединяться с Support/Chatwoot `infra` stack. Он содержит:
+
+- persistent source PostgreSQL 16 только для Admin Finance;
+- одноразовый restore PostgreSQL на `tmpfs`;
+- cert/bootstrap init без сети;
+- one-shot `database-drill` helper с PostgreSQL 16 tools и Node runner.
+
+Ни один сервис не публикует host port. Source и restore находятся только во
+внутренней project network. Для preflight нужны четыре разные password files:
+
+- `ATLAS_ADMIN_FINANCE_SOURCE_OWNER_PASSWORD_FILE`;
+- `ATLAS_ADMIN_FINANCE_SOURCE_BACKUP_PASSWORD_FILE`;
+- `ATLAS_ADMIN_FINANCE_RESTORE_ADMIN_PASSWORD_FILE`;
+- `ATLAS_ADMIN_FINANCE_RESTORE_OWNER_PASSWORD_FILE`.
+
+Сначала разрешён только config preflight:
+
+```bash
+docker compose \
+  --profile database-drill \
+  -f deploy/admin-finance-staging/compose.database.yaml \
+  config --quiet
+```
+
+Фактический `up` выполняется отдельной change-операцией после проверки файлов
+секретов, свободного места и отсутствия пересечения имён с другими Compose
+projects. Source bootstrap до DDL сверяет SHA-256/размер baseline. Helper
+проверяет non-superuser роли, обязательный transaction-level read-only режим,
+отсутствие write/create/temp/sequence-mutation прав source и PUBLIC ACL,
+разные cluster `system_identifier`, точный список таблиц и schema-only
+fingerprint. После restore без source ACL runner повторно применяет и проверяет
+PUBLIC-deny policy для schema/tables/sequences/functions. Restore archive не
+перезаписывается; для каждого drill требуется новый
+`ATLAS_ADMIN_FINANCE_BACKUP_NAME`. Один archive ограничен 512 MiB, общий budget
+volume составляет 2 GiB, одновременные drill запрещены lock-directory. При
+исчерпании budget оператор обязан сначала проверить retention и существующие
+архивы, а не удалять их автоматически.
+
+Подготовленный stack не включает Forecast, notifications, Telegram/email или
+provider credentials. Их включение остаётся отдельным gate после успешного
+restore drill.
+
 ## R1.1 Forecast runtime
 
 Forecast API подключён к Alpha server, но в базовом Compose остаётся выключен

@@ -421,6 +421,41 @@ write-action selectors считаются ошибкой сборки. Эти и
   DDL не применялась, backup/restore drill на сервере не выполнялся и active
   release не изменялся.
 
+## Изолированный PostgreSQL stack от 17.08.2026
+
+- Подготовлен отдельный Compose project
+  `atlas-admin-finance-staging-database`, не связанный с общим
+  `infra-postgres-1`: source и restore используют только project-scoped
+  internal network, host ports отсутствуют, source имеет отдельную volume, а
+  restore хранит data directory на ограниченном `tmpfs`.
+- PostgreSQL 16.10 и Node 22.22 drill runtime закреплены официальными Docker
+  manifest digests. Passwords передаются только file-based secrets; source
+  backup и restore owner являются отдельными `NOSUPERUSER` ролями, а helper не
+  получает bootstrap-admin credentials. Role passwords не попадают в argv
+  `psql`; owner/helper passwords обязаны различаться; backup role имеет
+  обязательный `default_transaction_read_only=on` и не получает sequence
+  `USAGE/UPDATE` или membership в других ролях.
+- До первого DDL init проверяются checksum и размер baseline из migration
+  manifest. Source становится healthy только после exact table-list hash и
+  schema marker; частично инициализированная persistent volume остаётся
+  fail closed.
+- Все DB-соединения helper используют TLS `verify-full` с отдельной внутренней
+  CA и SAN `source`/`restore`. CA private key удаляется до успешного завершения
+  cert-init; server keys не монтируются в helper. При повторном старте cert-init
+  проверяет SAN, срок действия и соответствие каждого сертификата private key.
+- Restore runner дополнительно проверяет non-privileged роли, отсутствие
+  write/create/temp/sequence-mutation прав source, отсутствие PUBLIC ACL,
+  разные PostgreSQL `system_identifier` и SHA-256 полного schema-only
+  definition до/после restore. После `--no-privileges` restore он повторно
+  применяет PUBLIC-deny policy и проверяет её fail closed. Subprocess имеет
+  per-command/total timeout и ограничение captured output. Backup archive
+  дополнительно ограничен 512 MiB на файл и общим бюджетом volume 2 GiB;
+  параллельные drill блокируются exclusive lock.
+- На VPS прошёл только effective Compose JSON preflight во временном `/tmp`.
+  Команды `pull`, `build`, `up` и `run` не выполнялись; containers, networks и
+  volumes не создавались, baseline не применялся, реальный backup отсутствует.
+  Общая Support/Chatwoot БД не изменялась.
+
 ## Текущий рабочий этап
 
 Зафиксировать воспроизводимый `MVP-1 Internal Alpha` и перейти к `R1.1 Data
