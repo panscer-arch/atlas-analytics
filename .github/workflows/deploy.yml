@@ -36,6 +36,12 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Validate history RPC secret
+        env:
+          BSC_LOG_RPC_URLS: ${{ secrets.BSC_LOG_RPC_URLS }}
+          ATLAS_CONTRACTS_LOG_CHUNK: 1000
+        run: node scripts/validate-history-rpc-secret.mjs
+
       - name: Verify application and marketing monitor
         run: |
           npm ci
@@ -47,6 +53,7 @@ jobs:
           npm run test:ga4
           npm run test:products
           npm run test:listings-crm
+          npm run test:atlas-flow-history
           npm run build
 
       - name: Detect server changes
@@ -122,6 +129,8 @@ jobs:
         if: steps.server_changes.outputs.content_api == 'true'
         shell: bash
         timeout-minutes: 15
+        env:
+          BSC_LOG_RPC_URLS: ${{ secrets.BSC_LOG_RPC_URLS }}
         run: |
           run_with_retry() {
             local label="$1"
@@ -150,6 +159,8 @@ jobs:
           }
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/atlas-flow-log-history.mjs /tmp/atlas-flow-log-history.mjs
+          scp_to_vps server/rpc-url-policy.mjs /tmp/atlas-rpc-url-policy.mjs
           scp_to_vps server/google-analytics.mjs /tmp/atlas-google-analytics.mjs
           scp_to_vps server/agent-reach-parser.mjs /tmp/atlas-agent-reach-parser.mjs
           scp_to_vps server/agent-reach-mcporter.json /tmp/atlas-agent-reach-mcporter.json
@@ -191,6 +202,8 @@ jobs:
             sudo install -m 640 -o www-data -g www-data /tmp/atlas-listings-crm-initial.json /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json
           fi
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-flow-log-history.mjs /opt/atlas-content-api/atlas-flow-log-history.mjs
+          sudo mv /tmp/atlas-rpc-url-policy.mjs /opt/atlas-content-api/rpc-url-policy.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
           sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs
@@ -345,6 +358,10 @@ jobs:
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ATLAS_FINANCE_PASSWORD=${{ secrets.ATLAS_FINANCE_PASSWORD }}
+          BSC_LOG_RPC_URLS=${{ secrets.BSC_LOG_RPC_URLS }}
+          ATLAS_CONTRACTS_LOG_CHUNK=1000
+          ATLAS_CONTRACTS_LOG_CONCURRENCY=2
+          ATLAS_CONTRACTS_FINALITY_BLOCKS=15
           ATLAS_PRODUCTS_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql
           ATLAS_LISTINGS_CRM_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql
           ATLAS_GA4_PROPERTY_ID=546276265

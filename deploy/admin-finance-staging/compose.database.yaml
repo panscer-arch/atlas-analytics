@@ -1,0 +1,204 @@
+name: atlas-admin-finance-staging-database
+
+x-postgres-service: &postgres-service
+  image: postgres:16.10-bookworm@sha256:38471f330eb885e04de130b768d6db4e10469e2311879c7e5c699f6d2d8a1c74
+  user: "999:999"
+  read_only: true
+  shm_size: 128mb
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 128
+  restart: unless-stopped
+  tmpfs:
+    - /tmp:size=32m,uid=999,gid=999,mode=1777
+    - /var/run/postgresql:size=8m,uid=999,gid=999,mode=0775
+  networks: [database]
+
+services:
+  database-init:
+    image: postgres:16.10-bookworm@sha256:38471f330eb885e04de130b768d6db4e10469e2311879c7e5c699f6d2d8a1c74
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/opt/atlas-finance/database-init.sh"]
+    read_only: true
+    network_mode: none
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    volumes:
+      - ./database-init.sh:/opt/atlas-finance/database-init.sh:ro
+      - database_tls:/certs
+      - database_backups:/backups
+      - source_data:/source-data
+
+  source:
+    <<: *postgres-service
+    environment:
+      POSTGRES_DB: atlas_finance
+      POSTGRES_USER: atlas_finance_owner
+      POSTGRES_PASSWORD_FILE: /run/secrets/source-owner-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+      ATLAS_ADMIN_FINANCE_SCHEMA_VERSION: admin-finance-schema-v1
+      ATLAS_ADMIN_FINANCE_SCHEMA_SHA256: 2d7c7fdda8dfcf0412f8536810971c27426e2e632ce80c3da6dfb4368f8fc332
+      ATLAS_ADMIN_FINANCE_SCHEMA_BYTES: "54427"
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/run/atlas-finance-tls/source.crt
+      - -c
+      - ssl_key_file=/run/atlas-finance-tls/source.key
+      - -c
+      - ssl_ca_file=/run/atlas-finance-tls/ca.crt
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+      - -c
+      - password_encryption=scram-sha-256
+    secrets:
+      - source: source_owner_password
+        target: source-owner-password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: source_backup_password
+        target: source-backup-password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    volumes:
+      - source_data:/var/lib/postgresql/data
+      - database_tls:/run/atlas-finance-tls:ro
+      - ./database-healthcheck.sh:/opt/atlas-finance/database-healthcheck.sh:ro
+      - ./database-verify-baseline.sh:/docker-entrypoint-initdb.d/005_verify_baseline.sh:ro
+      - ../../docs/admin-finance/data-model/001_admin_finance_schema.sql:/docker-entrypoint-initdb.d/010_admin_finance_schema.sql:ro
+      - ./database-source-init.sh:/docker-entrypoint-initdb.d/020_backup_role.sh:ro
+    depends_on:
+      database-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/bin/sh", "/opt/atlas-finance/database-healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  restore:
+    <<: *postgres-service
+    environment:
+      POSTGRES_DB: atlas_finance_restore_drill
+      POSTGRES_USER: atlas_finance_restore_bootstrap
+      POSTGRES_PASSWORD_FILE: /run/secrets/restore-admin-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/run/atlas-finance-tls/restore.crt
+      - -c
+      - ssl_key_file=/run/atlas-finance-tls/restore.key
+      - -c
+      - ssl_ca_file=/run/atlas-finance-tls/ca.crt
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+      - -c
+      - password_encryption=scram-sha-256
+    secrets:
+      - source: restore_admin_password
+        target: restore-admin-password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: restore_owner_password
+        target: restore-owner-password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    volumes:
+      - database_tls:/run/atlas-finance-tls:ro
+      - ./database-restore-init.sh:/docker-entrypoint-initdb.d/010_restore_owner.sh:ro
+    tmpfs:
+      - /tmp:size=32m,uid=999,gid=999,mode=1777
+      - /var/run/postgresql:size=8m,uid=999,gid=999,mode=0775
+      - /var/lib/postgresql/data:size=512m,uid=999,gid=999,mode=0700
+    depends_on:
+      database-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --host=127.0.0.1 --username=$$POSTGRES_USER --dbname=$$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  database-drill:
+    profiles: ["database-drill"]
+    build:
+      context: ../..
+      dockerfile: deploy/admin-finance-staging/Dockerfile
+      target: database-drill
+    user: "999:999"
+    environment:
+      ATLAS_ADMIN_FINANCE_SOURCE_HOST: source
+      ATLAS_ADMIN_FINANCE_SOURCE_DATABASE: atlas_finance
+      ATLAS_ADMIN_FINANCE_SOURCE_USER: atlas_finance_backup
+      ATLAS_ADMIN_FINANCE_RESTORE_HOST: restore
+      ATLAS_ADMIN_FINANCE_RESTORE_DATABASE: atlas_finance_restore_drill
+      ATLAS_ADMIN_FINANCE_RESTORE_USER: atlas_finance_restore
+      ATLAS_ADMIN_FINANCE_BACKUP_NAME: ${ATLAS_ADMIN_FINANCE_BACKUP_NAME:?required}
+      ATLAS_ADMIN_FINANCE_MAX_BACKUP_BYTES: "536870912"
+      ATLAS_ADMIN_FINANCE_MAX_BACKUP_TOTAL_BYTES: "2147483648"
+      ATLAS_ADMIN_FINANCE_NOTIFICATIONS_ENABLED: "false"
+    entrypoint: ["/bin/sh", "/app/deploy/admin-finance-staging/database-drill-entrypoint.sh"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    restart: "no"
+    tmpfs:
+      - /tmp:size=32m,uid=999,gid=999,mode=1777
+    secrets:
+      - source: source_backup_password
+        target: source-backup-password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+      - source: restore_owner_password
+        target: restore-owner-password
+        uid: "999"
+        gid: "999"
+        mode: 0400
+    volumes:
+      - database_tls:/run/atlas-finance-tls:ro
+      - database_backups:/backups
+    depends_on:
+      source:
+        condition: service_healthy
+      restore:
+        condition: service_healthy
+    networks: [database]
+
+networks:
+  database:
+    internal: true
+
+volumes:
+  source_data: {}
+  database_tls: {}
+  database_backups: {}
+
+secrets:
+  source_owner_password:
+    file: ${ATLAS_ADMIN_FINANCE_SOURCE_OWNER_PASSWORD_FILE:?required}
+  source_backup_password:
+    file: ${ATLAS_ADMIN_FINANCE_SOURCE_BACKUP_PASSWORD_FILE:?required}
+  restore_admin_password:
+    file: ${ATLAS_ADMIN_FINANCE_RESTORE_ADMIN_PASSWORD_FILE:?required}
+  restore_owner_password:
+    file: ${ATLAS_ADMIN_FINANCE_RESTORE_OWNER_PASSWORD_FILE:?required}

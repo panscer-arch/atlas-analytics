@@ -1,0 +1,324 @@
+{
+  "fixtureSet": "atlas-admin-finance-golden-v1",
+  "version": "1.0.0-draft",
+  "status": "GATE_0_REVIEW",
+  "generatedAt": "2026-08-05T00:00:00Z",
+  "moneyFormat": {
+    "rule": "All keys ending in Atomic are base-10 integer strings.",
+    "token": "USDT",
+    "decimals": 6
+  },
+  "globalInvariants": [
+    "grossDeltaAtomic = participantNetDeltaAtomic + platformFeeAtomic + otherDeductionsAtomic",
+    "claimTotalOutflowAtomic = principalAtomic + grossDeltaAtomic + partnerRewardAtomic",
+    "platformFeeAtomic is included in grossDeltaAtomic and is never added twice",
+    "partnerRewardAtomic is a separate expense above grossDeltaAtomic",
+    "reprocessing the same source identity does not create a second economic event",
+    "reversal and correction append compensating events and never rewrite raw evidence"
+  ],
+  "cases": [
+    {
+      "id": "GF-001",
+      "name": "Cycle creation creates principal inflow and opening partner reward",
+      "category": "payout_waterfall",
+      "given": {
+        "eventType": "CYCLE_CREATED",
+        "sourceIdentity": "56:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:4",
+        "principalAtomic": "100000000",
+        "openingPartnerRewardAtomic": "15000000",
+        "rulesetVersion": "fixture-ruleset-1"
+      },
+      "expect": {
+        "cycleCount": 1,
+        "externalInAtomic": "100000000",
+        "partnerRewardAtomic": "15000000",
+        "platformFeeAtomic": "0",
+        "claimTotalOutflowAtomic": "0",
+        "economicEvents": ["CYCLE_PRINCIPAL_IN", "PARTNER_REWARD_ON_CREATE"]
+      }
+    },
+    {
+      "id": "GF-002",
+      "name": "Paid claim keeps fee inside gross and reward above gross",
+      "category": "payout_waterfall",
+      "given": {
+        "eventType": "CLAIM_PAID",
+        "principalAtomic": "100000000",
+        "grossDeltaAtomic": "20000000",
+        "platformFeeAtomic": "2000000",
+        "otherDeductionsAtomic": "0",
+        "participantNetDeltaAtomic": "18000000",
+        "partnerRewardAtomic": "5000000"
+      },
+      "expect": {
+        "claimTotalOutflowAtomic": "125000000",
+        "participantReceivesAtomic": "118000000",
+        "companyPlatformFeeAtomic": "2000000",
+        "networkPartnerRewardAtomic": "5000000",
+        "mustNotEqualAtomic": "127000000"
+      }
+    },
+    {
+      "id": "GF-003",
+      "name": "Failed claim retry produces one paid obligation",
+      "category": "lifecycle",
+      "given": {
+        "claimId": "10000000-0000-4000-8000-000000000003",
+        "transitions": [
+          { "status": "SUBMITTED", "attempt": 1, "at": "2026-08-05T10:00:00Z" },
+          { "status": "FAILED", "attempt": 1, "at": "2026-08-05T10:01:00Z", "failureCode": "RPC_TIMEOUT" },
+          { "status": "PROCESSING", "attempt": 2, "at": "2026-08-05T10:05:00Z" },
+          { "status": "PAID", "attempt": 2, "at": "2026-08-05T10:06:00Z" }
+        ],
+        "claimTotalOutflowAtomic": "125000000"
+      },
+      "expect": {
+        "terminalStatus": "PAID",
+        "paidEconomicEventCount": 1,
+        "contractOutflowAtomic": "125000000",
+        "retryCount": 1
+      }
+    },
+    {
+      "id": "GF-004",
+      "name": "Duplicate source event is idempotent",
+      "category": "idempotency",
+      "given": {
+        "deliveries": 3,
+        "sourceIdentity": "56:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:8",
+        "amountAtomic": "100000000"
+      },
+      "expect": {
+        "rawEventCount": 1,
+        "cycleCount": 1,
+        "ledgerTransactionCount": 1,
+        "externalInAtomic": "100000000",
+        "duplicateCount": 2
+      }
+    },
+    {
+      "id": "GF-005",
+      "name": "Out-of-order lifecycle events converge deterministically",
+      "category": "ordering",
+      "given": {
+        "arrivalOrder": ["CLAIM_PAID", "CLAIM_SUBMITTED", "CYCLE_MATURED"],
+        "eventOrder": ["CYCLE_MATURED", "CLAIM_SUBMITTED", "CLAIM_PAID"],
+        "claimTotalOutflowAtomic": "125000000"
+      },
+      "expect": {
+        "terminalStatus": "PAID",
+        "contractOutflowAtomic": "125000000",
+        "quarantinedCount": 0,
+        "rebuildMatchesOrderedInput": true
+      }
+    },
+    {
+      "id": "GF-006",
+      "name": "Reorg orphans economic projection and rebuilds from canonical block",
+      "category": "reorg",
+      "given": {
+        "chainId": 56,
+        "orphanedBlock": 54321000,
+        "orphanedBlockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "replacementBlockHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "orphanedExternalInAtomic": "100000000",
+        "replacementExternalInAtomic": "250000000"
+      },
+      "expect": {
+        "rawEvidenceRetained": true,
+        "orphanedEventStatus": "ORPHANED",
+        "canonicalExternalInAtomic": "250000000",
+        "netProjectionAdjustmentAtomic": "150000000",
+        "reconciliationStatus": "MATCHED"
+      }
+    },
+    {
+      "id": "GF-007",
+      "name": "Correction appends compensating ledger transaction",
+      "category": "correction",
+      "given": {
+        "originalTransactionKey": "claim:GF-007:paid",
+        "originalOutflowAtomic": "125000000",
+        "correctedOutflowAtomic": "124000000",
+        "reasonCode": "SOURCE_CORRECTION"
+      },
+      "expect": {
+        "originalRetained": true,
+        "compensatingCreditAtomic": "1000000",
+        "effectiveOutflowAtomic": "124000000",
+        "ledgerBalanced": true,
+        "auditEventCount": 1
+      }
+    },
+    {
+      "id": "GF-008",
+      "name": "Ruleset boundary uses event-effective version",
+      "category": "ruleset",
+      "given": {
+        "boundaryAt": "2026-08-05T12:00:00Z",
+        "events": [
+          {
+            "eventAt": "2026-08-05T11:59:59Z",
+            "rulesetVersion": "rank-v1",
+            "partnerRewardAtomic": "15000000"
+          },
+          {
+            "eventAt": "2026-08-05T12:00:00Z",
+            "rulesetVersion": "rank-v2",
+            "partnerRewardAtomic": "18000000"
+          }
+        ]
+      },
+      "expect": {
+        "firstPartnerRewardAtomic": "15000000",
+        "secondPartnerRewardAtomic": "18000000",
+        "unknownRulesetFallbackAllowed": false
+      }
+    },
+    {
+      "id": "GF-009",
+      "name": "Internal transfer is eliminated from consolidated flow",
+      "category": "perimeter",
+      "given": {
+        "fromPerimeter": "atlas_consolidated",
+        "toPerimeter": "atlas_consolidated",
+        "transferAtomic": "500000000"
+      },
+      "expect": {
+        "payoutContractTransferAtomic": "500000000",
+        "consolidatedExternalInAtomic": "0",
+        "consolidatedExternalOutAtomic": "0",
+        "eliminationAtomic": "500000000"
+      }
+    },
+    {
+      "id": "GF-010",
+      "name": "Zero, empty and unavailable remain distinct",
+      "category": "data_state",
+      "given": {
+        "zeroMetric": { "valueAtomic": "0", "dataState": "AVAILABLE" },
+        "emptyDataset": { "items": [], "dataState": "EMPTY" },
+        "unavailableMetric": { "valueAtomic": null, "dataState": "UNAVAILABLE" }
+      },
+      "expect": {
+        "zeroRendersAs": "0.00 USDT",
+        "emptyRendersAs": "Нет данных за период",
+        "unavailableRendersAs": "N/A",
+        "coerceUnavailableToZero": false
+      }
+    },
+    {
+      "id": "GF-011",
+      "name": "Provider outage preserves last evidence but marks response stale",
+      "category": "availability",
+      "given": {
+        "providerStatus": "UNAVAILABLE",
+        "lastPublishedAt": "2026-08-05T09:00:00Z",
+        "requestedAt": "2026-08-05T10:00:00Z",
+        "lastValueAtomic": "900000000"
+      },
+      "expect": {
+        "httpStatus": 200,
+        "dataState": "STALE",
+        "displayValueAtomic": "900000000",
+        "freshnessSeconds": 3600,
+        "staleWarningRequired": true,
+        "forecastCanAdvanceWatermark": false
+      }
+    },
+    {
+      "id": "GF-012",
+      "name": "Unauthorized wallet reveal and export are denied and audited",
+      "category": "authorization",
+      "given": {
+        "actorRole": "ANALYST",
+        "stepUpPresent": false,
+        "actions": ["participant.wallet.reveal", "claims.export"]
+      },
+      "expect": {
+        "walletRevealHttpStatus": 403,
+        "exportHttpStatus": 403,
+        "secretReadCount": 0,
+        "auditEventCount": 2,
+        "responseContainsWallet": false
+      }
+    },
+    {
+      "id": "GF-013",
+      "name": "Invalid numeric money payload is rejected",
+      "category": "wire_format",
+      "given": {
+        "payload": {
+          "amountAtomic": 100000000,
+          "decimals": 6,
+          "token": "USDT"
+        }
+      },
+      "expect": {
+        "httpStatus": 400,
+        "errorCode": "invalid_money_wire_format",
+        "persistedRows": 0,
+        "requiredAmountType": "string"
+      }
+    },
+    {
+      "id": "GF-014",
+      "name": "Forecast bucket does not add platform fee twice",
+      "category": "forecast",
+      "given": {
+        "principalDueAtomic": "300000000",
+        "deltaGrossDueAtomic": "60000000",
+        "platformFeeInsideGrossAtomic": "6000000",
+        "partnerRewardDueAtomic": "15000000",
+        "pendingPartnerCreationDueAtomic": "0",
+        "openingLiquidityAtomic": "500000000",
+        "expectedInflowAtomic": "100000000",
+        "reserveTargetAtomic": "250000000"
+      },
+      "expect": {
+        "totalOutflowDueAtomic": "375000000",
+        "closingLiquidityAtomic": "225000000",
+        "fundingGapAtomic": "25000000",
+        "incorrectDoubleFeeOutflowAtomic": "381000000",
+        "firstGapDate": "2026-08-06"
+      }
+    },
+    {
+      "id": "GF-015",
+      "name": "Balance roll-forward reconciles to on-chain checkpoint",
+      "category": "reconciliation",
+      "given": {
+        "openingBalanceAtomic": "1000000000",
+        "externalInAtomic": "450000000",
+        "externalOutAtomic": "375000000",
+        "observedClosingAtomic": "1075000000"
+      },
+      "expect": {
+        "expectedClosingAtomic": "1075000000",
+        "residualAtomic": "0",
+        "status": "MATCHED",
+        "exceptionCount": 0
+      }
+    },
+    {
+      "id": "GF-016",
+      "name": "Restored database reproduces ledger and audit heads",
+      "category": "restore",
+      "given": {
+        "backupId": "backup-2026-08-05-0000",
+        "rpoSeconds": 300,
+        "targetLedgerHeadHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "targetAuditHeadHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "expectedClosingAtomic": "1075000000"
+      },
+      "expect": {
+        "restoreEnvironment": "isolated",
+        "ledgerHeadMatches": true,
+        "auditHeadMatches": true,
+        "closingBalanceAtomic": "1075000000",
+        "reconciliationStatus": "MATCHED",
+        "productionPromotionAllowed": true
+      }
+    }
+  ]
+}

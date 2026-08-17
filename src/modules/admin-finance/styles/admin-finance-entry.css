@@ -1,0 +1,20 @@
+:root {
+  color-scheme: light;
+  font-family: Manrope, Arial, sans-serif;
+  background: #fff7ef;
+  color: #25130b;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #fff7ef;
+}
