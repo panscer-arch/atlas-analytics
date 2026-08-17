@@ -68,6 +68,7 @@ const NAV = [
   { id: "today", label: "Мой день", icon: "✓" },
   { id: "team", label: "Команда", icon: "◉" },
   { id: "records", label: "Все записи", icon: "≡" },
+  { id: "daily-report", label: "Отчёт дня", icon: "▣" },
   { id: "activity", label: "Журнал", icon: "↺" },
 ];
 const TASK_LABELS: Record<string, string> = {
@@ -183,6 +184,7 @@ function normalizeBootstrap(payload: any): Bootstrap {
 function ListingsCrmWorkspace() {
   const [data, setData] = useState<Bootstrap>(EMPTY);
   const [view, setView] = useState("overview");
+  const [reportDate, setReportDate] = useState(() => localDate());
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<RecordCategoryId | "all">("all");
   const [contactQuery, setContactQuery] = useState("");
@@ -246,6 +248,19 @@ function ListingsCrmWorkspace() {
   const overdue = activeTasks.filter((task) => task.dueDate && task.dueDate < today).length;
   const teamPoints = data.tasks.filter((task) => task.dueDate === today && task.status === "DONE").reduce((sum, task) => sum + task.points, 0);
   const teamCapacity = data.members.filter((member) => member.active).reduce((sum, member) => sum + Number(member.capacity || 5), 0) || 15;
+  const dailyRecords = useMemo(() => [...data.records]
+    .filter((record) => String(record.updatedAt || "").slice(0, 10) === reportDate)
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))), [data.records, reportDate]);
+  const dailyPublished = dailyRecords.filter((record) => record.status.toLowerCase().includes("опубликовано"));
+  const dailyBlocked = dailyRecords.filter((record) => /требует исправления|не выполнена|блокер|недоступен/i.test(record.status));
+  const dailyInProgress = dailyRecords.filter((record) => !dailyPublished.includes(record) && !dailyBlocked.includes(record));
+  const placementAudit = data.records.find((record) => record.id === "audit-atlas-public-placement-2026-08-07");
+  const verifiedPlacementCount = Number(placementAudit?.status.match(/\d+/)?.[0] || 0);
+  const shiftReportDate = (days: number) => {
+    const date = new Date(`${reportDate}T12:00:00`);
+    date.setDate(date.getDate() + days);
+    setReportDate(date.toLocaleDateString("sv-SE", { timeZone: "Europe/Moscow" }));
+  };
 
   const records = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -453,6 +468,28 @@ function ListingsCrmWorkspace() {
         </section>}
 
         {view === "today" && <section className="board"><div className="board-head"><div><h3>Мой день · {currentMember?.name || "выберите себя"}</h3><p>Просроченные задачи не скрываются</p></div>{canCoordinate && <button className="button primary" onClick={generatePlan}>Обновить план</button>}</div><div className="task-sections"><div><h3>Мои задачи</h3><div className="task-grid">{myTasks.map(renderTask)}{myTasks.length === 0 && <div className="empty">У вас пока нет задач</div>}</div></div><div><h3>Общая очередь</h3><div className="task-grid">{freeTasks.map(renderTask)}{freeTasks.length === 0 && <div className="empty">Свободных задач нет</div>}</div></div></div></section>}
+
+        {view === "daily-report" && <section className="daily-report">
+          <section className="report-hero">
+            <div><span className="report-eyebrow">КРАТКИЙ ОТЧЁТ</span><h2>{new Date(`${reportDate}T12:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</h2><p>Фактические изменения карточек за выбранный день. Письма без подтверждённой отправки не считаются выполненными.</p></div>
+            <div className="report-calendar"><span>Дата отчёта</span><div><button type="button" onClick={() => shiftReportDate(-1)} aria-label="Предыдущий день">←</button><input type="date" value={reportDate} max={today} onChange={(event) => setReportDate(event.target.value || today)} /><button type="button" onClick={() => shiftReportDate(1)} disabled={reportDate >= today} aria-label="Следующий день">→</button></div>{reportDate !== today && <button className="report-today" type="button" onClick={() => setReportDate(today)}>Сегодня</button>}</div>
+            <div className="report-total"><strong>{dailyRecords.length}</strong><span>обновлено карточек</span></div>
+          </section>
+          <section className="report-metrics">
+            <article className="report-metric published"><span>Опубликовано</span><strong>{dailyPublished.length}</strong><small>проверенные прямые URL</small></article>
+            <article className="report-metric verified"><span>Всего подтверждено</span><strong>{verifiedPlacementCount || "—"}</strong><small>публичных материалов</small></article>
+            <article className="report-metric progress"><span>В работе</span><strong>{dailyInProgress.length}</strong><small>следующие действия назначены</small></article>
+            <article className="report-metric blocked"><span>Блокеры</span><strong>{dailyBlocked.length}</strong><small>нужны исправления или доступ</small></article>
+          </section>
+          <section className="board report-section"><div className="board-head"><div><h3>Что сделано сегодня</h3><p>Публикации, проверки и подготовленные площадки</p></div></div><div className="report-list">
+            {[...dailyPublished, ...dailyInProgress].map((record) => <article key={record.id}><span className={`report-status tone-${toneFor(record.status)}`}><i /></span><div><strong>{record.name}</strong><p>{record.status}</p></div><button onClick={() => setSelectedId(record.id)}>Открыть</button></article>)}
+            {dailyPublished.length + dailyInProgress.length === 0 && <div className="empty">За выбранный день завершённых изменений нет</div>}
+          </div></section>
+          <section className="board report-section"><div className="board-head"><div><h3>Перенесено на следующий день</h3><p>Задачи, которые нельзя считать выполненными</p></div></div><div className="report-list blockers">
+            {dailyBlocked.map((record) => <article key={record.id}><span className={`report-status tone-${toneFor(record.status)}`}><i /></span><div><strong>{record.name}</strong><p>{record.status} · {record.action}</p></div><button onClick={() => setSelectedId(record.id)}>Открыть</button></article>)}
+            {dailyBlocked.length === 0 && <div className="empty">Незакрытых блокеров за день нет</div>}
+          </div></section>
+        </section>}
 
         {view === "team" && <section className="team-board">{data.members.filter((member) => member.active).map((member) => <section className="team-column" key={member.id}><header><span className="member-avatar">{member.name.slice(0, 1)}</span><div><h3>{member.name}</h3><p>{ROLE_LABELS[member.role] || member.role}</p></div><b>{activeTasks.filter((task) => task.assigneeId === member.id).reduce((sum, task) => sum + task.points, 0)}/{member.capacity || 5}</b></header><div>{activeTasks.filter((task) => task.assigneeId === member.id).map(renderTask)}{activeTasks.every((task) => task.assigneeId !== member.id) && <div className="empty compact">Нет активных задач</div>}</div></section>)}<section className="team-column unassigned"><header><div><h3>Свободная очередь</h3><p>Берёт только один сотрудник</p></div><b>{freeTasks.length}</b></header><div>{freeTasks.map(renderTask)}</div></section></section>}
 

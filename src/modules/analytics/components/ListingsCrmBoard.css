@@ -634,6 +634,48 @@ td { padding: 16px; }
 .activity-list strong { font-size: 13px; }
 .activity-list p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .activity-list time { color: var(--muted); font-size: 11px; }
+.daily-report { display: grid; gap: 14px; }
+.report-hero {
+  min-height: 148px; padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  border: 1px solid #dfe3ff; border-radius: 12px; background: linear-gradient(135deg, #fff 0%, #f2f4ff 100%);
+}
+.report-eyebrow { color: var(--blue); font-size: 11px; font-weight: 850; letter-spacing: .1em; }
+.report-hero h2 { margin: 7px 0 5px; font-size: 27px; letter-spacing: -.03em; }
+.report-hero p { max-width: 680px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.report-calendar { min-width: 245px; display: grid; gap: 7px; }
+.report-calendar > span { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.report-calendar > div { display: grid; grid-template-columns: 38px minmax(150px, 1fr) 38px; }
+.report-calendar button, .report-calendar input { height: 38px; border: 1px solid #d9ddea; background: white; color: #4f5561; }
+.report-calendar > div button:first-child { border-radius: 8px 0 0 8px; }
+.report-calendar > div button:last-child { border-radius: 0 8px 8px 0; }
+.report-calendar input { min-width: 0; padding: 0 9px; border-right: 0; border-left: 0; font-size: 12px; font-weight: 700; }
+.report-calendar button { font-weight: 800; }
+.report-calendar button:disabled { color: #c4c7ce; cursor: default; }
+.report-calendar .report-today { width: fit-content; height: auto; padding: 0; border: 0; background: transparent; color: var(--blue); font-size: 11px; }
+.report-total { min-width: 155px; padding: 17px 20px; border: 1px solid #dce0ff; border-radius: 10px; background: white; text-align: center; }
+.report-total strong, .report-total span { display: block; }
+.report-total strong { color: var(--blue); font-size: 38px; line-height: 1; }
+.report-total span { margin-top: 6px; color: var(--muted); font-size: 12px; }
+.report-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.report-metric { min-height: 112px; padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.report-metric span, .report-metric small { display: block; }
+.report-metric span { color: #686d77; font-size: 12px; font-weight: 700; }
+.report-metric strong { display: block; margin: 8px 0 4px; font-size: 30px; line-height: 1; }
+.report-metric small { color: var(--muted); font-size: 11px; }
+.report-metric.published strong, .report-metric.verified strong { color: var(--green); }
+.report-metric.progress strong { color: var(--violet); }
+.report-metric.blocked strong { color: var(--red); }
+.report-section { min-width: 0; }
+.report-list article { min-height: 66px; padding: 13px 18px; display: grid; grid-template-columns: 11px minmax(0, 1fr) auto; align-items: center; gap: 12px; border-top: 1px solid #eef0f2; }
+.report-list article:first-child { border-top: 0; }
+.report-status { width: 10px; height: 10px; display: grid; place-items: center; border-radius: 50%; }
+.report-status i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.report-list strong, .report-list p { display: block; margin: 0; }
+.report-list strong { font-size: 14px; }
+.report-list p { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.report-list button { min-height: 32px; padding: 6px 10px; border: 1px solid #dfe1e6; border-radius: 7px; background: white; color: #555b66; font-size: 11px; font-weight: 700; }
+.report-list button:hover { border-color: var(--blue); color: var(--blue); }
+.report-list.blockers article { background: #fffafa; }
 .proof-storage-note { max-width: 210px; padding: 8px 10px; border-radius: 7px; background: #edf1f0; color: #647069; font-size: 11px; font-weight: 700; text-align: center; }
 .coordinator-note { color: var(--muted); font-size: 11px; font-weight: 700; }
 .database-ready { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; text-align: left; }
@@ -757,6 +799,10 @@ td { padding: 16px; }
 .crm-checklist > div:last-child span { padding: 8px 10px; border: 1px solid #d9e8df; border-radius: 7px; background: #f2faf6; color: #347052; font-size: 11px; font-weight: 750; }
 
 @media (max-width: 980px) {
+  .report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .report-hero { align-items: stretch; flex-direction: column; }
+  .report-calendar { width: 100%; }
+  .report-total { width: 100%; }
   .nav-item { font-size: 0; }
   .nav-item > span { font-size: 22px; }
   .dashboard-grid { grid-template-columns: 1fr; }
