@@ -279,6 +279,8 @@ function isCoordinator(member) {
   return member?.role === "DUTY_COORDINATOR";
 }
 
+// Run on repository startup and before mutations so already-imported stores are
+// repaired as well as fresh legacy imports.
 function repairLegacyOwnerReferences(state) {
   const memberIds = new Set((state.members || []).map((member) => member.id));
   let repaired = 0;
