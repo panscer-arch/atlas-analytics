@@ -36,6 +36,11 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Validate history RPC secret
+        env:
+          BSC_LOG_RPC_URLS: ${{ secrets.BSC_LOG_RPC_URLS }}
+        run: node scripts/validate-history-rpc-secret.mjs
+
       - name: Verify application and marketing monitor
         run: |
           npm ci
@@ -126,11 +131,6 @@ jobs:
         env:
           BSC_LOG_RPC_URLS: ${{ secrets.BSC_LOG_RPC_URLS }}
         run: |
-          if [[ -z "$BSC_LOG_RPC_URLS" || "$BSC_LOG_RPC_URLS" != https://* ]]; then
-            echo "BSC_LOG_RPC_URLS must contain an authenticated HTTPS history-capable BNB Chain endpoint."
-            exit 1
-          fi
-
           run_with_retry() {
             local label="$1"
             shift
@@ -159,6 +159,7 @@ jobs:
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
           scp_to_vps server/atlas-flow-log-history.mjs /tmp/atlas-flow-log-history.mjs
+          scp_to_vps server/rpc-url-policy.mjs /tmp/atlas-rpc-url-policy.mjs
           scp_to_vps server/google-analytics.mjs /tmp/atlas-google-analytics.mjs
           scp_to_vps server/agent-reach-parser.mjs /tmp/atlas-agent-reach-parser.mjs
           scp_to_vps server/agent-reach-mcporter.json /tmp/atlas-agent-reach-mcporter.json
@@ -201,6 +202,7 @@ jobs:
           fi
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-flow-log-history.mjs /opt/atlas-content-api/atlas-flow-log-history.mjs
+          sudo mv /tmp/atlas-rpc-url-policy.mjs /opt/atlas-content-api/rpc-url-policy.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
           sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs

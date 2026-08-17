@@ -39,17 +39,27 @@
   preflight прошёл, API/web images собраны с отдельными release tags; активный
   symlink и работающие контейнеры остались на release от 15.08;
 - в рабочей ветке BscScan HTML discovery заменён на серверный
-  history-capable `eth_getLogs`: bounded ranges, до 6 worker-ов, OR по
-  Locked/Claimed topics, строгая проверка address/hash/index,
-  дедупликация и отсечка 15 head blocks. GitHub deployment
-  теперь fail closed требует server-only secret `BSC_LOG_RPC_URLS`
-  без fallback на публичный RPC; checkpoint дополнительно привязан к
-  deployment block и полному набору event topics
-  и копирует новый reader module. Unit test, полный Admin Finance
-  suite и staging build прошли;
+  history-capable `eth_getLogs`: bounded последовательные ranges, OR по
+  Locked/Claimed topics, строгая проверка address/hash/index и точной ABI
+  формы, дедупликация и отсечка 15 head blocks. Head берётся из того же
+  history-provider perimeter. Каждый range полностью закреплён за одним
+  endpoint; boundary проверяется до/после запроса, event block hashes
+  сверяются с canonical headers. Подтверждённый range атомарно сохраняется в
+  checkpoint v2; response/log/checkpoint sizes ограничены. Временный
+  `checkpoint_ahead` не удаляет историю; подтверждённый reorg
+  сбрасывает историю только затронутого контракта и запускает полный rebuild.
+  GitHub deployment
+  теперь fail closed проверяет каждый URL server-only secret `BSC_LOG_RPC_URLS`
+  тем же parser, что используется runtime,
+  без fallback на публичный RPC, причём secret проверяется до SSH и любых
+  deployment-действий. Unit test, полный Admin Finance suite и staging build
+  прошли для исходной версии; усиленная v2-ревизия после security review сейчас
+  проходит повторную полную проверку;
 - это исправление ещё не развёрнуто: в GitHub нет
-  `BSC_LOG_RPC_URLS`, а бесплатные public endpoints в live-пробах вернули
-  archive auth/rate-limit/timeout. Candidate release от `11:10 UTC` не
+  `BSC_LOG_RPC_URLS`. Официальный public NodeReal endpoint подтвердил чтение
+  старого deployment block и одиночный `eth_getLogs`, но последовательный
+  scan завершился timeout; публичный rate-limited ключ не принимается как
+  production credential. Candidate release от `11:10 UTC` не
   содержит этот более новый source fix и по-прежнему не активирован;
 - в ходе аудита пароль root был заменён владельцем через Hostinger. Пароль,
   содержимое vault и clipboard в репозиторий или проектную память не записаны.

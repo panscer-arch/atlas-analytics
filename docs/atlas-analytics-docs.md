@@ -203,12 +203,13 @@ TGSTAT_TOKEN=...
 ATLAS_FINANCE_PASSWORD=...
 BSC_LOG_RPC_URLS=https://history-capable-bsc-rpc.example/<server-side-token>
 ATLAS_CONTRACTS_LOG_CHUNK=1000
-ATLAS_CONTRACTS_LOG_CONCURRENCY=2
+ATLAS_CONTRACTS_MAX_LOG_RANGES_PER_REFRESH=250
 ATLAS_CONTRACTS_FINALITY_BLOCKS=15
+ATLAS_FLOW_REFRESH_RETRY_COOLDOWN_MS=15000
 ```
 
-`BSC_LOG_RPC_URLS` хранится как GitHub Actions secret и серверная переменная. URL с токеном нельзя вставлять в frontend, логи, документацию или Git. Content API и deployment останавливаются, если отдельный history-capable endpoint не задан; публичные RPC не используются как скрытый fallback для истории.
-Первый запуск делает полный backfill от независимо проверенных deployment blocks. После каждого контракта сервер сохраняет проверенные event logs и finalized checkpoint в `atlas.analytics.bscFlowEventHistory.v1`; следующие refresh читают только новые блоки. Address, deployment block и event topics привязаны к checkpoint. Их mismatch, malformed log или checkpoint выше finalized head останавливают обновление.
+`BSC_LOG_RPC_URLS` хранится как GitHub Actions secret и серверная переменная. URL с токеном нельзя вставлять в frontend, логи, документацию или Git. Общий строгий parser проверяет каждый comma-separated URL до SSH/deploy и повторно при старте runtime: разрешён только HTTPS без embedded credentials и fragment. Content API и deployment останавливаются, если отдельный history-capable endpoint не задан; публичные RPC не используются как скрытый fallback для истории.
+Первый запуск делает полный backfill от независимо проверенных deployment blocks ограниченными последовательными диапазонами. Каждый range закреплён за одним endpoint: boundary block hash проверяется до и после `eth_getLogs`, а block hash каждого полученного события сверяется с canonical header того же провайдера. RPC response, logs per range, event blocks и checkpoint имеют жёсткие size limits. После каждого подтверждённого диапазона сервер атомарно сохраняет проверенные event logs и finalized checkpoint v2 в `atlas.analytics.bscFlowEventHistory.v1`; следующие refresh продолжаются с последнего сохранённого блока. Address, deployment block, event topics, точные ABI topic/data word counts и canonical boundary block hash привязаны к checkpoint. `null` RPC result, malformed/oversized payload, log за пределами диапазона или недоступный boundary block не продвигают checkpoint. Временно отставший provider head возвращает `checkpoint_ahead`, но не удаляет корректную историю. Несовместимый checkpoint или подтверждённый reorg сбрасывает и полностью перечитывает историю только затронутого контракта; до завершения backfill новая финансовая snapshot не публикуется.
 
 `ATLAS_FUNNEL_SIGNING_SECRET` обязателен для `/api/funnel/session`. Его нужно создать отдельно, например командой `openssl rand -hex 32`, хранить только в `/etc/atlas-funnel.env` и подключать к `atlas-content-api.service` отдельным systemd drop-in. Секрет нельзя добавлять во frontend, общий outreach-конфиг или Git.
 

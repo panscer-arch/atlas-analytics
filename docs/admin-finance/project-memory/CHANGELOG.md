@@ -17,18 +17,34 @@
   не выполнялось; соседние проекты не перезапускались.
 - Root cause stale snapshot воспроизведён локально: contract-state RPC работает,
   но legacy BscScan HTML transaction discovery получает `403`. Публичные BNB
-  RPC документированно отключают `eth_getLogs`; freshness не ослаблялась.
+  RPC из прежнего набора отключают или жёстко ограничивают `eth_getLogs`;
+  freshness не ослаблялась. Официальный public NodeReal endpoint подтвердил
+  доступ к старому deployment block и совместимость `eth_getLogs`, но при
+  последовательном сканировании ушёл в timeout, поэтому production secret им
+  не подменяется.
 - На VPS загружен и собран отдельными image tags candidate release
   `20260817T111008Z-6576338934dc`. Symlink, runtime-контейнеры, Nginx, DNS и
   соседние Compose-проекты не менялись.
 - Реализован новый server-only BNB history reader на `eth_getLogs`:
-  bounded ranges, controlled concurrency, finalized head offset, Locked/Claimed
-  topic filter, strict log validation, deduplication и chain ordering. HTML
-  BscScan больше не является источником flow history.
-- GitHub workflow дополнен доставкой reader module и fail-closed
-  проверкой secret `BSC_LOG_RPC_URLS`; токен не попадает в frontend
+  bounded ranges, finalized head offset, Locked/Claimed topic filter, strict
+  address/hash/index/topic validation, точные ABI topic/data word counts,
+  deduplication и chain ordering. Каждый range закреплён за одним endpoint:
+  boundary hash проверяется до и после запроса, а block hash каждого event
+  сверяется с canonical header того же провайдера. Размер RPC response,
+  количество logs/event blocks и общий checkpoint ограничены.
+  Backfill идёт последовательно и сохраняет checkpoint после каждого
+  подтверждённого диапазона; `null` RPC result не трактуется как пустая
+  история. HTML BscScan больше не является источником flow history.
+- GitHub workflow дополнен доставкой reader modules и fail-closed
+  проверкой каждого URL в secret `BSC_LOG_RPC_URLS` общим runtime parser;
+  токен не попадает в frontend
   или Git. Публичный RPC больше не используется как fallback для истории,
-  а persisted checkpoint валидирует address, deployment block и topics.
+  а persisted checkpoint v2 валидирует address, deployment block, topics и
+  canonical boundary block hash. Временный `checkpoint_ahead` сохраняет
+  корректный checkpoint и завершает refresh без rebuild. Reorg или другой
+  несовместимый checkpoint приводит
+  к полному безопасному rebuild этого контракта. Secret-gate выполняется до
+  SSH и любых deployment-действий.
   До создания/проверки этого secret source deployment не
   запускался.
 - Прошли новый history-reader test, полный `test:admin-finance`,
