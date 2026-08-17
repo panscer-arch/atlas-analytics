@@ -163,7 +163,9 @@ Endpoints:
 
 ## BSC Atlas Flows API
 
-Dashboard и аналитические вкладки используют read-only endpoint `GET /api/contracts/atlas-flows`. Он собирает агрегированные показатели по контрактам Atlas в BNB Smart Chain: количество циклов и участников, объёмы, поступления, выплаты и временные ряды. Wallet addresses в ответ не возвращаются.
+Dashboard и аналитические вкладки используют read-only endpoint `GET /api/contracts/atlas-flows`. Он собирает агрегированные показатели по контрактам Atlas в BNB Smart Chain: количество циклов и участников, объёмы, поступления, выплаты и временные ряды. Wallet addresses в ответ не возвращаются. История Locked/Claimed читается напрямую через `eth_getLogs` и не зависит от HTML-вёрстки BscScan.
+
+Для сбора истории обязателен аутентифицированный HTTPS RPC endpoint с поддержкой исторического `eth_getLogs`. Публичный RPC без SLA не считается production-источником. Запросы делятся на ограниченные диапазоны, а в snapshot попадают только финализированные блоки.
 
 Первый запрос не блокируется долгим RPC-сканированием. Если готового снимка ещё нет, API сразу возвращает состояние `refreshing`; интерфейс повторяет запрос, пока сервер формирует snapshot. Готовый снимок сохраняется в content store и обновляется в фоне.
 
@@ -199,7 +201,14 @@ OUTREACH_REPLY_TO_EMAIL=partners@atlas-system.io
 TELEMETR_API_KEY=...
 TGSTAT_TOKEN=...
 ATLAS_FINANCE_PASSWORD=...
+BSC_LOG_RPC_URLS=https://history-capable-bsc-rpc.example/<server-side-token>
+ATLAS_CONTRACTS_LOG_CHUNK=1000
+ATLAS_CONTRACTS_LOG_CONCURRENCY=2
+ATLAS_CONTRACTS_FINALITY_BLOCKS=15
 ```
+
+`BSC_LOG_RPC_URLS` хранится как GitHub Actions secret и серверная переменная. URL с токеном нельзя вставлять в frontend, логи, документацию или Git. Content API и deployment останавливаются, если отдельный history-capable endpoint не задан; публичные RPC не используются как скрытый fallback для истории.
+Первый запуск делает полный backfill от независимо проверенных deployment blocks. После каждого контракта сервер сохраняет проверенные event logs и finalized checkpoint в `atlas.analytics.bscFlowEventHistory.v1`; следующие refresh читают только новые блоки. Address, deployment block и event topics привязаны к checkpoint. Их mismatch, malformed log или checkpoint выше finalized head останавливают обновление.
 
 `ATLAS_FUNNEL_SIGNING_SECRET` обязателен для `/api/funnel/session`. Его нужно создать отдельно, например командой `openssl rand -hex 32`, хранить только в `/etc/atlas-funnel.env` и подключать к `atlas-content-api.service` отдельным systemd drop-in. Секрет нельзя добавлять во frontend, общий outreach-конфиг или Git.
 

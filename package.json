@@ -28,6 +28,7 @@
     "test:admin-finance-forecast-runtime": "node scripts/verify-admin-finance-forecast-runtime.mjs",
     "test:admin-finance-provider": "node scripts/verify-admin-finance-provider.mjs",
     "test:admin-finance-alpha-api": "node scripts/verify-admin-finance-alpha-api.mjs",
+    "test:atlas-flow-history": "node scripts/verify-atlas-flow-log-history.mjs",
     "test:funnel": "node scripts/verify-atlas-funnel.mjs",
     "test:funnel-pilot": "node scripts/verify-atlas-funnel-pilot.mjs && node scripts/verify-atlas-funnel-api.mjs",
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",

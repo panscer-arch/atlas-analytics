@@ -2,6 +2,38 @@
 
 ## 2026-08-17
 
+- Выполнен live read-only аудит Admin Finance VPS: подтверждены custom SSH
+  `48222`, активный immutable release, loopback web `8088`, host Nginx `8443`
+  и HTTP 200 на пяти внутренних `/admin/*` маршрутах. Соседние сервисы не
+  изменялись.
+- Зафиксирован fail-closed инцидент источника: Alpha readiness возвращает
+  `503 source_unavailable`, потому что flow snapshot был старше 15 минут;
+  balance registry оставался свежим. Лимит свежести не ослаблялся.
+- Сверены hashes staging release с текущей веткой: source adapter, Compose и
+  Nginx совпадают, но текущий `admin-finance-api.mjs` со строгим pin по block
+  number/hash ещё не развёрнут.
+- Повторно пройдены полный Admin Finance test suite, staging build, release
+  boundary, staging package и удалённый Compose preflight. Обновление runtime
+  не выполнялось; соседние проекты не перезапускались.
+- Root cause stale snapshot воспроизведён локально: contract-state RPC работает,
+  но legacy BscScan HTML transaction discovery получает `403`. Публичные BNB
+  RPC документированно отключают `eth_getLogs`; freshness не ослаблялась.
+- На VPS загружен и собран отдельными image tags candidate release
+  `20260817T111008Z-6576338934dc`. Symlink, runtime-контейнеры, Nginx, DNS и
+  соседние Compose-проекты не менялись.
+- Реализован новый server-only BNB history reader на `eth_getLogs`:
+  bounded ranges, controlled concurrency, finalized head offset, Locked/Claimed
+  topic filter, strict log validation, deduplication и chain ordering. HTML
+  BscScan больше не является источником flow history.
+- GitHub workflow дополнен доставкой reader module и fail-closed
+  проверкой secret `BSC_LOG_RPC_URLS`; токен не попадает в frontend
+  или Git. Публичный RPC больше не используется как fallback для истории,
+  а persisted checkpoint валидирует address, deployment block и topics.
+  До создания/проверки этого secret source deployment не
+  запускался.
+- Прошли новый history-reader test, полный `test:admin-finance`,
+  dedicated staging build, build boundary, JavaScript syntax, YAML parse и
+  `git diff --check`.
 - Уточнён Gate 0 по контрактам: адреса уже предоставлены пользователем,
   независимо проверены и зафиксированы в machine-readable registry. Повторная
   передача адресов не требуется; открыты только утверждение точного

@@ -2,6 +2,58 @@
 
 Обновлено: 17.08.2026. Статус: `MVP-1 STAGING DEPLOYED · INTERNAL ALPHA PARTIAL`.
 
+## Live staging audit 2026-08-17
+
+- подтверждён read-only SSH-доступ к `srv1870557` на custom port `48222`;
+  production Support/Chatwoot и соседние проекты не изменялись;
+- активный immutable release:
+  `20260815T155500-8a62b495c3fc305f659c9d92aafff12aaba27ea6`;
+  web-контейнер работает на loopback `127.0.0.1:8088`, host Nginx на `:8443`
+  отвечает ожидаемым `401 Basic Auth`, а пять `/admin/*` MVP-маршрутов внутри
+  proxy возвращают HTTP 200;
+- API-процесс работает, но контейнер `atlas-admin-finance-staging-api-1`
+  находится в `unhealthy`: readiness корректно fail closed возвращает
+  `503 source_unavailable`;
+- точная причина — публичный flow snapshot
+  `https://supersussystem.com/api/contracts/atlas-flows` перестал обновляться:
+  при проверке в `10:49 UTC` его `updatedAt` был `08:08 UTC`, то есть старше
+  разрешённых 15 минут. Balance registry в тот же момент был свежим;
+- независимый локальный запуск того же on-chain сборщика подтвердил root
+  cause: чтение 2 062 Lockup orders прошло, после чего HTML-скрейпинг списка
+  транзакций BscScan получил `HTTP 403`. Официальные публичные BNB RPC не
+  поддерживают `eth_getLogs`; для восстановления нужен отдельный
+  log/archive-capable RPC или доступ к VPS источника для замены scraper;
+- лимит свежести не ослаблялся и stale snapshot не принимался как факт.
+  Источник находится на отдельном сервере `46.202.153.132`, поэтому исправление
+  его scheduler/parser не относится к этой VPS;
+- `onchain-provider.mjs`, staging Compose и Nginx template на сервере совпадают
+  с текущей веткой. `admin-finance-api.mjs` отстаёт: строгий snapshot pin по
+  `block number + block hash` для всех пяти вкладок уже есть в Git, но ещё не
+  развёрнут на staging;
+- на текущей ветке повторно прошли полный `test:admin-finance`, выделенная
+  staging-сборка, проверка release boundary и staging package. Удалённый
+  `docker compose config --quiet` с существующим server-side secret env также
+  прошёл без раскрытия значений;
+- на VPS подготовлен, но не активирован immutable candidate release
+  `20260817T111008Z-6576338934dc`. Его archive checksum подтверждён, Compose
+  preflight прошёл, API/web images собраны с отдельными release tags; активный
+  symlink и работающие контейнеры остались на release от 15.08;
+- в рабочей ветке BscScan HTML discovery заменён на серверный
+  history-capable `eth_getLogs`: bounded ranges, до 6 worker-ов, OR по
+  Locked/Claimed topics, строгая проверка address/hash/index,
+  дедупликация и отсечка 15 head blocks. GitHub deployment
+  теперь fail closed требует server-only secret `BSC_LOG_RPC_URLS`
+  без fallback на публичный RPC; checkpoint дополнительно привязан к
+  deployment block и полному набору event topics
+  и копирует новый reader module. Unit test, полный Admin Finance
+  suite и staging build прошли;
+- это исправление ещё не развёрнуто: в GitHub нет
+  `BSC_LOG_RPC_URLS`, а бесплатные public endpoints в live-пробах вернули
+  archive auth/rate-limit/timeout. Candidate release от `11:10 UTC` не
+  содержит этот более новый source fix и по-прежнему не активирован;
+- в ходе аудита пароль root был заменён владельцем через Hostinger. Пароль,
+  содержимое vault и clipboard в репозиторий или проектную память не записаны.
+
 ## Git reconciliation 2026-08-16
 
 - подтверждённая Admin Finance цепочка перенесена поверх свежего
@@ -327,6 +379,13 @@ Foundation`:
    расширения доступа.
 
 ## Следующий конкретный результат
+
+Ближайший operational blocker: получить отдельный read-only BNB
+history RPC endpoint, добавить его как `BSC_LOG_RPC_URLS`, прогнать
+полную историю и сверить totals/event counts/latest finalized block с
+текущим snapshot и Dune до deployment source API. Затем получить
+Finance readiness 200 и только после этого собирать/активировать
+новый Finance staging release.
 
 В изолированной staging PostgreSQL baseline schema проходит реальный
 backup/restore drill, а Forecast runtime получает проверенный provider payload,
