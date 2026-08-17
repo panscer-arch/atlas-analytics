@@ -220,6 +220,9 @@ export async function runStagingDatabaseRestoreDrill(plan, options = {}) {
     if (result?.code !== 0) fail("drill_command_failed", `Restore drill step ${item.id} failed.`);
     if (item.id === "inspect_archive" && !String(result.stdout || "").trim()) fail("invalid_backup_archive", "Backup archive list is empty.");
     if (item.id.endsWith("table_count")) counts[item.id] = parseCount(result, item.id);
+    if (item.id === "source_table_count" && counts[item.id] !== plan.baseline.tableCount) {
+      fail("source_schema_incomplete", "Source user-table count does not match the migration baseline.");
+    }
     if (item.id === "restore_target_table_count" && counts[item.id] !== 0) {
       fail("restore_target_not_empty", "Restore database contains user tables; restore was not attempted.");
     }

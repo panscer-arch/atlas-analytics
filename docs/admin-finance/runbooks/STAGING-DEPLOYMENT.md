@@ -194,8 +194,10 @@ npm run admin-finance:db-restore-preflight -- --execute-restore-drill
 ```
 
 Runner не выполняет SQL на source. Он снимает custom-format backup,
-проверяет archive list, требует нуль user tables в restore-БД, восстанавливает
-архив и сверяет число user tables. Любая ошибка останавливает цепочку.
+но до `pg_dump` требует, чтобы source содержал ровно 47 user tables из
+проверенного migration manifest. Затем он проверяет archive list, требует нуль
+user tables в restore-БД, восстанавливает архив и сверяет число user tables.
+Любая ошибка останавливает цепочку.
 
 Перед применением обязательны custom-format `pg_dump`, проверка архива через
 `pg_restore --list`, отдельная restore-база и сверка схемы/47 таблиц после

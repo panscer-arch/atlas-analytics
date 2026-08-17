@@ -2,6 +2,12 @@
 
 ## 2026-08-17
 
+- Restore-drill runner усилен manifest-bound проверкой source-схемы: до
+  `pg_dump` он требует ровно 47 user tables текущего baseline и fail closed
+  останавливается после первого read-only count query при неполной схеме.
+  Негативный regression test подтверждает, что backup и restore не начинаются
+  для source с 19 таблицами. Полный Admin Finance suite и dedicated staging
+  build проходят; staging PostgreSQL и active release не изменялись.
 - Создан отдельный free-tier dRPC ключ для read-only BNB history и настроен
   GitHub Actions secret `BSC_LOG_RPC_URLS` без сохранения значения в Git.
   Проверка показала, что endpoint читает старые canonical blocks, но

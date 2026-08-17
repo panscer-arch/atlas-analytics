@@ -57,11 +57,26 @@ assert.equal(dryRunCalls, 0);
 
 const calls = [];
 const fixtureOutputs = {
-  source_table_count: "19\n",
+  source_table_count: "47\n",
   inspect_archive: "; archive contents\n",
   restore_target_table_count: "0\n",
-  restored_table_count: "19\n",
+  restored_table_count: "47\n",
 };
+
+let incompleteSourceCalls = 0;
+await assert.rejects(
+  () => runStagingDatabaseRestoreDrill(plan, {
+    execute: true,
+    runProcess: async (call) => {
+      incompleteSourceCalls += 1;
+      if (call.id === "source_table_count") return { code: 0, stdout: "19\n", stderr: "" };
+      return { code: 0, stdout: fixtureOutputs[call.id] || "", stderr: "" };
+    },
+  }),
+  /does not match the migration baseline/,
+);
+assert.equal(incompleteSourceCalls, 1, "Backup must not run when the source schema is incomplete");
+
 const executed = await runStagingDatabaseRestoreDrill(plan, {
   execute: true,
   baseEnvironment: { PATH: "/fixture" },
@@ -72,8 +87,8 @@ const executed = await runStagingDatabaseRestoreDrill(plan, {
   },
 });
 assert.equal(executed.executed, true);
-assert.equal(executed.sourceTableCount, 19);
-assert.equal(executed.restoredTableCount, 19);
+assert.equal(executed.sourceTableCount, 47);
+assert.equal(executed.restoredTableCount, 47);
 assert.equal(executed.sourceApplyAllowed, false);
 assert.deepEqual(calls.map(({ id }) => id), plan.commands.map(({ id }) => id));
 assert(calls.filter(({ id }) => id !== "inspect_archive").every(({ env }) => env.PGSSLMODE === "verify-full"));
