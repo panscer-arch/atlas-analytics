@@ -14,6 +14,7 @@ import {
   shouldResetAtlasEventHistoryCheckpoint,
 } from "../server/atlas-flow-log-history.mjs";
 import { parseHttpsRpcUrls } from "../server/rpc-url-policy.mjs";
+import { HISTORY_RPC_PROBES, preflightHistoryRpcUrl, requestHistoryRpc } from "./history-rpc-preflight.mjs";
 
 const ADDRESS = "0x8F6daC6F25A5038112E1A01f1cBBD682e4D64889";
 const LOCKED_TOPIC = "0xfc19754b7c43ed8f5cf6ce6617a1fff336b6cc4bb8e5ea4bfa6a031d019c49ff";
@@ -321,6 +322,90 @@ assert.deepEqual(parseHttpsRpcUrls("https://one.example/key, https://two.example
 assert.throws(() => parseHttpsRpcUrls("https://one.example,http://127.0.0.1:8545", "test_rpc"), /test_rpc_invalid/);
 assert.throws(() => parseHttpsRpcUrls("https://user:pass@example.com", "test_rpc"), /test_rpc_invalid/);
 
+const preflightCalls = [];
+const preflightResult = await preflightHistoryRpcUrl("https://history.example/key", {
+  lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+  requestRpc: async (method, params) => {
+    preflightCalls.push({ method, params });
+    if (method === "eth_chainId") return "0x38";
+    if (method === "eth_getBlockByNumber") {
+      const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0]);
+      return { number: params[0], hash: probe?.deploymentBlockHash };
+    }
+    if (method === "eth_getLogs") {
+      const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0].fromBlock);
+      return [{
+        blockNumber: params[0].fromBlock,
+        blockHash: probe?.deploymentBlockHash,
+        transactionHash: probe?.logProbe.transactionHash,
+        logIndex: probe?.logProbe.logIndex,
+        address: probe?.logProbe.address,
+        topics: [probe?.logProbe.topic0],
+      }];
+    }
+    throw new Error("unexpected_method");
+  },
+});
+assert.equal(preflightResult.chainId, "0x38");
+assert.equal(preflightResult.probes, 3);
+assert.equal(preflightCalls.filter((item) => item.method === "eth_getLogs").length, 3);
+assert.equal(preflightCalls.find((item) => item.method === "eth_getLogs").params[0].toBlock, "0x6615620");
+
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+    requestRpc: async (method, params) => {
+      if (method === "eth_chainId") return "0x38";
+      if (method === "eth_getBlockByNumber") {
+        const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0]);
+        return { number: params[0], hash: probe?.deploymentBlockHash };
+      }
+      return [];
+    },
+  }),
+  /rpc_history_log_mismatch/,
+);
+
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+    requestRpc: async (method, params) => {
+      if (method === "eth_chainId") return "0x38";
+      if (method === "eth_getBlockByNumber") return { number: params[0], hash: `0x${"0".repeat(64)}` };
+      return [];
+    },
+  }),
+  /rpc_history_block_mismatch/,
+);
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+    requestRpc: async (method) => (method === "eth_chainId" ? "0x1" : null),
+  }),
+  /rpc_chain_id_mismatch/,
+);
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "127.0.0.1", family: 4 }],
+    requestRpc: async () => { throw new Error("must_not_request"); },
+  }),
+  /rpc_hostname_invalid/,
+);
+let redirectPolicy;
+await requestHistoryRpc("https://history.example/secret", "eth_chainId", [], {
+  fetchImpl: async (_url, init) => {
+    redirectPolicy = init.redirect;
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x38" }), { status: 200 });
+  },
+});
+assert.equal(redirectPolicy, "error");
+await assert.rejects(
+  () => requestHistoryRpc("https://history.example/secret", "eth_chainId", [], {
+    fetchImpl: async () => new Response("x".repeat((2 * 1024 * 1024) + 1), { status: 200 }),
+  }),
+  /rpc_response_invalid/,
+);
+
 const workflow = await readFile(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
 const contentApiSource = await readFile(new URL("../server/content-api.mjs", import.meta.url), "utf8");
 const secretGateIndex = workflow.indexOf("- name: Validate history RPC secret");
@@ -330,6 +415,7 @@ assert(secretGateIndex > 0, "history RPC secret gate is missing");
 assert(secretGateIndex < configureSshIndex, "history RPC secret must be validated before SSH setup");
 assert(secretGateIndex < deployVpsIndex, "history RPC secret must be validated before VPS deploy");
 assert(workflow.includes("node scripts/validate-history-rpc-secret.mjs"), "deploy must use the shared strict RPC URL parser");
+assert(workflow.indexOf("node scripts/validate-history-rpc-secret.mjs") < configureSshIndex, "functional history RPC preflight must run before SSH setup");
 assert(workflow.includes("server/rpc-url-policy.mjs /tmp/atlas-rpc-url-policy.mjs"), "deploy must upload the shared RPC URL parser");
 assert(workflow.includes("/tmp/atlas-rpc-url-policy.mjs /opt/atlas-content-api/rpc-url-policy.mjs"), "deploy must install the shared RPC URL parser");
 assert(!contentApiSource.includes("result.payload?.result || []"), "null history RPC results must not become an empty log set");

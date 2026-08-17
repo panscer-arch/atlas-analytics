@@ -374,6 +374,30 @@ screenshots находятся в `artifacts/admin-finance-staging`.
 write-action selectors считаются ошибкой сборки. Эти изменения пока находятся
 в draft PR и не развёрнуты на Hostinger/staging.
 
+## Проверка history RPC от 17.08.2026
+
+- Для репозитория настроен GitHub Actions secret `BSC_LOG_RPC_URLS`; значение
+  не хранится в Git и не выводится диагностикой.
+- Выданный free-tier dRPC endpoint проходит проверку BNB Chain и читает
+  canonical headers старых deployment blocks, но нестабильно выполняет
+  `eth_getLogs` даже на диапазоне 50 блоков. Поэтому он не считается пригодным
+  для полного backfill и не разрешает deployment source API.
+- Изолированный backfill завершился fail closed с
+  `event_history_range_unavailable`: snapshot не публиковался, checkpoint не
+  создавался и staging не изменялся.
+- Deployment workflow теперь до SSH выполняет функциональный preflight каждого
+  history endpoint: public DNS без redirects, chain id, independently pinned
+  canonical block hashes и точное совпадение канонического historical log в
+  каждом deployment block Daily V1, Lockup и Daily V2. Пустой `eth_getLogs`
+  отклоняется; ошибка любого endpoint останавливает workflow без раскрытия URL
+  или token.
+- Запись в SuperSUS Vault пока не создана: Vault был недоступен по сети во время
+  проверки. Это отдельная незавершённая операция, а не подтверждённое хранение
+  секрета.
+
+Сервер, active release, Nginx, DNS и соседние проекты в рамках этой проверки не
+изменялись. Production по-прежнему `NO-GO`.
+
 ## Текущий рабочий этап
 
 Зафиксировать воспроизводимый `MVP-1 Internal Alpha` и перейти к `R1.1 Data
@@ -390,8 +414,9 @@ Foundation`:
 
 ## Следующий конкретный результат
 
-Ближайший operational blocker: получить отдельный read-only BNB
-history RPC endpoint, добавить его как `BSC_LOG_RPC_URLS`, прогнать
+Ближайший operational blocker: заменить текущий непригодный free-tier endpoint
+в `BSC_LOG_RPC_URLS` на стабильный authenticated archive/history RPC, который
+проходит новый functional preflight, затем прогнать
 полную историю и сверить totals/event counts/latest finalized block с
 текущим snapshot и Dune до deployment source API. Затем получить
 Finance readiness 200 и только после этого собирать/активировать

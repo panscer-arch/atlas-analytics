@@ -2,6 +2,21 @@
 
 ## 2026-08-17
 
+- Создан отдельный free-tier dRPC ключ для read-only BNB history и настроен
+  GitHub Actions secret `BSC_LOG_RPC_URLS` без сохранения значения в Git.
+  Проверка показала, что endpoint читает старые canonical blocks, но
+  нестабильно обслуживает `eth_getLogs` на коротких диапазонах и потому не
+  пригоден для полного historical backfill. Изолированный backfill завершился
+  fail closed: snapshot и checkpoint не были созданы, deployment не запускался.
+- Secret gate усилен функциональным preflight до SSH: для каждого endpoint
+  проверяются public DNS без redirects, BNB chain id, independently pinned
+  canonical block hashes и точные historical logs всех трёх deployment-блоков.
+  Пустой `eth_getLogs` отклоняется. Добавлены общий deadline, потоковое
+  ограничение ответа, retry и негативные тесты; ошибки не содержат URL или
+  token.
+- SuperSUS Vault во время операции был недоступен, поэтому сохранение endpoint
+  в Vault не подтверждено. Сервер, active release, Nginx, DNS и соседние
+  проекты не изменялись; production остаётся `NO-GO`.
 - Выполнен live read-only аудит Admin Finance VPS: подтверждены custom SSH
   `48222`, активный immutable release, loopback web `8088`, host Nginx `8443`
   и HTTP 200 на пяти внутренних `/admin/*` маршрутах. Соседние сервисы не

@@ -1,9 +1,20 @@
 import { parseHttpsRpcUrls } from "../server/rpc-url-policy.mjs";
+import { preflightHistoryRpcUrl } from "./history-rpc-preflight.mjs";
 
 try {
-  parseHttpsRpcUrls(process.env.BSC_LOG_RPC_URLS, "bsc_log_rpc_urls");
-  console.log("BSC_LOG_RPC_URLS validation passed.");
-} catch {
-  console.error("BSC_LOG_RPC_URLS must contain one to four valid HTTPS history-capable BNB Chain endpoints.");
+  const urls = parseHttpsRpcUrls(process.env.BSC_LOG_RPC_URLS, "bsc_log_rpc_urls");
+  await Promise.all(urls.map(async (url, index) => {
+    try {
+      await preflightHistoryRpcUrl(url);
+    } catch {
+      throw new Error(`endpoint_${index + 1}_preflight_failed`);
+    }
+  }));
+  console.log(`BSC_LOG_RPC_URLS validation passed for ${urls.length} endpoint(s).`);
+} catch (error) {
+  const suffix = /^endpoint_\d+_preflight_failed$/.test(error?.message || "")
+    ? ` ${error.message.replaceAll("_", " ")}.`
+    : "";
+  console.error(`BSC_LOG_RPC_URLS must contain one to four valid HTTPS history-capable BNB Chain endpoints.${suffix}`);
   process.exitCode = 1;
 }
