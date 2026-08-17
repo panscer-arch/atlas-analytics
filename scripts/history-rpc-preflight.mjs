@@ -4,6 +4,8 @@ import { isIP } from "node:net";
 const BNB_CHAIN_ID = "0x38";
 const MAX_RPC_RESPONSE_BYTES = 2 * 1024 * 1024;
 const DEFAULT_PREFLIGHT_TIMEOUT_MS = 60000;
+const REQUIRED_LOG_RANGE_BLOCKS = 1000;
+const MAX_LOG_RANGE_BLOCKS = 50000;
 
 export const HISTORY_RPC_PROBES = [
   {
@@ -26,6 +28,11 @@ export const HISTORY_RPC_PROBES = [
     logProbe: {
       address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
       topic0: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      topics: [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x000000000000000000000000916f992df86795f24de6c268cfb9031fbb1155da",
+        "0x00000000000000000000000084eece394a096cd80f6e3386012ed5708440f844",
+      ],
       transactionHash: "0xb836ffaba84743c83d84928104f0864543010daa14de7aca307680c335f7c572",
       logIndex: "0x0",
     },
@@ -52,6 +59,26 @@ function normalizeChainId(value) {
 function sanitizeRpcErrorCode(value) {
   const code = Number(value);
   return Number.isSafeInteger(code) ? String(code) : "unknown";
+}
+
+export function normalizeHistoryLogRangeBlocks(value) {
+  const parsed = value === undefined || value === null || value === ""
+    ? REQUIRED_LOG_RANGE_BLOCKS
+    : Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 50 || parsed > MAX_LOG_RANGE_BLOCKS) {
+    throw new Error("rpc_history_range_blocks_invalid");
+  }
+  return Math.max(REQUIRED_LOG_RANGE_BLOCKS, parsed);
+}
+
+function matchesHistoryLogProbe(log, probe) {
+  const blockHex = `0x${probe.deploymentBlock.toString(16)}`;
+  return String(log?.blockNumber || "").toLowerCase() === blockHex
+    && String(log?.blockHash || "").toLowerCase() === probe.deploymentBlockHash
+    && String(log?.transactionHash || "").toLowerCase() === probe.logProbe.transactionHash
+    && String(log?.logIndex || "").toLowerCase() === probe.logProbe.logIndex
+    && String(log?.address || "").toLowerCase() === probe.logProbe.address
+    && String(log?.topics?.[0] || "").toLowerCase() === probe.logProbe.topic0;
 }
 
 function isPublicAddress(address) {
@@ -171,6 +198,7 @@ async function requestWithRetry(requestRpc, method, params) {
 
 export async function preflightHistoryRpcUrl(url, options = {}) {
   await assertPublicRpcHostname(url, options);
+  const requiredLogRangeBlocks = normalizeHistoryLogRangeBlocks(options.logRangeBlocks);
   const preflightController = new AbortController();
   const preflightTimeout = setTimeout(
     () => preflightController.abort(),
@@ -194,20 +222,42 @@ export async function preflightHistoryRpcUrl(url, options = {}) {
         address: probe.logProbe.address,
         fromBlock: blockHex,
         toBlock: blockHex,
-        topics: [probe.logProbe.topic0],
+        topics: probe.logProbe.topics || [probe.logProbe.topic0],
       }]);
-      if (!Array.isArray(logs) || !logs.some((log) => (
-        String(log?.blockNumber || "").toLowerCase() === blockHex
-        && String(log?.blockHash || "").toLowerCase() === probe.deploymentBlockHash
-        && String(log?.transactionHash || "").toLowerCase() === probe.logProbe.transactionHash
-        && String(log?.logIndex || "").toLowerCase() === probe.logProbe.logIndex
-        && String(log?.address || "").toLowerCase() === probe.logProbe.address
-        && String(log?.topics?.[0] || "").toLowerCase() === probe.logProbe.topic0
-      ))) {
+      if (!Array.isArray(logs) || !logs.some((log) => matchesHistoryLogProbe(log, probe))) {
         throw new Error(`rpc_history_log_mismatch_${probe.id}`);
       }
     }
-    return { chainId, probes: HISTORY_RPC_PROBES.length };
+
+    const rangeProbes = [
+      {
+        probe: HISTORY_RPC_PROBES[0],
+        fromBlock: HISTORY_RPC_PROBES[0].deploymentBlock,
+        toBlock: HISTORY_RPC_PROBES[0].deploymentBlock + requiredLogRangeBlocks - 1,
+      },
+      {
+        probe: HISTORY_RPC_PROBES[1],
+        fromBlock: HISTORY_RPC_PROBES[1].deploymentBlock - requiredLogRangeBlocks + 1,
+        toBlock: HISTORY_RPC_PROBES[1].deploymentBlock,
+      },
+    ];
+    for (const { probe: rangeProbe, fromBlock, toBlock } of rangeProbes) {
+      let rangeLogs;
+      try {
+        rangeLogs = await requestWithRetry(requestRpc, "eth_getLogs", [{
+          address: rangeProbe.logProbe.address,
+          fromBlock: `0x${fromBlock.toString(16)}`,
+          toBlock: `0x${toBlock.toString(16)}`,
+          topics: rangeProbe.logProbe.topics || [rangeProbe.logProbe.topic0],
+        }]);
+      } catch {
+        throw new Error("rpc_history_range_unsupported");
+      }
+      if (!Array.isArray(rangeLogs) || !rangeLogs.some((log) => matchesHistoryLogProbe(log, rangeProbe))) {
+        throw new Error("rpc_history_range_unsupported");
+      }
+    }
+    return { chainId, probes: HISTORY_RPC_PROBES.length, logRangeBlocks: requiredLogRangeBlocks };
   } finally {
     clearTimeout(preflightTimeout);
   }

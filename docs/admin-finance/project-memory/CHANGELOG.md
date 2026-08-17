@@ -11,9 +11,17 @@
 - Secret gate усилен функциональным preflight до SSH: для каждого endpoint
   проверяются public DNS без redirects, BNB chain id, independently pinned
   canonical block hashes и точные historical logs всех трёх deployment-блоков.
-  Пустой `eth_getLogs` отклоняется. Добавлены общий deadline, потоковое
-  ограничение ответа, retry и негативные тесты; ошибки не содержат URL или
-  token.
+  Два дополнительных probe требуют диапазон `eth_getLogs`, равный runtime
+  chunk, но не меньше 1000 блоков, и независимо подтверждают события в первом
+  блоке одного диапазона и последнем блоке другого. Поэтому provider с формальным
+  доступом к одному старому блоку, явным range-limit или молчаливым усечением
+  отклоняется. Пустой `eth_getLogs` отклоняется. Добавлены общий deadline,
+  потоковое ограничение ответа, retry и негативные тесты; ошибки не содержат
+  URL или token.
+- Проверен Alchemy Free: archive headers и одноблочные historical logs BNB
+  доступны, но тариф ограничивает `eth_getLogs` десятью блоками. Изолированный
+  runtime-прогон закономерно завершился fail closed; Alchemy endpoint не
+  записан в GitHub secret или Vault, staging и server runtime не изменялись.
 - SuperSUS Vault во время операции был недоступен, поэтому сохранение endpoint
   в Vault не подтверждено. Сервер, active release, Nginx, DNS и соседние
   проекты не изменялись; production остаётся `NO-GO`.

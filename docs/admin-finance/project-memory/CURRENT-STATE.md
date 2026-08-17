@@ -385,12 +385,19 @@ write-action selectors считаются ошибкой сборки. Эти и
 - Изолированный backfill завершился fail closed с
   `event_history_range_unavailable`: snapshot не публиковался, checkpoint не
   создавался и staging не изменялся.
+- Отдельно проверен Alchemy Free: BNB archive headers и одноблочные historical
+  logs доступны, но `eth_getLogs` ограничен диапазоном 10 блоков. При штатном
+  chunk 1000 такой endpoint непригоден для полного backfill и не записан в
+  GitHub secret или SuperSUS Vault.
 - Deployment workflow теперь до SSH выполняет функциональный preflight каждого
   history endpoint: public DNS без redirects, chain id, independently pinned
   canonical block hashes и точное совпадение канонического historical log в
-  каждом deployment block Daily V1, Lockup и Daily V2. Пустой `eth_getLogs`
-  отклоняется; ошибка любого endpoint останавливает workflow без раскрытия URL
-  или token.
+  каждом deployment block Daily V1, Lockup и Daily V2. Два дополнительных
+  probe требуют успешный `eth_getLogs` на диапазоне, равном runtime chunk, но
+  не меньше 1000 блоков, и подтверждают канонические события в первом блоке
+  одного диапазона и последнем блоке другого. Пустой, ограниченный или
+  молчаливо усечённый с любого края результат отклоняется; ошибка endpoint останавливает
+  workflow без раскрытия URL или token.
 - Запись в SuperSUS Vault пока не создана: Vault был недоступен по сети во время
   проверки. Это отдельная незавершённая операция, а не подтверждённое хранение
   секрета.
@@ -416,7 +423,8 @@ Foundation`:
 
 Ближайший operational blocker: заменить текущий непригодный free-tier endpoint
 в `BSC_LOG_RPC_URLS` на стабильный authenticated archive/history RPC, который
-проходит новый functional preflight, затем прогнать
+проходит новый functional preflight, включая runtime chunk и канонические
+anchor на обоих краях, затем прогнать
 полную историю и сверить totals/event counts/latest finalized block с
 текущим snapshot и Dune до deployment source API. Затем получить
 Finance readiness 200 и только после этого собирать/активировать

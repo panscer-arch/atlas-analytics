@@ -39,6 +39,7 @@ jobs:
       - name: Validate history RPC secret
         env:
           BSC_LOG_RPC_URLS: ${{ secrets.BSC_LOG_RPC_URLS }}
+          ATLAS_CONTRACTS_LOG_CHUNK: 1000
         run: node scripts/validate-history-rpc-secret.mjs
 
       - name: Verify application and marketing monitor

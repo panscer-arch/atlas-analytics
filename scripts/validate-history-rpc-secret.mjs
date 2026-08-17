@@ -1,11 +1,12 @@
 import { parseHttpsRpcUrls } from "../server/rpc-url-policy.mjs";
-import { preflightHistoryRpcUrl } from "./history-rpc-preflight.mjs";
+import { normalizeHistoryLogRangeBlocks, preflightHistoryRpcUrl } from "./history-rpc-preflight.mjs";
 
 try {
   const urls = parseHttpsRpcUrls(process.env.BSC_LOG_RPC_URLS, "bsc_log_rpc_urls");
+  const logRangeBlocks = normalizeHistoryLogRangeBlocks(process.env.ATLAS_CONTRACTS_LOG_CHUNK);
   await Promise.all(urls.map(async (url, index) => {
     try {
-      await preflightHistoryRpcUrl(url);
+      await preflightHistoryRpcUrl(url, { logRangeBlocks });
     } catch {
       throw new Error(`endpoint_${index + 1}_preflight_failed`);
     }

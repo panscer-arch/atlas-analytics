@@ -14,7 +14,12 @@ import {
   shouldResetAtlasEventHistoryCheckpoint,
 } from "../server/atlas-flow-log-history.mjs";
 import { parseHttpsRpcUrls } from "../server/rpc-url-policy.mjs";
-import { HISTORY_RPC_PROBES, preflightHistoryRpcUrl, requestHistoryRpc } from "./history-rpc-preflight.mjs";
+import {
+  HISTORY_RPC_PROBES,
+  normalizeHistoryLogRangeBlocks,
+  preflightHistoryRpcUrl,
+  requestHistoryRpc,
+} from "./history-rpc-preflight.mjs";
 
 const ADDRESS = "0x8F6daC6F25A5038112E1A01f1cBBD682e4D64889";
 const LOCKED_TOPIC = "0xfc19754b7c43ed8f5cf6ce6617a1fff336b6cc4bb8e5ea4bfa6a031d019c49ff";
@@ -333,9 +338,15 @@ const preflightResult = await preflightHistoryRpcUrl("https://history.example/ke
       return { number: params[0], hash: probe?.deploymentBlockHash };
     }
     if (method === "eth_getLogs") {
-      const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0].fromBlock);
+      const fromBlock = Number.parseInt(params[0].fromBlock, 16);
+      const toBlock = Number.parseInt(params[0].toBlock, 16);
+      const probe = HISTORY_RPC_PROBES.find((item) => (
+        item.deploymentBlock >= fromBlock
+        && item.deploymentBlock <= toBlock
+        && item.logProbe.address.toLowerCase() === String(params[0].address).toLowerCase()
+      ));
       return [{
-        blockNumber: params[0].fromBlock,
+        blockNumber: `0x${probe?.deploymentBlock.toString(16)}`,
         blockHash: probe?.deploymentBlockHash,
         transactionHash: probe?.logProbe.transactionHash,
         logIndex: probe?.logProbe.logIndex,
@@ -348,8 +359,120 @@ const preflightResult = await preflightHistoryRpcUrl("https://history.example/ke
 });
 assert.equal(preflightResult.chainId, "0x38");
 assert.equal(preflightResult.probes, 3);
-assert.equal(preflightCalls.filter((item) => item.method === "eth_getLogs").length, 3);
-assert.equal(preflightCalls.find((item) => item.method === "eth_getLogs").params[0].toBlock, "0x6615620");
+assert.equal(preflightResult.logRangeBlocks, 1000);
+assert.equal(normalizeHistoryLogRangeBlocks(1500), 1500);
+assert.equal(normalizeHistoryLogRangeBlocks(50), 1000);
+assert.throws(() => normalizeHistoryLogRangeBlocks(50001), /rpc_history_range_blocks_invalid/);
+assert.equal(preflightCalls.filter((item) => item.method === "eth_getLogs").length, 5);
+const preflightRangeCalls = preflightCalls
+  .filter((item) => item.method === "eth_getLogs")
+  .filter((item) => item.params[0].fromBlock !== item.params[0].toBlock);
+assert.equal(preflightRangeCalls.length, 2);
+for (const call of preflightRangeCalls) {
+  assert.equal(
+    Number.parseInt(call.params[0].toBlock, 16)
+      - Number.parseInt(call.params[0].fromBlock, 16)
+      + 1,
+    1000,
+  );
+}
+assert.equal(preflightRangeCalls[0].params[0].fromBlock, "0x6615620");
+assert.equal(preflightRangeCalls[1].params[0].toBlock, "0x661573b");
+
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+    requestRpc: async (method, params) => {
+      if (method === "eth_chainId") return "0x38";
+      if (method === "eth_getBlockByNumber") {
+        const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0]);
+        return { number: params[0], hash: probe?.deploymentBlockHash };
+      }
+      if (method === "eth_getLogs") {
+        const fromBlock = Number.parseInt(params[0].fromBlock, 16);
+        const toBlock = Number.parseInt(params[0].toBlock, 16);
+        const visibleToBlock = Math.min(toBlock, fromBlock + 9);
+        const probe = HISTORY_RPC_PROBES.find((item) => (
+          item.deploymentBlock >= fromBlock
+          && item.deploymentBlock <= visibleToBlock
+          && item.logProbe.address.toLowerCase() === String(params[0].address).toLowerCase()
+        ));
+        return probe ? [{
+          blockNumber: `0x${probe.deploymentBlock.toString(16)}`,
+          blockHash: probe.deploymentBlockHash,
+          transactionHash: probe.logProbe.transactionHash,
+          logIndex: probe.logProbe.logIndex,
+          address: probe.logProbe.address,
+          topics: [probe.logProbe.topic0],
+        }] : [];
+      }
+      throw new Error("unexpected_method");
+    },
+  }),
+  /rpc_history_range_unsupported/,
+);
+
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+    requestRpc: async (method, params) => {
+      if (method === "eth_chainId") return "0x38";
+      if (method === "eth_getBlockByNumber") {
+        const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0]);
+        return { number: params[0], hash: probe?.deploymentBlockHash };
+      }
+      if (method === "eth_getLogs") {
+        const fromBlock = Number.parseInt(params[0].fromBlock, 16);
+        const toBlock = Number.parseInt(params[0].toBlock, 16);
+        const visibleFromBlock = Math.max(fromBlock, toBlock - 299);
+        const probe = HISTORY_RPC_PROBES.find((item) => (
+          item.deploymentBlock >= visibleFromBlock
+          && item.deploymentBlock <= toBlock
+          && item.logProbe.address.toLowerCase() === String(params[0].address).toLowerCase()
+        ));
+        return probe ? [{
+          blockNumber: `0x${probe.deploymentBlock.toString(16)}`,
+          blockHash: probe.deploymentBlockHash,
+          transactionHash: probe.logProbe.transactionHash,
+          logIndex: probe.logProbe.logIndex,
+          address: probe.logProbe.address,
+          topics: [probe.logProbe.topic0],
+        }] : [];
+      }
+      throw new Error("unexpected_method");
+    },
+  }),
+  /rpc_history_range_unsupported/,
+);
+
+await assert.rejects(
+  () => preflightHistoryRpcUrl("https://history.example/key", {
+    lookupImpl: async () => [{ address: "93.184.216.34", family: 4 }],
+    requestRpc: async (method, params) => {
+      if (method === "eth_chainId") return "0x38";
+      if (method === "eth_getBlockByNumber") {
+        const probe = HISTORY_RPC_PROBES.find((item) => `0x${item.deploymentBlock.toString(16)}` === params[0]);
+        return { number: params[0], hash: probe?.deploymentBlockHash };
+      }
+      if (method === "eth_getLogs") {
+        const fromBlock = Number.parseInt(params[0].fromBlock, 16);
+        const toBlock = Number.parseInt(params[0].toBlock, 16);
+        if (toBlock - fromBlock + 1 > 10) throw new Error("rpc_error_-32600");
+        const probe = HISTORY_RPC_PROBES.find((item) => item.deploymentBlock === fromBlock);
+        return [{
+          blockNumber: params[0].fromBlock,
+          blockHash: probe?.deploymentBlockHash,
+          transactionHash: probe?.logProbe.transactionHash,
+          logIndex: probe?.logProbe.logIndex,
+          address: probe?.logProbe.address,
+          topics: [probe?.logProbe.topic0],
+        }];
+      }
+      throw new Error("unexpected_method");
+    },
+  }),
+  /rpc_history_range_unsupported/,
+);
 
 await assert.rejects(
   () => preflightHistoryRpcUrl("https://history.example/key", {
@@ -415,6 +538,7 @@ assert(secretGateIndex > 0, "history RPC secret gate is missing");
 assert(secretGateIndex < configureSshIndex, "history RPC secret must be validated before SSH setup");
 assert(secretGateIndex < deployVpsIndex, "history RPC secret must be validated before VPS deploy");
 assert(workflow.includes("node scripts/validate-history-rpc-secret.mjs"), "deploy must use the shared strict RPC URL parser");
+assert(workflow.includes("ATLAS_CONTRACTS_LOG_CHUNK: 1000"), "preflight and runtime log chunk must stay aligned");
 assert(workflow.indexOf("node scripts/validate-history-rpc-secret.mjs") < configureSshIndex, "functional history RPC preflight must run before SSH setup");
 assert(workflow.includes("server/rpc-url-policy.mjs /tmp/atlas-rpc-url-policy.mjs"), "deploy must upload the shared RPC URL parser");
 assert(workflow.includes("/tmp/atlas-rpc-url-policy.mjs /opt/atlas-content-api/rpc-url-policy.mjs"), "deploy must install the shared RPC URL parser");
