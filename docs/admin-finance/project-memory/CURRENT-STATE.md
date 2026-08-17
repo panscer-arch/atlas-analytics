@@ -1,6 +1,6 @@
 # Current State
 
-Обновлено: 16.08.2026. Статус: `MVP-1 STAGING DEPLOYED · INTERNAL ALPHA PARTIAL`.
+Обновлено: 17.08.2026. Статус: `MVP-1 STAGING DEPLOYED · INTERNAL ALPHA PARTIAL`.
 
 ## Git reconciliation 2026-08-16
 
@@ -51,6 +51,10 @@
   opt-in Compose overlay. Базовый staging оставляет его выключенным; без
   PostgreSQL, trusted CA и verified provider payload endpoint отвечает fail
   closed и Forecast не входит в MVP-навигацию.
+- Forecast UI теперь согласован с runtime-контрактом: API mode запрашивает
+  `committed` и подписывает значения как подтверждённые обязательства, а
+  static-only design demo остаётся `stress / maximum exposure`. Base/P50/P90
+  по-прежнему не показываются до калибровки claim-delay и backtesting.
 
 ## Research update 2026-08-14
 
@@ -207,9 +211,9 @@
   точные maturity bucket dates и состав Principal / Gross Delta / Partner
   Reward, поэтому полный cash ladder и funding gap остаются `N/A`;
 - forecast input contract, source adapter, independent RPC verifier и runtime
-  пока проверены только на golden fixture/fake transport и negative tests и не
-  подключены к Alpha API: реальный provider payload, credential, RPC и
-  утверждённые policies не получены;
+  подключены к Alpha API через выключенный по умолчанию overlay и пока
+  проверены только на golden fixture/fake transport и negative tests: реальный
+  provider payload, credential, RPC и утверждённые policies не получены;
 - PostgreSQL checkpoint guard и repository подключены в выключенной Forecast
   runtime-композиции, но DDL не применена и multi-replica race не проверен в
   staging; активный Alpha API этот runtime пока не использует;
