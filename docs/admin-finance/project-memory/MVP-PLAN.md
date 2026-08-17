@@ -85,7 +85,9 @@ Participants/KPI, GA4/Traffic, Campaigns, Risks, exports, wallet reveal,
 - [x] реализовать explicit source mode, local read-only session boundary и
   fail-closed состояния;
 - [x] проверить five-route desktop/mobile API mode без demo fallback;
-- [ ] утвердить controlled addresses и contract registry владельцем;
+- [x] получить, проверить и зафиксировать controlled addresses в
+  machine-readable contract registry;
+- [ ] утвердить точный staging-периметр и activation cutover Daily V1/V2;
 - [ ] подключить production identity и archive-capable RPC.
 
 ### MVP-1 — Internal Alpha, 10–12 августа

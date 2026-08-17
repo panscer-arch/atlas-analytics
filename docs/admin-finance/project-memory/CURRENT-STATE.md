@@ -177,12 +177,15 @@
 - production OIDC/BFF, RBAC, audit и backup/restore для новой админки не
   развёрнуты; proxy-auth код и package готовы, но реальный issuer/client ещё не
   подключён;
-- controlled-address registry не утверждён владельцем;
+- адреса Atlas-контрактов уже предоставлены пользователем и зафиксированы в
+  machine-readable controlled-address registry; повторно запрашивать их не
+  требуется;
 - кандидат controlled-address registry собран из официального PDF, публичного
   provider, AuditV5 и независимого чтения BNB Chain на block `114407352`; все
   пять контрактов содержат runtime code, параметры owner/treasury/fee/tokenId
-  сверены, права четырёх контрактов на общий LP-NFT подтверждены. Реестр fail
-  closed и ещё не считается утверждённым;
+  сверены, права четырёх контрактов на общий LP-NFT подтверждены. Техническое
+  подтверждение адресов завершено; открыто только формальное утверждение
+  точного staging-периметра и lifecycle cutover Daily V1/V2;
 - официальный PDF от 22.07.2026 содержит прежнего owner Daily Flow, тогда как
   on-chain owner уже Atlas SAFE 2-of-3; дрейф конфигурации зафиксирован как
   наблюдаемый и должен контролироваться по block-tagged snapshot;
