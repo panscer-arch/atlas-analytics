@@ -222,24 +222,25 @@ export const partnerCaptureSeries = [
 ];
 
 export const companyGrowthPlan = [
-  { month: "Август 2026", shortMonth: "Авг 26", flow: 1500000, dailyReference: 50000, companyRevenue: 60000 },
-  { month: "Сентябрь 2026", shortMonth: "Сен 26", flow: 2100000, dailyReference: 70000, companyRevenue: 84000 },
-  { month: "Октябрь 2026", shortMonth: "Окт 26", flow: 3000000, dailyReference: 100000, companyRevenue: 120000 },
-  { month: "Ноябрь 2026", shortMonth: "Ноя 26", flow: 4200000, dailyReference: 140000, companyRevenue: 168000 },
-  { month: "Декабрь 2026", shortMonth: "Дек 26", flow: 5800000, dailyReference: 190000, companyRevenue: 232000 },
-  { month: "Январь 2027", shortMonth: "Янв 27", flow: 8200000, dailyReference: 270000, companyRevenue: 328000 },
-  { month: "Февраль 2027", shortMonth: "Фев 27", flow: 11300000, dailyReference: 380000, companyRevenue: 452000 },
-  { month: "Март 2027", shortMonth: "Мар 27", flow: 16000000, dailyReference: 530000, companyRevenue: 640000 },
-  { month: "Апрель 2027", shortMonth: "Апр 27", flow: 22200000, dailyReference: 740000, companyRevenue: 888000 },
-  { month: "Май 2027", shortMonth: "Май 27", flow: 31000000, dailyReference: 1030000, companyRevenue: 1240000 },
-  { month: "Июнь 2027", shortMonth: "Июн 27", flow: 44000000, dailyReference: 1470000, companyRevenue: 1760000 },
-  { month: "Июль 2027", shortMonth: "Июл 27", flow: 61000000, dailyReference: 2030000, companyRevenue: 2440000 },
+  { month: "Август 2026", shortMonth: "Авг 26", flow: 1500000, dailyReference: 50000, newWallets: 900, dailyWallets: 30, cycles: 4500, dailyCycles: 150, companyRevenue: 75000 },
+  { month: "Сентябрь 2026", shortMonth: "Сен 26", flow: 2300000, dailyReference: 75000, newWallets: 1350, dailyWallets: 45, cycles: 6750, dailyCycles: 225, companyRevenue: 115000 },
+  { month: "Октябрь 2026", shortMonth: "Окт 26", flow: 3400000, dailyReference: 113000, newWallets: 2040, dailyWallets: 68, cycles: 10140, dailyCycles: 338, companyRevenue: 170000 },
+  { month: "Ноябрь 2026", shortMonth: "Ноя 26", flow: 5100000, dailyReference: 169000, newWallets: 3030, dailyWallets: 101, cycles: 15180, dailyCycles: 506, companyRevenue: 255000 },
+  { month: "Декабрь 2026", shortMonth: "Дек 26", flow: 7600000, dailyReference: 253000, newWallets: 4560, dailyWallets: 152, cycles: 22770, dailyCycles: 759, companyRevenue: 380000 },
+  { month: "Январь 2027", shortMonth: "Янв 27", flow: 11400000, dailyReference: 380000, newWallets: 6840, dailyWallets: 228, cycles: 34170, dailyCycles: 1139, companyRevenue: 570000 },
+  { month: "Февраль 2027", shortMonth: "Фев 27", flow: 17100000, dailyReference: 570000, newWallets: 10260, dailyWallets: 342, cycles: 51270, dailyCycles: 1709, companyRevenue: 855000 },
+  { month: "Март 2027", shortMonth: "Мар 27", flow: 25600000, dailyReference: 854000, newWallets: 15390, dailyWallets: 513, cycles: 76890, dailyCycles: 2563, companyRevenue: 1280000 },
+  { month: "Апрель 2027", shortMonth: "Апр 27", flow: 38400000, dailyReference: 1281000, newWallets: 23070, dailyWallets: 769, cycles: 115320, dailyCycles: 3844, companyRevenue: 1920000 },
+  { month: "Май 2027", shortMonth: "Май 27", flow: 57700000, dailyReference: 1922000, newWallets: 34590, dailyWallets: 1153, cycles: 173010, dailyCycles: 5767, companyRevenue: 2885000 },
+  { month: "Июнь 2027", shortMonth: "Июн 27", flow: 86500000, dailyReference: 2883000, newWallets: 51900, dailyWallets: 1730, cycles: 259500, dailyCycles: 8650, companyRevenue: 4325000 },
+  { month: "Июль 2027", shortMonth: "Июл 27", flow: 129700000, dailyReference: 4325000, newWallets: 77850, dailyWallets: 2595, cycles: 389250, dailyCycles: 12975, companyRevenue: 6485000 },
 ];
 
 export const companyGrowthPlanAssumptions = {
   monthlyGrowthPercent: 40,
+  scenarioGrowthPercent: 50,
   planningDays: 30,
-  plannedCompanyRevenuePercent: 4,
+  plannedCompanyRevenuePercent: 5,
   partnerCaptureTargetPercent: PARTNER_CAPTURE_THRESHOLDS.targetPercent,
 };
 

@@ -107,6 +107,10 @@ try {
   assert.equal(growthPlan.data.status, "proposed");
   assert.equal(growthPlan.data.months.length, 12);
   assert.equal(growthPlan.data.months[0].flowTarget.amountRaw, "1500000000000");
+  assert.equal(growthPlan.data.months[0].newWalletsTarget, 900);
+  assert.equal(growthPlan.data.months[0].cyclesTarget, 4500);
+  assert.equal(growthPlan.data.months[11].dailyCycleReference, 12975);
+  assert.equal(growthPlan.data.plannedCompanyRevenueBasisPoints, 500);
   assertAtomicStrings(growthPlan);
 
   const growthPlanWrite = await request("/management/growth-plan", { method: "POST" });

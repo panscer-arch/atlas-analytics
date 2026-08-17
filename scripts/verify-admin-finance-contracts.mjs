@@ -156,6 +156,12 @@ function verifyOpenApi() {
   const growthPlan = document.components.schemas.ManagementGrowthPlan;
   assert(growthPlan?.additionalProperties === false, "ManagementGrowthPlan must reject unknown fields");
   assert(growthPlan.properties.status.enum.includes("proposed"), "Growth plan must expose proposal state");
+  const growthPlanMonth = document.components.schemas.ManagementGrowthPlanMonth;
+  assert(growthPlanMonth?.additionalProperties === false, "ManagementGrowthPlanMonth must reject unknown fields");
+  for (const field of ["newWalletsTarget", "dailyWalletReference", "cyclesTarget", "dailyCycleReference"]) {
+    assert(growthPlanMonth.required.includes(field), `Growth plan month must require ${field}`);
+    assert(growthPlanMonth.properties[field].type === "integer", `${field} must be an integer target`);
+  }
   const partnerEconomicsRef = document.paths["/finance/partner-economics"].get.responses["200"].content["application/json"].schema.$ref;
   assert(partnerEconomicsRef === "#/components/schemas/PartnerEconomicsResponse", "Partner economics must use its strict response schema");
   assert(document.components.schemas.PartnerEconomics?.additionalProperties === false, "PartnerEconomics must reject unknown fields");

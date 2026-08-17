@@ -1102,11 +1102,15 @@ components:
     ManagementGrowthPlanMonth:
       type: object
       additionalProperties: false
-      required: [monthStart, flowTarget, dailyReference, plannedCompanyRevenue]
+      required: [monthStart, flowTarget, dailyReference, newWalletsTarget, dailyWalletReference, cyclesTarget, dailyCycleReference, plannedCompanyRevenue]
       properties:
         monthStart: { type: string, format: date }
         flowTarget: { $ref: "#/components/schemas/Money" }
         dailyReference: { $ref: "#/components/schemas/Money" }
+        newWalletsTarget: { type: integer, minimum: 0 }
+        dailyWalletReference: { type: integer, minimum: 0 }
+        cyclesTarget: { type: integer, minimum: 0 }
+        dailyCycleReference: { type: integer, minimum: 0 }
         plannedCompanyRevenue: { $ref: "#/components/schemas/Money" }
     ManagementGrowthPlan:
       type: object

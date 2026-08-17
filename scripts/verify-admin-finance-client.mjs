@@ -194,27 +194,37 @@ const growthMoney = (amountRaw) => ({ amountRaw, decimals: 6, tokenAddress: `0x$
 const growthPlanPayload = {
   data: {
     id: "90000000-0000-4000-8000-000000000001",
-    version: "growth-plan-2026.08-v1",
+    version: "growth-plan-2026.08-v2",
     status: "proposed",
     owner: "Finance",
     approvedBy: null,
     approvedAt: null,
     effectiveFrom: "2026-08-01",
     previousVersionId: null,
-    monthlyGrowthBasisPoints: 4000,
-    plannedCompanyRevenueBasisPoints: 400,
+    monthlyGrowthBasisPoints: 5000,
+    plannedCompanyRevenueBasisPoints: 500,
     dayBasis: "source_30_day_reference",
     source: "manual_management_scenario",
     months: Array.from({ length: 12 }, (_, index) => {
       const monthStart = new Date(Date.UTC(2026, 7 + index, 1)).toISOString().slice(0, 10);
       const flow = BigInt(1500000000000 + index * 100000000000);
-      return { monthStart, flowTarget: growthMoney(String(flow)), dailyReference: growthMoney("50000000000"), plannedCompanyRevenue: growthMoney(String(flow * 400n / 10000n)) };
+      return {
+        monthStart,
+        flowTarget: growthMoney(String(flow)),
+        dailyReference: growthMoney("50000000000"),
+        newWalletsTarget: 900 + index * 100,
+        dailyWalletReference: 30 + index,
+        cyclesTarget: 4500 + index * 500,
+        dailyCycleReference: 150 + index * 10,
+        plannedCompanyRevenue: growthMoney(String(flow * 500n / 10000n)),
+      };
     }),
   },
   meta: { ...validMeta, perimeter: "company_treasury", partial: true, sourceStatus: "partial" },
 };
 const growthPlanClient = createAdminFinanceClient({ fetchImpl: async () => jsonResponse(growthPlanPayload) });
 assert.equal((await growthPlanClient.getManagementGrowthPlan()).data.months.length, 12);
+assert.equal((await growthPlanClient.getManagementGrowthPlan()).data.months[0].newWalletsTarget, 900);
 const invalidGrowthPlanClient = createAdminFinanceClient({
   fetchImpl: async () => jsonResponse({ ...growthPlanPayload, data: { ...growthPlanPayload.data, months: growthPlanPayload.data.months.slice(0, 11) } }),
 });

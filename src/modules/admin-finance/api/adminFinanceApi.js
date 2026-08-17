@@ -143,12 +143,18 @@ function validateManagementGrowthPlan(payload) {
   let previousMonth = "";
   const seen = new Set();
   plan.months.forEach((month) => {
-    const keys = ["monthStart", "flowTarget", "dailyReference", "plannedCompanyRevenue"];
+    const keys = [
+      "monthStart", "flowTarget", "dailyReference", "newWalletsTarget",
+      "dailyWalletReference", "cyclesTarget", "dailyCycleReference",
+      "plannedCompanyRevenue",
+    ];
     const expectedRevenue = BigInt(month?.flowTarget?.amountRaw || "0")
       * BigInt(plan.plannedCompanyRevenueBasisPoints) / 10000n;
     if (!month || keys.some((key) => month[key] === undefined)
       || !/^\d{4}-\d{2}-01$/.test(month.monthStart) || seen.has(month.monthStart)
       || (previousMonth && month.monthStart <= previousMonth)
+      || ![month.newWalletsTarget, month.dailyWalletReference, month.cyclesTarget, month.dailyCycleReference]
+        .every((value) => Number.isInteger(value) && value >= 0)
       || BigInt(month.plannedCompanyRevenue.amountRaw) !== expectedRevenue) {
       throw new AdminFinanceApiError("Management growth plan month is inconsistent.", {
         code: "invalid_management_growth_plan_month",

@@ -110,8 +110,38 @@ function RevenueTooltip({ active, payload, label }) {
   return <div className="af-chart-tooltip"><strong>{label}</strong>{payload.map((item) => <span key={item.dataKey}>{item.name}: {item.dataKey === "timingRatio" || item.dataKey === "captureRate" || item.dataKey === "companyRevenueRate" || item.dataKey === "targetRate" ? `${item.value.toFixed(1)}%` : formatMoney(item.value)}</span>)}</div>;
 }
 
+function GrowthOperationsTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return <div className="af-chart-tooltip"><strong>{label}</strong>{payload.map((item) => <span key={item.dataKey}>{item.name}: {formatCount(item.value)}</span>)}</div>;
+}
+
 function formatPlanMoney(value) {
   return `$${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: value < 10 ? 2 : 0, maximumFractionDigits: 2 })}`;
+}
+
+function formatCount(value) {
+  return Number(value || 0).toLocaleString("ru-RU");
+}
+
+function GrowthOperations({ rows }) {
+  const totals = rows.reduce((result, row) => ({
+    flow: result.flow + row.flow,
+    newWallets: result.newWallets + row.newWallets,
+    cycles: result.cycles + row.cycles,
+    companyRevenue: result.companyRevenue + row.companyRevenue,
+  }), { flow: 0, newWallets: 0, cycles: 0, companyRevenue: 0 });
+  return <div className="af-growth-operations">
+    <div className="af-growth-operations-summary">
+      <article><span>План потока за 12 месяцев</span><strong>{formatPlanMoney(totals.flow)}</strong><small>сумма месячных целей</small></article>
+      <article><span>Новые кошельки</span><strong>{formatCount(totals.newWallets)}</strong><small>целевые подключения</small></article>
+      <article><span>Созданные циклы</span><strong>{formatCount(totals.cycles)}</strong><small>целевое количество</small></article>
+      <article className="revenue"><span>Доход платформы</span><strong>{formatPlanMoney(totals.companyRevenue)}</strong><small>плановый сценарий</small></article>
+    </div>
+    <div className="af-growth-operations-chart">
+      <div><strong>Операционный масштаб</strong><small>План новых кошельков и циклов по месяцам</small></div>
+      <ResponsiveContainer width="100%" height={225}><ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 4, left: 0 }}><CartesianGrid stroke="#eadfd5" vertical={false} /><XAxis dataKey="shortMonth" tick={{ fontSize: 7, fill: "#79675e" }} axisLine={false} tickLine={false} interval={1} /><YAxis yAxisId="wallets" tickFormatter={(value) => formatCount(value)} tick={{ fontSize: 7, fill: "#79675e" }} axisLine={false} tickLine={false} /><YAxis yAxisId="cycles" orientation="right" tickFormatter={(value) => formatCount(value)} tick={{ fontSize: 7, fill: "#79675e" }} axisLine={false} tickLine={false} /><Tooltip content={<GrowthOperationsTooltip />} /><Bar isAnimationActive={false} yAxisId="wallets" dataKey="newWallets" name="Новые кошельки" fill="#ff8716" radius={[3,3,0,0]} /><Line isAnimationActive={false} yAxisId="cycles" type="monotone" dataKey="cycles" name="Новые циклы" stroke="#239a77" strokeWidth={3} dot={{ r: 3, fill: "#fff", strokeWidth: 2 }} /></ComposedChart></ResponsiveContainer>
+    </div>
+  </div>;
 }
 
 function loadGrowthDraft() {
@@ -134,6 +164,10 @@ function growthPlanRowsFromApi(plan) {
       shortMonth: shortFormatter.format(date).replace(" г.", ""),
       flow: Number(row.flowTarget.displayAmount),
       dailyReference: Number(row.dailyReference.displayAmount),
+      newWallets: row.newWalletsTarget,
+      dailyWallets: row.dailyWalletReference,
+      cycles: row.cyclesTarget,
+      dailyCycles: row.dailyCycleReference,
       companyRevenue: Number(row.plannedCompanyRevenue.displayAmount),
     };
   });
@@ -292,7 +326,8 @@ function ApiGrowthPlanScreen({ response, partnerRequest, companyRequest, eventsR
         <div className="af-growth-chart-head"><div><strong>Серверный сценарий · {plan.monthlyGrowthBasisPoints / 100}% MoM</strong><small>Источник: {plan.source} · reconciliation: {response.meta.reconciliationStatus}</small></div><span>Плановый доход: {revenuePercent}%</span></div>
         <div className="af-growth-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={rows} margin={{ top: 12, right: 12, bottom: 4, left: 0 }}><CartesianGrid stroke="#eadfd5" vertical={false} /><XAxis dataKey="shortMonth" tick={{ fontSize: 8, fill: "#79675e" }} axisLine={false} tickLine={false} interval={0} /><YAxis yAxisId="flow" tickFormatter={(value) => `$${Math.round(value / 1000000)}m`} tick={{ fontSize: 8, fill: "#79675e" }} axisLine={false} tickLine={false} /><YAxis yAxisId="revenue" orientation="right" tickFormatter={(value) => `$${Math.round(value / 1000)}k`} tick={{ fontSize: 8, fill: "#79675e" }} axisLine={false} tickLine={false} /><Tooltip content={<RevenueTooltip />} /><Bar isAnimationActive={false} yAxisId="flow" dataKey="flow" name="План потока" fill="#ff8716" radius={[3,3,0,0]} /><Line isAnimationActive={false} yAxisId="revenue" type="monotone" dataKey="companyRevenue" name="План дохода" stroke="#285c22" strokeWidth={3} dot={{ r: 3, fill: "#fff", strokeWidth: 2 }} /></ComposedChart></ResponsiveContainer></div>
       </div>
-      <div className="af-table-scroll af-growth-table"><table><thead><tr><th>Месяц</th><th className="number">План потока</th><th className="number">Ориентир / день</th><th className="number">План дохода компании</th><th>Статус версии</th></tr></thead><tbody>{rows.map((row) => <tr key={row.month}><td><strong>{row.month}</strong></td><td className="number">{formatMoney(row.flow)}</td><td className="number">{formatMoney(row.dailyReference)}</td><td className="number revenue">{formatMoney(row.companyRevenue)}</td><td><Tag tone={plan.status === "approved" ? "green" : "orange"}>{plan.status.toUpperCase()}</Tag></td></tr>)}</tbody></table></div>
+      <GrowthOperations rows={rows} />
+      <div className="af-table-scroll af-growth-table"><table><thead><tr><th>Месяц</th><th className="number">План потока</th><th className="number">Поток / день</th><th className="number">Новые кошельки</th><th className="number">Кошельки / день</th><th className="number">Новые циклы</th><th className="number">Циклы / день</th><th className="number">Доход платформы</th><th>Статус</th></tr></thead><tbody>{rows.map((row) => <tr key={row.month}><td><strong>{row.month}</strong></td><td className="number">{formatMoney(row.flow)}</td><td className="number">{formatMoney(row.dailyReference)}</td><td className="number">{formatCount(row.newWallets)}</td><td className="number">{formatCount(row.dailyWallets)}</td><td className="number">{formatCount(row.cycles)}</td><td className="number">{formatCount(row.dailyCycles)}</td><td className="number revenue">{formatMoney(row.companyRevenue)}</td><td><Tag tone={plan.status === "approved" ? "green" : "orange"}>{plan.status.toUpperCase()}</Tag></td></tr>)}</tbody></table></div>
       <footer className="af-growth-foot"><span>Block {response.meta.asOfBlockNumber} · {response.meta.finality} · source {response.meta.sourceStatus}</span><span>{response.meta.partial ? `PARTIAL: ${(response.meta.partialReasons || []).join(", ")}` : "Полный утверждённый план"}</span></footer>
     </section>
   </div>;
@@ -459,12 +494,13 @@ export default function AdminFinanceRevenue() {
         </div>
 
         <div className="af-growth-chart-wrap">
-          <div className="af-growth-chart-head"><div><strong>Сценарий август 2026 — июль 2027</strong><small>Версия growth-plan-2026.08-v1 · статус: предложен, не утверждён</small></div><span>Доход: 4% от потока</span></div>
+          <div className="af-growth-chart-head"><div><strong>Сценарий август 2026 — июль 2027</strong><small>Версия growth-plan-2026.08-v2 · статус: предложен, не утверждён</small></div><span>Сценарий: ≈{companyGrowthPlanAssumptions.scenarioGrowthPercent}% MoM · доход {companyGrowthPlanAssumptions.plannedCompanyRevenuePercent}%</span></div>
           <div className="af-growth-chart"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={companyGrowthPlan} margin={{ top: 12, right: 12, bottom: 4, left: 0 }}><CartesianGrid stroke="#eadfd5" vertical={false} /><XAxis dataKey="shortMonth" tick={{ fontSize: 7, fill: "#79675e" }} axisLine={false} tickLine={false} interval={1} /><YAxis yAxisId="flow" tickFormatter={(value) => `$${Math.round(value / 1000000)}m`} tick={{ fontSize: 7, fill: "#79675e" }} axisLine={false} tickLine={false} /><YAxis yAxisId="revenue" orientation="right" tickFormatter={(value) => `$${Math.round(value / 1000)}k`} tick={{ fontSize: 7, fill: "#79675e" }} axisLine={false} tickLine={false} /><Tooltip content={<RevenueTooltip />} /><Bar isAnimationActive={false} yAxisId="flow" dataKey="flow" name="План потока" fill="#ff8716" radius={[3,3,0,0]} /><Line isAnimationActive={false} yAxisId="revenue" type="monotone" dataKey="companyRevenue" name="План дохода" stroke="#285c22" strokeWidth={3} dot={{ r: 3, fill: "#fff", strokeWidth: 2 }} /></ComposedChart></ResponsiveContainer></div>
         </div>
       </div>
-      <div className="af-table-scroll af-growth-table"><table><thead><tr><th>Месяц</th><th className="number">План потока</th><th className="number">Ориентир / день</th><th className="number">План дохода компании</th><th className="number">Целевой темп</th></tr></thead><tbody>{companyGrowthPlan.map((row, index) => <tr key={row.month}><td><strong>{row.month}</strong>{index === 0 ? <small>Базовый месяц сценария</small> : null}</td><td className="number">{formatMoney(row.flow)}</td><td className="number">{formatMoney(row.dailyReference)}</td><td className="number revenue">{formatMoney(row.companyRevenue)}</td><td className="number"><Tag tone={index === 0 ? "blue" : "green"}>{index === 0 ? "BASE" : "+40% TARGET"}</Tag></td></tr>)}</tbody></table></div>
-      <footer className="af-growth-foot"><span>Суммы и 30-дневный ориентир перенесены из исходного сценария и округлены; поэтому видимый шаг между строками может отличаться от 40%.</span><span>Production: точный факт × 1.40 · реальные дни месяца · versioned target · owner approval · audit trail</span></footer>
+      <GrowthOperations rows={companyGrowthPlan} />
+      <div className="af-table-scroll af-growth-table"><table><thead><tr><th>Месяц</th><th className="number">План потока</th><th className="number">Поток / день</th><th className="number">Новые кошельки</th><th className="number">Кошельки / день</th><th className="number">Новые циклы</th><th className="number">Циклы / день</th><th className="number">Доход платформы</th><th className="number">Сценарий</th></tr></thead><tbody>{companyGrowthPlan.map((row, index) => <tr key={row.month}><td><strong>{row.month}</strong>{index === 0 ? <small>Базовый месяц сценария</small> : null}</td><td className="number">{formatMoney(row.flow)}</td><td className="number">{formatMoney(row.dailyReference)}</td><td className="number">{formatCount(row.newWallets)}</td><td className="number">{formatCount(row.dailyWallets)}</td><td className="number">{formatCount(row.cycles)}</td><td className="number">{formatCount(row.dailyCycles)}</td><td className="number revenue">{formatMoney(row.companyRevenue)}</td><td className="number"><Tag tone={index === 0 ? "blue" : "green"}>{index === 0 ? "BASE" : `≈+${companyGrowthPlanAssumptions.scenarioGrowthPercent}%`}</Tag></td></tr>)}</tbody></table></div>
+      <footer className="af-growth-foot"><span>Это предоставленный управленческий сценарий. Кошельки, циклы и доход — плановые цели, не фактические показатели.</span><span>Минимальная политика +{companyGrowthPlanAssumptions.monthlyGrowthPercent}% сохранена в динамическом контроле · табличный сценарий ≈{companyGrowthPlanAssumptions.scenarioGrowthPercent}% MoM · 30-дневные ориентиры · owner approval pending</span></footer>
     </section>
 
     <div className="af-revenue-main-grid">

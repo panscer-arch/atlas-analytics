@@ -215,11 +215,15 @@
   staging; активный Alpha API этот runtime пока не использует;
 - referral tree/status history, Company Revenue и Head Account live API
   отсутствуют; новый branch/compression контур остаётся только DEMO + contract;
-- Company Revenue static-only экран содержит отдельный `PLAN · DEMO` сценарий
-  роста входящего потока минимум на 40% MoM: месячная таблица, плановый take
-  rate 4% из предоставленного сценария и локальный калькулятор
+- Company Revenue static-only экран содержит отдельный `PLAN · DEMO`
+  динамический контроль минимального роста входящего потока на 40% MoM:
   target/pace/gap/required daily pace. Редактируемый черновик сохраняется
   только в browser localStorage и восстанавливается после reload;
+- Company Revenue также содержит предоставленный операционный сценарий
+  `growth-plan-2026.08-v2`: около 50% MoM, 5% планового дохода платформы,
+  целевые новые кошельки и циклы за месяц/день, график масштаба и годовые
+  итоги. Минимальная политика +40% сохранена в динамическом контроле; обе
+  модели явно помечены как PLAN, а не фактические данные;
 - Company Revenue static-only экран показывает отдельный `Partner Capture Rate`
   с целевым ориентиром 35%: Head Account referral receipts делятся на Gross
   Partner Rewards, фактически выплаченные сети. Platform Fee исключён. Сейчас
