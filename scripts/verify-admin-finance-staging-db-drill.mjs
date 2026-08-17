@@ -26,6 +26,7 @@ const baseOptions = {
 
 const plan = await buildStagingDatabaseDrillPlan(baseOptions);
 const sanitized = sanitizeStagingDatabaseDrillPlan(plan);
+const baselineTableList = `${plan.baseline.tableNames.join("\n")}\n`;
 assert.equal(sanitized.mode, "restore_drill_only");
 assert.equal(sanitized.baseline.artifactKind, "baseline");
 assert.equal(sanitized.baseline.sourceApplyAllowed, false);
@@ -57,10 +58,10 @@ assert.equal(dryRunCalls, 0);
 
 const calls = [];
 const fixtureOutputs = {
-  source_table_count: "47\n",
+  source_table_list: baselineTableList,
   inspect_archive: "; archive contents\n",
-  restore_target_table_count: "0\n",
-  restored_table_count: "47\n",
+  restore_target_table_list: "",
+  restored_table_list: baselineTableList,
 };
 
 let incompleteSourceCalls = 0;
@@ -69,13 +70,53 @@ await assert.rejects(
     execute: true,
     runProcess: async (call) => {
       incompleteSourceCalls += 1;
-      if (call.id === "source_table_count") return { code: 0, stdout: "19\n", stderr: "" };
+      if (call.id === "source_table_list") {
+        return { code: 0, stdout: `${plan.baseline.tableNames.slice(0, 19).join("\n")}\n`, stderr: "" };
+      }
       return { code: 0, stdout: fixtureOutputs[call.id] || "", stderr: "" };
     },
   }),
   /does not match the migration baseline/,
 );
 assert.equal(incompleteSourceCalls, 1, "Backup must not run when the source schema is incomplete");
+
+let wrongSourceCalls = 0;
+await assert.rejects(
+  () => runStagingDatabaseRestoreDrill(plan, {
+    execute: true,
+    runProcess: async (call) => {
+      wrongSourceCalls += 1;
+      if (call.id === "source_table_list") {
+        const sameCountWrongSchema = [...plan.baseline.tableNames];
+        sameCountWrongSchema[sameCountWrongSchema.length - 1] = "admin_finance.unexpected_table";
+        return { code: 0, stdout: `${sameCountWrongSchema.join("\n")}\n`, stderr: "" };
+      }
+      return { code: 0, stdout: fixtureOutputs[call.id] || "", stderr: "" };
+    },
+  }),
+  /does not match the migration baseline/,
+);
+assert.equal(wrongSourceCalls, 1, "Backup must not run when source table names differ from the baseline");
+
+for (const invalidSourceList of [
+  "admin_finance.valid_table\ninvalid table name\n",
+  "admin_finance.duplicate_table\nadmin_finance.duplicate_table\n",
+  "Admin_Finance.tokens\n",
+]) {
+  let invalidProbeCalls = 0;
+  await assert.rejects(
+    () => runStagingDatabaseRestoreDrill(plan, {
+      execute: true,
+      runProcess: async (call) => {
+        invalidProbeCalls += 1;
+        if (call.id === "source_table_list") return { code: 0, stdout: invalidSourceList, stderr: "" };
+        return { code: 0, stdout: fixtureOutputs[call.id] || "", stderr: "" };
+      },
+    }),
+    /returned (an invalid table name|duplicate table names)/,
+  );
+  assert.equal(invalidProbeCalls, 1, "An invalid schema probe must stop before backup");
+}
 
 const executed = await runStagingDatabaseRestoreDrill(plan, {
   execute: true,
@@ -97,6 +138,24 @@ assert(calls.some(({ env }) => env.PGPASSWORD === "source_secret"));
 assert(calls.some(({ env }) => env.PGPASSWORD === "restore_secret"));
 assert(calls.every(({ args }) => !JSON.stringify(args).includes("secret")));
 
+let wrongRestoreCalls = 0;
+await assert.rejects(
+  () => runStagingDatabaseRestoreDrill(plan, {
+    execute: true,
+    runProcess: async (call) => {
+      wrongRestoreCalls += 1;
+      if (call.id === "restored_table_list") {
+        const sameCountWrongSchema = [...plan.baseline.tableNames];
+        sameCountWrongSchema[0] = "admin_finance.unexpected_restored_table";
+        return { code: 0, stdout: `${sameCountWrongSchema.join("\n")}\n`, stderr: "" };
+      }
+      return { code: 0, stdout: fixtureOutputs[call.id] || "", stderr: "" };
+    },
+  }),
+  /does not match the source database/,
+);
+assert.equal(wrongRestoreCalls, plan.commands.length, "The complete restored schema must be verified");
+
 await rm(backupPath);
 let stoppedAfter = 0;
 await assert.rejects(
@@ -104,7 +163,9 @@ await assert.rejects(
     execute: true,
     runProcess: async (call) => {
       stoppedAfter += 1;
-      if (call.id === "restore_target_table_count") return { code: 0, stdout: "2\n", stderr: "" };
+      if (call.id === "restore_target_table_list") {
+        return { code: 0, stdout: "admin_finance.existing_one\nadmin_finance.existing_two\n", stderr: "" };
+      }
       return { code: 0, stdout: fixtureOutputs[call.id] || "", stderr: "" };
     },
   }),

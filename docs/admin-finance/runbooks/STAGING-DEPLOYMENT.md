@@ -194,15 +194,17 @@ npm run admin-finance:db-restore-preflight -- --execute-restore-drill
 ```
 
 Runner не выполняет SQL на source. Он снимает custom-format backup,
-но до `pg_dump` требует, чтобы source содержал ровно 47 user tables из
-проверенного migration manifest. Затем он проверяет archive list, требует нуль
-user tables в restore-БД, восстанавливает архив и сверяет число user tables.
-Любая ошибка останавливает цепочку.
+но до `pg_dump` требует точного совпадения полного списка `schema.table` source
+с 47 таблицами baseline, закреплённого checksum проверенного migration
+manifest. Совпадения одного количества недостаточно. Затем runner проверяет
+archive list, требует полностью пустой список user tables в restore-БД,
+восстанавливает архив и повторно сверяет точный список таблиц. Любая ошибка
+останавливает цепочку.
 
 Перед применением обязательны custom-format `pg_dump`, проверка архива через
-`pg_restore --list`, отдельная restore-база и сверка схемы/47 таблиц после
-восстановления. Notification runtime остаётся disabled даже после успешной
-миграции до отдельного channel security review.
+`pg_restore --list`, отдельная restore-база и точная сверка схемы и всех 47
+имён таблиц после восстановления. Notification runtime остаётся disabled даже
+после успешной миграции до отдельного channel security review.
 
 ## R1.1 Forecast runtime
 

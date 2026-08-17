@@ -407,12 +407,14 @@ write-action selectors считаются ошибкой сборки. Эти и
 
 ## Усиление PostgreSQL restore gate от 17.08.2026
 
-- Restore-drill runner теперь до снятия backup сверяет фактическое число user
-  tables source-БД с `expectedTableCount` проверенного migration manifest.
-- Неполная source-схема блокируется сразу после read-only count query; `pg_dump`
-  и последующие restore-шаги не запускаются. Для текущего baseline требуется
-  ровно 47 таблиц.
-- Добавлен негативный regression test на source с 19 таблицами. Полный
+- Restore-drill runner теперь до снятия backup сверяет точный отсортированный
+  список `schema.table` source-БД со списком 47 таблиц из baseline, чей checksum
+  закреплён migration manifest. Одного совпадения количества недостаточно.
+- Неполная или иная source-схема блокируется сразу после первого read-only
+  list query; `pg_dump` и последующие restore-шаги не запускаются. После restore
+  точный список таблиц повторно сравнивается с source и baseline.
+- Добавлены негативные regression tests на source с 19 таблицами, source с 47
+  таблицами и одним неверным именем, а также несовпадающую restored-схему. Полный
   `test:admin-finance`, dedicated staging build, build boundary, syntax checks
   и `git diff --check` проходят.
 - Это локальная проверка safety gate. Реальная staging PostgreSQL не создавалась,

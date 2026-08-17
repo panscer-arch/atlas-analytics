@@ -6,13 +6,14 @@ import { dirname, isAbsolute, resolve } from "node:path";
 const POSTGRES_PROTOCOLS = new Set(["postgres:", "postgresql:"]);
 const EMBEDDED_TLS_OPTIONS = ["sslmode", "sslcert", "sslkey", "sslrootcert"];
 const SAFE_RESTORE_DATABASE = /(restore|drill|scratch)/i;
-const USER_TABLE_COUNT_SQL = `
-SELECT count(*)
+const USER_TABLE_LIST_SQL = `
+SELECT n.nspname || '.' || c.relname
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r', 'p')
   AND n.nspname NOT IN ('pg_catalog', 'information_schema')
   AND n.nspname NOT LIKE 'pg_toast%'
+ORDER BY 1
 `.trim();
 
 export class StagingDatabaseDrillError extends Error {
@@ -83,8 +84,13 @@ export async function verifyMigrationBaseline({ manifestPath, rootDirectory }) {
   const manifest = JSON.parse(await readFile(absoluteManifest, "utf8"));
   const ddlPath = resolve(rootDirectory, manifest.source);
   const ddl = await readFile(ddlPath);
+  const ddlText = ddl.toString("utf8");
   const checksum = createHash("sha256").update(ddl).digest("hex");
-  const tableCount = [...ddl.toString("utf8").matchAll(/^CREATE TABLE admin_finance\./gm)].length;
+  const tableNames = [...ddlText.matchAll(/^CREATE TABLE\s+([a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)\s*\(/gm)]
+    .map((match) => match[1])
+    .sort();
+  const tableCount = tableNames.length;
+  if (new Set(tableNames).size !== tableCount) fail("manifest_drift", "Migration baseline contains duplicate table names.");
 
   if (manifest.status !== "prepared_not_applied") fail("unsafe_manifest_status", "Migration manifest must remain prepared_not_applied before the drill.");
   if (manifest.artifactKind !== "baseline" || manifest.sourceApplyAllowed !== false) {
@@ -93,7 +99,7 @@ export async function verifyMigrationBaseline({ manifestPath, rootDirectory }) {
   if (manifest.sha256 !== checksum || manifest.bytes !== ddl.byteLength || manifest.expectedTableCount !== tableCount) {
     fail("manifest_drift", "Migration baseline does not match its manifest.");
   }
-  return Object.freeze({ manifest, ddlPath, checksum, tableCount });
+  return Object.freeze({ manifest, ddlPath, checksum, tableCount, tableNames: Object.freeze(tableNames) });
 }
 
 function postgresEnvironment(target, caFile, baseEnvironment) {
@@ -158,12 +164,12 @@ export async function buildStagingDatabaseDrillPlan(options = {}) {
     baseline,
     sourceApplyAllowed: false,
     commands: Object.freeze([
-      command("source_table_count", toolPaths.psql, ["--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", USER_TABLE_COUNT_SQL], "source", true),
+      command("source_table_list", toolPaths.psql, ["--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", USER_TABLE_LIST_SQL], "source", true),
       command("backup", toolPaths.pgDump, ["--format=custom", "--no-owner", "--no-privileges", "--file", backupPath], "source"),
       command("inspect_archive", toolPaths.pgRestore, ["--list", backupPath], null, true),
-      command("restore_target_table_count", toolPaths.psql, ["--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", USER_TABLE_COUNT_SQL], "restore", true),
+      command("restore_target_table_list", toolPaths.psql, ["--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", USER_TABLE_LIST_SQL], "restore", true),
       command("restore", toolPaths.pgRestore, ["--exit-on-error", "--no-owner", "--no-privileges", "--dbname", restore.database, backupPath], "restore"),
-      command("restored_table_count", toolPaths.psql, ["--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", USER_TABLE_COUNT_SQL], "restore", true),
+      command("restored_table_list", toolPaths.psql, ["--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", USER_TABLE_LIST_SQL], "restore", true),
     ]),
   });
 }
@@ -184,10 +190,23 @@ function defaultRunProcess({ executable, args, env, capture }) {
   });
 }
 
-function parseCount(result, id) {
-  const value = Number(String(result.stdout || "").trim());
-  if (!Number.isSafeInteger(value) || value < 0) fail("invalid_drill_probe", `${id} returned an invalid table count.`);
-  return value;
+function parseTableList(result, id) {
+  const tableNames = String(result.stdout || "")
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .sort();
+  if (tableNames.some((value) => !/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(value))) {
+    fail("invalid_drill_probe", `${id} returned an invalid table name.`);
+  }
+  if (new Set(tableNames).size !== tableNames.length) {
+    fail("invalid_drill_probe", `${id} returned duplicate table names.`);
+  }
+  return Object.freeze(tableNames);
+}
+
+function sameTableList(actual, expected) {
+  return actual.length === expected.length && actual.every((value, index) => value === expected[index]);
 }
 
 export function sanitizeStagingDatabaseDrillPlan(plan) {
@@ -211,7 +230,7 @@ export async function runStagingDatabaseRestoreDrill(plan, options = {}) {
   if (options.execute !== true) return { executed: false, plan: sanitizeStagingDatabaseDrillPlan(plan) };
   const runProcess = options.runProcess || defaultRunProcess;
   const baseEnvironment = options.baseEnvironment || process.env;
-  const counts = {};
+  const tableLists = {};
 
   for (const item of plan.commands) {
     const target = item.target === "source" ? plan.source : item.target === "restore" ? plan.restore : null;
@@ -219,25 +238,25 @@ export async function runStagingDatabaseRestoreDrill(plan, options = {}) {
     const result = await runProcess({ executable: item.executable, args: [...item.args], env, capture: item.capture, id: item.id });
     if (result?.code !== 0) fail("drill_command_failed", `Restore drill step ${item.id} failed.`);
     if (item.id === "inspect_archive" && !String(result.stdout || "").trim()) fail("invalid_backup_archive", "Backup archive list is empty.");
-    if (item.id.endsWith("table_count")) counts[item.id] = parseCount(result, item.id);
-    if (item.id === "source_table_count" && counts[item.id] !== plan.baseline.tableCount) {
-      fail("source_schema_incomplete", "Source user-table count does not match the migration baseline.");
+    if (item.id.endsWith("table_list")) tableLists[item.id] = parseTableList(result, item.id);
+    if (item.id === "source_table_list" && !sameTableList(tableLists[item.id], plan.baseline.tableNames)) {
+      fail("source_schema_incomplete", "Source user-table list does not match the migration baseline.");
     }
-    if (item.id === "restore_target_table_count" && counts[item.id] !== 0) {
+    if (item.id === "restore_target_table_list" && tableLists[item.id].length !== 0) {
       fail("restore_target_not_empty", "Restore database contains user tables; restore was not attempted.");
     }
   }
 
-  if (counts.source_table_count !== counts.restored_table_count) {
-    fail("restore_table_count_mismatch", "Restored user-table count does not match the source database.");
+  if (!sameTableList(tableLists.source_table_list, tableLists.restored_table_list)) {
+    fail("restore_table_list_mismatch", "Restored user-table list does not match the source database.");
   }
   const backup = await stat(plan.backupPath);
   if (!backup.isFile() || backup.size < 1) fail("backup_file_invalid", "Backup file is missing or empty after the drill.");
 
   return Object.freeze({
     executed: true,
-    sourceTableCount: counts.source_table_count,
-    restoredTableCount: counts.restored_table_count,
+    sourceTableCount: tableLists.source_table_list.length,
+    restoredTableCount: tableLists.restored_table_list.length,
     backupBytes: backup.size,
     sourceApplyAllowed: false,
   });
