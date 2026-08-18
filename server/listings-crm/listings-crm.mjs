@@ -356,7 +356,6 @@ async function readRecordSeed(recordSeedFilePath) {
 }
 
 function applyBundledRecordMigrations(state, seed) {
-  // A journal marker makes each curated seed patch a one-time production migration.
   const migrations = Array.isArray(seed?.meta?.recordMigrations) ? seed.meta.recordMigrations : [];
   const seedRecords = new Map((Array.isArray(seed?.records) ? seed.records : []).map((record) => [normalizeText(record?.id, 200), record]));
   const recordById = new Map(state.records.map((record) => [record.id, record]));
