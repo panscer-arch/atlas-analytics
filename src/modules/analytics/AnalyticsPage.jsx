@@ -62,6 +62,7 @@ const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
   session: "sessionQueue",
   parser: "parser",
+  marketingOs: "marketingOS",
   analytics: "analytics",
   products: "products",
   expenses: "expenses",
@@ -629,6 +630,7 @@ function AnalyticsPage() {
   const mainTabs = [
     { id: "dashboard", label: "Дашборд" },
     { id: "parser", label: "Маркетинг" },
+    { id: "marketingOs", label: "MarketingOS" },
     { id: "analytics", label: "Аналитика" },
     { id: "products", label: "Продукты" },
     { id: "tasks", label: "Задачи" },

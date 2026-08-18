@@ -35,6 +35,7 @@ const SEGMENT_OUTREACH_KEY = "atlas.analytics.segmentOutreach.v10";
 const BITNEST_YOUTUBE_KEY = "atlas.analytics.bitnestYoutube.channels.v1";
 const MARKETING_YOUTUBE_MONITOR_STATE_KEY = "atlas.analytics.marketingYoutubeMonitor.state.v1";
 const MARKETING_DASHBOARD_KEY = "atlas.analytics.marketingDashboard.v1";
+const MARKETING_OS_KEY = "atlas.analytics.marketingOS.v1";
 const EXPENSE_CENTER_KEY = "atlas.analytics.expenseCenter.v2";
 const FINANCE_CONTENT_KEYS = new Set([
   EXPENSE_CENTER_KEY,
@@ -182,6 +183,7 @@ const MARKETING_SOURCE_CONFIGS = [
 ];
 const MARKETING_MONITORED_CONTENT_KEYS = new Set([
   MARKETING_DASHBOARD_KEY,
+  MARKETING_OS_KEY,
   AGENT_REACH_LEADS_KEY,
   ...FINANCE_CONTENT_KEYS,
   YOUTUBE_API_LEADS_KEY,

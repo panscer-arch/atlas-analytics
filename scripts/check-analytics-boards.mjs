@@ -25,6 +25,7 @@ const checks = [
   { id: "home", path: "/", text: "Аналитика" },
   { id: "expenses", path: "/?board=expenses", text: "Расходы" },
   { id: "parser", path: "/?board=parser", text: "PARSER / OUTREACH" },
+  { id: "marketing-os", path: "/?board=marketingOS", text: "MarketingOS" },
   { id: "diary", path: "/?board=diary", text: "Код доступа" },
 
   { id: "tasks-launch", path: "/?board=launch", text: "Задачи запуска" },

@@ -6,6 +6,7 @@ import ExpensesBoard from "./ExpensesBoard";
 import HermesAssistantBoard from "./HermesAssistantBoard";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import LifeDiaryBoard from "./LifeDiaryBoard";
+import MarketingOsBoard from "./MarketingOsBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import ProductsRegistry from "./ProductsRegistry";
@@ -157,6 +158,14 @@ export default function AnalyticsMainPanel({
     return (
       <Wrapper as="section" marginTop="lg">
         <ParserWorkspacePanel />
+      </Wrapper>
+    );
+  }
+
+  if (activeTab === "marketingOs") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <MarketingOsBoard />
       </Wrapper>
     );
   }
