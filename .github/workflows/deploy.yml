@@ -345,6 +345,7 @@ jobs:
           ATLAS_YOUTRACK_TOKEN=${{ secrets.ATLAS_YOUTRACK_TOKEN }}
           ATLAS_YOUTRACK_PROJECT=${{ secrets.ATLAS_YOUTRACK_PROJECT }}
           ATLAS_FINANCE_PASSWORD=${{ secrets.ATLAS_FINANCE_PASSWORD }}
+          SUPERSUS_ACCESS_PASSWORD_HASH=734c3a7459ad629c114c70863427e1a5bb9161ae63407963685878e6e1af9c1e
           ATLAS_PRODUCTS_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql
           ATLAS_LISTINGS_CRM_DATABASE_URL=postgresql://www-data@/atlas_products?host=/var/run/postgresql
           ATLAS_GA4_PROPERTY_ID=546276265
