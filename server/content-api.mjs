@@ -4664,6 +4664,8 @@ const handleProductsRequest = await createProductsRequestHandler({
 const handleListingsCrmRequest = await createListingsCrmRequestHandler({
   storeDir: process.env.ATLAS_LISTINGS_CRM_STORE_DIR || path.join(STORE_DIR, "listings-crm"),
   legacyFilePath: filePathForKey("atlas.analytics.listingsCrm.v1"),
+  recordSeedFilePath: process.env.ATLAS_LISTINGS_CRM_RECORD_SEED_FILE
+    || "/opt/atlas-content-api/listings-crm/listings-crm-initial.json",
   authorize: hasMarketingWriteSession,
 });
 
