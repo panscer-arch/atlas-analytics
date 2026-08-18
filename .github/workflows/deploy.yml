@@ -190,7 +190,6 @@ jobs:
           if [ ! -f /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json ]; then
             sudo install -m 640 -o www-data -g www-data /tmp/atlas-listings-crm-initial.json /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json
           fi
-          sudo install -m 640 -o www-data -g www-data /tmp/atlas-listings-crm-initial.json /opt/atlas-content-api/listings-crm/listings-crm-initial.json
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
@@ -366,7 +365,6 @@ jobs:
           EnvironmentFile=-/etc/atlas-outreach.env
           Environment=ATLAS_CONTENT_API_PORT=8787
           Environment=ATLAS_CONTENT_STORE_DIR=/var/lib/atlas-analytics-content
-          Environment=ATLAS_LISTINGS_CRM_RECORD_SEED_FILE=/opt/atlas-content-api/listings-crm/listings-crm-initial.json
           Environment=PIPER_TTS_URL=http://127.0.0.1:7466/synthesize
           Environment=EDGE_TTS_BIN=/opt/atlas-hermes-tts/venv/bin/edge-tts
           Environment=EDGE_TTS_VOICE=en-US-AndrewMultilingualNeural

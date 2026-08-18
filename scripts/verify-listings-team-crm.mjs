@@ -8,7 +8,6 @@ import { createListingsCrmRequestHandler } from "../server/listings-crm/listings
 const root = await mkdtemp(path.join(tmpdir(), "atlas-listings-crm-"));
 const legacyFilePath = path.join(root, "legacy.json");
 const storeDir = path.join(root, "store");
-const recordSeedFilePath = path.join(root, "record-seed.json");
 const legacyProofUrl = `data:image/png;base64,${"a".repeat(410_000)}`;
 
 await writeFile(legacyFilePath, JSON.stringify({
@@ -17,29 +16,6 @@ await writeFile(legacyFilePath, JSON.stringify({
     { id: "dapp-overdue", source: "Листинги", name: "DApp Example", type: "DApp catalog", status: "Не обработано", priority: "P0", dueDate: "2026-08-11", link: "https://dapp.example/listing" },
     { id: "article-overdue", source: "PR", name: "Article Example", type: "Article catalog", status: "Не обработано", priority: "P1", dueDate: "2026-08-12", link: "https://article.example/listing", owner: "Atlas Partnerships", ownerId: "atlas-partnerships" },
     { id: "mlm-overdue", source: "Листинги", name: "MLM Example", type: "MLM platform", status: "Не обработано", priority: "P1", dueDate: "2026-08-13", link: "https://mlm.example/listing" },
-  ],
-}), "utf8");
-
-await writeFile(recordSeedFilePath, JSON.stringify({
-  meta: {
-    recordMigrations: [{
-      id: "sync-2026-08-17-work",
-      records: [{ id: "article-overdue", fields: ["status", "action", "updatedAt"] }],
-    }],
-  },
-  records: [
-    {
-      id: "article-overdue",
-      source: "PR",
-      name: "Article Example",
-      type: "Article catalog",
-      status: "Опубликовано",
-      priority: "P1",
-      dueDate: "2026-08-12",
-      link: "https://article.example/listing",
-      action: "Проверять публичный URL",
-      updatedAt: "2026-08-17T18:00:00+03:00",
-    },
   ],
 }), "utf8");
 
@@ -282,35 +258,6 @@ try {
 
   const persisted = JSON.parse(await readFile(path.join(storeDir, "listings-team-crm-v1.json"), "utf8"));
   assert.equal(persisted.records.find((record) => record.id === recordId).status, "Архив");
-
-  const migrationStoreDir = path.join(root, "record-migration-store");
-  const preMigrationHandler = await createListingsCrmRequestHandler({
-    storeDir: migrationStoreDir, legacyFilePath, contactSeedFilePath: "",
-    recordSeedFilePath: "", authorize: async () => true, connectionString: "",
-  });
-  const preMigration = await call(preMigrationHandler, "GET", "/api/listings-crm/bootstrap");
-  const preMigrationArticle = preMigration.body.records.find((record) => record.id === "article-overdue");
-  assert.equal(preMigrationArticle.status, "Не обработано", "existing CRM data starts with the persisted server value");
-
-  const migrationHandler = await createListingsCrmRequestHandler({
-    storeDir: migrationStoreDir, legacyFilePath, contactSeedFilePath: "",
-    recordSeedFilePath, authorize: async () => true, connectionString: "",
-  });
-  const migratedBootstrap = await call(migrationHandler, "GET", "/api/listings-crm/bootstrap");
-  const migratedArticle = migratedBootstrap.body.records.find((record) => record.id === "article-overdue");
-  assert.equal(migratedArticle.status, "Опубликовано", "a bundled record migration reaches an already initialized CRM store");
-  assert.equal(migratedArticle.action, "Проверять публичный URL");
-  assert.equal(migratedArticle.updatedAt, "2026-08-17T18:00:00+03:00", "historical work keeps its real report date");
-  assert.equal(migratedArticle.owner, "Atlas Partnerships", "fields outside the migration manifest are preserved");
-  assert.equal(migratedArticle.version, preMigrationArticle.version + 1, "the migrated card gets one new version");
-  assert.ok(migratedBootstrap.body.audit.some((event) => event.action === "BUNDLED_RECORD_MIGRATION"), "the migration is recorded in the CRM journal");
-
-  const repeatedMigrationBootstrap = await call(migrationHandler, "GET", "/api/listings-crm/bootstrap");
-  assert.equal(
-    repeatedMigrationBootstrap.body.records.find((record) => record.id === "article-overdue").version,
-    migratedArticle.version,
-    "a bundled record migration is idempotent",
-  );
 
   const bundledLegacyPath = path.resolve("src/modules/analytics/data/listingsCrmInitialData.json");
   const bundledLegacy = JSON.parse(await readFile(bundledLegacyPath, "utf8"));

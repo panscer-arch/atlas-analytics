@@ -345,53 +345,6 @@ async function readLegacy(legacyFilePath) {
   }
 }
 
-async function readRecordSeed(recordSeedFilePath) {
-  if (!recordSeedFilePath) return null;
-  try {
-    return JSON.parse(await readFile(recordSeedFilePath, "utf8"));
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    throw error;
-  }
-}
-
-function applyBundledRecordMigrations(state, seed) {
-  const migrations = Array.isArray(seed?.meta?.recordMigrations) ? seed.meta.recordMigrations : [];
-  const seedRecords = new Map((Array.isArray(seed?.records) ? seed.records : []).map((record) => [normalizeText(record?.id, 200), record]));
-  const recordById = new Map(state.records.map((record) => [record.id, record]));
-  let applied = 0;
-  let changedRecords = 0;
-
-  for (const migration of migrations) {
-    const migrationId = normalizeText(migration?.id, 200);
-    if (!migrationId || state.audit.some((event) => event.action === "BUNDLED_RECORD_MIGRATION" && event.entityId === migrationId)) continue;
-    const entries = Array.isArray(migration?.records) ? migration.records : [];
-    let migrationChangedRecords = 0;
-
-    for (const entry of entries) {
-      const recordId = normalizeText(entry?.id, 200);
-      const current = recordById.get(recordId);
-      const source = seedRecords.get(recordId);
-      if (!current || !source) continue;
-      const fields = new Set((Array.isArray(entry?.fields) ? entry.fields : []).map((field) => normalizeText(field, 80)));
-      const patch = Object.fromEntries([...fields]
-        .filter((field) => RECORD_FIELDS.includes(field) && Object.prototype.hasOwnProperty.call(source, field))
-        .map((field) => [field, source[field]]));
-      if (!Object.keys(patch).length && !fields.has("updatedAt")) continue;
-      const normalized = normalizeRecordInput(patch, current);
-      const updatedAt = fields.has("updatedAt") ? normalizeText(source.updatedAt, 80) || current.updatedAt || nowIso() : current.updatedAt;
-      Object.assign(current, normalized, { version: Number(current.version || 0) + 1, updatedAt });
-      changedRecords += 1;
-      migrationChangedRecords += 1;
-    }
-
-    state.audit.push(createAudit("workspace", migrationId, "BUNDLED_RECORD_MIGRATION", null, null, null, { recordCount: migrationChangedRecords }));
-    applied += 1;
-  }
-
-  return { applied, changedRecords };
-}
-
 async function mergeContactSeeds(state, contactSeedFilePath) {
   if (!contactSeedFilePath) return 0;
   let payload;
@@ -433,7 +386,7 @@ async function mergeContactSeeds(state, contactSeedFilePath) {
   return added;
 }
 
-function createFileRepository(storeDir, legacyFilePath, contactSeedFilePath, recordSeedFilePath) {
+function createFileRepository(storeDir, legacyFilePath, contactSeedFilePath) {
   const filePath = path.join(storeDir, "listings-team-crm-v1.json");
   let queue = Promise.resolve();
 
@@ -453,14 +406,12 @@ function createFileRepository(storeDir, legacyFilePath, contactSeedFilePath, rec
       }
       const repairedOwners = repairLegacyOwnerReferences(state);
       const addedContacts = await mergeContactSeeds(state, contactSeedFilePath);
-      const migrated = applyBundledRecordMigrations(state, await readRecordSeed(recordSeedFilePath));
-      if (repairedOwners || addedContacts || migrated.applied) await persist(state);
+      if (repairedOwners || addedContacts) await persist(state);
       return state;
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
       const state = normalizeLegacyState(await readLegacy(legacyFilePath));
       await mergeContactSeeds(state, contactSeedFilePath);
-      applyBundledRecordMigrations(state, await readRecordSeed(recordSeedFilePath));
       await persist(state);
       return state;
     }
@@ -480,7 +431,7 @@ function createFileRepository(storeDir, legacyFilePath, contactSeedFilePath, rec
   return { mode: "file", readState, mutate };
 }
 
-async function createPostgresRepository(connectionString, legacyFilePath, contactSeedFilePath, recordSeedFilePath) {
+async function createPostgresRepository(connectionString, legacyFilePath, contactSeedFilePath) {
   const { Pool } = await import("pg");
   const pool = new Pool({ connectionString, max: Number(process.env.ATLAS_LISTINGS_CRM_PG_POOL || 6) });
   const migrationPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "001_listings_crm.sql");
@@ -527,8 +478,7 @@ async function createPostgresRepository(connectionString, legacyFilePath, contac
     const nextState = shouldInitialize ? normalizeLegacyState(await readLegacy(legacyFilePath)) : current;
     const repairedOwners = repairLegacyOwnerReferences(nextState);
     const addedContacts = await mergeContactSeeds(nextState, contactSeedFilePath);
-    const migrated = applyBundledRecordMigrations(nextState, await readRecordSeed(recordSeedFilePath));
-    if (shouldInitialize || repairedOwners || addedContacts || migrated.applied) await persist(seedClient, nextState);
+    if (shouldInitialize || repairedOwners || addedContacts) await persist(seedClient, nextState);
     await seedClient.query("COMMIT");
   } catch (error) {
     await seedClient.query("ROLLBACK");
@@ -563,11 +513,10 @@ export async function createListingsCrmRepository({
   storeDir,
   legacyFilePath,
   contactSeedFilePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "listings-contact-seeds.json"),
-  recordSeedFilePath = "",
   connectionString = process.env.ATLAS_LISTINGS_CRM_DATABASE_URL,
 } = {}) {
-  if (connectionString) return createPostgresRepository(connectionString, legacyFilePath, contactSeedFilePath, recordSeedFilePath);
-  return createFileRepository(storeDir, legacyFilePath, contactSeedFilePath, recordSeedFilePath);
+  if (connectionString) return createPostgresRepository(connectionString, legacyFilePath, contactSeedFilePath);
+  return createFileRepository(storeDir, legacyFilePath, contactSeedFilePath);
 }
 
 function sendJson(response, status, value, extraHeaders = {}) {
@@ -793,8 +742,8 @@ function patchTask(state, task, body, actorMemberId) {
   return task;
 }
 
-export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath, contactSeedFilePath, recordSeedFilePath, authorize = async () => false, connectionString } = {}) {
-  const repository = await createListingsCrmRepository({ storeDir, legacyFilePath, contactSeedFilePath, recordSeedFilePath, connectionString });
+export async function createListingsCrmRequestHandler({ storeDir, legacyFilePath, contactSeedFilePath, authorize = async () => false, connectionString } = {}) {
+  const repository = await createListingsCrmRepository({ storeDir, legacyFilePath, contactSeedFilePath, connectionString });
   return async function handleListingsCrmRequest(request, response, url) {
     const routePrefix = ["/api/marketing/listings-crm", "/api/listings-crm"]
       .find((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`));

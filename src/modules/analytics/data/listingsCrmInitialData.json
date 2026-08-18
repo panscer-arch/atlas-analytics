@@ -5,29 +5,7 @@
     "timezone": "Europe/Moscow",
     "commercialPlacementRule": "Если бесплатного варианта нет, в карточке обязательно фиксировать подтверждённую цену или диапазон, состав пакета, срок, способ оплаты и запрет оплаты без согласования. Неизвестные суммы отмечать как требующие письменного подтверждения; не угадывать.",
     "sourceSpreadsheet": "https://docs.google.com/spreadsheets/d/1HhJnJ6uai-8C3Arz_HwZQecQoxvfrhuk4QjQ9MiMdE8/edit",
-    "recordCount": 187,
-    "recordMigrations": [
-      {
-        "id": "sync-2026-08-17-work-and-2026-08-18-mail",
-        "records": [
-          { "id": "pr-atlas-media-10-publications-2026-08-06", "fields": ["link"] },
-          { "id": "pr-coingape-precheck-2026-08-06", "fields": ["action"] },
-          { "id": "compliance-mlmgateway-1", "fields": ["notes"] },
-          { "id": "listing-2", "fields": ["action"] },
-          { "id": "listing-4", "fields": ["action"] },
-          { "id": "listing-5", "fields": ["action"] },
-          { "id": "mlm-channel-linkaal-2026-08-07", "fields": ["status", "dueDate", "action", "notes", "channel", "updatedAt"] },
-          { "id": "mlm-media-home-business-magazine-2026-08-07", "fields": ["priority", "status", "dueDate", "action", "summary", "price", "notes", "channel", "link", "updatedAt", "placementTerm", "renewalNotes"] },
-          { "id": "audit-atlas-public-placement-2026-08-07", "fields": ["name", "status", "dueDate", "summary", "notes", "updatedAt", "renewalDate", "renewalNotes"] },
-          { "id": "pr-techstory-media-2026-08-09", "fields": ["status", "dueDate", "action", "price", "notes", "link", "updatedAt", "placementStart", "placementTerm", "renewalNotes", "platformAccess", "correspondence"] },
-          { "id": "pr-futuresbytes-collaborator-2026-08-09", "fields": ["status", "dueDate", "action", "notes", "link", "updatedAt", "placementStart", "placementTerm", "renewalNotes", "platformAccess"] },
-          { "id": "pr-eldorar-collaborator-2026-08-09", "fields": ["status", "dueDate", "action", "notes", "link", "updatedAt", "placementStart", "placementTerm", "renewalNotes", "platformAccess"] },
-          { "id": "pr-coinarbitragebot-collaborator-2026-08-09", "fields": ["status", "dueDate", "action", "notes", "link", "updatedAt", "placementStart", "placementTerm", "renewalNotes", "platformAccess"] },
-          { "id": "listing-chainquiry-2026-08-10", "fields": ["action"] },
-          { "id": "pr-definetix-collaborator-2026-08-10", "fields": ["status", "dueDate", "action", "notes", "link", "updatedAt", "placementStart", "placementTerm", "renewalNotes"] }
-        ]
-      }
-    ]
+    "recordCount": 187
   },
   "records": [
     {
