@@ -86,6 +86,15 @@ try {
   assert.equal(proxiedBootstrap.status, 200, "the production marketing proxy prefix is supported");
   assert.equal(proxiedBootstrap.body.records.length, 4);
 
+  const sameHostHttpsWrite = await call(handler, "POST", "/api/marketing/listings-crm/records", {
+    name: "Production-origin write", source: "Листинги", type: "MLM platform", link: "https://production-origin.example",
+  }, {
+    host: "supersussystem.com",
+    origin: "https://supersussystem.com",
+    "x-atlas-member-id": "duty-coordinator",
+  });
+  assert.equal(sameHostHttpsWrite.status, 201, "same-host HTTPS writes survive a proxy that omits x-forwarded-proto");
+
   const duplicate = await call(handler, "POST", "/api/listings-crm/records", {
     name: "Same site again", source: "Листинги", type: "HYIP monitor", link: "https://www.example.org/another-path",
   }, { "x-atlas-member-id": "listings-operator-1" });

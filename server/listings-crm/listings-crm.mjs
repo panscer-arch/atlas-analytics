@@ -557,14 +557,17 @@ function assertWriteAllowed(request) {
   const origin = request.headers.origin;
   if (origin) {
     const protocol = normalizeText(request.headers["x-forwarded-proto"], 20) || "http";
-    const hosts = [request.headers.host, request.headers["x-forwarded-host"]].filter(Boolean);
+    const hosts = [request.headers.host, request.headers["x-forwarded-host"]]
+      .filter(Boolean)
+      .map((host) => normalizeText(host, 300).toLowerCase());
     const valid = new Set(hosts.map((host) => `${protocol}://${host}`));
     const allowed = new Set(normalizeText(process.env.ATLAS_LISTINGS_CRM_ALLOWED_ORIGINS, 5_000).split(",").map((item) => item.trim()).filter(Boolean));
     let parsed;
     try { parsed = new URL(origin); } catch { throw Object.assign(new Error("origin_not_allowed"), { status: 403 }); }
+    const sameHost = hosts.includes(parsed.host.toLowerCase());
     const remote = String(request.socket?.remoteAddress || "");
     const local = ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) && /127\.0\.0\.1|::1/.test(remote);
-    if (!valid.has(origin) && !allowed.has(origin) && !local) throw Object.assign(new Error("origin_not_allowed"), { status: 403 });
+    if (!valid.has(origin) && !allowed.has(origin) && !sameHost && !local) throw Object.assign(new Error("origin_not_allowed"), { status: 403 });
   }
   const key = normalizeText(request.headers["x-real-ip"] || request.socket?.remoteAddress || "unknown", 200);
   const now = Date.now();
