@@ -361,7 +361,6 @@ function applyBundledRecordMigrations(state, seed) {
   const seedRecords = new Map((Array.isArray(seed?.records) ? seed.records : []).map((record) => [normalizeText(record?.id, 200), record]));
   const recordById = new Map(state.records.map((record) => [record.id, record]));
   let applied = 0;
-  let changedRecords = 0;
 
   for (const migration of migrations) {
     const migrationId = normalizeText(migration?.id, 200);
@@ -382,7 +381,6 @@ function applyBundledRecordMigrations(state, seed) {
       const normalized = normalizeRecordInput(patch, current);
       const updatedAt = fields.has("updatedAt") ? normalizeText(source.updatedAt, 80) || current.updatedAt || nowIso() : current.updatedAt;
       Object.assign(current, normalized, { version: Number(current.version || 0) + 1, updatedAt });
-      changedRecords += 1;
       migrationChangedRecords += 1;
     }
 
@@ -390,7 +388,7 @@ function applyBundledRecordMigrations(state, seed) {
     applied += 1;
   }
 
-  return { applied, changedRecords };
+  return { applied };
 }
 
 async function mergeContactSeeds(state, contactSeedFilePath) {
