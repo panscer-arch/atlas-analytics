@@ -657,23 +657,20 @@ jobs:
           TIMER
 
           timeout 45s sudo systemctl daemon-reload
-          TTS_READY=false
-          if timeout 45s sudo systemctl enable --now atlas-hermes-tts.service \
-            && timeout 45s sudo systemctl restart atlas-hermes-tts.service; then
-            for attempt in $(seq 1 20); do
-              if curl -fsS http://127.0.0.1:7466/info >/dev/null; then
-                TTS_READY=true
-                break
-              fi
-              sleep 2
-            done
-          fi
-          if [ "$TTS_READY" != true ]; then
-            echo "::warning::Hermes TTS is unavailable; continuing the independent Content API deployment."
-            sudo systemctl status atlas-hermes-tts.service --no-pager || true
-            sudo journalctl -u atlas-hermes-tts.service -n 60 --no-pager || true
-          fi
-          if [ "$(sudo cat /tmp/atlas-hermes-stt-deploy-state 2>/dev/null || true)" = ready ] && [ "$TTS_READY" = true ]; then
+          timeout 45s sudo systemctl enable --now atlas-hermes-tts.service
+          timeout 45s sudo systemctl restart atlas-hermes-tts.service
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:7466/info >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              sudo systemctl status atlas-hermes-tts.service --no-pager || true
+              sudo journalctl -u atlas-hermes-tts.service -n 60 --no-pager || true
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$(sudo cat /tmp/atlas-hermes-stt-deploy-state 2>/dev/null || true)" = ready ]; then
             for attempt in $(seq 1 45); do
               if curl -fsS http://127.0.0.1:7467/docs >/dev/null; then
                 break
@@ -700,7 +697,7 @@ jobs:
               exit 1
             fi
           else
-            echo "::warning::Hermes STT verification skipped because a required optional voice service is unavailable."
+            echo "::warning::Hermes STT verification skipped because the optional image refresh did not fit on disk."
           fi
           timeout 45s sudo systemctl enable --now atlas-content-api.service
           timeout 45s sudo systemctl restart atlas-content-api.service
