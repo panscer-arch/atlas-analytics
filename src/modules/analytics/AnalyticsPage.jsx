@@ -720,7 +720,8 @@ function AnalyticsPage() {
         onHermesOpen={() => handleMainTabChange("hermes")}
         onSessionOpen={() => handleMainTabChange("session")}
         onExpensesOpen={() => handleMainTabChange("expenses")}
-        crmUrl="https://crm.46.202.153.132.sslip.io"
+        listingsCrmUrl="https://node-panel-hq.com/"
+        partnersCrmUrl="https://partner-cycle.com/"
         mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />

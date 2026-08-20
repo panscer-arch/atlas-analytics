@@ -5,7 +5,7 @@ const VAULT_URL = String(import.meta.env.VITE_VAULT_URL || "").trim();
 
 function HeaderTool({ label, onClick, href, children, className = "" }) {
   const Component = href ? "a" : "button";
-  const externalProps = href ? { href, target: "_blank", rel: "noreferrer" } : { type: "button", onClick };
+  const externalProps = href ? { href, target: "_blank", rel: "noopener noreferrer" } : { type: "button", onClick };
   return (
     <Component
       {...externalProps}
@@ -35,7 +35,8 @@ function AnalyticsHeader({
   onHermesOpen,
   onSessionOpen,
   onExpensesOpen,
-  crmUrl,
+  listingsCrmUrl,
+  partnersCrmUrl,
   mediaPreviewUrl,
   onLiveAnalyticsClick,
   showAdmins = false,
@@ -96,8 +97,23 @@ function AnalyticsHeader({
             <LockKeyhole size={22} strokeWidth={1.8} aria-hidden="true" />
           </HeaderTool>
         ) : null}
-        {crmUrl ? (
-          <HeaderTool label="CRM" href={crmUrl} className="analytics-header-tool-text">CRM</HeaderTool>
+        {listingsCrmUrl ? (
+          <HeaderTool
+            label="CRM №1 — Площадки и маркетинг"
+            href={listingsCrmUrl}
+            className="analytics-header-tool-text analytics-header-tool-crm analytics-header-tool-crm-listings"
+          >
+            <span>CRM</span><b>1</b>
+          </HeaderTool>
+        ) : null}
+        {partnersCrmUrl ? (
+          <HeaderTool
+            label="CRM №2 — Люди и партнёры"
+            href={partnersCrmUrl}
+            className="analytics-header-tool-text analytics-header-tool-crm analytics-header-tool-crm-partners"
+          >
+            <span>CRM</span><b>2</b>
+          </HeaderTool>
         ) : null}
         {mediaPreviewUrl ? (
           <HeaderTool label="Atlas Media" href={mediaPreviewUrl}><ToolIcon type="media" /></HeaderTool>

@@ -416,6 +416,32 @@
   letter-spacing: 0.04em;
 }
 
+.analytics-header-tool-crm {
+  display: inline-flex;
+  gap: 0.18rem;
+  align-items: baseline;
+  justify-content: center;
+  letter-spacing: 0;
+}
+
+.analytics-header-tool-crm span {
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.analytics-header-tool-crm b {
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.analytics-header-tool-crm-listings {
+  color: #ffd28a;
+}
+
+.analytics-header-tool-crm-partners {
+  color: #c9b8ff;
+}
+
 .analytics-header-ai-button {
   overflow: visible;
   animation: none;
