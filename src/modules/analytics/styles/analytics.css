@@ -419,7 +419,7 @@
 .analytics-header-tool-crm {
   display: inline-flex;
   gap: 0.18rem;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
   letter-spacing: 0;
 }
