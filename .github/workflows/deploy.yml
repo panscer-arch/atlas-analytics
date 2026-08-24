@@ -151,6 +151,7 @@ jobs:
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
           scp_to_vps server/google-analytics.mjs /tmp/atlas-google-analytics.mjs
+          scp_to_vps server/instagram-parser.mjs /tmp/atlas-instagram-parser.mjs
           scp_to_vps server/agent-reach-parser.mjs /tmp/atlas-agent-reach-parser.mjs
           scp_to_vps server/agent-reach-mcporter.json /tmp/atlas-agent-reach-mcporter.json
           scp_to_vps server/hermes-speech.mjs /tmp/atlas-hermes-speech.mjs
@@ -192,6 +193,7 @@ jobs:
           fi
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
+          sudo mv /tmp/atlas-instagram-parser.mjs /opt/atlas-content-api/instagram-parser.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs
           sudo mv /tmp/atlas-hermes-speech.mjs /opt/atlas-content-api/hermes-speech.mjs
           sudo mv /tmp/atlas-hermes-transcription.mjs /opt/atlas-content-api/hermes-transcription.mjs
@@ -338,6 +340,8 @@ jobs:
           OUTREACH_REPLY_TO_EMAIL=${{ secrets.OUTREACH_REPLY_TO_EMAIL }}
           TGSTAT_TOKEN=${{ secrets.TGSTAT_TOKEN }}
           TELEMETR_API_KEY=${{ secrets.TELEMETR_API_KEY }}
+          APIFY_TOKEN=${{ secrets.APIFY_TOKEN }}
+          APIFY_INSTAGRAM_ACTOR_ID=${{ secrets.APIFY_INSTAGRAM_ACTOR_ID }}
           TELEGRAM_PUSH_CHAT_ID=-5158247269
           ATLAS_YOUTRACK_URL=${{ secrets.ATLAS_YOUTRACK_URL }}
           ATLAS_YOUTRACK_LOGIN=${{ secrets.ATLAS_YOUTRACK_LOGIN }}

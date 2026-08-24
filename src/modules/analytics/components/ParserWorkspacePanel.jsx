@@ -5,6 +5,7 @@ import AtlasCreativesPanel from "./AtlasCreativesPanel";
 import BitnestYoutubeParserPanel from "./BitnestYoutubeParserPanel";
 import HyipParserPanel from "./HyipParserPanel";
 import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
+import InstagramInfluencerCampaignBoard from "./InstagramInfluencerCampaignBoard";
 import ListingsCrmBoard from "./ListingsCrmBoard";
 import MarketingDirectionWorkspace from "./MarketingDirectionWorkspace";
 import MarketSegmentsPanel from "./MarketSegmentsPanel";
@@ -91,6 +92,11 @@ const PARSER_TABS = [
     hint: `${defaultInfluencerProspects.length} лидов`,
   },
   {
+    id: "instagramInfluencers",
+    label: "Instagram / блогеры",
+    hint: "поиск и кампания",
+  },
+  {
     id: "youtubeApi",
     label: "YouTube API",
     hint: "поиск",
@@ -159,6 +165,7 @@ const PARSER_TAB_BOARD_IDS = {
   monitors: "hyipParser",
   telegram: "telegramParser",
   influencers: "influencers",
+  instagramInfluencers: "instagramInfluencers",
   youtubeApi: "youtubeApiSearch",
   bitnestYoutube: "bitnestYoutube",
   articlePlacement: "articlePlacement",
@@ -874,6 +881,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         <TelegramChannelsParserPanel />
       ) : activeTab === "influencers" ? (
         <InfluencerProspectsPanel />
+      ) : activeTab === "instagramInfluencers" ? (
+        <InstagramInfluencerCampaignBoard />
       ) : activeTab === "youtubeApi" ? (
         <YouTubeApiSearchPanel />
       ) : activeTab === "bitnestYoutube" ? (
