@@ -19,6 +19,7 @@ import {
 } from "../data/countryDiscoveryData";
 
 const INSTAGRAM_PARSER_LEADS_STORAGE_KEY = "atlas.analytics.instagramParser.leads.v1";
+const INSTAGRAM_PARSER_LEADS_LOCAL_STORAGE_KEY = `${INSTAGRAM_PARSER_LEADS_STORAGE_KEY}.local`;
 const INSTAGRAM_PARSER_RUNS_STORAGE_KEY = "atlas.analytics.instagramParser.runs.v1";
 const AGENT_REACH_LEADS_STORAGE_KEY = "atlas.analytics.socialParser.leads.v2";
 const AGENT_REACH_PLATFORMS = new Set(["linkedin", "facebook", "x", "youtube", "reddit", "github", "web"]);
@@ -70,6 +71,16 @@ const DEFAULT_AGENT_REACH_FORM = {
   language: "en",
   limit: "10",
 };
+
+function readLocalInstagramQueue() {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(INSTAGRAM_PARSER_LEADS_LOCAL_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 function getInitialSocialParserTab() {
   const requested = new URLSearchParams(window.location.search).get("social");
@@ -688,7 +699,8 @@ export default function UniversalSocialParserPanel() {
       loadServerContent(INSTAGRAM_PARSER_RUNS_STORAGE_KEY),
     ]).then(([savedInstagramLeads]) => {
       if (!isMounted) return;
-      const savedLeads = uniqueByProfile(Array.isArray(savedInstagramLeads) ? savedInstagramLeads : []);
+      const serverLeads = Array.isArray(savedInstagramLeads) ? savedInstagramLeads : [];
+      const savedLeads = uniqueByProfile([...serverLeads, ...readLocalInstagramQueue()]);
       setInstagramSavedLeads(savedLeads);
       setInstagramResults(savedLeads);
       setInstagramNotice(savedLeads.length
@@ -751,6 +763,11 @@ export default function UniversalSocialParserPanel() {
   async function persistInstagramQueue(nextLeads) {
     const next = uniqueByProfile(nextLeads);
     setInstagramSavedLeads(next);
+    try {
+      window.localStorage.setItem(INSTAGRAM_PARSER_LEADS_LOCAL_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Server persistence remains the source of truth when browser storage is unavailable.
+    }
     await saveServerContent(INSTAGRAM_PARSER_LEADS_STORAGE_KEY, next);
     return next;
   }

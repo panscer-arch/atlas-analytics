@@ -151,6 +151,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "parser",
   "telegramParser",
   "influencers",
+  "instagramInfluencers",
   "socialParser",
   "web3Segments",
   "agentTasks",
@@ -186,7 +187,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "listings") return "parser";
   if (boardId === "marketingOS") return "marketingOs";
   if (boardId === "analytics" || boardId.startsWith("analytics-") || boardId === "contractBalances" || boardId === "contracts") return "analytics";
-  if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "utmBuilder" || boardId === "telegramParser" || boardId === "influencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "mlmGateway" || boardId === "segmentOutreach" || boardId === "socialParser" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";
+  if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "utmBuilder" || boardId === "telegramParser" || boardId === "influencers" || boardId === "instagramInfluencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "mlmGateway" || boardId === "segmentOutreach" || boardId === "socialParser" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";
   if (boardId === "taskMonitor") return "taskMonitor";
   if (boardId === "diary") return "diary";
   if (boardId === "transportRiskFaq") return "content";
@@ -267,6 +268,10 @@ export const STATIC_BOARD_META = {
   influencers: {
     title: "Инфлюенсеры",
     description: "Рабочий список потенциальных инфлюенсеров и сообществ из YouTube, Facebook, X и Telegram для Atlas outreach.",
+  },
+  instagramInfluencers: {
+    title: "Instagram / блогеры",
+    description: "Поиск Instagram-профилей, отбор кандидатов, креативы и контроль рекламного пилота.",
   },
   socialParser: {
     title: "Универсальный парсер соцсетей",
@@ -349,6 +354,7 @@ const STATIC_BOARD_RENDERERS = {
   parser: () => <ParserWorkspacePanel />,
   telegramParser: () => <ParserWorkspacePanel initialTab="telegram" />,
   influencers: () => <ParserWorkspacePanel initialTab="influencers" />,
+  instagramInfluencers: () => <ParserWorkspacePanel initialTab="instagramInfluencers" />,
   socialParser: () => <ParserWorkspacePanel initialTab="socialUniversal" />,
   videoScripts: () => <VideoScriptsBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
