@@ -37,6 +37,7 @@ import {
   ARTICLE_PLACEMENT_STORAGE_KEY,
   defaultArticlePlacementResources,
 } from "../data/articlePlacementData";
+import { defaultMarketSegments } from "../data/marketSegmentsData";
 import {
   TELEGRAM_OUTREACH_STORAGE_KEY,
   TELEGRAM_STORAGE_KEY,
@@ -114,7 +115,7 @@ const PARSER_TABS = [
   {
     id: "marketSegments",
     label: "Сегменты рынка",
-    hint: "7 направлений",
+    hint: `${defaultMarketSegments.length} направлений`,
   },
   {
     id: "regionalHiring",
