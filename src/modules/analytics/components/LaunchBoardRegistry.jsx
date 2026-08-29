@@ -22,6 +22,7 @@ import PresentationContentTab from "./PresentationContentTab";
 import ProductLibraryBoard from "./ProductLibraryBoard";
 import SecurityReviewBoard from "./SecurityReviewBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
+import ToolRadarBoard from "./ToolRadarBoard";
 import VideoGeneratorBoard from "./VideoGeneratorBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
@@ -126,6 +127,7 @@ export const CONTENT_BOARD_TABS = [
   { id: "legalDocs", label: "Документы" },
   { id: "videoGenerator", label: "Генерация видео" },
   { id: "videoScripts", label: "Ролики" },
+  { id: "toolRadar", label: "Радар инструментов" },
   { id: "terminology", label: "Терминология" },
   { id: "localization", label: "Локализация" },
   { id: "securityReview", label: "Security Review" },
@@ -142,6 +144,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "landings",
   "images",
   "videoScripts",
+  "toolRadar",
   "materials",
   "presentation",
   "productLibrary",
@@ -212,6 +215,10 @@ export const STATIC_BOARD_META = {
   videoScripts: {
     title: "Ролики",
     description: "Сценарии и ТЗ для роликов: тексты, формат, длительность и комментарии для правок.",
+  },
+  toolRadar: {
+    title: "Радар инструментов",
+    description: "Сервисы, методы и идеи из роликов: назначение, польза для Atlas, риски и решение команды.",
   },
   contentPlan: {
     title: "Контент-план",
@@ -357,6 +364,7 @@ const STATIC_BOARD_RENDERERS = {
   instagramInfluencers: () => <ParserWorkspacePanel initialTab="instagramInfluencers" />,
   socialParser: () => <ParserWorkspacePanel initialTab="socialUniversal" />,
   videoScripts: () => <VideoScriptsBoard />,
+  toolRadar: () => <ToolRadarBoard />,
   agentTasks: () => <AgentKnowledgeTemplate />,
   agentDataset: () => <AgentTrainingDataset />,
   agentFaq: () => <AgentFaqTemplate />,
