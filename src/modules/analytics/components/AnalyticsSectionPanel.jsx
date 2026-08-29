@@ -3,7 +3,7 @@ import BaseCompositionTabSection from "./BaseCompositionTabSection";
 import ContractBalancesPanel from "./ContractBalancesPanel";
 import DashboardTabSection from "./DashboardTabSection";
 import GeographyTabSection from "./GeographyTabSection";
-import GoogleAnalyticsBoard from "./GoogleAnalyticsBoard";
+import WebAnalyticsBoard from "./WebAnalyticsBoard";
 import LeadersTabSection from "./LeadersTabSection";
 import OverviewTabSection from "./OverviewTabSection";
 import PartnerTabSection from "./PartnerTabSection";
@@ -64,7 +64,7 @@ export default function AnalyticsSectionPanel({
       ) : null}
       {activeAnalyticsTab === "ga4" ? (
         <Wrapper as="section" marginTop="lg">
-          <GoogleAnalyticsBoard />
+          <WebAnalyticsBoard />
         </Wrapper>
       ) : null}
       {activeAnalyticsTab === "traffic" ? (

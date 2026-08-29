@@ -639,7 +639,7 @@ function AnalyticsPage() {
 
   const analyticsSectionTabs = [
     { id: "dashboard", label: "Дашборд", hint: "центр" },
-    { id: "ga4", label: "Google Analytics", hint: "GA4" },
+    { id: "ga4", label: "Аналитика сайта", hint: "GA · Clarity · Rybbit" },
     { id: "overview", label: "Обзор", hint: "день" },
     { id: "traffic", label: "Трафик / Онлайн", hint: "онлайн" },
     { id: "products", label: "Продукты / Циклы", hint: "тарифы" },

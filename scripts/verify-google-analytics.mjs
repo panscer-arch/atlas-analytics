@@ -63,19 +63,24 @@ const unconfigured = await getGoogleAnalyticsOverview({
 assert.equal(unconfigured.configured, false);
 assert.equal(unconfigured.error, "ga4_credentials_not_configured");
 
-const [page, section, component, css, server, deploy] = await Promise.all([
+const [page, section, component, webAnalytics, css, server, deploy] = await Promise.all([
   readFile("src/modules/analytics/AnalyticsPage.jsx", "utf8"),
   readFile("src/modules/analytics/components/AnalyticsSectionPanel.jsx", "utf8"),
   readFile("src/modules/analytics/components/GoogleAnalyticsBoard.jsx", "utf8"),
+  readFile("src/modules/analytics/components/WebAnalyticsBoard.jsx", "utf8"),
   readFile("src/modules/analytics/styles/analytics.css", "utf8"),
   readFile("server/content-api.mjs", "utf8"),
   readFile(".github/workflows/deploy.yml", "utf8"),
 ]);
 
-assert.match(page, /id: "ga4", label: "Google Analytics"/);
-assert.match(section, /<GoogleAnalyticsBoard \/>/);
+assert.match(page, /id: "ga4", label: "Аналитика сайта"/);
+assert.match(section, /<WebAnalyticsBoard \/>/);
 assert.match(component, /data-testid="google-analytics-board"/);
 assert.match(component, /\/api\/content\/google-analytics\?range=/);
+assert.match(webAnalytics, /data-testid="web-analytics-board"/);
+assert.match(webAnalytics, /data-testid="clarity-analytics-board"/);
+assert.match(webAnalytics, /data-testid="rybbit-analytics-board"/);
+assert.match(webAnalytics, /y9w7xdh0dw/);
 assert.match(css, /\.ga4-metrics/);
 assert.match(server, /getGoogleAnalyticsOverview/);
 assert.match(server, /\/api\/content\/google-analytics/);
