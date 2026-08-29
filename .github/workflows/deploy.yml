@@ -86,19 +86,19 @@ jobs:
 
       - name: Deploy on VPS
         shell: bash
-        timeout-minutes: 3
+        timeout-minutes: 10
         run: |
           for attempt in 1 2 3 4 5 6; do
-            if timeout 90s ssh -i ~/.ssh/deploy_key \
+            if timeout 420s ssh -i ~/.ssh/deploy_key \
               -o IdentitiesOnly=yes \
               -o StrictHostKeyChecking=accept-new \
               -o ConnectTimeout=25 \
               "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
               'bash -lc '"'"'
-                timeout 240s /opt/atlas-analytics/deploy.sh
+                timeout 360s /opt/atlas-analytics/deploy.sh
                 status=$?
                 if [ "$status" -eq 124 ]; then
-                  echo "deploy.sh timed out after 240s"
+                  echo "deploy.sh timed out after 360s"
                   exit 124
                 fi
                 exit "$status"
@@ -108,7 +108,7 @@ jobs:
 
             status=$?
             if [ "$status" -eq 124 ]; then
-              echo "Deploy SSH command timed out after 90s"
+              echo "Deploy SSH command timed out after 420s"
               exit 1
             fi
             echo "Deploy SSH attempt $attempt failed with status $status"
