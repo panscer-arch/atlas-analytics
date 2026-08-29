@@ -14,6 +14,8 @@ import GoogleAnalyticsBoard from "./GoogleAnalyticsBoard";
 
 const CLARITY_PROJECT_ID = "y9w7xdh0dw";
 const CLARITY_BASE_URL = `https://clarity.microsoft.com/projects/view/${CLARITY_PROJECT_ID}`;
+const RYBBIT_SITE_ID = "9620a8e74f69";
+const RYBBIT_DASHBOARD_URL = "https://app.rybbit.io/16955/main";
 
 const PROVIDERS = [
   {
@@ -37,8 +39,8 @@ const PROVIDERS = [
     label: "Rybbit",
     shortLabel: "Rybbit",
     description: "Простые воронки и отчёты через AI",
-    status: "Нужен тариф",
-    tone: "warning",
+    status: "Подключено",
+    tone: "success",
   },
 ];
 
@@ -143,36 +145,36 @@ function RybbitBoard() {
         <div>
           <span className="analytics-kicker">Rybbit · понятные воронки</span>
           <h2>Простая аналитика без интерфейса GA</h2>
-          <p>Аккаунт Atlas System подготовлен. Облачный проект начнёт собирать данные только после выбора платного тарифа.</p>
+          <p>Standard trial активен. Счётчик {RYBBIT_SITE_ID} работает на atlas-system.tech через Cloudflare Zaraz, первое событие уже получено.</p>
         </div>
-        <a className="web-analytics-primary-link" href="https://app.rybbit.io/signup?step=3" target="_blank" rel="noreferrer">
-          Продолжить настройку <ExternalLink size={16} />
+        <a className="web-analytics-primary-link" href={RYBBIT_DASHBOARD_URL} target="_blank" rel="noreferrer">
+          Открыть Rybbit <ExternalLink size={16} />
         </a>
       </section>
 
       <section className="web-analytics-summary-grid">
         <article className="analytics-surface web-analytics-summary-card is-success">
           <CheckCircle2 size={21} />
-          <span><strong>Аккаунт создан</strong><small>Atlas System · Google sign-in</small></span>
+          <span><strong>Счётчик активен</strong><small>Site ID {RYBBIT_SITE_ID}</small></span>
         </article>
-        <article className="analytics-surface web-analytics-summary-card is-warning">
-          <LockKeyhole size={21} />
-          <span><strong>Тариф не активирован</strong><small>Standard — 7 дней бесплатно, затем €136,46 в год по текущему checkout</small></span>
+        <article className="analytics-surface web-analytics-summary-card is-success">
+          <BarChart3 size={21} />
+          <span><strong>Standard подключён</strong><small>100 000 событий · до 5 сайтов</small></span>
         </article>
         <article className="analytics-surface web-analytics-summary-card">
-          <BrainCircuit size={21} />
-          <span><strong>AI через MCP</strong><small>Подключается после активации проекта</small></span>
+          <LockKeyhole size={21} />
+          <span><strong>Trial до 5 сентября</strong><small>Затем €136,46 в год до отмены</small></span>
         </article>
       </section>
 
       <section className="analytics-surface web-analytics-explainer">
-        <div><span className="analytics-kicker">Что появится после активации</span><h3>Один понятный источник для воронок</h3></div>
+        <div><span className="analytics-kicker">Что уже доступно</span><h3>Один понятный источник для воронок</h3></div>
         <ul>
           <li>Источник → Participate → кошелёк → выбранный план → Smart Cycle.</li>
           <li>Страны, устройства, UTM-метки, ошибки и пути пользователей.</li>
           <li>Вопросы к данным обычным языком через read-only MCP.</li>
         </ul>
-        <p className="web-analytics-note">Подписка и списание денег не активированы.</p>
+        <p className="web-analytics-note">Официальный Rybbit MCP доступен отдельно. Постоянный AI-доступ пока не выдавался и требует отдельного подтверждения.</p>
       </section>
     </div>
   );
