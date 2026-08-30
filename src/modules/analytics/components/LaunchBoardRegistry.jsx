@@ -186,6 +186,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "sessionQueue") return "session";
   if (boardId === "hermesAssistant") return "hermes";
   if (boardId === "expenses") return "expenses";
+  if (boardId === "influencers" || boardId === "marketing-influencers") return "contacts";
   if (boardId === "products" || boardId === "productLibrary" || boardId === "developments") return "products";
   if (boardId === "listings") return "parser";
   if (boardId === "marketingOS") return "marketingOs";
@@ -274,8 +275,8 @@ export const STATIC_BOARD_META = {
     description: "Поиск и обработка Telegram-каналов по странам: крипта, DeFi, NFT, smart-contract, Web3 и похожие проекты.",
   },
   influencers: {
-    title: "Инфлюенсеры",
-    description: "Рабочий список потенциальных инфлюенсеров и сообществ из YouTube, Facebook, X и Telegram для Atlas outreach.",
+    title: "Контакты",
+    description: "Единый рабочий список контактов, каналов связи, переписки, следующих шагов и результатов outreach.",
   },
   instagramInfluencers: {
     title: "Instagram / блогеры",
@@ -361,7 +362,7 @@ const STATIC_BOARD_RENDERERS = {
   crmBoard: ({ analyticsBoardUrl }) => <AnalyticsBoardEmbed boardUrl={analyticsBoardUrl} variant="inline" />,
   parser: () => <ParserWorkspacePanel />,
   telegramParser: () => <ParserWorkspacePanel initialTab="telegram" />,
-  influencers: () => <ParserWorkspacePanel initialTab="influencers" />,
+  influencers: () => <InfluencerProspectsPanel />,
   instagramInfluencers: () => <ParserWorkspacePanel initialTab="instagramInfluencers" />,
   socialParser: () => <ParserWorkspacePanel initialTab="socialUniversal" />,
   videoScripts: () => <VideoScriptsBoard />,

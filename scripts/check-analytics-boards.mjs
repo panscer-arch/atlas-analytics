@@ -5,8 +5,7 @@ import path from "node:path";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
-const defaultChromiumPath =
-  "/Users/digitex/Library/Caches/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-mac-arm64/chrome-headless-shell";
+const defaultChromiumPath = chromium.executablePath();
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((arg) => {
@@ -18,13 +17,17 @@ const args = Object.fromEntries(
 const baseUrl = String(args.baseUrl || args.url || "http://127.0.0.1:3036/").replace(/\/$/, "");
 const waitUntil = args.waitUntil || "domcontentloaded";
 const timeout = Number(args.timeout || 30000);
+const viewportWidth = Number(args.viewportWidth || 1440);
+const viewportHeight = Number(args.viewportHeight || 1000);
+const allowExpectedApiFailures = String(args.allowExpectedApiFailures || "false") === "true";
 const filter = args.filter ? new Set(String(args.filter).split(",").map((item) => item.trim()).filter(Boolean)) : null;
 const screenshotDir = args.screenshotDir || "/tmp/supersus-board-checks";
 
 const checks = [
   { id: "home", path: "/", text: "Аналитика" },
   { id: "expenses", path: "/?board=expenses", text: "Расходы" },
-  { id: "parser", path: "/?board=parser", text: "PARSER / OUTREACH" },
+  { id: "contacts", path: "/?board=influencers", text: "Контакты", expectedBoard: "influencers" },
+  { id: "parser", path: "/?board=parser", text: "Marketing Dashboard" },
   { id: "marketing-os", path: "/?board=marketingOS", text: "MarketingOS" },
   { id: "diary", path: "/?board=diary", text: "Код доступа" },
 
@@ -58,8 +61,9 @@ const checks = [
 ];
 
 const interactionChecks = [
-  { id: "button-parser", path: "/", clickSelector: ".analytics-header-parser-button", text: "PARSER / OUTREACH" },
-  { id: "button-notes", path: "/", clickSelector: ".analytics-header-notes-button", text: "Заметки" },
+  { id: "button-contacts", path: "/", clickSelector: '[aria-label="Контакты"]', text: "Контакты", expectedBoard: "influencers" },
+  { id: "button-parser", path: "/", clickSelector: '[aria-label="Маркетинг"]', text: "Marketing Dashboard", expectedBoard: "parser" },
+  { id: "button-notes", path: "/", clickSelector: '[aria-label="Заметки"]', text: "Заметки" },
   { id: "button-diary", path: "/", clickSelector: ".analytics-header-motion-button", text: "Код доступа" },
 ];
 
@@ -75,13 +79,30 @@ function shouldRun(check) {
 async function runCheck(page, check) {
   const pageErrors = [];
   const consoleErrors = [];
+  const responseErrors = [];
   const onPageError = (error) => pageErrors.push(error.message);
   const onConsole = (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() === "error" && !message.text().startsWith("Failed to load resource:")) {
+      consoleErrors.push(message.text());
+    }
+  };
+  const onResponse = (response) => {
+    if (response.status() < 400) return;
+    const request = response.request();
+    const pathname = new URL(response.url()).pathname;
+    const isExpectedLocalFailure = allowExpectedApiFailures && (
+      (request.method() === "GET" && pathname === "/api/contracts/atlas-flows")
+      || (request.method() === "PUT" && pathname.startsWith("/api/content/"))
+      || (request.method() === "GET" && pathname === "/api/marketing/browser-session")
+    );
+    if (!isExpectedLocalFailure) {
+      responseErrors.push(`${request.method()} ${response.status()} ${pathname}`);
+    }
   };
 
   page.on("pageerror", onPageError);
   page.on("console", onConsole);
+  page.on("response", onResponse);
 
   const url = makeUrl(check.path);
   try {
@@ -97,8 +118,18 @@ async function runCheck(page, check) {
     if (!bodyText.includes(check.text)) {
       throw new Error(`Missing text "${check.text}"`);
     }
-    if (pageErrors.length || consoleErrors.length) {
-      throw new Error([...pageErrors, ...consoleErrors].join("\n"));
+    if (check.expectedBoard) {
+      const currentBoard = new URL(page.url()).searchParams.get("board");
+      if (currentBoard !== check.expectedBoard) {
+        throw new Error(`Expected board "${check.expectedBoard}", received "${currentBoard || ""}"`);
+      }
+    }
+    const layoutWidth = await page.evaluate(() => Math.max(document.body.scrollWidth, document.documentElement.scrollWidth));
+    if (layoutWidth > viewportWidth + 1) {
+      throw new Error(`Horizontal page overflow: ${layoutWidth}px at ${viewportWidth}px viewport`);
+    }
+    if (pageErrors.length || consoleErrors.length || responseErrors.length) {
+      throw new Error([...pageErrors, ...consoleErrors, ...responseErrors].join("\n"));
     }
 
     console.log(`OK ${check.id} ${url}`);
@@ -114,6 +145,7 @@ async function runCheck(page, check) {
   } finally {
     page.off("pageerror", onPageError);
     page.off("console", onConsole);
+    page.off("response", onResponse);
   }
 }
 
@@ -136,7 +168,7 @@ try {
   const results = [];
 
   for (const check of allChecks) {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: viewportWidth, height: viewportHeight }, deviceScaleFactor: 1 });
     results.push(await runCheck(page, check));
     await page.close().catch(() => {});
   }

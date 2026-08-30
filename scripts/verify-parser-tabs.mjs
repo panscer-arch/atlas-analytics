@@ -15,7 +15,6 @@ const {
 const requiredTabs = [
   ["monitors", "Мониторы"],
   ["telegram", "Telegram-каналы"],
-  ["influencers", "Инфлюенсеры"],
   ["youtubeApi", "YouTube API"],
   ["bitnestYoutube", "Битнест YouTube"],
   ["articlePlacement", "SuperSource"],

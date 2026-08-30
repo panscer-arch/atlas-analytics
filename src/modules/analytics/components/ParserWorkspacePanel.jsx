@@ -88,11 +88,6 @@ const PARSER_TABS = [
     hint: `${defaultTelegramLeads.length} лидов`,
   },
   {
-    id: "influencers",
-    label: "Инфлюенсеры",
-    hint: `${defaultInfluencerProspects.length} лидов`,
-  },
-  {
     id: "instagramInfluencers",
     label: "Instagram / блогеры",
     hint: "поиск и кампания",
@@ -165,7 +160,6 @@ const PARSER_TAB_BOARD_IDS = {
   utmBuilder: "utmBuilder",
   monitors: "hyipParser",
   telegram: "telegramParser",
-  influencers: "influencers",
   instagramInfluencers: "instagramInfluencers",
   youtubeApi: "youtubeApiSearch",
   bitnestYoutube: "bitnestYoutube",
@@ -188,6 +182,7 @@ const LEGACY_MARKETING_BOARD_ALIASES = {
 };
 const MARKETING_DASHBOARD_PENDING_STORAGE_KEY = `${MARKETING_DASHBOARD_STORAGE_KEY}.pending.v2`;
 const MARKETING_ACCESS_BOT_URL = "https://t.me/Supersussystembot?text=%2Fmarketing_access";
+const VISIBLE_MARKETING_DIRECTIONS = MARKETING_DIRECTIONS.filter((direction) => direction.id !== "influencers");
 
 const RESULT_OUTREACH_STATUSES = new Set(["Подключено", "Размещено", "Опубликовано", "Завершено", "Разместили"]);
 const IN_PROGRESS_OUTREACH_STATUSES = new Set(["Черновик", "Отправлено", "Написали", "Связались", "Переговоры", "Ответили", "Цена получена", "Договорились", "Запланировано"]);
@@ -491,13 +486,13 @@ function MarketingOverview({
         </div>
         <div className="analytics-marketing-hub-summary" aria-label="Сводка маркетинговых инструментов">
           <span>Направления</span>
-          <strong>{MARKETING_DIRECTIONS.length}</strong>
-          <small>{MARKETING_DIRECTIONS.filter((direction) => hasAssignedOwner(dashboardState.directions[direction.id]?.owner)).length} с назначенным ответственным</small>
+          <strong>{VISIBLE_MARKETING_DIRECTIONS.length}</strong>
+          <small>{VISIBLE_MARKETING_DIRECTIONS.filter((direction) => hasAssignedOwner(dashboardState.directions[direction.id]?.owner)).length} с назначенным ответственным</small>
         </div>
       </section>
 
       <section className="analytics-marketing-tool-grid" aria-label="Маркетинговые направления">
-        {MARKETING_DIRECTIONS.map((direction) => {
+        {VISIBLE_MARKETING_DIRECTIONS.map((direction) => {
           const value = dashboardState.directions[direction.id];
           const stats = sourceStats[direction.sourceKey] || genericStats(value);
           const phase = operationalPhase(value, stats);
@@ -880,8 +875,6 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         <UtmBuilderPanel />
       ) : activeTab === "telegram" ? (
         <TelegramChannelsParserPanel />
-      ) : activeTab === "influencers" ? (
-        <InfluencerProspectsPanel />
       ) : activeTab === "instagramInfluencers" ? (
         <InstagramInfluencerCampaignBoard />
       ) : activeTab === "youtubeApi" ? (

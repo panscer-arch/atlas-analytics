@@ -8,21 +8,21 @@ import {
 export default function InfluencerProspectsPanel() {
   return (
     <HyipParserPanel
-      title="Инфлюенсеры для Atlas"
-      kicker="Influencers / YouTube / Facebook / X / Telegram"
+      title="Контакты"
+      kicker="Contacts / Email / Telegram / WhatsApp / Social"
       seedLeads={defaultInfluencerProspects}
       storageKey={INFLUENCER_STORAGE_KEY}
       outreachStorageKey={INFLUENCER_OUTREACH_STORAGE_KEY}
-      csvFilename="atlas-influencer-prospects.csv"
-      tableAriaLabel="Список инфлюенсеров и сообществ для outreach"
-      searchPlaceholder="YouTube, X, Facebook, Telegram, страна, DeFi, airdrop..."
+      csvFilename="atlas-contacts.csv"
+      tableAriaLabel="Список контактов, каналов связи и истории outreach"
+      searchPlaceholder="Имя, email, Telegram, WhatsApp, соцсеть, страна..."
       showVerification
       platformFilterOptions={["YouTube", "X", "Telegram", "Facebook", "TikTok", "Instagram", "Reddit", "Google"]}
       keywordFilterOptions={["Bitnest"]}
       platformFilterLabel="Соцсеть"
       manualLeadDefaults={{
-        name: "Новый инфлюенсер",
-        category: "Influencer / Web3 / crypto",
+        name: "Новый контакт",
+        category: "Контакт / партнёр / автор",
         verificationStatus: "Не проверен",
         verificationNotes: "Проверить профиль, последние публикации, средние охваты, ER, гео, рекламную историю и контакт для закупки.",
         notes: "Добавлено вручную: проверить platform fit, цену, формат интеграции, токсичность аудитории и compliance-риски.",
