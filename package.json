@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.74.4",
+    "@xyflow/react": "^12.11.5",
     "bootstrap": "^5.3.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

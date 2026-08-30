@@ -1,4 +1,4 @@
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, UsersRound } from "lucide-react";
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
 const VAULT_URL = String(import.meta.env.VITE_VAULT_URL || "").trim();
@@ -35,6 +35,7 @@ function AnalyticsHeader({
   onHermesOpen,
   onSessionOpen,
   onExpensesOpen,
+  onTeamOpen,
   listingsCrmUrl,
   partnersCrmUrl,
   mediaPreviewUrl,
@@ -91,6 +92,12 @@ function AnalyticsHeader({
         {onParserOpen ? <HeaderTool label="Маркетинг" onClick={onParserOpen}><ToolIcon type="marketing" /></HeaderTool> : null}
         {onQuickNotes ? (
           <HeaderTool label="Заметки" onClick={onQuickNotes}><ToolIcon type="notes" /></HeaderTool>
+        ) : null}
+        {onTeamOpen ? (
+          <HeaderTool label="Создай команду" onClick={onTeamOpen} className="analytics-header-team-button">
+            <UsersRound size={20} strokeWidth={1.9} aria-hidden="true" />
+            <span>Создай команду</span>
+          </HeaderTool>
         ) : null}
         {VAULT_URL ? (
           <HeaderTool label="Пароли" href={VAULT_URL}>
