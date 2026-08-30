@@ -2,16 +2,6 @@ import "./AtlasPagesBoard.css";
 
 const ATLAS_PAGES = [
   {
-    id: "official-resources",
-    title: "Официальные ресурсы Atlas",
-    description:
-      "Единая страница с официальными сайтами, продуктами, партнерскими моделями, статусами запуска и проверенными ссылками Atlas System.",
-    href: "/atlas-pages/official-resources/index.html",
-    preview: "/atlas-pages/official-resources/preview.png",
-    format: "HTML",
-    language: "RU",
-  },
-  {
     id: "contract-registry",
     title: "Официальный реестр смарт-контрактов и инфраструктуры",
     description:
