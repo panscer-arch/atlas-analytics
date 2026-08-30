@@ -1,0 +1,78 @@
+name: Sync Gate Memory to Hermes
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-hermes-memory-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate and decode encrypted memory bundle
+        shell: bash
+        env:
+          GATE_HERMES_MEMORY_B64: ${{ secrets.GATE_HERMES_MEMORY_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "$GATE_HERMES_MEMORY_B64"
+          printf '%s' "$GATE_HERMES_MEMORY_B64" | base64 --decode > /tmp/gate-memory.tar.gz
+          mkdir -p /tmp/gate-memory-check
+          tar -tzf /tmp/gate-memory.tar.gz > /tmp/gate-memory-files.txt
+          if grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/gate-memory-files.txt; then
+            echo "Unsafe archive path"
+            exit 1
+          fi
+          if grep -Evq '^(\./)?[A-Za-z0-9._-]+\.md$' /tmp/gate-memory-files.txt; then
+            echo "Bundle must contain top-level Markdown files only"
+            exit 1
+          fi
+          tar -xzf /tmp/gate-memory.tar.gz -C /tmp/gate-memory-check
+          test -f /tmp/gate-memory-check/_SYNC_MANIFEST.md
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' '${{ secrets.VPS_SSH_KEY }}' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -T 15 -H '${{ secrets.VPS_HOST }}' >> ~/.ssh/known_hosts
+
+      - name: Copy Gate memory to Hermes
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            /tmp/gate-memory.tar.gz \
+            '${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/gate-memory.tar.gz'
+
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            '${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}' \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+          staging_dir="$(mktemp -d /tmp/gate-memory.XXXXXX)"
+          trap 'rm -rf "$staging_dir" /tmp/gate-memory.tar.gz' EXIT
+          tar -xzf /tmp/gate-memory.tar.gz -C "$staging_dir"
+          sudo install -d -m 750 -o hermes -g hermes /opt/hermes/files/gate
+          found=0
+          for source_file in "$staging_dir"/*.md; do
+            test -f "$source_file" || continue
+            found=1
+            sudo install -m 640 -o hermes -g hermes \
+              "$source_file" "/opt/hermes/files/gate/$(basename "$source_file")"
+          done
+          test "$found" -eq 1
+          sudo test -f /opt/hermes/files/gate/_SYNC_MANIFEST.md
+          sudo find /opt/hermes/files/gate -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sort
+          REMOTE
