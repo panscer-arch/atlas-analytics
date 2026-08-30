@@ -61,6 +61,7 @@ const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
 const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
   session: "sessionQueue",
+  contacts: "influencers",
   parser: "parser",
   marketingOs: "marketingOS",
   analytics: "analytics",
@@ -721,6 +722,7 @@ function AnalyticsPage() {
         onHermesOpen={() => handleMainTabChange("hermes")}
         onSessionOpen={() => handleMainTabChange("session")}
         onExpensesOpen={() => handleMainTabChange("expenses")}
+        onContactsOpen={() => handleMainTabChange("contacts")}
         onTeamOpen={() => handleMainTabChange("team")}
         listingsCrmUrl="https://node-panel-hq.com/"
         partnersCrmUrl="https://partner-cycle.com/"

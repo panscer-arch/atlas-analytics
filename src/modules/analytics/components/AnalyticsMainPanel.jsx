@@ -4,6 +4,7 @@ import CrmDashboardTab from "./CrmDashboardTab";
 import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
 import HermesAssistantBoard from "./HermesAssistantBoard";
+import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import LifeDiaryBoard from "./LifeDiaryBoard";
 import MarketingOsBoard from "./MarketingOsBoard";
@@ -155,6 +156,14 @@ export default function AnalyticsMainPanel({
   }
   if (activeTab === "products") return <ProductsWorkspacePanel />;
   if (activeTab === "content") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
+
+  if (activeTab === "contacts") {
+    return (
+      <Wrapper as="section" marginTop="lg">
+        <InfluencerProspectsPanel />
+      </Wrapper>
+    );
+  }
 
   if (activeTab === "parser") {
     return (

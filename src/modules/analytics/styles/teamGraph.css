@@ -33,6 +33,19 @@
   color: #ffd39f;
 }
 
+@media (max-width: 760px) {
+  .analytics-header .analytics-header-team-button {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .analytics-header .analytics-header-team-button span {
+    display: none;
+  }
+}
+
 .team-graph-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(520px, 0.78fr);
