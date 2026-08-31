@@ -29,6 +29,8 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { loadServerContentResult, saveServerContent } from "../services/contentStore";
+import { hydrateSharedContent } from "../utils/sharedContentMigration";
 import "../styles/teamGraph.css";
 
 const STORAGE_KEY = "supersus.teamGraph.v3";
@@ -147,13 +149,17 @@ function readGraph() {
   if (typeof window === "undefined") return buildInitialGraph();
   try {
     const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
-    if (Array.isArray(stored?.nodes)
-      && Array.isArray(stored?.edges)
-      && stored.nodes.every((node) => node.data?.layoutVersion === 2)) return stored;
+    if (isValidGraph(stored)) return stored;
   } catch {
     // A damaged local snapshot should never block the team map.
   }
   return buildInitialGraph();
+}
+
+function isValidGraph(value) {
+  return Array.isArray(value?.nodes)
+    && Array.isArray(value?.edges)
+    && value.nodes.every((node) => node?.id && node.data?.layoutVersion === 2);
 }
 
 function MemberNode({ data, selected }) {
@@ -187,6 +193,7 @@ const NODE_TYPES = { member: MemberNode, project: ProjectNode };
 
 function TeamGraphBoard() {
   const initialGraph = useMemo(readGraph, []);
+  const defaultGraph = useMemo(buildInitialGraph, []);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialGraph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialGraph.edges);
   const [selectedNodeId, setSelectedNodeId] = useState(initialGraph.nodes[0]?.id || "");
@@ -195,10 +202,50 @@ function TeamGraphBoard() {
   const [newName, setNewName] = useState("");
   const [newMeta, setNewMeta] = useState("");
   const [search, setSearch] = useState("");
-  const [saveState, setSaveState] = useState("Сохранено");
+  const [saveState, setSaveState] = useState("Загружаю...");
+  const [isHydrated, setIsHydrated] = useState(false);
   const [flowInstance, setFlowInstance] = useState(null);
   const [viewMode, setViewMode] = useState("people");
   const saveTimerRef = useRef(0);
+  const skipHydrationSaveRef = useRef(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadServerContentResult(STORAGE_KEY).then(async (serverResult) => {
+      const validServerResult = {
+        ...serverResult,
+        exists: serverResult.exists && isValidGraph(serverResult.value),
+      };
+      const hydrated = await hydrateSharedContent({
+        serverResult: validServerResult,
+        localValue: initialGraph,
+        defaultValue: defaultGraph,
+        save: (value) => saveServerContent(STORAGE_KEY, value),
+      });
+      if (!isMounted) return;
+
+      if (isValidGraph(hydrated.value)) {
+        setNodes(hydrated.value.nodes);
+        setEdges(hydrated.value.edges);
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(hydrated.value));
+        } catch {
+          // Серверная версия уже загружена в состояние страницы.
+        }
+      }
+      setSaveState(
+        hydrated.source === "local-offline" || hydrated.migration === "failed"
+          ? "Локально, сервер недоступен"
+          : "Сохранено на сервере",
+      );
+      setIsHydrated(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [defaultGraph, initialGraph, setEdges, setNodes]);
 
   const members = useMemo(() => nodes.filter((node) => node.type === "member"), [nodes]);
   const projects = useMemo(() => nodes.filter((node) => node.type === "project"), [nodes]);
@@ -227,14 +274,26 @@ function TeamGraphBoard() {
   }, [members, projectById, projectIdsByMember, search]);
 
   useEffect(() => {
+    if (!isHydrated) return undefined;
+    if (skipHydrationSaveRef.current) {
+      skipHydrationSaveRef.current = false;
+      return undefined;
+    }
     setSaveState("Сохраняю...");
     window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes, edges }));
-      setSaveState("Сохранено");
+      const graph = { nodes, edges };
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(graph));
+      } catch {
+        // Серверное сохранение ниже остаётся основным.
+      }
+      saveServerContent(STORAGE_KEY, graph).then((saved) => {
+        setSaveState(saved ? "Сохранено на сервере" : "Локально, сервер недоступен");
+      });
     }, 220);
     return () => window.clearTimeout(saveTimerRef.current);
-  }, [nodes, edges]);
+  }, [nodes, edges, isHydrated]);
 
   const onConnect = useCallback((connection) => {
     const source = nodes.find((node) => node.id === connection.source);
@@ -413,7 +472,7 @@ function TeamGraphBoard() {
           <button type="button" onClick={() => setCreateMode("project")}><BriefcaseBusiness size={16} /> Проект</button>
           {viewMode === "map" ? <button type="button" className="is-icon" onClick={showFullMap} aria-label="Показать всю карту" title="Показать всю карту"><LayoutGrid size={17} /></button> : null}
           <button type="button" className="is-icon" onClick={resetGraph} aria-label="Вернуть исходную схему" title="Вернуть исходную схему"><RotateCcw size={17} /></button>
-          <span className={`team-graph-save${saveState === "Сохранено" ? " is-saved" : ""}`}>{saveState}</span>
+          <span className={`team-graph-save${saveState === "Сохранено на сервере" ? " is-saved" : ""}`}>{saveState}</span>
         </div>
       </div>
 
