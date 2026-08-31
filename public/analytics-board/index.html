@@ -582,6 +582,7 @@
       const PROJECT_TITLE = "Доска аналитики Web3";
       const STORAGE_KEY = "web3-analytics-board-status-v1";
       const SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
+      const SIGNALS_SERVER_MIGRATION_KEY = "web3-analytics-board-signals-server-migrated-v1";
       const MIGRATION_KEY = "web3-analytics-board-migration-v19";
       const ACTIVE_BOARD_KEY = "web3-analytics-board-active-view-v1";
       const SITE_UPLOAD_MIGRATION_KEY = "web3-site-upload-board-migration-v1";
@@ -1238,6 +1239,63 @@
         }
       }
 
+      async function loadServerSignalsResult() {
+        if (window.location.protocol === "file:") return { ok: false, exists: false, value: null };
+        try {
+          const response = await fetch(`/api/content/${encodeURIComponent(SIGNALS_STORAGE_KEY)}`, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (!response.ok) return { ok: false, exists: false, value: null };
+          const payload = await response.json();
+          return {
+            ok: payload?.ok !== false,
+            exists: payload?.exists === true && Array.isArray(payload.value),
+            value: payload?.exists && Array.isArray(payload.value) ? payload.value : null,
+          };
+        } catch (error) {
+          console.error("Failed to load server board signals", error);
+          return { ok: false, exists: false, value: null };
+        }
+      }
+
+      async function persistServerSignals(signals = state.signals) {
+        if (window.location.protocol === "file:") return false;
+        try {
+          const response = await fetch(`/api/content/${encodeURIComponent(SIGNALS_STORAGE_KEY)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value: signals || [] }),
+          });
+          return response.ok;
+        } catch (error) {
+          console.error("Failed to persist server board signals", error);
+          return false;
+        }
+      }
+
+      async function hydrateSignals() {
+        const localSignals = loadLocalSignals();
+        const serverResult = await loadServerSignalsResult();
+        if (!serverResult.ok) return localSignals;
+
+        const migrationComplete = localStorage.getItem(SIGNALS_SERVER_MIGRATION_KEY) === "true";
+        const nextSignals = serverResult.exists
+          ? migrationComplete
+            ? serverResult.value
+            : mergeSignals(serverResult.value, localSignals)
+          : localSignals;
+        const serverSignalIds = (serverResult.value || []).map((signal) => String(signal?.id || ""));
+        const nextSignalIds = nextSignals.map((signal) => String(signal?.id || ""));
+        const shouldPersist = !serverResult.exists
+          ? nextSignals.length > 0
+          : !migrationComplete && JSON.stringify(nextSignalIds) !== JSON.stringify(serverSignalIds);
+        const migrated = !shouldPersist || await persistServerSignals(nextSignals);
+        if (migrated) localStorage.setItem(SIGNALS_SERVER_MIGRATION_KEY, "true");
+        return nextSignals;
+      }
+
       function mergeSignals(primary, fallback) {
         const next = [];
         const seen = new Set();
@@ -1457,6 +1515,7 @@
       async function deleteIdea(signalId) {
         state.signals = (state.signals || []).filter((signal) => signal.id !== signalId);
         persistLocalSignals();
+        await persistServerSignals();
         renderIdeas();
         renderTasks();
       }
@@ -1633,7 +1692,7 @@
         const localStatuses = loadLocalStatuses();
         const serverStatuses = await loadServerStatuses();
         state.statuses = { ...serverStatuses, ...localStatuses };
-        state.signals = getActiveBoard().useSignals ? loadLocalSignals() : [];
+        state.signals = getActiveBoard().useSignals ? await hydrateSignals() : [];
         migrateBoardState();
 
         if (window.location.protocol === "file:" || state.activeBoard !== "analytics") {
@@ -1656,6 +1715,7 @@
           persistLocalStatuses();
           await persistServerStatuses();
           persistLocalSignals();
+          await persistServerSignals();
         } catch (error) {
           console.error("Failed to load board state", error);
         }

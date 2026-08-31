@@ -568,7 +568,7 @@ function ContentPlanBoard() {
       approvals={smmState.approvals}
       isEditing={smmState.isEditing}
       rows={smmState.rows}
-      saveMeta={SAVE_STATE_META[saveState] || { label: "Сохранено", detail: "SMM-доска готова" }}
+      saveMeta={SAVE_STATE_META[smmState.saveState] || { label: "Сохранено", detail: "SMM-доска готова" }}
       stats={smmState.stats}
       theme={smmState.theme}
       onAddRow={smmState.addRow}

@@ -1,9 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LayoutGrid, { LayoutCell } from "./LayoutGrid";
 import Wrapper from "./Wrapper";
+import { loadServerContentResult, saveServerContent } from "../services/contentStore";
+import { mergeRecordsById, resolveSharedRecords } from "../utils/sharedContentMigration";
 
 const IDEAS_STORAGE_KEY = "analytics-idea-capture-v1";
 const BOARD_SIGNALS_STORAGE_KEY = "web3-analytics-board-signals-v1";
+const IDEAS_MIGRATION_KEY = "analytics-idea-capture-server-migrated-v1";
+const SIGNALS_MIGRATION_KEY = "web3-analytics-board-signals-server-migrated-v1";
 
 function loadIdeas() {
   if (typeof window === "undefined") return [];
@@ -17,7 +21,7 @@ function loadIdeas() {
   }
 }
 
-function saveIdeas(ideas) {
+async function saveIdeas(ideas) {
   if (typeof window === "undefined") return;
 
   try {
@@ -25,6 +29,8 @@ function saveIdeas(ideas) {
   } catch (error) {
     console.error("Failed to persist analytics ideas", error);
   }
+  const saved = await saveServerContent(IDEAS_STORAGE_KEY, ideas);
+  if (!saved) throw new Error("Idea server storage failed");
 }
 
 function formatDateTime(value) {
@@ -45,13 +51,18 @@ function buildIdeaPayload(title, details, activeTab) {
   };
 }
 
-function sendIdeaToBoard(idea) {
+async function sendIdeaToBoard(idea) {
   if (typeof window === "undefined") return;
 
   try {
     const raw = window.localStorage.getItem(BOARD_SIGNALS_STORAGE_KEY);
-    const existingSignals = raw ? JSON.parse(raw) : [];
-    const nextSignals = [
+    const localSignals = raw ? JSON.parse(raw) : [];
+    const serverResult = await loadServerContentResult(BOARD_SIGNALS_STORAGE_KEY);
+    const migrationComplete = window.localStorage.getItem(SIGNALS_MIGRATION_KEY) === "true";
+    const existingSignals = serverResult.ok && serverResult.exists && Array.isArray(serverResult.value)
+      ? mergeRecordsById(serverResult.value, migrationComplete ? [] : localSignals)
+      : migrationComplete ? [] : localSignals;
+    const nextSignals = mergeRecordsById([
       {
         id: idea.id,
         title: idea.title,
@@ -60,13 +71,15 @@ function sendIdeaToBoard(idea) {
         tab: idea.activeTab,
         createdAt: idea.createdAt,
         createdAtLabel: idea.createdAtLabel,
-        type: "idea",
+        type: "analytics-idea",
         status: "new",
       },
-      ...existingSignals,
-    ];
+    ], existingSignals).slice(0, 100);
 
-    window.localStorage.setItem(BOARD_SIGNALS_STORAGE_KEY, JSON.stringify(nextSignals.slice(0, 100)));
+    const saved = await saveServerContent(BOARD_SIGNALS_STORAGE_KEY, nextSignals);
+    if (!saved) throw new Error("Board server storage failed");
+    window.localStorage.setItem(BOARD_SIGNALS_STORAGE_KEY, JSON.stringify(nextSignals));
+    window.localStorage.setItem(SIGNALS_MIGRATION_KEY, "true");
   } catch (error) {
     throw new Error(`Board storage failed: ${String(error)}`);
   }
@@ -81,6 +94,32 @@ function AnalyticsIdeaCapture({ activeTab }) {
 
   const recentIdeas = useMemo(() => ideas.slice(0, 5), [ideas]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const localIdeas = loadIdeas();
+
+    loadServerContentResult(IDEAS_STORAGE_KEY).then(async (serverResult) => {
+      const resolved = resolveSharedRecords({
+        serverResult,
+        localRecords: localIdeas,
+        migrationComplete: window.localStorage.getItem(IDEAS_MIGRATION_KEY) === "true",
+      });
+      if (resolved.shouldMigrate) {
+        const saved = await saveServerContent(IDEAS_STORAGE_KEY, resolved.value);
+        if (saved) window.localStorage.setItem(IDEAS_MIGRATION_KEY, "true");
+      } else if (serverResult.ok) {
+        window.localStorage.setItem(IDEAS_MIGRATION_KEY, "true");
+      }
+      if (!isMounted) return;
+      setIdeas(resolved.value);
+      window.localStorage.setItem(IDEAS_STORAGE_KEY, JSON.stringify(resolved.value));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (!title.trim()) {
@@ -94,9 +133,8 @@ function AnalyticsIdeaCapture({ activeTab }) {
     setStatus("");
 
     try {
-      sendIdeaToBoard(idea);
+      await Promise.all([sendIdeaToBoard(idea), saveIdeas(nextIdeas)]);
       setIdeas(nextIdeas);
-      saveIdeas(nextIdeas);
       setTitle("");
       setDetails("");
       setStatus("Идея отправлена в доску аналитики.");
@@ -105,7 +143,11 @@ function AnalyticsIdeaCapture({ activeTab }) {
       const offlineIdea = { ...idea, offline: true };
       const offlineIdeas = [offlineIdea, ...ideas];
       setIdeas(offlineIdeas);
-      saveIdeas(offlineIdeas);
+      try {
+        window.localStorage.setItem(IDEAS_STORAGE_KEY, JSON.stringify(offlineIdeas));
+      } catch {
+        // Идея останется в состоянии страницы до следующей попытки.
+      }
       setTitle("");
       setDetails("");
       setStatus("Доска сейчас недоступна. Идея сохранена локально.");
