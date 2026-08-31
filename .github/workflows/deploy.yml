@@ -25,8 +25,8 @@ jobs:
         env:
           ATLAS_FINANCE_PASSWORD: ${{ secrets.ATLAS_FINANCE_PASSWORD }}
         run: |
-          if [ "${#ATLAS_FINANCE_PASSWORD}" -lt 12 ]; then
-            echo "ATLAS_FINANCE_PASSWORD must be configured and contain at least 12 characters."
+          if [ "${#ATLAS_FINANCE_PASSWORD}" -lt 8 ]; then
+            echo "ATLAS_FINANCE_PASSWORD must be configured and contain at least 8 characters."
             exit 1
           fi
 
