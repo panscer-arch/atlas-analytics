@@ -13,6 +13,7 @@ import MlmGatewayTracker from "./MlmGatewayTracker";
 import MlmLeaderOutreachPanel from "./MlmLeaderOutreachPanel";
 import PoolMonitorPanel from "./PoolMonitorPanel";
 import RegionalHiringPanel from "./RegionalHiringPanel";
+import ReelsCampaignBoard from "./ReelsCampaignBoard";
 import SegmentOutreachPanel from "./SegmentOutreachPanel";
 import TelegramChannelsParserPanel from "./TelegramChannelsParserPanel";
 import UniversalSocialParserPanel from "./UniversalSocialParserPanel";
@@ -71,6 +72,11 @@ const PARSER_TABS = [
     id: "creatives",
     label: "Креативы / SEO",
     hint: "тексты и баннеры",
+  },
+  {
+    id: "reels",
+    label: "Reels Studio",
+    hint: "5 идей · global",
   },
   {
     id: "utmBuilder",
@@ -157,6 +163,7 @@ const PARSER_TABS = [
 const PARSER_TAB_BOARD_IDS = {
   overview: "parser",
   creatives: "atlasCreatives",
+  reels: "reelsCampaign",
   utmBuilder: "utmBuilder",
   monitors: "hyipParser",
   telegram: "telegramParser",
@@ -871,6 +878,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
         />
       ) : activeTab === "creatives" ? (
         <AtlasCreativesPanel />
+      ) : activeTab === "reels" ? (
+        <ReelsCampaignBoard />
       ) : activeTab === "utmBuilder" ? (
         <UtmBuilderPanel />
       ) : activeTab === "telegram" ? (
