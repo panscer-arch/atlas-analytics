@@ -1,4 +1,5 @@
-export const TOOL_RADAR_STORAGE_KEY = "atlas.analytics.toolRadar.v1";
+export const TOOL_RADAR_STORAGE_KEY = "atlas.analytics.toolRadar.v2";
+export const TOOL_RADAR_LEGACY_STORAGE_KEY = "atlas.analytics.toolRadar.v1";
 
 export const TOOL_RADAR_DECISIONS = [
   { id: "adopt", label: "Берём", tone: "green" },
@@ -15,8 +16,165 @@ export const TOOL_RADAR_CATEGORIES = [
   "AI и автоматизация",
   "Контент",
   "Дизайн",
+  "Пентест и OSINT",
   "Рискованные инструменты",
 ];
+
+export const securityOsintToolRadarItems = [
+  {
+    id: "strix-ai-pentester",
+    title: "Strix",
+    category: "Пентест и OSINT",
+    decision: "test",
+    type: "AI-пентестер",
+    sourceUrl: "https://github.com/usestrix/strix",
+    productUrl: "",
+    summary: "Автономно исследует код, веб-приложения и API, проверяет найденные уязвимости и формирует воспроизводимые доказательства.",
+    atlasUse: "Пилот для комплексной проверки SuperSUS и сервисов Atlas на отдельном staging-стенде перед релизом.",
+    caution: "Активные проверки могут менять данные и создавать нагрузку. Запускать только на staging с тестовыми аккаунтами и письменным scope.",
+  },
+  {
+    id: "shannon-ai-pentester",
+    title: "Shannon",
+    category: "Пентест и OSINT",
+    decision: "test",
+    type: "AI-пентестер",
+    sourceUrl: "https://github.com/KeygraphHQ/shannon",
+    productUrl: "",
+    summary: "Source-aware пентестер: сопоставляет исходный код с работающим приложением и подтверждает уязвимости эксплуатацией.",
+    atlasUse: "Проверять авторизацию, бизнес-логику и API SuperSUS на staging; результаты передавать разработчику в формате SARIF.",
+    caution: "Только изолированный staging. AGPL-3.0 требует отдельной проверки условий использования и модификации.",
+  },
+  {
+    id: "pentagi",
+    title: "PentAGI",
+    category: "Пентест и OSINT",
+    decision: "research",
+    type: "AI-оркестратор",
+    sourceUrl: "https://github.com/vxcontrol/pentagi",
+    productUrl: "",
+    summary: "Многоагентная система для автономного пентеста с песочницами, браузером, терминалом и журналом действий.",
+    atlasUse: "Рассмотреть после базового контура безопасности для сложных сценариев и регулярных проверок отдельных сервисов Atlas.",
+    caution: "Тяжёлый и рискованный контур. Нужны изоляция, лимиты ресурсов, контроль человека и запрет доступа к production-секретам.",
+  },
+  {
+    id: "projectdiscovery-nuclei",
+    title: "Nuclei",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "Сканер уязвимостей",
+    sourceUrl: "https://github.com/projectdiscovery/nuclei",
+    productUrl: "",
+    summary: "Быстрый шаблонный сканер известных CVE, ошибочных конфигураций, открытых панелей и утечек.",
+    atlasUse: "Запускать безопасный профиль в CI и по расписанию для доменов Atlas; активные шаблоны оставлять для staging.",
+    caution: "В production разрешать только проверенный набор неразрушающих шаблонов, с rate limit и журналом целей.",
+  },
+  {
+    id: "owasp-zap",
+    title: "OWASP ZAP",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "DAST-сканер",
+    sourceUrl: "https://github.com/zaproxy/zaproxy",
+    productUrl: "",
+    summary: "Динамически проверяет веб-приложение: заголовки, сессии, формы, XSS, инъекции и другие веб-риски.",
+    atlasUse: "Baseline/passive scan после деплоя; полный authenticated scan — в nightly-проверке staging.",
+    caution: "Активный режим способен отправлять изменяющие запросы. Для production оставлять только passive/baseline scan.",
+  },
+  {
+    id: "aquasecurity-trivy",
+    title: "Trivy",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "Supply-chain scanner",
+    sourceUrl: "https://github.com/aquasecurity/trivy",
+    productUrl: "",
+    summary: "Ищет CVE в зависимостях и контейнерах, секреты, ошибки IaC-конфигураций и формирует SBOM.",
+    atlasUse: "Обязательная проверка репозитория и образов SuperSUS/Atlas в CI до сборки и деплоя.",
+    caution: "Результаты нужно приоритизировать по достижимости и реальному влиянию, а не блокировать релиз по любому совпадению.",
+  },
+  {
+    id: "gitleaks",
+    title: "Gitleaks",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "Сканер секретов",
+    sourceUrl: "https://github.com/gitleaks/gitleaks",
+    productUrl: "",
+    summary: "Находит API-ключи, токены, пароли и другие секреты в текущем коде и истории Git.",
+    atlasUse: "Запускать локально через pre-commit и в CI для всех репозиториев Atlas и SuperSUS.",
+    caution: "Найденный реальный секрет нужно немедленно отозвать и перевыпустить; удаления строки из последнего коммита недостаточно.",
+  },
+  {
+    id: "semgrep",
+    title: "Semgrep",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "SAST-сканер",
+    sourceUrl: "https://github.com/semgrep/semgrep",
+    productUrl: "",
+    summary: "Статически анализирует код по готовым и собственным правилам безопасности без запуска приложения.",
+    atlasUse: "Проверять pull request на опасные паттерны авторизации, инъекции, небезопасные вызовы и случайное логирование данных.",
+    caution: "Правила требуют настройки под стек и архитектуру Atlas, иначе команда получит много ложных срабатываний.",
+  },
+  {
+    id: "spiderfoot",
+    title: "SpiderFoot",
+    category: "Пентест и OSINT",
+    decision: "test",
+    type: "OSINT-платформа",
+    sourceUrl: "https://github.com/smicallef/spiderfoot",
+    productUrl: "",
+    summary: "Собирает открытые сведения о доменах, IP, DNS, утечках, связанных аккаунтах и внешней инфраструктуре через сотни модулей.",
+    atlasUse: "Строить карту публичного цифрового следа Atlas и находить забытые домены, адреса и открытые сервисы.",
+    caution: "Собирать только публичные технические данные по активам Atlas; не использовать для профилирования частных лиц.",
+  },
+  {
+    id: "owasp-amass",
+    title: "OWASP Amass",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "Attack Surface / OSINT",
+    sourceUrl: "https://github.com/owasp-amass/amass",
+    productUrl: "",
+    summary: "Обнаруживает субдомены и связи между DNS, сертификатами, IP-адресами и автономными системами.",
+    atlasUse: "Вести актуальный реестр внешних активов atlas-system.tech, SuperSUS и связанных сервисных доменов.",
+    caution: "Активное перечисление выполнять с ограничением частоты и только для принадлежащих Atlas доменов.",
+  },
+  {
+    id: "lynis",
+    title: "Lynis",
+    category: "Пентест и OSINT",
+    decision: "adopt",
+    type: "Аудит Linux",
+    sourceUrl: "https://github.com/CISOfy/lynis",
+    productUrl: "",
+    summary: "Проверяет hardening Linux: доступы, SSH, пакеты, журналы, права файлов, сетевые настройки и системные службы.",
+    atlasUse: "Регулярный аудит Ubuntu-серверов Atlas с фиксацией отклонений и планом исправлений.",
+    caution: "Инструмент в основном диагностический, но исправления по отчёту нужно тестировать, чтобы не нарушить работу сервисов.",
+  },
+  {
+    id: "wazuh",
+    title: "Wazuh",
+    category: "Пентест и OSINT",
+    decision: "research",
+    type: "SIEM / мониторинг",
+    sourceUrl: "https://github.com/wazuh/wazuh",
+    productUrl: "",
+    summary: "Централизует события безопасности, контроль целостности, конфигурационный аудит и обнаружение угроз на серверах.",
+    atlasUse: "Рассмотреть как следующий слой после разовых сканеров для постоянного наблюдения за инфраструктурой Atlas.",
+    caution: "Требует отдельной инфраструктуры, настройки правил, хранения журналов и процесса обработки алертов.",
+  },
+];
+
+export function migrateLegacyToolRadarItems(value) {
+  const legacyItems = Array.isArray(value) ? value.filter(Boolean) : [];
+  const existingIds = new Set(legacyItems.map((item) => item?.id).filter(Boolean));
+  return [
+    ...legacyItems,
+    ...securityOsintToolRadarItems.filter((item) => !existingIds.has(item.id)),
+  ];
+}
 
 export const defaultToolRadarItems = [
   {
@@ -163,5 +321,5 @@ export const defaultToolRadarItems = [
     atlasUse: "Вернуться к оценке, когда появятся точная ссылка, список функций и условия использования.",
     caution: "По доступным материалам функциональность продукта не подтверждена.",
   },
+  ...securityOsintToolRadarItems,
 ];
-

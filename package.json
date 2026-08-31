@@ -24,6 +24,7 @@
     "test:country-discovery": "node scripts/verify-country-discovery-parser.mjs",
     "test:youtrack-monitor": "node scripts/verify-youtrack-monitor.mjs",
     "test:expenses": "node scripts/verify-expense-center.mjs && node scripts/verify-finance-access.mjs",
+    "test:tool-radar": "node scripts/verify-tool-radar.mjs",
     "test:ga4": "node scripts/verify-google-analytics.mjs",
     "test:products": "node scripts/verify-products-registry.mjs",
     "test:listings-crm": "node scripts/verify-listings-team-crm.mjs",

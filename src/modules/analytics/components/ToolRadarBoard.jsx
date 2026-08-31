@@ -18,10 +18,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   TOOL_RADAR_CATEGORIES,
   TOOL_RADAR_DECISIONS,
+  TOOL_RADAR_LEGACY_STORAGE_KEY,
   TOOL_RADAR_STORAGE_KEY,
   defaultToolRadarItems,
+  migrateLegacyToolRadarItems,
 } from "../data/toolRadarData";
-import { loadServerContent, saveServerContent } from "../services/contentStore";
+import { loadServerContentResult, saveServerContent } from "../services/contentStore";
 
 const EMPTY_DRAFT = {
   title: "",
@@ -56,7 +58,11 @@ function readLocalItems() {
   if (typeof window === "undefined") return defaultToolRadarItems;
   try {
     const saved = window.localStorage.getItem(TOOL_RADAR_STORAGE_KEY);
-    return saved ? normalizeItems(JSON.parse(saved)) : defaultToolRadarItems;
+    if (saved) return normalizeItems(JSON.parse(saved));
+    const legacySaved = window.localStorage.getItem(TOOL_RADAR_LEGACY_STORAGE_KEY);
+    return legacySaved
+      ? normalizeItems(migrateLegacyToolRadarItems(JSON.parse(legacySaved)))
+      : defaultToolRadarItems;
   } catch {
     return defaultToolRadarItems;
   }
@@ -75,16 +81,44 @@ function ToolRadarBoard() {
 
   useEffect(() => {
     let mounted = true;
-    loadServerContent(TOOL_RADAR_STORAGE_KEY).then((serverItems) => {
+    async function hydrateItems() {
+      const currentResult = await loadServerContentResult(TOOL_RADAR_STORAGE_KEY);
       if (!mounted) return;
-      if (Array.isArray(serverItems)) {
-        const normalized = normalizeItems(serverItems);
+
+      if (currentResult.ok && currentResult.exists && Array.isArray(currentResult.value)) {
+        const normalized = normalizeItems(currentResult.value);
         setItems(normalized);
         window.localStorage.setItem(TOOL_RADAR_STORAGE_KEY, JSON.stringify(normalized));
+        hydratedRef.current = true;
+        setSaveState("Сохранено на сервере");
+        return;
       }
+
+      if (!currentResult.ok) {
+        hydratedRef.current = true;
+        setSaveState("Сохранено локально");
+        return;
+      }
+
+      const legacyResult = await loadServerContentResult(TOOL_RADAR_LEGACY_STORAGE_KEY);
+      if (!mounted) return;
+      if (!legacyResult.ok) {
+        hydratedRef.current = true;
+        setSaveState("Сохранено локально");
+        return;
+      }
+      const migrated = legacyResult.ok && legacyResult.exists && Array.isArray(legacyResult.value)
+        ? migrateLegacyToolRadarItems(legacyResult.value)
+        : defaultToolRadarItems;
+      const normalized = normalizeItems(migrated);
+      setItems(normalized);
+      window.localStorage.setItem(TOOL_RADAR_STORAGE_KEY, JSON.stringify(normalized));
       hydratedRef.current = true;
-      setSaveState("Сохранено на сервере");
-    });
+      const saved = await saveServerContent(TOOL_RADAR_STORAGE_KEY, normalized);
+      if (mounted) setSaveState(saved ? "Сохранено на сервере" : "Сохранено локально");
+    }
+
+    hydrateItems();
     return () => {
       mounted = false;
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
@@ -256,4 +290,3 @@ function ToolRadarBoard() {
 }
 
 export default ToolRadarBoard;
-
