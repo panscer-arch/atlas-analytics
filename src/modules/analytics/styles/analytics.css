@@ -1,3 +1,5 @@
+@import "./supersus-harness.css";
+
 .analytics-layout {
   min-height: 100vh;
   width: 100%;
@@ -772,328 +774,440 @@
 
 .analytics-youtrack {
   display: grid;
-  gap: 1.1rem;
+  gap: 12px;
   min-width: 0;
   max-width: 100%;
-  color: #edf3ff;
+  color: var(--sus-ui-text);
 }
 
-.analytics-youtrack-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.38fr);
-  gap: 1.2rem;
+.analytics-youtrack-header {
+  display: flex;
   align-items: flex-start;
-  padding: 1.5rem;
-  border-color: rgba(104, 220, 255, 0.18);
-  background:
-    linear-gradient(rgba(104, 220, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(104, 220, 255, 0.04) 1px, transparent 1px),
-    radial-gradient(circle at 82% 18%, rgba(79, 134, 255, 0.22), transparent 32%),
-    linear-gradient(135deg, rgba(10, 27, 45, 0.96), rgba(5, 13, 26, 0.94));
-  background-size: 44px 44px, 44px 44px, auto, auto;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--sus-ui-line);
 }
 
-.analytics-youtrack-hero h2 {
-  margin: 8px 0 10px;
-  font-size: clamp(28px, 4vw, 48px);
-  line-height: 1.03;
-  color: #ffffff;
+.analytics-youtrack-heading {
+  min-width: 0;
+}
+
+.analytics-youtrack-title-row,
+.analytics-youtrack-sync-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.analytics-youtrack-title-row .analytics-kicker {
+  margin: 0;
+}
+
+.analytics-youtrack-header h2 {
+  margin: 8px 0 4px;
+  color: var(--sus-ui-text);
+  font-size: clamp(1.65rem, 2.2vw, 2rem);
+  font-weight: 900;
+  line-height: 1.08;
   letter-spacing: 0;
 }
 
-.analytics-youtrack-hero p {
-  max-width: 760px;
+.analytics-youtrack-header p {
   margin: 0;
-  color: rgba(226, 240, 255, 0.78);
-  font-size: 16px;
-  line-height: 1.55;
-  font-weight: 650;
+  color: var(--sus-ui-muted);
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+.analytics-youtrack-sync-row {
+  margin-top: 11px;
+}
+
+.analytics-youtrack-sync-row > span:last-child {
+  color: var(--sus-ui-subtle);
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .analytics-youtrack-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 0.65rem;
-  min-width: min(100%, 360px);
-}
-
-.analytics-youtrack-actions .analytics-export-btn,
-.analytics-youtrack-actions .analytics-parser-mini-button {
-  width: 100%;
-  min-height: 48px;
-  border-radius: 0.85rem;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .analytics-youtrack-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  justify-content: center;
-  width: 100%;
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(237, 243, 255, 0.92);
-  font-weight: 900;
+  min-height: var(--sus-ui-control-height);
+  padding: 0 11px;
+  border: 1px solid var(--sus-ui-line);
+  border-radius: var(--sus-ui-radius);
+  background: var(--sus-ui-surface-muted);
+  color: var(--sus-ui-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analytics-youtrack-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.analytics-youtrack-switch {
+  width: 30px;
+  height: 18px;
+  flex: 0 0 auto;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(169, 191, 207, 0.28);
+  transition: background-color 140ms ease;
+}
+
+.analytics-youtrack-switch::after {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  transition: transform 140ms ease;
+}
+
+.analytics-youtrack-toggle input:checked + .analytics-youtrack-switch {
+  background: var(--sus-ui-green);
+}
+
+.analytics-youtrack-toggle input:checked + .analytics-youtrack-switch::after {
+  transform: translateX(12px);
+}
+
+.analytics-youtrack-toggle:has(input:focus-visible) {
+  box-shadow: var(--sus-ui-focus);
 }
 
 .analytics-youtrack-kpis {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 8px;
 }
 
-.analytics-youtrack-kpi {
-  display: grid;
-  gap: 0.55rem;
-  min-height: 112px;
-  padding: 1rem;
-  border: 1px solid rgba(104, 220, 255, 0.17);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at 92% 16%, rgba(104, 220, 255, 0.18), transparent 32%),
-    linear-gradient(135deg, rgba(16, 36, 56, 0.92), rgba(8, 17, 31, 0.96));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+.analytics-youtrack-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--sus-ui-line);
+  border-radius: var(--sus-ui-radius);
+  background: var(--sus-ui-surface);
 }
 
-.analytics-youtrack-kpi span {
-  color: rgba(190, 207, 231, 0.84);
-  font-size: 0.82rem;
+.analytics-youtrack-panel-head,
+.analytics-youtrack-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analytics-youtrack-panel-head h3,
+.analytics-youtrack-board-head h3 {
+  margin: 3px 0 0;
+  color: var(--sus-ui-text);
+  font-size: 1.03rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
-.analytics-youtrack-kpi strong {
-  color: #ffffff;
-  font-size: clamp(1.8rem, 2.6vw, 2.35rem);
-  line-height: 1;
-  font-weight: 950;
-}
-
-.analytics-youtrack-kpi-danger {
-  border-color: rgba(255, 95, 112, 0.36);
-  background:
-    radial-gradient(circle at 92% 16%, rgba(255, 95, 112, 0.2), transparent 34%),
-    linear-gradient(135deg, rgba(60, 23, 32, 0.92), rgba(16, 19, 34, 0.96));
-}
-
-.analytics-youtrack-kpi-success {
-  border-color: rgba(79, 212, 141, 0.32);
-  background:
-    radial-gradient(circle at 92% 16%, rgba(79, 212, 141, 0.18), transparent 34%),
-    linear-gradient(135deg, rgba(15, 51, 43, 0.92), rgba(8, 17, 31, 0.96));
-}
-
-.analytics-youtrack-attention,
-.analytics-youtrack-board,
-.analytics-youtrack-changes {
-  padding: 1.25rem;
-  border-color: rgba(104, 220, 255, 0.16);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(79, 134, 255, 0.13), transparent 34%),
-    linear-gradient(135deg, rgba(8, 25, 42, 0.93), rgba(6, 12, 24, 0.95));
-}
-
-.analytics-youtrack-attention-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.analytics-youtrack-alert-card {
-  display: grid;
-  gap: 0.5rem;
-  min-height: 180px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 170, 64, 0.28);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at 92% 12%, rgba(255, 170, 64, 0.2), transparent 34%),
-    rgba(255, 255, 255, 0.055);
-  color: inherit;
-  text-decoration: none;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
-}
-
-.analytics-youtrack-alert-card:hover,
-.analytics-youtrack-alert-card:focus-visible {
-  border-color: rgba(255, 170, 64, 0.55);
-  background: rgba(255, 255, 255, 0.085);
-  transform: translateY(-1px);
-}
-
-.analytics-youtrack-alert-card span {
-  color: #ffb13d;
-  font-weight: 900;
-}
-
-.analytics-youtrack-alert-card strong {
-  color: #ffffff;
-  line-height: 1.25;
-}
-
-.analytics-youtrack-alert-card small,
-.analytics-youtrack-alert-card p {
-  margin: 0;
-  color: rgba(214, 227, 246, 0.76);
-  line-height: 1.4;
-}
-
-.analytics-youtrack-alert-card p {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-.analytics-youtrack-search {
-  width: min(420px, 100%);
-  min-height: 44px;
-  border: 1px solid rgba(104, 220, 255, 0.2);
-  border-radius: 0.85rem;
-  padding: 0 14px;
-  background: rgba(4, 13, 25, 0.72);
-  color: #f8fbff;
-  font: inherit;
+.analytics-youtrack-board-head small {
+  display: block;
+  margin-top: 4px;
+  color: var(--sus-ui-subtle);
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
-.analytics-youtrack-search::placeholder {
-  color: rgba(190, 207, 231, 0.62);
+.analytics-youtrack-attention-list {
+  margin-top: 12px;
+  border-top: 1px solid var(--sus-ui-line);
 }
 
-.analytics-youtrack-search:focus {
-  outline: 2px solid rgba(104, 220, 255, 0.44);
-  outline-offset: 2px;
+.analytics-youtrack-attention-row {
+  display: grid;
+  grid-template-columns: 76px minmax(240px, 0.8fr) minmax(240px, 1.2fr) 20px;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--sus-ui-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.analytics-youtrack-attention-row:last-child {
+  border-bottom: 0;
+}
+
+.analytics-youtrack-attention-row:hover,
+.analytics-youtrack-attention-row:focus-visible {
+  background: var(--sus-ui-orange-soft);
+  outline: none;
+}
+
+.analytics-youtrack-issue-id {
+  color: var(--sus-ui-orange);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.analytics-youtrack-attention-copy,
+.analytics-youtrack-attention-comment {
+  min-width: 0;
+}
+
+.analytics-youtrack-attention-copy strong,
+.analytics-youtrack-attention-copy small {
+  display: block;
+}
+
+.analytics-youtrack-attention-copy strong {
+  overflow: hidden;
+  color: var(--sus-ui-text);
+  font-size: 0.88rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-youtrack-attention-copy small {
+  margin-top: 4px;
+  color: var(--sus-ui-subtle);
+  font-size: 0.73rem;
+  line-height: 1.25;
+}
+
+.analytics-youtrack-attention-comment {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--sus-ui-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.analytics-youtrack-attention-row > .analytics-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--sus-ui-subtle);
+}
+
+.analytics-youtrack-search-wrap {
+  width: min(390px, 100%);
+  min-height: var(--sus-ui-control-height);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid var(--sus-ui-line-strong);
+  border-radius: var(--sus-ui-radius);
+  background: rgba(3, 12, 20, 0.66);
+}
+
+.analytics-youtrack-search-wrap > .analytics-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--sus-ui-subtle);
+}
+
+.analytics-youtrack-search {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sus-ui-text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.analytics-youtrack-search::placeholder {
+  color: var(--sus-ui-subtle);
+}
+
+.analytics-youtrack-search-wrap:focus-within {
+  border-color: rgba(111, 230, 225, 0.48);
+  box-shadow: var(--sus-ui-focus);
+}
+
+.analytics-youtrack-filter-bar {
+  display: inline-flex;
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 3px;
+  border: 1px solid var(--sus-ui-line);
+  border-radius: var(--sus-ui-radius);
+  background: rgba(3, 12, 20, 0.52);
+  overflow-x: auto;
+}
+
+.analytics-youtrack-filter {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sus-ui-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.analytics-youtrack-filter:hover {
+  color: var(--sus-ui-text);
+}
+
+.analytics-youtrack-filter-active {
+  background: var(--sus-ui-cyan-soft);
+  color: var(--sus-ui-cyan);
+}
+
+.analytics-youtrack-filter:focus-visible {
+  outline: none;
+  box-shadow: var(--sus-ui-focus);
 }
 
 .analytics-youtrack-table-wrap {
   overflow-x: auto;
-  margin-top: 16px;
-  border-radius: 1rem;
+  margin-top: 12px;
+  border-top: 1px solid var(--sus-ui-line);
 }
 
 .analytics-youtrack-table {
   width: 100%;
   min-width: 1100px;
-  border-collapse: separate;
-  border-spacing: 0 10px;
+  border-collapse: collapse;
 }
 
 .analytics-youtrack-table th {
-  padding: 0 14px 4px;
-  color: rgba(154, 176, 206, 0.88);
-  font-size: 0.78rem;
-  font-weight: 950;
-  letter-spacing: 0.03em;
+  padding: 11px 12px;
+  color: var(--sus-ui-subtle);
+  background: rgba(3, 12, 20, 0.74);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0;
   text-transform: uppercase;
   text-align: left;
+  white-space: nowrap;
 }
 
 .analytics-youtrack-table td {
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.055);
-  border-top: 1px solid rgba(104, 220, 255, 0.12);
-  border-bottom: 1px solid rgba(104, 220, 255, 0.12);
+  padding: 12px;
+  border-bottom: 1px solid var(--sus-ui-line);
+  background: transparent;
   vertical-align: top;
-  color: rgba(218, 231, 249, 0.78);
-  line-height: 1.42;
+  color: var(--sus-ui-muted);
+  font-size: 0.78rem;
+  line-height: 1.38;
 }
 
 .analytics-youtrack-table td:first-child {
-  border-left: 1px solid rgba(104, 220, 255, 0.12);
-  border-radius: 16px 0 0 16px;
-  width: 320px;
+  width: 330px;
 }
 
 .analytics-youtrack-table td:last-child {
-  border-right: 1px solid rgba(104, 220, 255, 0.12);
-  border-radius: 0 16px 16px 0;
   max-width: 390px;
 }
 
 .analytics-youtrack-table td:first-child a {
   display: inline-flex;
-  margin-bottom: 6px;
-  color: #7dd3fc;
+  margin-bottom: 5px;
+  color: var(--sus-ui-cyan);
   font-weight: 900;
   text-decoration: none;
 }
 
 .analytics-youtrack-table td:first-child strong {
   display: block;
-  color: #ffffff;
+  color: var(--sus-ui-text);
   line-height: 1.3;
 }
 
 .analytics-youtrack-table td:first-child span {
   display: inline-flex;
-  margin-top: 8px;
-  padding: 4px 8px;
+  margin-top: 6px;
+  padding: 3px 6px;
   border-radius: 999px;
-  background: rgba(255, 170, 64, 0.13);
-  color: #ffbd62;
-  font-size: 12px;
-  font-weight: 900;
+  background: var(--sus-ui-orange-soft);
+  color: var(--sus-ui-orange);
+  font-size: 0.68rem;
+  font-weight: 850;
 }
 
 .analytics-youtrack-table b {
-  color: #ffffff;
+  color: var(--sus-ui-text);
 }
 
 .analytics-youtrack-status-pill {
   display: inline-flex;
   max-width: 190px;
   align-items: center;
-  border: 1px solid rgba(104, 220, 255, 0.18);
+  border: 1px solid var(--sus-ui-line-strong);
   border-radius: 999px;
-  padding: 0.28rem 0.58rem;
-  background: rgba(104, 220, 255, 0.08);
-  color: #f8fbff;
-  font-size: 0.82rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--sus-ui-cyan-soft);
+  color: var(--sus-ui-text);
+  font-size: 0.72rem;
   line-height: 1.15;
 }
 
 .analytics-youtrack-comment {
   display: -webkit-box;
   overflow: hidden;
-  color: rgba(226, 240, 255, 0.78);
+  color: var(--sus-ui-muted);
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
 .analytics-youtrack-row-attention td,
 .analytics-youtrack-row-danger td {
-  border-color: rgba(255, 95, 112, 0.3);
-  background: rgba(77, 28, 39, 0.4);
+  background: var(--sus-ui-red-soft);
+}
+
+.analytics-youtrack-row-attention td:first-child,
+.analytics-youtrack-row-danger td:first-child {
+  box-shadow: inset 3px 0 var(--sus-ui-red);
 }
 
 .analytics-youtrack-row-stale td {
-  border-color: rgba(255, 170, 64, 0.28);
-  background: rgba(83, 52, 17, 0.34);
+  background: var(--sus-ui-orange-soft);
+}
+
+.analytics-youtrack-row-stale td:first-child {
+  box-shadow: inset 3px 0 var(--sus-ui-orange);
 }
 
 .analytics-youtrack-row-done td {
-  background: rgba(22, 66, 52, 0.34);
-}
-
-.analytics-youtrack-empty {
-  padding: 28px;
-  text-align: center;
-  color: rgba(190, 207, 231, 0.78);
-  font-weight: 800;
+  background: var(--sus-ui-green-soft);
 }
 
 .analytics-youtrack-change {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(104, 220, 255, 0.12);
+  padding: 11px 0;
+  border-bottom: 1px solid var(--sus-ui-line);
+  color: var(--sus-ui-text);
+  font-size: 0.82rem;
 }
 
 .analytics-youtrack-change:last-child {
@@ -1101,21 +1215,24 @@
 }
 
 .analytics-youtrack-change span {
-  color: rgba(190, 207, 231, 0.78);
+  color: var(--sus-ui-muted);
 }
 
 @media (max-width: 1100px) {
-  .analytics-youtrack-hero {
-    grid-template-columns: 1fr;
+  .analytics-youtrack-header {
+    display: grid;
   }
 
   .analytics-youtrack-actions {
     justify-content: flex-start;
   }
 
-  .analytics-youtrack-kpis,
-  .analytics-youtrack-attention-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .analytics-youtrack-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .analytics-youtrack-attention-row {
+    grid-template-columns: 70px minmax(220px, 1fr) minmax(200px, 1fr) 20px;
   }
 }
 
@@ -1126,24 +1243,66 @@
     overflow: hidden;
   }
 
-  .analytics-youtrack-hero,
-  .analytics-youtrack-attention,
-  .analytics-youtrack-board,
-  .analytics-youtrack-changes {
-    padding: 1rem;
+  .analytics-youtrack-header {
+    gap: 14px;
+    padding-bottom: 14px;
   }
 
-  .analytics-youtrack-hero h2 {
-    font-size: 2rem;
+  .analytics-youtrack-header h2 {
+    font-size: 1.65rem;
   }
 
-  .analytics-youtrack-hero p {
-    font-size: 0.95rem;
+  .analytics-youtrack-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--sus-ui-control-height);
+    width: 100%;
   }
 
-  .analytics-youtrack-kpis,
-  .analytics-youtrack-attention-grid {
+  .analytics-youtrack-toggle {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .analytics-youtrack-panel {
+    padding: 13px;
+  }
+
+  .analytics-youtrack-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-youtrack-panel-head,
+  .analytics-youtrack-board-head {
+    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analytics-youtrack-search-wrap {
+    width: 100%;
+    max-width: none;
+  }
+
+  .analytics-youtrack-attention-row {
+    position: relative;
     grid-template-columns: 1fr;
+    gap: 5px;
+    padding-right: 26px;
+  }
+
+  .analytics-youtrack-attention-row > .analytics-icon {
+    position: absolute;
+    right: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .analytics-youtrack-attention-copy strong {
+    white-space: normal;
+  }
+
+  .analytics-youtrack-attention-comment {
+    -webkit-line-clamp: 2;
   }
 
   .analytics-youtrack-change {

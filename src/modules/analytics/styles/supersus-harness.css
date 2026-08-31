@@ -1,0 +1,189 @@
+:root {
+  --sus-ui-bg: #071019;
+  --sus-ui-surface: rgba(10, 23, 35, 0.92);
+  --sus-ui-surface-raised: rgba(14, 31, 46, 0.94);
+  --sus-ui-surface-muted: rgba(255, 255, 255, 0.035);
+  --sus-ui-line: rgba(126, 218, 232, 0.14);
+  --sus-ui-line-strong: rgba(126, 218, 232, 0.28);
+  --sus-ui-text: #f4f8fb;
+  --sus-ui-muted: rgba(205, 221, 234, 0.68);
+  --sus-ui-subtle: rgba(169, 191, 207, 0.54);
+  --sus-ui-cyan: #6fe6e1;
+  --sus-ui-cyan-soft: rgba(111, 230, 225, 0.1);
+  --sus-ui-orange: #f5a33b;
+  --sus-ui-orange-soft: rgba(245, 163, 59, 0.11);
+  --sus-ui-green: #55d59a;
+  --sus-ui-green-soft: rgba(85, 213, 154, 0.1);
+  --sus-ui-red: #ff6b78;
+  --sus-ui-red-soft: rgba(255, 107, 120, 0.1);
+  --sus-ui-radius: 8px;
+  --sus-ui-control-height: 42px;
+  --sus-ui-focus: 0 0 0 3px rgba(111, 230, 225, 0.22);
+}
+
+.sus-ui-button {
+  min-height: var(--sus-ui-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--sus-ui-line-strong);
+  border-radius: var(--sus-ui-radius);
+  background: var(--sus-ui-surface-muted);
+  color: var(--sus-ui-text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.sus-ui-button:hover {
+  border-color: rgba(111, 230, 225, 0.46);
+  background: rgba(111, 230, 225, 0.08);
+}
+
+.sus-ui-button:focus-visible,
+.sus-ui-status:focus-visible {
+  outline: none;
+  box-shadow: var(--sus-ui-focus);
+}
+
+.sus-ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.sus-ui-button-primary {
+  border-color: rgba(111, 230, 225, 0.52);
+  background: var(--sus-ui-cyan);
+  color: #052020;
+}
+
+.sus-ui-button-primary:hover {
+  border-color: #9af1ed;
+  background: #87ebe7;
+}
+
+.sus-ui-button-icon {
+  width: var(--sus-ui-control-height);
+  padding: 0;
+}
+
+.sus-ui-button .analytics-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sus-ui-metric {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 74px;
+  padding: 12px 14px;
+  border: 1px solid var(--sus-ui-line);
+  border-radius: var(--sus-ui-radius);
+  background: var(--sus-ui-surface-muted);
+}
+
+.sus-ui-metric span {
+  color: var(--sus-ui-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.sus-ui-metric strong {
+  color: var(--sus-ui-text);
+  font-size: 1.65rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sus-ui-metric-accent {
+  border-color: rgba(111, 230, 225, 0.24);
+  background: var(--sus-ui-cyan-soft);
+}
+
+.sus-ui-metric-success {
+  border-color: rgba(85, 213, 154, 0.24);
+  background: var(--sus-ui-green-soft);
+}
+
+.sus-ui-metric-danger {
+  border-color: rgba(255, 107, 120, 0.28);
+  background: var(--sus-ui-red-soft);
+}
+
+.sus-ui-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--sus-ui-line);
+  border-radius: 999px;
+  background: var(--sus-ui-surface-muted);
+  color: var(--sus-ui-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.sus-ui-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--sus-ui-cyan);
+}
+
+.sus-ui-status-attention::before {
+  background: var(--sus-ui-orange);
+}
+
+.sus-ui-status-danger::before {
+  background: var(--sus-ui-red);
+}
+
+.sus-ui-status-success::before {
+  background: var(--sus-ui-green);
+}
+
+.sus-ui-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 30px 20px;
+  color: var(--sus-ui-muted);
+  text-align: center;
+}
+
+.sus-ui-empty strong {
+  color: var(--sus-ui-text);
+  font-size: 0.95rem;
+}
+
+.sus-ui-empty .analytics-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--sus-ui-subtle);
+}
+
+.sus-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
