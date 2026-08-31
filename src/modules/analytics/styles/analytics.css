@@ -697,6 +697,14 @@
   color: #7ee6c2;
 }
 
+.analytics-header-contributions-button {
+  color: #ffd28a;
+}
+
+.analytics-header-radar-button {
+  color: #9ff7ff;
+}
+
 .analytics-header-ai-button {
   overflow: visible;
   animation: none;
@@ -24392,4 +24400,11 @@ input.analytics-smm-cell-input {
   .analytics-tool-radar-card-head, .analytics-tool-radar-card-footer { align-items: stretch; flex-direction: column; }
   .analytics-tool-radar-decision { align-self: flex-start; }
   .analytics-tool-radar-card-footer nav { justify-content: space-between; }
+}
+
+@media (max-width: 760px) {
+  .analytics-header-tool::after,
+  .analytics-header-ai-button::after {
+    display: none;
+  }
 }

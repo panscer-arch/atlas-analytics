@@ -191,7 +191,11 @@ function LaunchChecklistSection({ mode = "tasks", analyticsBoardUrl }) {
     }
 
     window.addEventListener("popstate", handleHistoryChange);
-    return () => window.removeEventListener("popstate", handleHistoryChange);
+    window.addEventListener("supersus:routechange", handleHistoryChange);
+    return () => {
+      window.removeEventListener("popstate", handleHistoryChange);
+      window.removeEventListener("supersus:routechange", handleHistoryChange);
+    };
   }, [customChecklists, mode, visibleBoardTabs]);
 
   function persistArchive(nextArchive) {

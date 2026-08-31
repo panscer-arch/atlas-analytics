@@ -185,7 +185,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "dashboard") return "dashboard";
   if (boardId === "sessionQueue") return "session";
   if (boardId === "hermesAssistant") return "hermes";
-  if (boardId === "expenses") return "expenses";
+  if (boardId === "expenses" || boardId === "contributions") return "expenses";
   if (boardId === "influencers" || boardId === "marketing-influencers") return "contacts";
   if (boardId === "products" || boardId === "productLibrary" || boardId === "developments") return "products";
   if (boardId === "listings") return "parser";
@@ -202,6 +202,10 @@ export function getAnalyticsTabForBoard(boardId) {
 }
 
 export const STATIC_BOARD_META = {
+  contributions: {
+    title: "Вклады команды",
+    description: "Внутренняя таблица текущих сумм, внесённых участниками команды Atlas.",
+  },
   launch: {
     title: "Задачи запуска",
     description: "Основной чек-лист запуска: задачи, ответственные, сроки и статус готовности.",

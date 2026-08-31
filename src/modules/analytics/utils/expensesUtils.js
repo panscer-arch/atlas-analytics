@@ -236,6 +236,33 @@ export function normalizeBudgets(items) {
   );
 }
 
+export function createContribution(overrides = {}) {
+  return normalizeContribution({
+    id: uniqueId("contribution"),
+    participant: "",
+    amount: 0,
+    asOfDate: getTodayInputDate(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  });
+}
+
+export function normalizeContribution(item = {}) {
+  return {
+    id: item.id || uniqueId("contribution"),
+    participant: String(item.participant || ""),
+    amount: finiteNonNegative(item.amount ?? item.currentDepositAmount ?? item.contributedAmount),
+    asOfDate: item.asOfDate || item.contributionDate || item.date || getTodayInputDate(),
+    createdAt: item.createdAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+export function normalizeContributions(items) {
+  return Array.isArray(items) ? items.map(normalizeContribution) : [];
+}
+
 export function normalizeExpenseCenter(value = {}) {
   return {
     version: 2,
@@ -243,6 +270,7 @@ export function normalizeExpenseCenter(value = {}) {
     expenses: normalizeExpenses(value.expenses),
     funds: normalizeFunds(value.funds),
     budgets: normalizeBudgets(value.budgets),
+    contributions: normalizeContributions(value.contributions),
     activity: Array.isArray(value.activity) ? value.activity.slice(0, 200) : [],
     settings: {
       ...defaultExpenseCenter.settings,

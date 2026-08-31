@@ -5,6 +5,7 @@ import {
   defaultExpenseCenter,
 } from "../src/modules/analytics/data/expensesData.js";
 import {
+  createContribution,
   createExpense,
   createPaidExpenseUpdate,
   expandExpenseOccurrences,
@@ -15,6 +16,7 @@ import {
   getMonthlyRecurringRunRate,
   migrateLegacyExpenseCenter,
   nextRecurringDate,
+  normalizeContribution,
   normalizeExpense,
   normalizeExpenseCenter,
   readEditableMoneyValue,
@@ -22,6 +24,7 @@ import {
 
 assert.equal(defaultExpenseCenter.expenses.length, 0, "Expense center must not ship fake expenses");
 assert.equal(defaultExpenseCenter.funds.length, 0, "Expense center must not ship fake funds");
+assert.equal(defaultExpenseCenter.contributions.length, 0, "Expense center must not ship fake team contributions");
 assert.ok(EXPENSE_CATEGORIES.includes("Маркетинг и привлечение"));
 assert.ok(EXPENSE_CATEGORIES.includes("Инфраструктура и IT"));
 assert.ok(EXPENSE_CATEGORIES.includes("Команда и подрядчики"));
@@ -51,6 +54,17 @@ assert.deepEqual(
   monthBudgets.map((item) => [item.month, item.monthlyLimit]),
   [["2026-07", 1000], ["2026-08", 2000]],
 );
+
+const manualContribution = createContribution({
+  participant: "Atlas teammate",
+  amount: 1250,
+  asOfDate: "2026-08-30",
+});
+assert.equal(manualContribution.amount, 1250);
+assert.equal(manualContribution.asOfDate, "2026-08-30");
+assert.equal(normalizeContribution({ amount: -5 }).amount, 0);
+assert.equal(normalizeContribution({ currentDepositAmount: 900, contributionDate: "2026-08-29" }).amount, 900);
+assert.equal(normalizeExpenseCenter({ contributions: [manualContribution] }).contributions.length, 1);
 
 const legacy = normalizeExpense({
   title: "Legacy server",
@@ -137,6 +151,10 @@ assert.doesNotMatch(analyticsPage, /\{ id: "expenses", label: "Расходы" \
 assert.match(analyticsPage, /expenses: "expenses"/);
 assert.match(analyticsPage, /onSessionOpen=\{\(\) => handleMainTabChange\("session"\)\}/);
 assert.match(analyticsPage, /onExpensesOpen=\{\(\) => handleMainTabChange\("expenses"\)\}/);
+assert.match(analyticsPage, /onContributionsOpen=\{handleContributionsOpen\}/);
+assert.match(analyticsPage, /onToolRadarOpen=\{handleToolRadarOpen\}/);
+assert.match(analyticsPage, /pushBoardRoute\("contributions"\)/);
+assert.match(analyticsPage, /pushBoardRoute\("toolRadar"\)/);
 
 const analyticsHeader = await readFile(
   new URL("../src/modules/analytics/components/AnalyticsHeader.jsx", import.meta.url),
@@ -144,6 +162,8 @@ const analyticsHeader = await readFile(
 );
 assert.match(analyticsHeader, /HeaderTool label="Сессия"/);
 assert.match(analyticsHeader, /HeaderTool label="Расходы"/);
+assert.match(analyticsHeader, /HeaderTool label="Вклады команды"/);
+assert.match(analyticsHeader, /HeaderTool label="Радар инструментов"/);
 
 const analyticsMainPanel = await readFile(
   new URL("../src/modules/analytics/components/AnalyticsMainPanel.jsx", import.meta.url),
@@ -168,8 +188,28 @@ assert.match(expenseBoard, /lockFinanceContent/);
 assert.match(expenseBoard, /clearLocalExpenseBackup/);
 assert.match(expenseBoard, /Пароль доступа/);
 assert.match(expenseBoard, /aria-label="Сумма поступления"/);
+assert.match(expenseBoard, /\["contributions", "Вклады команды"\]/);
+assert.match(expenseBoard, /view === "contributions"/);
+assert.match(expenseBoard, /contribution-created/);
+assert.match(expenseBoard, /getInitialExpenseView/);
 assert.doesNotMatch(expenseBoard, /Number\(event\.target\.value \|\| 0\)/);
 assert.doesNotMatch(expenseBoard, /marketing_access/);
+
+const contributionsLedger = await readFile(
+  new URL("../src/modules/analytics/components/ContributionsLedger.jsx", import.meta.url),
+  "utf8",
+);
+assert.match(contributionsLedger, /Кто сколько вложил/);
+assert.match(contributionsLedger, /Актуально на/);
+assert.match(contributionsLedger, /Суммы обновляются вручную/);
+assert.doesNotMatch(contributionsLedger, /Кошелёк|Сеть|Валюта|Источник данных|Tx hash|В депозитах/);
+
+const launchBoardRegistry = await readFile(
+  new URL("../src/modules/analytics/components/LaunchBoardRegistry.jsx", import.meta.url),
+  "utf8",
+);
+assert.match(launchBoardRegistry, /boardId === "expenses" \|\| boardId === "contributions"/);
+assert.match(launchBoardRegistry, /contributions: \{\s*title: "Вклады команды"/);
 
 const contentApi = await readFile(
   new URL("../server/content-api.mjs", import.meta.url),
@@ -182,4 +222,4 @@ assert.match(contentApi, /ATLAS_FINANCE_PASSWORD/);
 assert.match(contentApi, /\/api\/finance\/browser-session/);
 assert.match(contentApi, /expenseCenterMutationQueue/);
 
-console.log("Expense center verified: data model, recurrence, summaries, header routing, password access, and Session preservation.");
+console.log("Expense center verified: expenses, team contributions, radar routing, recurrence, summaries, and password access.");

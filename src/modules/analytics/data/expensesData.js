@@ -131,6 +131,7 @@ export const defaultExpenseCenter = {
   expenses: defaultExpenses,
   funds: defaultFunds,
   budgets: defaultBudgets,
+  contributions: [],
   activity: [],
   settings: {
     baseCurrency: "USDT",

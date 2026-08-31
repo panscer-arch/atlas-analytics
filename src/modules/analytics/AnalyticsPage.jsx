@@ -98,6 +98,7 @@ function pushBoardRoute(boardId, { replace = false } = {}) {
   url.searchParams.delete("view");
   url.searchParams.set("board", boardId);
   window.history[replace ? "replaceState" : "pushState"]({}, "", url);
+  window.dispatchEvent(new CustomEvent("supersus:routechange", { detail: { boardId } }));
 }
 
 function readStoredQuickNotesCount() {
@@ -185,7 +186,11 @@ function AnalyticsPage() {
     }
 
     window.addEventListener("popstate", handleHistoryChange);
-    return () => window.removeEventListener("popstate", handleHistoryChange);
+    window.addEventListener("supersus:routechange", handleHistoryChange);
+    return () => {
+      window.removeEventListener("popstate", handleHistoryChange);
+      window.removeEventListener("supersus:routechange", handleHistoryChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -710,6 +715,16 @@ function AnalyticsPage() {
     pushBoardRoute(ANALYTICS_TAB_BOARD_IDS[nextTab] || "analytics");
   }
 
+  function handleContributionsOpen() {
+    setActiveTab("expenses");
+    pushBoardRoute("contributions");
+  }
+
+  function handleToolRadarOpen() {
+    setActiveTab("content");
+    pushBoardRoute("toolRadar");
+  }
+
   return (
     <main className="analytics-layout">
       <AnalyticsHeader
@@ -722,6 +737,8 @@ function AnalyticsPage() {
         onHermesOpen={() => handleMainTabChange("hermes")}
         onSessionOpen={() => handleMainTabChange("session")}
         onExpensesOpen={() => handleMainTabChange("expenses")}
+        onContributionsOpen={handleContributionsOpen}
+        onToolRadarOpen={handleToolRadarOpen}
         onContactsOpen={() => handleMainTabChange("contacts")}
         onTeamOpen={() => handleMainTabChange("team")}
         listingsCrmUrl="https://node-panel-hq.com/"
