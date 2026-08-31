@@ -45,17 +45,27 @@ import {
   normalizeExpense,
   normalizeExpenseCenter,
   normalizeFund,
+  normalizeContribution,
   readEditableMoneyValue,
   shiftMonth,
 } from "../utils/expensesUtils";
+import ContributionsLedger from "./ContributionsLedger";
 
 const VIEWS = [
   ["overview", "Обзор"],
   ["calendar", "Календарь"],
   ["registry", "Реестр"],
   ["budget", "Бюджет"],
+  ["contributions", "Вклады команды"],
 ];
 const LOCAL_BACKUP_FORMAT = "supersus-expense-backup-v1";
+
+function getInitialExpenseView() {
+  if (typeof window === "undefined") return "overview";
+  return new URL(window.location.href).searchParams.get("board") === "contributions"
+    ? "contributions"
+    : "overview";
+}
 
 function readLocalExpenseBackup() {
   try {
@@ -181,7 +191,7 @@ function downloadExpensesCsv(expenses) {
 
 function ExpensesBoard() {
   const [center, setCenter] = useState(() => normalizeExpenseCenter(defaultExpenseCenter));
-  const [view, setView] = useState("overview");
+  const [view, setView] = useState(getInitialExpenseView);
   const [selectedMonth, setSelectedMonth] = useState(() => getMonthKey(getTodayInputDate()));
   const [selectedDate, setSelectedDate] = useState(getTodayInputDate());
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -336,6 +346,20 @@ function ExpensesBoard() {
   useLayoutEffect(() => {
     centerRef.current = center;
   }, [center]);
+
+  useEffect(() => {
+    function syncExpenseView(event) {
+      const boardId = event?.detail?.boardId || new URL(window.location.href).searchParams.get("board");
+      setView(event?.detail?.expenseView || (boardId === "contributions" ? "contributions" : "overview"));
+    }
+
+    window.addEventListener("popstate", syncExpenseView);
+    window.addEventListener("supersus:routechange", syncExpenseView);
+    return () => {
+      window.removeEventListener("popstate", syncExpenseView);
+      window.removeEventListener("supersus:routechange", syncExpenseView);
+    };
+  }, []);
 
   async function drainCenterSaves() {
     if (isSavingRef.current) return;
@@ -630,6 +654,39 @@ function ExpensesBoard() {
     ));
   }
 
+  function saveContribution(contribution, contributionId) {
+    commitCenter((current) => {
+      const normalized = normalizeContribution({
+        ...contribution,
+        participant: contribution.participant.trim(),
+        updatedAt: new Date().toISOString(),
+      });
+      const contributions = contributionId
+        ? current.contributions.map((item) => (item.id === contributionId ? normalized : item))
+        : [normalized, ...current.contributions];
+      return appendActivity(
+        { ...current, contributions },
+        contributionId ? "contribution-updated" : "contribution-created",
+        normalized.participant,
+        `${normalized.amount.toLocaleString("ru-RU")} · актуально на ${formatDate(normalized.asOfDate)}`,
+      );
+    });
+  }
+
+  function deleteContribution(contributionId) {
+    const contribution = center.contributions.find((item) => item.id === contributionId);
+    if (!contribution || !window.confirm(`Удалить запись о вкладе «${contribution.participant}»?`)) return;
+    commitCenter((current) => appendActivity(
+      {
+        ...current,
+        contributions: current.contributions.filter((item) => item.id !== contributionId),
+      },
+      "contribution-deleted",
+      contribution.participant,
+      contribution.amount.toLocaleString("ru-RU"),
+    ));
+  }
+
   function updateBudget(category, patch) {
     commitCenter((current) => {
       const index = current.budgets.findIndex(
@@ -673,13 +730,26 @@ function ExpensesBoard() {
     }));
   }
 
+  function selectView(nextView) {
+    setView(nextView);
+    const url = new URL(window.location.href);
+    const currentBoardId = url.searchParams.get("board");
+    if (nextView !== "contributions" && currentBoardId !== "contributions") return;
+    url.searchParams.delete("b");
+    url.searchParams.delete("view");
+    const boardId = nextView === "contributions" ? "contributions" : "expenses";
+    url.searchParams.set("board", boardId);
+    window.history.pushState({}, "", url);
+    window.dispatchEvent(new CustomEvent("supersus:routechange", { detail: { boardId, expenseView: nextView } }));
+  }
+
   return (
     <section className="analytics-expenses">
       <header className="analytics-expenses-hero analytics-surface">
         <div>
           <span className="analytics-kicker">SuperSUS / Финансы</span>
-          <h2>Центр расходов</h2>
-          <p>План, факт, обязательные платежи и календарь проекта в одном рабочем контуре.</p>
+          <h2>{view === "contributions" ? "Вклады команды" : "Центр расходов"}</h2>
+          <p>{view === "contributions" ? "Простой внутренний учёт: участник, текущая сумма и дата актуальности." : "План, факт, обязательные платежи и календарь проекта в одном рабочем контуре."}</p>
         </div>
         <div className="analytics-expenses-hero-actions">
           <span
@@ -704,15 +774,17 @@ function ExpensesBoard() {
               {isLockingFinance ? "Закрываю..." : "Выйти"}
             </button>
           ) : null}
-          <button type="button" className="analytics-expenses-add" disabled={!isLoaded} onClick={() => openNewExpense()}>
-            + Добавить расход
-          </button>
+          {view !== "contributions" ? (
+            <button type="button" className="analytics-expenses-add" disabled={!isLoaded} onClick={() => openNewExpense()}>
+              + Добавить расход
+            </button>
+          ) : null}
         </div>
       </header>
 
-      <nav className="analytics-expenses-nav analytics-surface" aria-label="Разделы расходов">
+      <nav className="analytics-expenses-nav analytics-surface" aria-label="Разделы финансового центра">
         {VIEWS.map(([id, label]) => (
-          <button key={id} type="button" className={view === id ? "is-active" : ""} onClick={() => setView(id)}>
+          <button key={id} type="button" className={view === id ? "is-active" : ""} onClick={() => selectView(id)}>
             {label}
           </button>
         ))}
@@ -1197,6 +1269,14 @@ function ExpensesBoard() {
             </div>
           </aside>
         </div>
+      ) : null}
+
+      {view === "contributions" && isLoaded ? (
+        <ContributionsLedger
+          contributions={center.contributions}
+          onSave={saveContribution}
+          onDelete={deleteContribution}
+        />
       ) : null}
 
       {isEditorOpen ? (
