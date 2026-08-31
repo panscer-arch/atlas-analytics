@@ -135,6 +135,34 @@ function iconPaths(name) {
       );
     case "action":
       return <path d="M5 12h14M13 6l6 6-6 6" />;
+    case "refresh":
+      return (
+        <>
+          <path d="M19 8a7 7 0 1 0 1 5" />
+          <path d="M19 4v4h-4" />
+        </>
+      );
+    case "notify":
+      return (
+        <>
+          <path d="M7 10a5 5 0 0 1 10 0c0 5 2 5 2 7H5c0-2 2-2 2-7" />
+          <path d="M10 20h4" />
+        </>
+      );
+    case "search":
+      return (
+        <>
+          <circle cx="11" cy="11" r="6" />
+          <path d="m16 16 4 4" />
+        </>
+      );
+    case "empty":
+      return (
+        <>
+          <rect x="5" y="6" width="14" height="12" rx="2" />
+          <path d="M9 10h6M9 14h4" />
+        </>
+      );
     default:
       return <circle cx="12" cy="12" r="7" />;
   }
