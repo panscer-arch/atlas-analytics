@@ -28,10 +28,11 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadServerContentResult, saveServerContent } from "../services/contentStore";
 import { hydrateSharedContent } from "../utils/sharedContentMigration";
 import "../styles/teamGraph.css";
+const TeamOffice = lazy(() => import("./TeamOffice"));
 
 const STORAGE_KEY = "supersus.teamGraph.v3";
 
@@ -205,7 +206,7 @@ function TeamGraphBoard() {
   const [saveState, setSaveState] = useState("Загружаю...");
   const [isHydrated, setIsHydrated] = useState(false);
   const [flowInstance, setFlowInstance] = useState(null);
-  const [viewMode, setViewMode] = useState("people");
+  const [viewMode, setViewMode] = useState(() => new URLSearchParams(window.location.search).get("view") === "office" ? "office" : "people");
   const saveTimerRef = useRef(0);
   const skipHydrationSaveRef = useRef(true);
 
@@ -466,6 +467,7 @@ function TeamGraphBoard() {
         <div className="team-graph-view-switch" role="tablist" aria-label="Режим отображения команды">
           <button type="button" className={viewMode === "people" ? "is-active" : ""} onClick={() => setViewMode("people")} role="tab" aria-selected={viewMode === "people"}><PanelsTopLeft size={15} /> По людям</button>
           <button type="button" className={viewMode === "map" ? "is-active" : ""} onClick={() => setViewMode("map")} role="tab" aria-selected={viewMode === "map"}><Network size={15} /> Карта связей</button>
+          <button type="button" className={viewMode === "office" ? "is-active" : ""} onClick={() => setViewMode("office")} role="tab" aria-selected={viewMode === "office"}><BriefcaseBusiness size={15} /> Офис</button>
         </div>
         <div className="team-graph-toolbar-actions">
           <button type="button" onClick={() => setCreateMode("member")}><UserRound size={16} /> Участник</button>
@@ -492,6 +494,7 @@ function TeamGraphBoard() {
         </form>
       ) : null}
 
+      {viewMode === "office" ? <Suspense fallback={<p>Открываю офис…</p>}><TeamOffice members={members} projectIdsByMember={projectIdsByMember} projectById={projectById} /></Suspense> : null}
       {viewMode === "people" ? (
         <div className="team-responsibility-view">
           <div className="team-responsibility-heading">
@@ -541,7 +544,7 @@ function TeamGraphBoard() {
             ) : <p>У каждого проекта есть ответственный.</p>}
           </section>
         </div>
-      ) : <div className="team-graph-workspace">
+      ) : viewMode === "map" ? <div className="team-graph-workspace">
         <div className="team-graph-canvas" aria-label="Карта команды и проектов">
           <ReactFlow
             nodes={displayNodes}
@@ -646,7 +649,7 @@ function TeamGraphBoard() {
             </div>
           )}
         </aside>
-      </div>}
+      </div> : null}
     </section>
   );
 }
