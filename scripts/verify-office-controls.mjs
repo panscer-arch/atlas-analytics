@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+const layout=await import('../src/modules/analytics/utils/officeLayout.js').catch(()=>({}));
+assert.equal(typeof layout.actionTarget,'function','Office action destinations must exist');
+assert.deepEqual(layout.actionTarget('work',0),{x:-8.5,z:-5.7});
+assert.equal(layout.poseAt('work',{x:0,z:9},0),'idle','Do not sit before arriving');
+assert.equal(layout.poseAt('work',{x:-8.5,z:-5.7},0),'work');
+assert.equal(layout.poseAt('meeting',layout.actionTarget('meeting',0),0),'meeting');
+const obstacle=[{x:0,z:0,w:2,d:2}];
+const route=layout.findOfficePath({x:0,z:3},{x:0,z:-3},obstacle);
+assert(route.length>0,'Find route around furniture');
+assert(route.every(p=>!layout.isOfficeBlocked(p.x,p.z,obstacle)));
+assert.deepEqual(layout.findOfficePath({x:0,z:3},{x:0,z:0},obstacle),[],'Reject blocked destination');
+assert.deepEqual(layout.findOfficePath({x:0,z:3},{x:100,z:0},[]),[]);
+console.log('Office controls: destinations, arrival poses and obstacle routing passed.');

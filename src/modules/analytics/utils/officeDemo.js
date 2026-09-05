@@ -3,6 +3,11 @@ export function avatarTraits(label='') {
   return {beard:/^(vasya|вася)$/.test(name), bald:/^(gem|гем|гема)$/.test(name), glasses:/^(gem|гем|гема)$/.test(name), hookah:name==='иванов', asian:name==='китаец'};
 }
 export const activityNames={work:'Работает',eat:'Обедает',sleep:'Спит',rest:'Отдыхает',meeting:'В переговорке',walk:'Гуляет',hookah:'Отдыхает у кальяна'};
+function corridorWalk(seconds,index){
+  const points=[[7,-9],[8.4,-9],[8.4,1],[7,1]],segments=points.map((p,i)=>({from:p,to:points[(i+1)%4],duration:Math.hypot(p[0]-points[(i+1)%4][0],p[1]-points[(i+1)%4][1])/.8+2}));
+  let t=(seconds+(index>=8?17:0))%segments.reduce((sum,s)=>sum+s.duration,0);
+  for(const s of segments){if(t>s.duration){t-=s.duration;continue;}const progress=Math.min(1,t/(s.duration-2));return {x:s.from[0]+(s.to[0]-s.from[0])*progress,z:s.from[1]+(s.to[1]-s.from[1])*progress,facing:Math.atan2(s.to[0]-s.from[0],s.to[1]-s.from[1]),walking:progress<1};}
+}
 // Pure, local-only animation data. Never submitted to the presence API.
 export function demoPeople(members,seconds) {
   return members.slice(0,16).map((m,i)=>{
@@ -14,10 +19,7 @@ export function demoPeople(members,seconds) {
     if(activity==='meeting'){x=i%2?13.5:10.5;z=-7.7+Math.floor(i/8)*1.3;facing=x>12?-Math.PI/2:Math.PI/2;}
     if(activity==='sleep'||activity==='rest'){x=13.2;z=3.7+(i%8===3?2.4:0);y=.65;facing=Math.PI/2; if(i>=8){x=i%8===3?12:9;z=8.7;}}
     if(activity==='hookah'){x=10;z=3.4;facing=.6;}
-    if(activity==='walk'){
-      const t=(seconds*.7+i*2)%20;
-      x=7.3+(i>=8?1:0);z=t<10?-9+t:11-t;facing=t<10?0:Math.PI;
-    }
-    return {memberId:m.id,demo:true,activity,x,z,y,facing,status:activity==='work'?'focus':activity==='meeting'?'meeting':'break',task:activityNames[activity]};
+    const walk=activity==='walk'?corridorWalk(seconds,i):{};
+    return {memberId:m.id,demo:true,activity,x,z,y,facing,...walk,status:activity==='work'?'focus':activity==='meeting'?'meeting':'break',task:activityNames[activity]};
   });
 }

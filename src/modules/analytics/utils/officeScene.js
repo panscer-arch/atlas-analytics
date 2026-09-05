@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { avatarTraits } from './officeDemo';
+import { deskPosition, poseAt, findOfficePath } from './officeLayout';
 
-export const deskPosition = (index) => ({ x: -8.5 + (index % 4) * 4.1, z: -6.8 + Math.floor(index / 4) * 3.55 });
+export { deskPosition } from './officeLayout';
 const palette = ['#ec905d', '#679caf', '#b191cc', '#7da88f', '#dfb45f', '#cc8193'];
 
 export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
@@ -17,7 +18,8 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 150);
   let angle = Math.PI / 4, distance = 38;
   const target = new THREE.Vector3(0, 0, 0);
-  const cameraUpdate = () => { const d=distance*Math.max(1,1.25/camera.aspect); camera.position.set(Math.sin(angle) * d, d * .83, Math.cos(angle) * d); camera.lookAt(target); };
+  const cameraUpdate = () => { const d=distance*Math.max(1,1.25/camera.aspect); camera.position.set(target.x+Math.sin(angle)*d,d*.83,target.z+Math.cos(angle)*d); camera.lookAt(target); };
+  let focusId='',paused=false,animationTime=0;
   cameraUpdate();
   scene.add(new THREE.HemisphereLight('#fff7df', '#80958b', 2.4));
   const sun = new THREE.DirectionalLight('#ffefce', 3.3);
@@ -89,6 +91,7 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
   // Glass meeting area on the right and a lounge near the entrance.
   box(5.3, .05, 7.6, 12, .13, -6.5, '#bccac3');
   box(.09, 2.6, 7, 9.35, 1.35, -6.7, '#a9bfb2');
+  colliders.push({x:9.35,z:-6.7,w:.65,d:7.5});
   box(2.05, .2, 3.7, 12, 1.12, -6.5, '#d9bb91');
   colliders.push({ x: 12, z: -6.5, w: 2.5, d: 4 });
   for (const z of [-7.7, -6.4, -5.1]) for (const x of [10.5, 13.5]) {
@@ -99,12 +102,12 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
   box(1, .56, 3.7, 13.25, .48, 5, '#b67754');
   box(.22, 1, 3.7, 13.8, .7, 5, '#ad6e4c');
   box(2.1, .15, 1.25, 11.15, .65, 5, '#f0dfc5');
-  colliders.push({x: 12, z: 5, w: 4.5, d: 4.4});
+  colliders.push({x:11.15,z:5,w:2.6,d:1.75},{x:13.65,z:5,w:1.4,d:4.2});
   box(2.4, 1.25, .7, 11.4, .7, -.2, '#c4a481');
   box(.65, .65, .48, 11.9, 1.62, -.2, '#374e47');
   for (const p of [[-12,-10],[-12,10],[7,-10],[8,9],[14,10],[14,-10]]) plant(...p);
   const demoDecor=new THREE.Group();scene.add(demoDecor);demoDecor.visible=false;
-  for(const x of [9,12]){box(1.2,.5,2.2,x,.35,8.7,'#b67754',demoDecor);box(1.15,.15,.55,x,.68,7.85,'#f3dfbd',demoDecor);}
+  for(const x of [9,12]){box(1.2,.5,2.2,x,.35,8.7,'#b67754');box(1.15,.15,.55,x,.68,7.85,'#f3dfbd');colliders.push({x,z:8.3,w:1.7,d:1.6});}
   // Ivanov's hookah: glass base, metal stem, bowl and curved hose.
   ball(.25,10.8,.35,3.5,'#659fa3',demoDecor);
   box(.08,.85,.08,10.8,.9,3.5,'#c3b388',demoDecor);
@@ -138,28 +141,10 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
     group.traverse(m => { m.userData.memberId=memberId; });
     scene.add(group); return {group, body, head, hair, legs, arms, ring, food, dest:new THREE.Vector3(), status:'available'};
   }
-  const blocked = (x,z) => x < -12.5 || x > 14.5 || z < -10.5 || z > 10.5 || colliders.some(c=>Math.abs(x-c.x)<c.w/2 && Math.abs(z-c.z)<c.d/2);
   function pathTo(start, end) {
-    const step = .5;
-    const key=(x,z)=>`${x},${z}`;
-    const sx=Math.round(start.x/step), sz=Math.round(start.z/step), ex=Math.round(end.x/step), ez=Math.round(end.z/step);
-    if(blocked(ex*step,ez*step)) return [];
-    const queue=[[sx,sz]], previous=new Map([[key(sx,sz),null]]);
-    for(let i=0;i<queue.length && i<5000;i++) {
-      const [x,z]=queue[i];
-      if(x===ex && z===ez) {
-        const result=[]; let at=key(x,z);
-        while(previous.get(at)) { const [px,pz]=at.split(',').map(Number); result.unshift(new THREE.Vector3(px*step,0,pz*step)); at=previous.get(at); }
-        return result;
-      }
-      for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-        const nx=x+dx,nz=z+dz,k=key(nx,nz);
-        if(!previous.has(k)&&!blocked(nx*step,nz*step)){previous.set(k,key(x,z));queue.push([nx,nz]);}
-      }
-    }
-    return [];
+    return findOfficePath(start,end,colliders).map(p=>new THREE.Vector3(p.x,0,p.z));
   }
-  function walk(x,z) { const me=avatars.get(myId); if(me) route=pathTo(me.group.position,{x,z}); }
+  function walk(x,z) { const me=avatars.get(myId); if(!me)return false;route=pathTo(me.group.position,{x,z});return route.length>0||Math.hypot(me.group.position.x-x,me.group.position.z-z)<.65; }
   const ray = new THREE.Raycaster(), pointer = new THREE.Vector2();
   function click(event) {
     const rect=renderer.domElement.getBoundingClientRect();
@@ -173,7 +158,8 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
   const resize=new ResizeObserver(()=> {const {width,height}=host.getBoundingClientRect(); if(!width||!height)return;renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();cameraUpdate();}); resize.observe(host);
   const labelAt=(id,x,y,z,online)=>{const p=new THREE.Vector3(x,y,z).project(camera);return {id,x:(p.x+1)*host.clientWidth/2,y:(1-p.y)*host.clientHeight/2,online,visible:p.z<1};};
   function frame(now) {
-    const dt=Math.min((now-lastTime)/1000,.05); lastTime=now;
+    const dt=Math.min((now-lastTime)/1000,.05); lastTime=now;if(!paused&&!reduced)animationTime+=dt*1000;
+    if(focusId){const a=avatars.get(focusId);const index=members.findIndex(m=>m.id===focusId);const p=a?.group.position||deskPosition(Math.max(0,index));target.lerp(new THREE.Vector3(p.x,0,p.z),Math.min(1,dt*5));cameraUpdate();}
     const labels=[];
     for(const [id,a] of avatars) {
       const isMe=id===myId;
@@ -181,30 +167,34 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
         const next=route[0], delta=next.clone().sub(a.group.position), distance=delta.length();
         if(distance<.08)route.shift();else {a.group.position.add(delta.normalize().multiplyScalar(Math.min(dt*3.6,distance)));a.group.rotation.y=Math.atan2(delta.x,delta.z);}
       } else if(!isMe) a.group.position.lerp(a.dest,Math.min(1,dt*8));
-      const moving=a.demo?a.activity==='walk':isMe?route.length>0:a.group.position.distanceTo(a.dest)>.08;
-      const desk=deskPosition(members.findIndex(m=>m.id===id));
-      const seated=a.demo?['work','eat','meeting','hookah'].includes(a.activity):!moving&&a.status==='focus'&&Math.hypot(a.group.position.x-desk.x,a.group.position.z-desk.z-1.1)<.65;
+      const moving=a.demo?a.activity==='walk'&&a.walking!==false:isMe?route.length>0:a.group.position.distanceTo(a.dest)>.08;
+      const activity=a.demo?a.activity:poseAt(a.activity||(a.status==='focus'?'work':'idle'),a.group.position,members.findIndex(m=>m.id===id));
+      const seated=!moving&&['work','eat','meeting','rest','hookah'].includes(activity);
       const lying=a.demo&&['sleep','rest'].includes(a.activity);
       a.group.rotation.z=lying?Math.PI/2:0;
       a.group.position.y=lying?1.05:0;
-      a.food.visible=a.demo&&a.activity==='eat';
+      a.food.visible=activity==='eat';
       a.body.position.y=seated?.78:1.05;a.head.position.y=seated?1.3:1.57;a.hair.position.y=seated?1.54:1.81;
       if(seated)a.group.rotation.y=Math.PI;
       if(a.demo)a.group.rotation.y=a.facing;
-      a.legs.forEach((leg,i)=>leg.rotation.x=seated?-1.25:moving&&!reduced?Math.sin(now*.013+i*Math.PI)*.5:0);
-      a.arms.forEach((arm,i)=>{arm.position.y=seated?.82:1.03;arm.rotation.x=seated?-.8:moving&&!reduced?Math.sin(now*.013+i*Math.PI)*-.4:0;});
-      if(a.demo&&!reduced){
-        if(a.activity==='work')a.arms.forEach((arm,i)=>arm.rotation.x=-.8+Math.sin(now*.009+i)*.1);
-        if(a.activity==='eat')a.arms[1].rotation.x=-1+Math.sin(now*.002)*.4;
-        if(a.activity==='meeting')a.arms[0].rotation.z=.3+Math.sin(now*.002)*.25;
+      else if(seated&&activity==='meeting')a.group.rotation.y=a.group.position.x>12?-Math.PI/2:Math.PI/2;
+      a.legs.forEach((leg,i)=>leg.rotation.x=seated?-1.25:moving&&!reduced?Math.sin(animationTime*.013+i*Math.PI)*.5:0);
+      a.arms.forEach((arm,i)=>{arm.position.y=seated?.82:1.03;arm.rotation.x=seated?-.8:moving&&!reduced?Math.sin(animationTime*.013+i*Math.PI)*-.4:0;});
+      if(!reduced){
+        if(activity==='work')a.arms.forEach((arm,i)=>arm.rotation.x=-.8+Math.sin(animationTime*.009+i)*.1);
+        if(activity==='eat')a.arms[1].rotation.x=-1+Math.sin(animationTime*.002)*.4;
+        if(activity==='meeting')a.arms[0].rotation.z=.3+Math.sin(animationTime*.002)*.25;
         else a.arms[0].rotation.z=0;
-        if(lying)a.body.scale.z=1+Math.sin(now*.0015)*.03;
+        if(lying)a.body.scale.z=1+Math.sin(animationTime*.0015)*.03;
       }
       a.ring.visible=id===selectedId||isMe;
       if(isMe && now-lastPublish>300) {onMove({x:a.group.position.x,z:a.group.position.z});lastPublish=now;}
       labels.push(labelAt(id,a.group.position.x,2.25,a.group.position.z,true));
     }
     for(let i=0;i<deskCount;i++) if(!avatars.has(members[i].id)) {const p=deskPosition(i);labels.push(labelAt(members[i].id,p.x,2.2,p.z,false));}
+    const occupied=[];
+    labels.sort((a,b)=>(b.id===selectedId)-(a.id===selectedId));
+    for(const label of labels){const width=50+(members.find(m=>m.id===label.id)?.data.label.length||0)*4;const hit=occupied.some(p=>Math.abs(p.x-label.x)<(p.width+width)/2&&Math.abs(p.y-label.y)<24);if(hit&&label.id!==selectedId)label.visible=false;else occupied.push({...label,width});}
     onLabels(labels);renderer.render(scene,camera);raf=requestAnimationFrame(frame);
   }
   raf=requestAnimationFrame(frame);
@@ -218,10 +208,13 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
         if(!avatars.has(p.memberId)){const a=avatar(p.memberId);a.group.position.set(p.x,0,p.z);avatars.set(p.memberId,a);}
         avatars.get(p.memberId).dest.set(p.x,0,p.z);
         avatars.get(p.memberId).status=p.status;
-        Object.assign(avatars.get(p.memberId),{demo:!!p.demo,activity:p.activity,facing:p.facing||0});
+        Object.assign(avatars.get(p.memberId),{demo:!!p.demo,activity:p.activity,facing:p.facing||0,walking:p.walking});
       }
     },
     walk,
+    focus(id){focusId=id;distance=25;cameraUpdate();},
+    reset(){focusId='';target.set(0,0,0);distance=38;angle=Math.PI/4;cameraUpdate();},
+    pause(value){paused=value;},
     rotate(delta){angle+=delta;cameraUpdate();},
     zoom(delta){distance=Math.max(25,Math.min(56,distance+delta));cameraUpdate();},
     dispose(){cancelAnimationFrame(raf);resize.disconnect();renderer.domElement.removeEventListener('click',click);scene.traverse(m=>m.geometry?.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.domElement.remove();},

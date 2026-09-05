@@ -19,7 +19,7 @@ export function createOfficePresenceHandler({ authorize, getMemberIds, now = Dat
     };
     if (req.headers.origin && !['https://supersussystem.com', 'https://www.supersussystem.com'].includes(req.headers.origin)) return send(403,{error:'origin_not_allowed'});
     const owner = await authorize(req);
-    if (!owner) return send(401,{error:'Войдите в SuperSUS, чтобы открыть офис.'});
+    if (!owner) return send(401,{code:'auth_required',error:'Войдите в SuperSUS, чтобы открыть офис.'});
     prune();
     if (!buckets.has(owner)) {
       if (buckets.size >= 2000) return send(429,{error:'Попробуйте позже.'});
@@ -45,14 +45,17 @@ export function createOfficePresenceHandler({ authorize, getMemberIds, now = Dat
         sessions.set(token,{token,owner,memberId:body.memberId,x:0,z:9,status:'available',task:'',seen:now()});
         return send(200,{token,people:people()});
       }
-      if (!['update','leave'].includes(body.action)) return send(400,{error:'invalid_action'});
+      if (!['update','leave','resume'].includes(body.action)) return send(400,{error:'invalid_action'});
       const item=sessions.get(body.token);
-      if(!item||item.owner!==owner)return send(401,{error:'Сессия офиса завершена. Войдите снова.'});
+      if(!item||item.owner!==owner)return send(401,{code:'session_expired',error:'Сессия офиса завершена. Войдите снова.'});
+      if(body.action==='resume'){item.seen=now();return send(200,{memberId:item.memberId,people:people()});}
       if(body.action==='leave'){sessions.delete(body.token);return send(200,{people:people()});}
       if(!Number.isFinite(body.x)||!Number.isFinite(body.z))return send(400,{error:'invalid_position'});
       if(!['available','focus','meeting','break'].includes(body.status))return send(400,{error:'invalid_status'});
       if(typeof body.task!=='string'||body.task.length>140)return send(400,{error:'invalid_task'});
+      if(body.activity!==undefined&&!['idle','work','eat','meeting','rest'].includes(body.activity))return send(400,{error:'invalid_activity'});
       Object.assign(item,{x:Math.max(-12.5,Math.min(14.5,body.x)),z:Math.max(-10.5,Math.min(10.5,body.z)),status:body.status,task:body.task,seen:now()});
+      item.activity=body.activity||'idle';
       return send(200,{people:people()});
     }catch{return send(400,{error:'invalid_request'});}
   };

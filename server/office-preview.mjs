@@ -5,7 +5,7 @@ export function officePreview() {
   const sessions = new Map();
   const publicView = () => {
     const now = Date.now();
-    for (const [token, item] of sessions) if (now - item.seen > 20000) sessions.delete(token);
+    for (const [token, item] of sessions) if (now - item.seen > 90000) sessions.delete(token);
     return [...sessions.values()].map(({ token, ...item }) => item);
   };
   return {
@@ -46,14 +46,16 @@ export function officePreview() {
             return send(200, { token, people: publicView() });
           }
           const item = sessions.get(body.token);
-          if (!item) return send(401, { error: 'Сессия завершена. Войдите снова.' });
+          if (!item) return send(401, { code:'session_expired', error: 'Сессия завершена. Войдите снова.' });
+          if(body.action==='resume'){item.seen=Date.now();return send(200,{memberId:item.memberId,people:publicView()});}
           if (body.action === 'leave') { sessions.delete(body.token); return send(200, { people: publicView() }); }
           if (Number.isFinite(body.x) && Number.isFinite(body.z)) {
-            item.x = Math.max(-12, Math.min(12, body.x));
+            item.x = Math.max(-12.5, Math.min(14.5, body.x));
             item.z = Math.max(-10, Math.min(10, body.z));
           }
           if (['available', 'focus', 'meeting', 'break'].includes(body.status)) item.status = body.status;
           if (typeof body.task === 'string') item.task = body.task.slice(0, 140);
+          if(['idle','work','eat','meeting','rest'].includes(body.activity))item.activity=body.activity;
           item.seen = Date.now();
           return send(200, { people: publicView() });
         } catch { send(400, { error: 'request' }); }

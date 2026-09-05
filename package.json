@@ -28,7 +28,7 @@
     "test:ga4": "node scripts/verify-google-analytics.mjs",
     "test:products": "node scripts/verify-products-registry.mjs",
     "test:shared-content": "node scripts/verify-shared-content-sync.mjs",
-    "test:office": "node scripts/verify-office-presence.mjs",
+    "test:office": "node scripts/verify-office-presence.mjs && node scripts/verify-office-controls.mjs && node scripts/verify-office-session.mjs && node scripts/verify-office-demo.mjs",
     "test:listings-crm": "node scripts/verify-listings-team-crm.mjs",
     "check:listings-crm": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules node scripts/check-listings-team-crm-page.mjs",
     "preview": "vite preview",
