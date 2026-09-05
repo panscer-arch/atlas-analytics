@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { readOfficeSession, saveOfficeSession } from '../src/modules/analytics/utils/officeSession.js';
+const entries=new Map(),storage={getItem:k=>entries.get(k),setItem:(k,v)=>entries.set(k,v),removeItem:k=>entries.delete(k)};
+assert.equal(readOfficeSession(storage),null);
+const session={token:'a'.repeat(48),memberId:'digitex'};
+saveOfficeSession(storage,session);assert.deepEqual(readOfficeSession(storage),session);
+saveOfficeSession(storage,null);assert.equal(readOfficeSession(storage),null);
+assert.equal(readOfficeSession({getItem:()=>'{broken'}),null);
+assert.equal(readOfficeSession({getItem:()=>JSON.stringify({token:'bad',memberId:'x'})}),null);
+assert.equal(readOfficeSession(null),null);assert.doesNotThrow(()=>saveOfficeSession(null,session));
+console.log('Office session: refresh cache, clearing, invalid data and unavailable storage passed.');

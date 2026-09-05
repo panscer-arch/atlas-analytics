@@ -16,4 +16,6 @@ assert(initial.some((p,i)=>p.activity!==demo.demoPeople(members,45)[i].activity)
 assert(initial.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.z)));
 assert.deepEqual(demo.demoPeople([],0),[]);
 assert.equal(demo.demoPeople([...members,...members],0).length,16);
+const walkerPositions=Array.from({length:150},(_,i)=>demo.demoPeople(members,i)[5]);
+assert(new Set(walkerPositions.map(p=>p.x.toFixed(1))).size>2,'Demo walkers should turn along a route, not pace on one line');
 console.log('Office demo: roster, isolation, traits, activities and movement passed.');

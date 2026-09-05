@@ -28,6 +28,14 @@ try {
   assert.equal(joined.data.people[0].token,undefined);
   assert.equal(joined.data.people[0].owner,undefined);
   assert.equal((await call({action:'join',memberId:'member-a'})).status,409);
+  const resumed=await call({action:'resume',token});
+  assert.equal(resumed.status,200,'Refresh must resume the existing presence');
+  assert.equal(resumed.data.people.length,1);
+  assert.equal(resumed.data.memberId,'member-a');
+  assert.equal((await call({action:'resume',token},'session=b')).status,401);
+  assert.equal((await call({action:'update',token,x:0,z:0,status:'break',task:'',activity:'invented'})).status,400);
+  const lunch=await call({action:'update',token,x:0,z:0,status:'break',task:'Lunch',activity:'eat'});
+  assert.equal(lunch.data.people[0].activity,'eat','Activities must synchronize');
   assert.equal((await call({action:'leave',token},'session=b')).status,401);
   assert.equal((await call({action:'update',token,x:'bad',z:0,status:'focus',task:''})).status,400);
   assert.equal((await call({action:'update',token,x:0,z:0,status:'invented',task:''})).status,400);
