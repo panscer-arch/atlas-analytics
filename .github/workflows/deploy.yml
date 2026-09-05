@@ -41,6 +41,7 @@ jobs:
           npm ci
           npm run test:marketing-monitor
           npm run test:expenses
+          npm run test:office
           npm run test:telegram-memory
           npm run test:official-memory
           npm run test:hermes-voice
@@ -150,6 +151,7 @@ jobs:
           }
 
           scp_to_vps server/content-api.mjs /tmp/atlas-content-api.mjs
+          scp_to_vps server/office-presence.mjs /tmp/atlas-office-presence.mjs
           scp_to_vps server/google-analytics.mjs /tmp/atlas-google-analytics.mjs
           scp_to_vps server/instagram-parser.mjs /tmp/atlas-instagram-parser.mjs
           scp_to_vps server/agent-reach-parser.mjs /tmp/atlas-agent-reach-parser.mjs
@@ -192,6 +194,7 @@ jobs:
             sudo install -m 640 -o www-data -g www-data /tmp/atlas-listings-crm-initial.json /var/lib/atlas-analytics-content/atlas.analytics.listingsCrm.v1.json
           fi
           sudo mv /tmp/atlas-content-api.mjs /opt/atlas-content-api/content-api.mjs
+          sudo mv /tmp/atlas-office-presence.mjs /opt/atlas-content-api/office-presence.mjs
           sudo mv /tmp/atlas-google-analytics.mjs /opt/atlas-content-api/google-analytics.mjs
           sudo mv /tmp/atlas-instagram-parser.mjs /opt/atlas-content-api/instagram-parser.mjs
           sudo mv /tmp/atlas-agent-reach-parser.mjs /opt/atlas-content-api/agent-reach-parser.mjs

@@ -22,6 +22,7 @@ import {
 import { getGoogleAnalyticsOverview } from "./google-analytics.mjs";
 import { createProductsRequestHandler } from "./products/products-registry.mjs";
 import { createListingsCrmRequestHandler } from "./listings-crm/listings-crm.mjs";
+import { createOfficePresenceHandler } from "./office-presence.mjs";
 
 const PORT = Number(process.env.ATLAS_CONTENT_API_PORT || 8787);
 const STORE_DIR = process.env.ATLAS_CONTENT_STORE_DIR || "/var/lib/atlas-analytics-content";
@@ -4669,9 +4670,19 @@ const handleListingsCrmRequest = await createListingsCrmRequestHandler({
   authorize: hasMarketingWriteSession,
 });
 
+const handleOfficePresence = createOfficePresenceHandler({
+  authorize: async (request) => await hasMarketingWriteSession(request)
+    ? hashMarketingSession(parseCookies(request)[MARKETING_SESSION_COOKIE]) : null,
+  getMemberIds: async () => {
+    const graph = await readContent("supersus.teamGraph.v3", { nodes: [] });
+    return new Set((graph?.nodes || []).filter(node => node.type === "member").map(node => node.id));
+  },
+});
+
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+    if (await handleOfficePresence(request, response, url)) return;
 
     if (await handleListingsCrmRequest(request, response, url)) return;
     if (await handleProductsRequest(request, response, url)) return;

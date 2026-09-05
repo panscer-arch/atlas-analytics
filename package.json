@@ -28,6 +28,7 @@
     "test:ga4": "node scripts/verify-google-analytics.mjs",
     "test:products": "node scripts/verify-products-registry.mjs",
     "test:shared-content": "node scripts/verify-shared-content-sync.mjs",
+    "test:office": "node scripts/verify-office-presence.mjs",
     "test:listings-crm": "node scripts/verify-listings-team-crm.mjs",
     "check:listings-crm": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules node scripts/check-listings-team-crm-page.mjs",
     "preview": "vite preview",
@@ -52,6 +53,7 @@
     "react-dom": "^18.3.1",
     "recharts": "^2.15.3",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.185.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
