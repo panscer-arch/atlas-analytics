@@ -4,6 +4,7 @@ import { createOfficeScene, deskPosition } from '../utils/officeScene';
 import '../styles/teamOffice.css';
 
 const statuses = { available: 'В офисе', focus: 'Занят', meeting: 'На встрече', break: 'Перерыв' };
+const OFFICE_API = import.meta.env.DEV ? '/api/office' : '/api/content/office-presence';
 
 export default function TeamOffice({ members, projectIdsByMember, projectById }) {
   const host = useRef(null), scene = useRef(null), labels = useRef(null);
@@ -18,7 +19,7 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
   const online = new Map(people.map(p => [p.memberId,p]));
 
   async function request(body) {
-    const response = await fetch('/api/office', body ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) } : { cache:'no-store' });
+    const response = await fetch(OFFICE_API, body ? { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) } : { cache:'no-store', credentials:'include' });
     const data = await response.json();
     if(!response.ok) {const e=new Error(data.error||'Сервер офиса недоступен');e.status=response.status;throw e;}
     return data;
@@ -30,12 +31,12 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
         const data=await request(session.current ? {token:session.current,action:'update',...position.current,...state.current} : null);
         if(!cancelled){setPeople(data.people);setConnected(true);}
       } catch(e) {
-        if(!cancelled){setConnected(false);setPeople([]);if(e.status===401){session.current=null;setMyId('');setError(e.message);}}
+        if(!cancelled){setConnected(false);setPeople([]);setError(e.message);if(e.status===401){session.current=null;setMyId('');}}
       }
       if(!cancelled)timer=setTimeout(poll,800);
     };
     poll();
-    const leaveOnClose=()=>{if(session.current)navigator.sendBeacon('/api/office',new Blob([JSON.stringify({action:'leave',token:session.current})],{type:'application/json'}));};
+    const leaveOnClose=()=>{if(session.current)navigator.sendBeacon(OFFICE_API,new Blob([JSON.stringify({action:'leave',token:session.current})],{type:'application/json'}));};
     window.addEventListener('pagehide',leaveOnClose);
     return()=>{cancelled=true;clearTimeout(timer);leaveOnClose();session.current=null;window.removeEventListener('pagehide',leaveOnClose);};
   },[]);
@@ -66,7 +67,7 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
   }
   return <div className="team-office">
     <div className="office-topbar">
-      <div><span className="office-eyebrow">SUPERSUS / WORKSPACE</span><h3>Наш офис<span className="office-preview">Локальный прототип</span></h3></div>
+      <div><span className="office-eyebrow">SUPERSUS / WORKSPACE</span><h3>Наш офис<span className="office-preview">{import.meta.env.DEV ? 'Локальный прототип' : 'Бета · выбор своего профиля'}</span></h3></div>
       <div className="office-live"><i className={connected?'is-connected':''}/>{connected?`${people.length} в офисе`:'Нет связи'}</div>
     </div>
     <div className="office-workspace">
