@@ -796,6 +796,27 @@ jobs:
           fi
 
           for NGINX_FILE in $NGINX_FILES; do
+            if sudo grep -q 'server_name supersussystem.com' "$NGINX_FILE" && ! sudo grep -q 'location = /api/content/office-presence' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          marker = "    location /api/content/ {"
+          snippet = """    location = /api/content/office-presence {
+                  proxy_pass http://127.0.0.1:8787;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header Origin $http_origin;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 2k;
+              }
+
+          """
+          if marker not in text:
+              raise SystemExit("Missing content route for office presence")
+          open(path, "w", encoding="utf-8").write(text.replace(marker, snippet + marker, 1))
+          PY
+            fi
             if [ -n "$NGINX_FILE" ] && ! sudo grep -q 'location /api/products' "$NGINX_FILE"; then
               sudo python3 - "$NGINX_FILE" <<'PY'
           import sys
