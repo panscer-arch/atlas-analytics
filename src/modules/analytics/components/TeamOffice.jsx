@@ -22,6 +22,7 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
     const response = await fetch(OFFICE_API, body ? { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) } : { cache:'no-store', credentials:'include' });
     const data = await response.json();
     if(!response.ok) {const e=new Error(data.error||'Сервер офиса недоступен');e.status=response.status;throw e;}
+    if(!Array.isArray(data.people)) throw new Error('Сервер офиса подключается. Повторите через минуту.');
     return data;
   }
   useEffect(() => {
