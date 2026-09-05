@@ -4,6 +4,7 @@
 .office-topbar h3{font-size:25px;margin:6px 0 0;font-weight:600;display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:#263e33}
 .office-preview{font-size:10px;font-weight:500;letter-spacing:.15px;border:1px solid #d0d9cd;padding:4px 7px;border-radius:4px;color:#6e7b6e}
 .office-live{display:flex;gap:8px;align-items:center;font-size:12px;white-space:nowrap}
+.office-mode{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.office-mode button{font:inherit;font-size:11px;border:1px solid #cdd8ca;background:#fff;padding:8px;border-radius:5px;color:#395d48;cursor:pointer}.office-mode button[aria-pressed=true]{background:#395d48;color:white}.office-mode .office-live{flex-basis:100%;justify-content:flex-end}.office-entry[hidden],.office-sidebar [hidden]{display:none}
 .office-live i,.office-roster i,.office-name i{width:6px;height:6px;border-radius:50%;background:#9ca59a;display:inline-block;flex-shrink:0}
 .office-live i.is-connected,.office-roster i.is-online,.office-name.is-online i{background:#6a9d77;box-shadow:0 0 0 3px #70957b18}
 .office-workspace{display:grid;grid-template-columns:minmax(0,1fr) 280px}

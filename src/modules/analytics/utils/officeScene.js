@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { avatarTraits } from './officeDemo';
 
 export const deskPosition = (index) => ({ x: -8.5 + (index % 4) * 4.1, z: -6.8 + Math.floor(index / 4) * 3.55 });
 const palette = ['#ec905d', '#679caf', '#b191cc', '#7da88f', '#dfb45f', '#cc8193'];
@@ -102,23 +103,40 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
   box(2.4, 1.25, .7, 11.4, .7, -.2, '#c4a481');
   box(.65, .65, .48, 11.9, 1.62, -.2, '#374e47');
   for (const p of [[-12,-10],[-12,10],[7,-10],[8,9],[14,10],[14,-10]]) plant(...p);
+  const demoDecor=new THREE.Group();scene.add(demoDecor);demoDecor.visible=false;
+  for(const x of [9,12]){box(1.2,.5,2.2,x,.35,8.7,'#b67754',demoDecor);box(1.15,.15,.55,x,.68,7.85,'#f3dfbd',demoDecor);}
+  // Ivanov's hookah: glass base, metal stem, bowl and curved hose.
+  ball(.25,10.8,.35,3.5,'#659fa3',demoDecor);
+  box(.08,.85,.08,10.8,.9,3.5,'#c3b388',demoDecor);
+  box(.42,.05,.42,10.8,1.22,3.5,'#d6c39e',demoDecor);
+  ball(.12,10.8,1.37,3.5,'#875640',demoDecor);
+  const hoseCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(10.8,.9,3.5),new THREE.Vector3(11.25,.45,3.9),new THREE.Vector3(10.2,.3,4),new THREE.Vector3(10.1,.85,3.5)]);
+  demoDecor.add(new THREE.Mesh(new THREE.TubeGeometry(hoseCurve,20,.035,6,false),mat('#514940')));
 
   const avatars = new Map();
   let people = [], myId = '', selectedId = '', route = [], lastTime = performance.now(), lastPublish = 0, raf;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function avatar(memberId) {
     const index = Math.max(0, members.findIndex(m => m.id === memberId));
+    const traits=avatarTraits(members[index]?.data.label);
     const group = new THREE.Group();
     const body = box(.5, .62, .32, 0, 1.05, 0, palette[index % 6], group);
     const head=box(.37, .39, .35, 0, 1.57, 0, '#dfb18b', group);
     const hair=box(.4, .13, .38, 0, 1.81, -.015, '#4c4238', group);
+    hair.visible=!traits.bald;
+    if(traits.asian){hair.material=mat('#252c2b');box(.4,.18,.1,0,-.02,-.17,'#252c2b',head);}
+    for(const x of [-.085,.085])box(.045,.045,.018,x,.025,.18,'#363b33',head);
+    if(traits.beard){const beard=box(.3,.48,.17,0,-.3,.17,'#614933',head);beard.rotation.x=-.12;}
+    if(traits.glasses){for(const x of [-.11,.11]){box(.21,.19,.05,x,.025,.195,'#242f2c',head);box(.14,.12,.02,x,.025,.227,'#accac5',head);}box(.06,.025,.035,0,.04,.23,'#242f2c',head);}
+    const food=new THREE.Group();group.add(food);food.visible=false;
+    box(.38,.035,.3,.37,1.04,.31,'#fff3dd',food);ball(.1,.37,1.12,.31,'#d99c4b',food);
     const legs = [-.16,.16].map(x => box(.18, .52, .21, x, .47, 0, '#384d4c', group));
     const arms = [-.35,.35].map(x => box(.15, .53, .19, x, 1.03, 0, palette[index % 6], group));
     const ring = new THREE.Mesh(new THREE.RingGeometry(.5,.6,32), new THREE.MeshBasicMaterial({color:'#f09b54',side:THREE.DoubleSide}));
     ring.rotation.x = -Math.PI/2; ring.position.y=.16; group.add(ring);
     group.userData.memberId=memberId;
     group.traverse(m => { m.userData.memberId=memberId; });
-    scene.add(group); return {group, body, head, hair, legs, arms, ring, dest:new THREE.Vector3(), status:'available'};
+    scene.add(group); return {group, body, head, hair, legs, arms, ring, food, dest:new THREE.Vector3(), status:'available'};
   }
   const blocked = (x,z) => x < -12.5 || x > 14.5 || z < -10.5 || z > 10.5 || colliders.some(c=>Math.abs(x-c.x)<c.w/2 && Math.abs(z-c.z)<c.d/2);
   function pathTo(start, end) {
@@ -163,13 +181,25 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
         const next=route[0], delta=next.clone().sub(a.group.position), distance=delta.length();
         if(distance<.08)route.shift();else {a.group.position.add(delta.normalize().multiplyScalar(Math.min(dt*3.6,distance)));a.group.rotation.y=Math.atan2(delta.x,delta.z);}
       } else if(!isMe) a.group.position.lerp(a.dest,Math.min(1,dt*8));
-      const moving=isMe?route.length>0:a.group.position.distanceTo(a.dest)>.08;
+      const moving=a.demo?a.activity==='walk':isMe?route.length>0:a.group.position.distanceTo(a.dest)>.08;
       const desk=deskPosition(members.findIndex(m=>m.id===id));
-      const seated=!moving&&a.status==='focus'&&Math.hypot(a.group.position.x-desk.x,a.group.position.z-desk.z-1.1)<.65;
+      const seated=a.demo?['work','eat','meeting','hookah'].includes(a.activity):!moving&&a.status==='focus'&&Math.hypot(a.group.position.x-desk.x,a.group.position.z-desk.z-1.1)<.65;
+      const lying=a.demo&&['sleep','rest'].includes(a.activity);
+      a.group.rotation.z=lying?Math.PI/2:0;
+      a.group.position.y=lying?1.05:0;
+      a.food.visible=a.demo&&a.activity==='eat';
       a.body.position.y=seated?.78:1.05;a.head.position.y=seated?1.3:1.57;a.hair.position.y=seated?1.54:1.81;
       if(seated)a.group.rotation.y=Math.PI;
+      if(a.demo)a.group.rotation.y=a.facing;
       a.legs.forEach((leg,i)=>leg.rotation.x=seated?-1.25:moving&&!reduced?Math.sin(now*.013+i*Math.PI)*.5:0);
       a.arms.forEach((arm,i)=>{arm.position.y=seated?.82:1.03;arm.rotation.x=seated?-.8:moving&&!reduced?Math.sin(now*.013+i*Math.PI)*-.4:0;});
+      if(a.demo&&!reduced){
+        if(a.activity==='work')a.arms.forEach((arm,i)=>arm.rotation.x=-.8+Math.sin(now*.009+i)*.1);
+        if(a.activity==='eat')a.arms[1].rotation.x=-1+Math.sin(now*.002)*.4;
+        if(a.activity==='meeting')a.arms[0].rotation.z=.3+Math.sin(now*.002)*.25;
+        else a.arms[0].rotation.z=0;
+        if(lying)a.body.scale.z=1+Math.sin(now*.0015)*.03;
+      }
       a.ring.visible=id===selectedId||isMe;
       if(isMe && now-lastPublish>300) {onMove({x:a.group.position.x,z:a.group.position.z});lastPublish=now;}
       labels.push(labelAt(id,a.group.position.x,2.25,a.group.position.z,true));
@@ -181,12 +211,14 @@ export function createOfficeScene(host, members, onSelect, onMove, onLabels) {
   return {
     update(nextPeople, nextMyId, nextSelectedId) {
       people=nextPeople;myId=nextMyId;selectedId=nextSelectedId;
+      demoDecor.visible=people.some(p=>p.demo);
       const ids=new Set(people.map(p=>p.memberId));
       for(const [id,a] of avatars)if(!ids.has(id)){scene.remove(a.group);a.group.traverse(m=>m.geometry?.dispose());avatars.delete(id);}
       for(const p of people) {
         if(!avatars.has(p.memberId)){const a=avatar(p.memberId);a.group.position.set(p.x,0,p.z);avatars.set(p.memberId,a);}
         avatars.get(p.memberId).dest.set(p.x,0,p.z);
         avatars.get(p.memberId).status=p.status;
+        Object.assign(avatars.get(p.memberId),{demo:!!p.demo,activity:p.activity,facing:p.facing||0});
       }
     },
     walk,

@@ -1,22 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Coffee, LogIn, LogOut, Minus, Plus, Armchair, Users } from 'lucide-react';
 import { createOfficeScene, deskPosition } from '../utils/officeScene';
+import { demoPeople, activityNames } from '../utils/officeDemo';
 import '../styles/teamOffice.css';
 
 const statuses = { available: 'В офисе', focus: 'Занят', meeting: 'На встрече', break: 'Перерыв' };
+const presenceLabel=p=>p?(p.demo?activityNames[p.activity]:statuses[p.status]):'Не в сети';
 const OFFICE_API = import.meta.env.DEV ? '/api/office' : '/api/content/office-presence';
 
 export default function TeamOffice({ members, projectIdsByMember, projectById }) {
   const host = useRef(null), scene = useRef(null), labels = useRef(null);
   const session = useRef(null), position = useRef({ x: 0, z: 9 });
   const [people, setPeople] = useState([]), [myId, setMyId] = useState('');
+  const [demo, setDemo] = useState(true), [demoTime,setDemoTime] = useState(0);
+  const displayedPeople=demo?demoPeople(members,demoTime):people;
   const [choice, setChoice] = useState(''), [selected, setSelected] = useState('');
   const [status, setStatus] = useState('available'), [task, setTask] = useState('');
   const [error, setError] = useState(''), [connected, setConnected] = useState(false), [joining, setJoining] = useState(false);
   const state = useRef({ status, task }); state.current = { status, task };
   const person = members.find(m => m.id === selected) || members.find(m => m.id === myId);
-  const active = person && people.find(p => p.memberId === person.id);
-  const online = new Map(people.map(p => [p.memberId,p]));
+  const active = person && displayedPeople.find(p => p.memberId === person.id);
+  const online = new Map(displayedPeople.map(p => [p.memberId,p]));
+  useEffect(()=>{if(!demo||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return; const start=performance.now(); const timer=setInterval(()=>setDemoTime((performance.now()-start)/1000),100);return()=>clearInterval(timer);},[demo]);
 
   async function request(body) {
     const response = await fetch(OFFICE_API, body ? { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) } : { cache:'no-store', credentials:'include' });
@@ -26,6 +31,7 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
     return data;
   }
   useEffect(() => {
+    if(demo){setPeople([]);setMyId('');setError('');return;}
     let cancelled=false, timer;
     const poll=async()=>{
       try {
@@ -40,7 +46,7 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
     const leaveOnClose=()=>{if(session.current)navigator.sendBeacon(OFFICE_API,new Blob([JSON.stringify({action:'leave',token:session.current})],{type:'application/json'}));};
     window.addEventListener('pagehide',leaveOnClose);
     return()=>{cancelled=true;clearTimeout(timer);leaveOnClose();session.current=null;window.removeEventListener('pagehide',leaveOnClose);};
-  },[]);
+  },[demo]);
   const memberKey = members.map(m=>m.id).join('|');
   useEffect(()=>{
     if(!host.current)return;
@@ -51,7 +57,7 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
     }catch{setError('Браузер не смог открыть 3D. Попробуйте включить аппаратное ускорение.');}
     return()=>{scene.current?.dispose();scene.current=null;};
   },[memberKey]);
-  useEffect(()=>{scene.current?.update(people,myId,selected);},[people,myId,selected,memberKey]);
+  useEffect(()=>{scene.current?.update(displayedPeople,demo?'':myId,selected);},[people,myId,selected,memberKey,demo,demoTime]);
 
   async function join() {
     if(!choice||joining)return;setJoining(true);setError('');
@@ -68,8 +74,8 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
   }
   return <div className="team-office">
     <div className="office-topbar">
-      <div><span className="office-eyebrow">SUPERSUS / WORKSPACE</span><h3>Наш офис<span className="office-preview">{import.meta.env.DEV ? 'Локальный прототип' : 'Бета · выбор своего профиля'}</span></h3></div>
-      <div className="office-live"><i className={connected?'is-connected':''}/>{connected?`${people.length} в офисе`:'Нет связи'}</div>
+      <div><span className="office-eyebrow">SUPERSUS / WORKSPACE</span><h3>Наш офис<span className="office-preview">{demo?'Демо · анимация персонажей': 'Бета · реальные участники'}</span></h3></div>
+      <div className="office-mode"><button aria-pressed={demo} onClick={()=>setDemo(true)}>Демо</button><button aria-pressed={!demo} onClick={()=>setDemo(false)}>Реальные участники</button><span className="office-live">{demo?`${displayedPeople.length} персонажей`:connected?`${people.length} в офисе`:'Нет связи'}</span></div>
     </div>
     <div className="office-workspace">
       <div className="office-world">
@@ -83,13 +89,16 @@ export default function TeamOffice({ members, projectIdsByMember, projectById })
           <button aria-label="Приблизить" onClick={()=>scene.current?.zoom(-3)}><Plus size={17}/></button>
           <button aria-label="Отдалить" onClick={()=>scene.current?.zoom(3)}><Minus size={17}/></button>
         </div>
-        <div className="office-hint">{myId?'Нажмите на свободное место, чтобы пройти туда':'Выберите сотрудника и войдите в офис'}<span>Нажмите на имя — откроется карточка</span></div>
+        <div className="office-hint">{demo?'Демонстрация · не реальные статусы сотрудников':myId?'Нажмите на свободное место, чтобы пройти туда':'Выберите сотрудника и войдите в офис'}<span>Нажмите на имя — откроется карточка</span></div>
       </div>
       <aside className="office-sidebar">
+        {demo?<div className="office-entry"><span className="office-eyebrow">ЖИВОЙ ОФИС · ДЕМО</span><h4>У каждого свои дела</h4><p>Работа, обед, встречи и отдых. Это постановочная анимация, а не наблюдение за сотрудниками.</p></div>:null}
+        <div hidden={demo}>
         {!myId?<div className="office-entry"><span className="office-eyebrow">ВАШЕ РАБОЧЕЕ МЕСТО</span><h4>Заходите, располагайтесь</h4><p>Выберите персонажа для проверки офиса.</p><label>Сотрудник<select value={choice} onChange={e=>setChoice(e.target.value)}><option value="">Выбрать из команды</option>{members.slice(0,16).map(m=><option value={m.id} key={m.id} disabled={online.has(m.id)}>{m.data.label}{online.has(m.id)?' · в офисе':''}</option>)}</select></label><button className="office-primary" onClick={join} disabled={!choice||!connected||joining}><LogIn size={16}/>{joining?'Подключение…':'Войти в офис'}</button></div>:<div className="office-entry"><span className="office-eyebrow">ВЫ В ОФИСЕ</span><h4>{members.find(m=>m.id===myId)?.data.label}</h4><label>Мой статус<select value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(statuses).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label><label>Над чем работаю<input value={task} maxLength={140} onChange={e=>setTask(e.target.value)} placeholder="Например, макеты вебинаров"/></label><div className="office-actions"><button onClick={goDesk}><Armchair size={16}/>К столу</button><button onClick={()=>{scene.current?.walk(8,6);setStatus('break');}}><Coffee size={16}/>Перерыв</button></div><button className="office-leave" onClick={leave}><LogOut size={14}/>Выйти из офиса</button></div>}
+        </div>
         {error?<p role="alert" className="office-error">{error}</p>:null}
-        {person?<div className="office-person"><div className="office-person-heading"><div className="office-initials">{person.data.initials||person.data.label.slice(0,2)}</div><div><strong>{person.data.label}</strong><span>{active?statuses[active.status]:'Не в сети'}</span></div></div><p>{person.data.role}</p>{active?.task?<blockquote>{active.task}</blockquote>:null}<span className="office-eyebrow">ПРОЕКТЫ</span><ul>{(projectIdsByMember.get(person.id)||[]).map(id=><li key={id}>{projectById.get(id)?.data.label}</li>)}</ul></div>:null}
-        <div className="office-roster"><span className="office-eyebrow"><Users size={13}/>КОМАНДА · {members.length}</span>{members.map(m=><button key={m.id} onClick={()=>setSelected(m.id)}><i className={online.has(m.id)?'is-online':''}/><span>{m.data.label}</span><small>{online.has(m.id)?statuses[online.get(m.id).status]:'Не в сети'}</small></button>)}</div>
+        {person?<div className="office-person"><div className="office-person-heading"><div className="office-initials">{person.data.initials||person.data.label.slice(0,2)}</div><div><strong>{person.data.label}</strong><span>{presenceLabel(active)}</span></div></div><p>{person.data.role}</p>{active?.task?<blockquote>{active.task}</blockquote>:null}<span className="office-eyebrow">ПРОЕКТЫ</span><ul>{(projectIdsByMember.get(person.id)||[]).map(id=><li key={id}>{projectById.get(id)?.data.label}</li>)}</ul></div>:null}
+        <div className="office-roster"><span className="office-eyebrow"><Users size={13}/>КОМАНДА · {members.length}</span>{members.map(m=><button key={m.id} onClick={()=>setSelected(m.id)}><i className={online.has(m.id)?'is-online':''}/><span>{m.data.label}</span><small>{presenceLabel(online.get(m.id))}</small></button>)}</div>
       </aside>
     </div>
   </div>;
