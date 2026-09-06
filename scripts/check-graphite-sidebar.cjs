@@ -1,0 +1,38 @@
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage({viewport:{width:1440,height:1000}});
+  await page.goto(`${process.env.CHECK_BASE_URL || 'http://127.0.0.1:4181'}/?board=parser`);
+  await page.locator('.analytics-parser-workspace').waitFor();
+  assert.equal(await page.locator('.sus-marketing-sidebar').count(),1,'Persistent marketing sidebar exists');
+  const sidebar = page.locator('.sus-marketing-sidebar');
+  await sidebar.evaluate(e => e.dataset.testIdentity='persistent');
+  const before = await sidebar.boundingBox();
+  for (const [label,board] of [['Контакты','influencers'],['Креативы / SEO','atlasCreatives'],['Reels Studio','reelsCampaign']]) {
+    await page.getByRole('tab',{name:label,exact:false}).click();
+    assert.equal(new URL(page.url()).searchParams.get('board'),board);
+    assert.equal(await sidebar.getAttribute('data-test-identity'),'persistent','Sidebar must not remount');
+    const box = await sidebar.boundingBox();
+    assert.equal(box.x,before.x);
+    assert.equal(box.width,before.width);
+    assert.ok((await page.locator('#marketing-tool-panel').boundingBox()).x>box.x+box.width);
+  }
+  await page.goBack();
+  assert.equal(await page.locator('[data-parser-tab=creatives]').getAttribute('aria-selected'),'true');
+  await page.getByRole('tab',{name:'Контакты',exact:false}).click();
+  await page.evaluate(()=>window.scrollTo(0,1500));
+  assert.ok((await sidebar.boundingBox()).y>=0,'Sidebar remains on screen when scrolling a long contact list');
+  await page.getByRole('tab',{name:'Reels Studio',exact:false}).click();
+  assert.ok((await page.locator('#marketing-tool-panel').boundingBox()).y>=-1,'New right panel starts on screen');
+  await page.setViewportSize({width:390,height:844});
+  const toggle=page.getByRole('button',{name:/Разделы маркетинга/});
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+  await toggle.click();
+  await page.getByRole('tab',{name:'Контакты',exact:false}).click();
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+  assert.equal(new URL(page.url()).searchParams.get('board'),'influencers');
+  assert.ok(await page.locator('#marketing-tool-panel').isVisible());
+  console.log('Persistent left navigation / right content, URLs, Back and mobile collapse passed.');
+  await browser.close();
+})().catch(e=>{ console.error(e); process.exit(1); });
