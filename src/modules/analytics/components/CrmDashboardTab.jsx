@@ -2,8 +2,6 @@ import CrmCommandDashboard from "./CrmCommandDashboard";
 import Wrapper from "./Wrapper";
 
 export default function CrmDashboardTab({
-  isAiReviewOpen,
-  aiTaskSummary,
   analyticsTitle,
   analyticsFlowTone,
   analyticsCoverageLabel,
@@ -29,8 +27,6 @@ export default function CrmDashboardTab({
   return (
     <Wrapper as="section" marginTop="lg">
       <CrmCommandDashboard
-        isAiReviewOpen={isAiReviewOpen}
-        aiTaskSummary={aiTaskSummary}
         analyticsTitle={analyticsTitle}
         analyticsFlowTone={analyticsFlowTone}
         analyticsCoverageLabel={analyticsCoverageLabel}

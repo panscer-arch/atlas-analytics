@@ -60,6 +60,7 @@ import {
   loadServerContentResult,
   saveServerContentResult,
 } from "../services/contentStore";
+import { MARKETING_CONTACTS_TAB } from "../data/navigationShell";
 import "../styles/marketing-dashboard.css";
 
 const PARSER_TABS = [
@@ -68,6 +69,7 @@ const PARSER_TABS = [
     label: "Маркетинг",
     hint: "центр",
   },
+  MARKETING_CONTACTS_TAB,
   {
     id: "creatives",
     label: "Креативы / SEO",
@@ -162,6 +164,7 @@ const PARSER_TABS = [
 
 const PARSER_TAB_BOARD_IDS = {
   overview: "parser",
+  contacts: MARKETING_CONTACTS_TAB.boardId,
   creatives: "atlasCreatives",
   reels: "reelsCampaign",
   utmBuilder: "utmBuilder",
@@ -186,6 +189,7 @@ const BOARD_PARSER_TABS = Object.fromEntries(
 );
 const LEGACY_MARKETING_BOARD_ALIASES = {
   "marketing-creatives": "atlasCreatives",
+  "marketing-influencers": "influencers",
 };
 const MARKETING_DASHBOARD_PENDING_STORAGE_KEY = `${MARKETING_DASHBOARD_STORAGE_KEY}.pending.v2`;
 const MARKETING_ACCESS_BOT_URL = "https://t.me/Supersussystembot?text=%2Fmarketing_access";
@@ -841,6 +845,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
             key={tab.id}
             type="button"
             className={`analytics-parser-subtab${activeTab === tab.id ? " analytics-parser-subtab-active" : ""}`}
+            data-parser-tab={tab.id}
             onClick={() => selectTab(tab.id)}
             role="tab"
             aria-selected={activeTab === tab.id}
@@ -859,6 +864,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
           onSelectDirection={selectDirection}
           onUpdateDirection={updateDirection}
         />
+      ) : activeTab === "contacts" ? (
+        <InfluencerProspectsPanel />
       ) : activeTab === "direction" && selectedDirection ? (
         <MarketingDirectionWorkspace
           direction={selectedDirection}

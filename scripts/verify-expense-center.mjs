@@ -146,9 +146,13 @@ const analyticsPage = await readFile(
   new URL("../src/modules/analytics/AnalyticsPage.jsx", import.meta.url),
   "utf8",
 );
+const navigationShell = await readFile(
+  new URL("../src/modules/analytics/data/navigationShell.js", import.meta.url),
+  "utf8",
+);
 assert.doesNotMatch(analyticsPage, /\{ id: "session", label: "Сессия" \}/);
 assert.doesNotMatch(analyticsPage, /\{ id: "expenses", label: "Расходы" \}/);
-assert.match(analyticsPage, /expenses: "expenses"/);
+assert.match(navigationShell, /expenses: "expenses"/);
 assert.match(analyticsPage, /onSessionOpen=\{\(\) => handleMainTabChange\("session"\)\}/);
 assert.match(analyticsPage, /onExpensesOpen=\{\(\) => handleMainTabChange\("expenses"\)\}/);
 assert.match(analyticsPage, /onContributionsOpen=\{handleContributionsOpen\}/);
@@ -160,10 +164,10 @@ const analyticsHeader = await readFile(
   new URL("../src/modules/analytics/components/AnalyticsHeader.jsx", import.meta.url),
   "utf8",
 );
-assert.match(analyticsHeader, /HeaderTool label="Сессия"/);
-assert.match(analyticsHeader, /HeaderTool label="Расходы"/);
-assert.match(analyticsHeader, /HeaderTool label="Вклады команды"/);
-assert.match(analyticsHeader, /HeaderTool label="Радар инструментов"/);
+assert.match(analyticsHeader, /toolId="session" label="Сессия"/);
+assert.match(analyticsHeader, /toolId="expenses" label="Расходы"/);
+assert.match(analyticsHeader, /toolId="contributions" label="Вклады команды"/);
+assert.match(analyticsHeader, /toolId="toolRadar" label="Радар инструментов"/);
 
 const analyticsMainPanel = await readFile(
   new URL("../src/modules/analytics/components/AnalyticsMainPanel.jsx", import.meta.url),

@@ -27,6 +27,7 @@ import VideoGeneratorBoard from "./VideoGeneratorBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
+import { DEFAULT_MAIN_TAB, LEGACY_PRIMARY_TAB_REDIRECTS } from "../data/navigationShell";
 
 const TASK_CATEGORY_STORAGE_PREFIX = "atlas.analytics.taskCategoryChecklist";
 
@@ -181,13 +182,12 @@ export const TASK_BOARD_IDS = [
 ];
 
 export function getAnalyticsTabForBoard(boardId) {
-  if (!boardId) return "dashboard";
-  if (boardId === "dashboard") return "dashboard";
+  if (!boardId) return DEFAULT_MAIN_TAB;
+  if (LEGACY_PRIMARY_TAB_REDIRECTS[boardId]) return LEGACY_PRIMARY_TAB_REDIRECTS[boardId];
   if (boardId === "sessionQueue") return "session";
   if (boardId === "hermesAssistant") return "hermes";
   if (boardId === "expenses" || boardId === "contributions") return "expenses";
-  if (boardId === "influencers" || boardId === "marketing-influencers") return "contacts";
-  if (boardId === "products" || boardId === "productLibrary" || boardId === "developments") return "products";
+  if (boardId === "influencers" || boardId === "marketing-influencers") return "parser";
   if (boardId === "listings") return "parser";
   if (boardId === "marketingOS") return "marketingOs";
   if (boardId === "analytics" || boardId.startsWith("analytics-") || boardId === "contractBalances" || boardId === "contracts") return "analytics";

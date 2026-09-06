@@ -1,16 +1,12 @@
 import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
 import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
 import CrmDashboardTab from "./CrmDashboardTab";
-import DevelopmentsRegistry from "./DevelopmentsRegistry";
 import ExpensesBoard from "./ExpensesBoard";
 import HermesAssistantBoard from "./HermesAssistantBoard";
-import InfluencerProspectsPanel from "./InfluencerProspectsPanel";
 import LaunchChecklistSection from "./LaunchChecklistSection";
 import LifeDiaryBoard from "./LifeDiaryBoard";
 import MarketingOsBoard from "./MarketingOsBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
-import ProductLibraryBoard from "./ProductLibraryBoard";
-import ProductsRegistry from "./ProductsRegistry";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import TeamGraphBoard from "./TeamGraphBoard";
 import TablesBoard from "./TablesBoard";
@@ -78,54 +74,6 @@ function TasksWorkspacePanel({ analyticsBoardUrl, initialView = "tasks" }) {
   );
 }
 
-function ProductsWorkspacePanel({ initialView = "registry" }) {
-  const [activeView, setActiveView] = useState(initialView);
-  const tabs = [
-    { id: "registry", label: "Реестр", hint: "live" },
-    { id: "library", label: "Библиотека", hint: "портфель" },
-    { id: "developments", label: "Разработки", hint: "roadmap" },
-  ];
-
-  function selectView(nextView) {
-    setActiveView(nextView);
-    const url = new URL(window.location.href);
-    url.searchParams.delete("b");
-    url.searchParams.delete("view");
-    url.searchParams.set(
-      "board",
-      nextView === "developments" ? "developments" : nextView === "library" ? "productLibrary" : "products",
-    );
-    window.history.pushState({}, "", url);
-  }
-
-  return (
-    <Wrapper as="section" marginTop="lg" gap="lg">
-      <div className="analytics-parser-subtabs analytics-surface" role="tablist" aria-label="Продукты и разработки">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`analytics-parser-subtab${activeView === tab.id ? " analytics-parser-subtab-active" : ""}`}
-            onClick={() => selectView(tab.id)}
-            role="tab"
-            aria-selected={activeView === tab.id}
-          >
-            <span>{tab.label}</span>
-            <small>{tab.hint}</small>
-          </button>
-        ))}
-      </div>
-      {activeView === "developments" ? (
-        <DevelopmentsRegistry />
-      ) : activeView === "library" ? (
-        <ProductLibraryBoard />
-      ) : (
-        <ProductsRegistry />
-      )}
-    </Wrapper>
-  );
-}
-
 export default function AnalyticsMainPanel({
   activeTab,
   analyticsBoardUrl,
@@ -158,16 +106,7 @@ export default function AnalyticsMainPanel({
       </Wrapper>
     );
   }
-  if (activeTab === "products") return <ProductsWorkspacePanel />;
   if (activeTab === "content") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
-
-  if (activeTab === "contacts") {
-    return (
-      <Wrapper as="section" marginTop="lg">
-        <InfluencerProspectsPanel />
-      </Wrapper>
-    );
-  }
 
   if (activeTab === "parser") {
     return (
@@ -191,14 +130,6 @@ export default function AnalyticsMainPanel({
         <SocialSubscriptionsBoard />
       </Wrapper>
     );
-  }
-
-  if (activeTab === "developments") {
-    return <ProductsWorkspacePanel initialView="developments" />;
-  }
-
-  if (activeTab === "productLibrary") {
-    return <ProductsWorkspacePanel initialView="library" />;
   }
 
   if (activeTab === "crmBoard") {

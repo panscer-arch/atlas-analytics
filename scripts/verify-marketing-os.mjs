@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
 
@@ -14,6 +15,9 @@ function assertIncludes(source, marker, label) {
 }
 
 const page = read("src/modules/analytics/AnalyticsPage.jsx");
+const header = read("src/modules/analytics/components/AnalyticsHeader.jsx");
+const navigationPath = path.join(root, "src/modules/analytics/data/navigationShell.js");
+const { MAIN_TAB_BOARD_IDS } = await import(pathToFileURL(navigationPath));
 const registry = read("src/modules/analytics/components/LaunchBoardRegistry.jsx");
 const panel = read("src/modules/analytics/components/AnalyticsMainPanel.jsx");
 const board = read("src/modules/analytics/components/MarketingOsBoard.jsx");
@@ -21,8 +25,11 @@ const data = read("src/modules/analytics/data/marketingOsData.js");
 const server = read("server/content-api.mjs");
 const browserChecks = read("scripts/check-analytics-boards.mjs");
 
-assertIncludes(page, 'marketingOs: "marketingOS"', "board route is not registered");
-assertIncludes(page, '{ id: "marketingOs", label: "MarketingOS" }', "top navigation tab is missing");
+if (MAIN_TAB_BOARD_IDS.marketingOs !== "marketingOS") {
+  throw new Error("MarketingOS verification failed: board route is not registered");
+}
+assertIncludes(page, 'onMarketingOsOpen={() => handleMainTabChange("marketingOs")}', "header action is not connected");
+assertIncludes(header, 'label="MarketingOS"', "MarketingOS header icon is missing");
 assertIncludes(registry, 'if (boardId === "marketingOS") return "marketingOs"', "query route does not select MarketingOS");
 assertIncludes(panel, 'activeTab === "marketingOs"', "main panel does not render MarketingOS");
 assertIncludes(panel, "<MarketingOsBoard />", "MarketingOS component is not mounted");

@@ -12,14 +12,13 @@ import {
   KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY,
   LAUNCH_CHECKLIST_STORAGE_KEY,
   MARKETING_CHECKLIST_STORAGE_KEY,
-  TASK_ARCHIVE_STORAGE_KEY,
-  TASK_HISTORY_STORAGE_KEY,
   defaultIdeasChecklistTasks,
   defaultKnowledgeBaseChecklistTasks,
   defaultLaunchChecklistTasks,
   defaultMarketingChecklistTasks,
 } from "./data/launchChecklistData";
 import { getAnalyticsTabForBoard } from "./components/LaunchBoardRegistry";
+import { MAIN_NAV_TABS, MAIN_TAB_BOARD_IDS } from "./data/navigationShell";
 import { MATERIALS_STORAGE_KEY, defaultMaterialItems } from "./data/materialsData";
 import { VIDEO_SCRIPTS_STORAGE_KEY, defaultVideoScripts } from "./data/videoScriptsData";
 import EmptyState from "./components/EmptyState";
@@ -34,7 +33,6 @@ import {
   ACTIVATION_PAGE_SIZE,
   ACTIVATION_PERIOD_OPTIONS,
   CRM_MY_TASKS_STORAGE_KEY,
-  buildAiTaskSummary,
   buildCrmContentStats,
   buildCrmTaskOverview,
   buildCrmTaskStats,
@@ -57,24 +55,6 @@ import "./styles/analytics.css";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
-const ATLAS_SITE_PREVIEW_URL = "/atlas-media-concept/index.html";
-const MAIN_TAB_BOARD_IDS = {
-  dashboard: "dashboard",
-  session: "sessionQueue",
-  contacts: "influencers",
-  tables: "tables",
-  parser: "parser",
-  marketingOs: "marketingOS",
-  analytics: "analytics",
-  products: "products",
-  expenses: "expenses",
-  tasks: "launch",
-  content: "materials",
-  hermes: "hermesAssistant",
-  diary: "diary",
-  team: "team",
-  departments: "departments",
-};
 const ANALYTICS_TAB_BOARD_IDS = {
   dashboard: "analytics",
   ga4: "analytics-ga4",
@@ -157,7 +137,6 @@ function AnalyticsPage() {
   const [crmMyTasksSaveState, setCrmMyTasksSaveState] = useState("Сохранено");
   const [expandedMyTaskId, setExpandedMyTaskId] = useState("");
   const [newMyTask, setNewMyTask] = useState({ title: "", dueDate: getTodayInputDate() });
-  const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
   const crmMyTasksSaveRef = useRef(0);
   const [crmTaskSource, setCrmTaskSource] = useState({
     launch: defaultLaunchChecklistTasks,
@@ -165,8 +144,6 @@ function AnalyticsPage() {
     knowledgeBase: defaultKnowledgeBaseChecklistTasks,
     ideas: defaultIdeasChecklistTasks,
   });
-  const [crmTaskArchive, setCrmTaskArchive] = useState([]);
-  const [crmTaskHistory, setCrmTaskHistory] = useState([]);
   const [crmTaskStats, setCrmTaskStats] = useState(() => buildCrmTaskStats({
     launch: defaultLaunchChecklistTasks,
     marketing: defaultMarketingChecklistTasks,
@@ -249,9 +226,7 @@ function AnalyticsPage() {
       loadServerContent(MARKETING_CHECKLIST_STORAGE_KEY),
       loadServerContent(IDEAS_CHECKLIST_STORAGE_KEY),
       loadServerContent(KNOWLEDGE_BASE_CHECKLIST_STORAGE_KEY),
-      loadServerContent(TASK_ARCHIVE_STORAGE_KEY),
-      loadServerContent(TASK_HISTORY_STORAGE_KEY),
-    ]).then(([launch, marketing, ideas, knowledgeBase, archive, history]) => {
+    ]).then(([launch, marketing, ideas, knowledgeBase]) => {
       if (!isMounted) return;
 
       const taskSource = {
@@ -263,8 +238,6 @@ function AnalyticsPage() {
 
       setCrmTaskSource(taskSource);
       setCrmTaskStats(buildCrmTaskStats(taskSource));
-      setCrmTaskArchive(Array.isArray(archive) ? archive : []);
-      setCrmTaskHistory(Array.isArray(history) ? history : []);
     });
 
     return () => {
@@ -636,16 +609,6 @@ function AnalyticsPage() {
     { title: "Топ-сеть", value: data.kpis.topNetwork, icon: "top-network", statusLabel: "лидер", description: "Самая активная сеть." },
   ];
 
-  const mainTabs = [
-    { id: "dashboard", label: "Дашборд" },
-    { id: "parser", label: "Маркетинг" },
-    { id: "marketingOs", label: "MarketingOS" },
-    { id: "analytics", label: "Аналитика" },
-    { id: "products", label: "Продукты" },
-    { id: "tasks", label: "Задачи" },
-    { id: "content", label: "Контент" },
-  ];
-
   const analyticsSectionTabs = [
     { id: "dashboard", label: "Дашборд", hint: "центр" },
     { id: "ga4", label: "Аналитика сайта", hint: "GA · Clarity · Rybbit" },
@@ -688,7 +651,6 @@ function AnalyticsPage() {
     { total: 0, done: 0, inWork: 0, left: 0 },
   );
   const crmTaskOverview = buildCrmTaskOverview(crmTaskSource);
-  const crmAiTaskSummary = buildAiTaskSummary(crmTaskOverview, crmTaskTotals, crmTaskArchive, crmTaskHistory);
   const crmTaskWidgets = [
     ["В работе", crmTaskTotals.inWork, "accent"],
     ["Осталось", crmTaskTotals.left, crmTaskTotals.left > 0 ? "danger" : "success"],
@@ -730,24 +692,18 @@ function AnalyticsPage() {
   return (
     <main className={`analytics-layout${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
       <AnalyticsHeader
-        onAiReview={() => {
-          handleMainTabChange("dashboard");
-          setIsAiReviewOpen((current) => !current);
-        }}
-        onParserOpen={() => handleMainTabChange("parser")}
+        onMarketingOsOpen={() => handleMainTabChange("marketingOs")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
         onHermesOpen={() => handleMainTabChange("hermes")}
         onSessionOpen={() => handleMainTabChange("session")}
         onExpensesOpen={() => handleMainTabChange("expenses")}
         onContributionsOpen={handleContributionsOpen}
         onToolRadarOpen={handleToolRadarOpen}
-        onContactsOpen={() => handleMainTabChange("contacts")}
         onTablesOpen={() => handleMainTabChange("tables")}
         onTeamOpen={() => handleMainTabChange("team")}
         onDepartmentsOpen={() => handleMainTabChange("departments")}
         listingsCrmUrl="https://node-panel-hq.com/"
         partnersCrmUrl="https://partner-cycle.com/"
-        mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />
 
@@ -756,15 +712,13 @@ function AnalyticsPage() {
       {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
 
       <Wrapper as="section" marginTop="lg">
-        <AnalyticsTabs tabs={mainTabs} activeTab={activeTab} onChange={handleMainTabChange} />
+        <AnalyticsTabs tabs={MAIN_NAV_TABS} activeTab={activeTab} onChange={handleMainTabChange} />
       </Wrapper>
 
       <AnalyticsMainPanel
         activeTab={activeTab}
         analyticsBoardUrl={ANALYTICS_BOARD_URL}
         crmDashboard={{
-          isAiReviewOpen,
-          aiTaskSummary: crmAiTaskSummary,
           analyticsTitleValue: dashboardPoolValue,
           analyticsFlowTone: contractNetFlowToday >= 0 ? "positive" : "negative",
           analyticsCoveragePercent: outgoingCoverage,

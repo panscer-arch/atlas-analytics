@@ -7,6 +7,7 @@ function AnalyticsTabs({ tabs = [], activeTab, onChange }) {
             key={tab.id}
             type="button"
             className={`analytics-tab-btn${activeTab === tab.id ? " analytics-tab-btn-active" : ""}`}
+            data-main-tab={tab.id}
             onClick={() => onChange(tab.id)}
           >
             <span className="analytics-tab-label">{tab.label}</span>

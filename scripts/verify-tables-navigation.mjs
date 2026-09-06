@@ -5,7 +5,7 @@ async function readOrEmpty(file) {
   return readFile(file, "utf8").catch(() => "");
 }
 
-const [header, page, panel, registry, board, styles, analyticsStyles, packageJson] = await Promise.all([
+const [header, page, panel, registry, board, styles, analyticsStyles, navigation, packageJson] = await Promise.all([
   readOrEmpty("src/modules/analytics/components/AnalyticsHeader.jsx"),
   readOrEmpty("src/modules/analytics/AnalyticsPage.jsx"),
   readOrEmpty("src/modules/analytics/components/AnalyticsMainPanel.jsx"),
@@ -13,13 +13,14 @@ const [header, page, panel, registry, board, styles, analyticsStyles, packageJso
   readOrEmpty("src/modules/analytics/components/TablesBoard.jsx"),
   readOrEmpty("src/modules/analytics/styles/tables.css"),
   readOrEmpty("src/modules/analytics/styles/analytics.css"),
+  readOrEmpty("src/modules/analytics/data/navigationShell.js"),
   readOrEmpty("package.json"),
 ]);
 
 const checks = [
   [header.includes("onTablesOpen") && header.includes('label="Таблицы"'), "header tool missing"],
   [header.includes("TableProperties") && header.includes("analytics-header-tables-button"), "header icon/accent hook missing"],
-  [page.includes('tables: "tables"') && page.includes('handleMainTabChange("tables")'), "route mapping missing"],
+  [navigation.includes('tables: "tables"') && page.includes('handleMainTabChange("tables")'), "route mapping missing"],
   [panel.includes('activeTab === "tables"') && panel.includes("<TablesBoard />"), "standalone board missing"],
   [registry.includes('boardId === "tables"') && registry.includes('return "tables"'), "direct route missing"],
   [board.includes("Рост системы") && board.includes("План ликвидности") && board.includes("Прогноз GPT"), "table tabs missing"],
