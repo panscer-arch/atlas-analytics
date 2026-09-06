@@ -117,6 +117,15 @@ export function validateTablesDocument(value) {
   if (!isObject(value) || value.version !== 1 || !Array.isArray(value.tables)) {
     return "Неверный формат таблиц.";
   }
+  if (
+    !isObject(value.source)
+    || typeof value.source.title !== "string"
+    || typeof value.source.url !== "string"
+    || typeof value.source.sheet !== "string"
+    || typeof value.source.capturedAt !== "string"
+  ) {
+    return "Источник таблиц имеет неверный формат.";
+  }
   if (!value.tables.length || value.tables.length > LIMITS.tables) {
     return `Количество таблиц должно быть от 1 до ${LIMITS.tables}.`;
   }
@@ -179,6 +188,9 @@ export function validateTablesDocument(value) {
       }
       noteIds.add(note.id);
     }
+  }
+  if (!tableIds.has("growth") || !tableIds.has("liquidity")) {
+    return "Документ должен содержать таблицы роста и ликвидности.";
   }
   return "";
 }
