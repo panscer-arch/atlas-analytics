@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,writeFile,rm,readFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+const deploy=await readFile('.github/workflows/deploy.yml','utf8');
+assert.match(deploy,/location = \/api\/content\/supersus\.departments\.v1 \{[^}]*proxy_set_header Origin \$http_origin;/,'Departments proxy must preserve browser Origin in its own exact route');
 const dir=await mkdtemp(path.join(os.tmpdir(),'departments-access-'));
 const port=21000+Math.floor(Math.random()*1000);
 const base=`http://127.0.0.1:${port}`;

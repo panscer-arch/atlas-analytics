@@ -63,7 +63,7 @@ jobs:
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             BEFORE="${{ github.sha }}^"
           fi
-          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^(server/|content/hermes/|scripts/build-hermes-official-catalog\.mjs$|scripts/verify-official-memory-sync\.mjs$)'; then
+          if git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -Eq '^(server/|content/hermes/|scripts/build-hermes-official-catalog\.mjs$|scripts/verify-official-memory-sync\.mjs$|\.github/workflows/deploy\.yml$)'; then
             echo "content_api=true" >> "$GITHUB_OUTPUT"
           else
             echo "content_api=false" >> "$GITHUB_OUTPUT"
@@ -797,6 +797,27 @@ jobs:
           fi
 
           for NGINX_FILE in $NGINX_FILES; do
+            if sudo grep -q 'server_name supersussystem.com' "$NGINX_FILE" && ! sudo grep -q 'location = /api/content/supersus.departments.v1' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          marker = "    location /api/content/ {"
+          snippet = """    location = /api/content/supersus.departments.v1 {
+                  proxy_pass http://127.0.0.1:8787;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header Origin $http_origin;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 1m;
+              }
+
+          """
+          if marker not in text:
+              raise SystemExit("Missing content route for departments")
+          open(path, "w", encoding="utf-8").write(text.replace(marker, snippet + marker, 1))
+          PY
+            fi
             if sudo grep -q 'server_name supersussystem.com' "$NGINX_FILE" && ! sudo grep -q 'location = /api/content/office-presence' "$NGINX_FILE"; then
               sudo python3 - "$NGINX_FILE" <<'PY'
           import sys
