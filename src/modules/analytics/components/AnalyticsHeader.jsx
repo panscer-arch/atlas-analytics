@@ -1,4 +1,4 @@
-import { ContactRound, HandCoins, LockKeyhole, Radar, UsersRound } from "lucide-react";
+import { Building2, ContactRound, HandCoins, LockKeyhole, Radar, UsersRound } from "lucide-react";
 import AnalyticsDateTime from "./AnalyticsDateTime";
 
 const VAULT_URL = String(import.meta.env.VITE_VAULT_URL || "").trim();
@@ -39,6 +39,7 @@ function AnalyticsHeader({
   onToolRadarOpen,
   onContactsOpen,
   onTeamOpen,
+  onDepartmentsOpen,
   listingsCrmUrl,
   partnersCrmUrl,
   mediaPreviewUrl,
@@ -117,6 +118,7 @@ function AnalyticsHeader({
             <span>Создай команду</span>
           </HeaderTool>
         ) : null}
+        {onDepartmentsOpen ? <HeaderTool label="Отделы и процессы" onClick={onDepartmentsOpen} className="analytics-header-team-button"><Building2 size={20}/><span>Отделы</span></HeaderTool> : null}
         {VAULT_URL ? (
           <HeaderTool label="Пароли" href={VAULT_URL}>
             <LockKeyhole size={22} strokeWidth={1.8} aria-hidden="true" />

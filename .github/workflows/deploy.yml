@@ -42,6 +42,7 @@ jobs:
           npm run test:marketing-monitor
           npm run test:expenses
           npm run test:office
+          npm run test:departments
           npm run test:telegram-memory
           npm run test:official-memory
           npm run test:hermes-voice
