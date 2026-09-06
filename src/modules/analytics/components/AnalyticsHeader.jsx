@@ -43,9 +43,7 @@ function AnalyticsHeader({
   onDepartmentsOpen,
   listingsCrmUrl,
   partnersCrmUrl,
-  onLiveAnalyticsClick,
   showAdmins = false,
-  showMotion = true,
 }) {
   const headerTools = {
     marketingOs: onMarketingOsOpen ? (
@@ -106,16 +104,6 @@ function AnalyticsHeader({
           <div className="sus-brand-row">
             <img className="sus-brand-original" src="/generated/analytics-character-logo.png" alt="" width="64" height="76" />
             <div className="sus-brand-copy"><h1>SuperSUS<span> / </span></h1><p>Рабочее пространство команды</p></div>
-            {showMotion ? (
-              <button
-                type="button"
-                className="sus-diary-button"
-                onClick={onLiveAnalyticsClick}
-                aria-label="Открыть дневник"
-              >
-                <ToolIcon type="notes" /><span>Дневник</span>
-              </button>
-            ) : null}
           </div>
         </div>
         <div className="analytics-header-time">

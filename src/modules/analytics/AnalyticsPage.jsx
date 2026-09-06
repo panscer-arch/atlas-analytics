@@ -720,7 +720,6 @@ function AnalyticsPage() {
         onDepartmentsOpen={() => handleMainTabChange("departments")}
         listingsCrmUrl="https://node-panel-hq.com/"
         partnersCrmUrl="https://partner-cycle.com/"
-        onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />
 
       <div className="sus-content-theme"><QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} /></div>
