@@ -7,6 +7,8 @@ const root = process.cwd();
 const configPath = path.join(root, "src/modules/analytics/data/navigationShell.js");
 const headerPath = path.join(root, "src/modules/analytics/components/AnalyticsHeader.jsx");
 const crmCommandPath = path.join(root, "src/modules/analytics/components/CrmCommandDashboard.jsx");
+const stylesPath = path.join(root, "src/modules/analytics/styles/analytics.css");
+const teamGraphStylesPath = path.join(root, "src/modules/analytics/styles/teamGraph.css");
 
 assert.ok(fs.existsSync(configPath), "Navigation shell configuration is missing.");
 
@@ -61,7 +63,28 @@ assert.deepEqual(
 
 const headerSource = fs.readFileSync(headerPath, "utf8");
 const crmCommandSource = fs.readFileSync(crmCommandPath, "utf8");
+const stylesSource = fs.readFileSync(stylesPath, "utf8");
+const teamGraphStylesSource = fs.readFileSync(teamGraphStylesPath, "utf8");
 assert.doesNotMatch(headerSource, /onAiReview|Atlas Media|onContactsOpen|onParserOpen/);
 assert.doesNotMatch(crmCommandSource, /isAiReviewOpen|AI-аудит задач/);
+assert.match(headerSource, /function HeaderTool\(\{ toolId, label, displayLabel = label,/);
+assert.match(headerSource, /className="analytics-header-tool-label"/);
+assert.match(
+  headerSource,
+  /<div className="analytics-header-top">[\s\S]*?<div className="analytics-header-time">\s*<AnalyticsDateTime \/>/,
+  "System Time must occupy a dedicated top-right area.",
+);
+assert.equal(
+  [...headerSource.matchAll(/<HeaderTool\b[^>]*displayLabel=/g)].length,
+  HEADER_TOOL_ORDER.length,
+  "Every header tool must have a visible label.",
+);
+assert.match(stylesSource, /\.analytics-header-tool-label\s*\{/);
+assert.doesNotMatch(
+  teamGraphStylesSource,
+  /\.analytics-header-team-button span\s*\{\s*display:\s*none;/,
+  "Team and departments labels must remain visible on mobile.",
+);
+assert.match(stylesSource, /\.analytics-header-top\s*\{/);
 
 console.log("SuperSus navigation shell configuration verified.");
