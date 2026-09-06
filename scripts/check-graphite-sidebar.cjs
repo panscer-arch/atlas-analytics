@@ -24,6 +24,7 @@ const assert = require('node:assert/strict');
   await page.evaluate(()=>window.scrollTo(0,1500));
   assert.ok((await sidebar.boundingBox()).y>=0,'Sidebar remains on screen when scrolling a long contact list');
   await page.getByRole('tab',{name:'Reels Studio',exact:false}).click();
+  await page.waitForFunction(()=>document.querySelector('#marketing-tool-panel').getBoundingClientRect().y>=-1);
   assert.ok((await page.locator('#marketing-tool-panel').boundingBox()).y>=-1,'New right panel starts on screen');
   await page.setViewportSize({width:390,height:844});
   const toggle=page.getByRole('button',{name:/Разделы маркетинга/});
