@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import crmCss from "./ListingsCrmBoard.css?raw";
+import crmCss from "./ListingsCrmBoard.css?inline";
 import ListingsInstructions from "./ListingsInstructions";
 import {
   archiveListingsRecord,
@@ -553,6 +553,10 @@ function ListingsCrmWorkspace() {
 export default function ListingsCrmBoard() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
-  useEffect(() => { if (hostRef.current) setShadowRoot(hostRef.current.shadowRoot || hostRef.current.attachShadow({ mode: "open" })); }, []);
+  useEffect(() => {
+    if (!hostRef.current) return;
+    hostRef.current.dataset.workspaceTheme = hostRef.current.closest('[data-workspace-theme]')?.getAttribute('data-workspace-theme') || 'graphite';
+    setShadowRoot(hostRef.current.shadowRoot || hostRef.current.attachShadow({ mode: "open" }));
+  }, []);
   return <div ref={hostRef} className="analytics-listings-crm-host">{shadowRoot && createPortal(<><style>{crmCss}</style><ListingsCrmWorkspace /></>, shadowRoot)}</div>;
 }

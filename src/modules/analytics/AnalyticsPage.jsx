@@ -53,6 +53,7 @@ import {
 } from "./utils/analyticsPageUtils";
 import "./styles/analytics.css";
 import "./styles/workspace-preview.css";
+import "./styles/graphite-theme.css";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
@@ -127,7 +128,7 @@ function getInitialAnalyticsSectionTab() {
 function AnalyticsPage() {
   const [designPreview] = useState(() => {
     const value = new URLSearchParams(window.location.search).get("designPreview");
-    return ["graphite", "platinum"].includes(value) ? value : undefined;
+    return value === "platinum" ? "platinum" : "graphite";
   });
   const [activeTab, setActiveTab] = useState(getInitialAnalyticsTab);
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState(getInitialAnalyticsSectionTab);
@@ -695,8 +696,8 @@ function AnalyticsPage() {
   }
 
   return (
-    <main data-design-preview={designPreview} className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
-      {designPreview ? (
+    <main data-design-preview={designPreview} data-workspace-theme={designPreview} className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
+      {designPreview === "platinum" ? (
         <div className="sus-design-switcher">
           <span>Предпросмотр оформления</span>
           <nav aria-label="Варианты дизайна">
@@ -722,15 +723,15 @@ function AnalyticsPage() {
         onLiveAnalyticsClick={() => handleMainTabChange("diary")}
       />
 
-      <QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} />
+      <div className="sus-content-theme"><QuickNotesModal isOpen={isQuickNotesOpen} onClose={() => setIsQuickNotesOpen(false)} onCountChange={setQuickNotesCount} /></div>
 
-      {isBoardOpen ? <AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /> : null}
+      {isBoardOpen ? <div className="sus-content-theme"><AnalyticsBoardEmbed boardUrl={ANALYTICS_BOARD_URL} onClose={() => setIsBoardOpen(false)} /></div> : null}
 
       <Wrapper as="section" marginTop="lg">
         <AnalyticsTabs tabs={MAIN_NAV_TABS} activeTab={activeTab} onChange={handleMainTabChange} />
       </Wrapper>
 
-      <AnalyticsMainPanel
+      <div className="sus-content-theme"><AnalyticsMainPanel
         activeTab={activeTab}
         analyticsBoardUrl={ANALYTICS_BOARD_URL}
         crmDashboard={{
@@ -789,16 +790,16 @@ function AnalyticsPage() {
           onActivationPageChange: setActivationPage,
           structureKpis,
         }}
-      />
+      /></div>
 
       {activeTab === "analytics" && activeAnalyticsTab !== "ga4" ? (
-        <Wrapper as="section" marginTop="lg">
+        <div className="sus-content-theme"><Wrapper as="section" marginTop="lg">
           <div className="analytics-footer-actions">
             <button type="button" className="analytics-export-btn analytics-export-btn-bottom" onClick={() => downloadCsv(exportAnalyticsCsv(data.table))}>
               Экспорт CSV
             </button>
           </div>
-        </Wrapper>
+        </Wrapper></div>
       ) : null}
     </main>
   );

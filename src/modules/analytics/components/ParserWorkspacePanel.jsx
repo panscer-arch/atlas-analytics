@@ -570,6 +570,7 @@ function MarketingOverview({
 }
 
 export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dashboardState, setDashboardState] = useState(() => {
     if (typeof window === "undefined") return createDefaultMarketingDashboardState();
     try {
@@ -603,14 +604,6 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
     }
     return PARSER_TAB_BOARD_IDS[initialTab] ? initialTab : "overview";
   });
-
-  useEffect(() => {
-    if (activeTab !== "listings" || typeof document === "undefined") return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      document.querySelector(".analytics-listings-crm-host")?.scrollIntoView({ block: "start" });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [activeTab]);
 
   useEffect(() => {
     if (typeof window === "undefined" || initialRawBoard === initialBoard) return;
@@ -779,9 +772,14 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   }, []);
 
   function selectTab(nextTab) {
+    setMobileMenuOpen(false);
     setActiveTab(nextTab);
     setSelectedDirectionId("");
     if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      const workspace = document.querySelector('.sus-marketing-layout');
+      if (workspace?.getBoundingClientRect().top < 0) workspace.scrollIntoView({ block: 'start' });
+    });
 
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
@@ -849,14 +847,20 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   }
 
   return (
-    <section className={`analytics-parser-workspace${activeTab === "overview" ? " sus-marketing-home" : ""}`}>
-      <div className="analytics-parser-subtabs analytics-surface" role="tablist" aria-label="Тип парсера">
+    <section className={`analytics-parser-workspace sus-marketing-layout${activeTab === "overview" ? " sus-marketing-home" : ""}`}>
+      <aside className="sus-marketing-sidebar" data-menu-open={mobileMenuOpen}>
+        <button type="button" className="sus-sidebar-toggle" aria-expanded={mobileMenuOpen} aria-controls="marketing-navigation" onClick={() => setMobileMenuOpen(open => !open)}>
+          <span>Разделы маркетинга</span><span aria-hidden="true">{mobileMenuOpen ? "−" : "+"}</span>
+        </button>
+      <div id="marketing-navigation" className="analytics-parser-subtabs analytics-surface" role="tablist" aria-label="Тип парсера" aria-orientation="vertical">
         {PARSER_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             className={`analytics-parser-subtab${activeTab === tab.id ? " analytics-parser-subtab-active" : ""}`}
             data-parser-tab={tab.id}
+            id={`marketing-tab-${tab.id}`}
+            aria-controls="marketing-tool-panel"
             onClick={() => selectTab(tab.id)}
             role="tab"
             aria-selected={activeTab === tab.id}
@@ -866,7 +870,8 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
           </button>
         ))}
       </div>
-
+      </aside>
+      <div id="marketing-tool-panel" className="sus-marketing-view" role="tabpanel" aria-labelledby={activeTab === "direction" ? undefined : `marketing-tab-${activeTab}`}>
       {activeTab === "overview" ? (
         <MarketingOverview
           dashboardState={dashboardState}
@@ -931,6 +936,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
       ) : (
         <HyipParserPanel />
       )}
+      </div>
     </section>
   );
 }

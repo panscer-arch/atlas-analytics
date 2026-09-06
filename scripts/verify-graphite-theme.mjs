@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import postcss from 'postcss';
+
+assert.ok(existsSync(new URL('../build/graphite-theme.mjs', import.meta.url)), 'Shared graphite palette adapter is implemented');
+const { graphiteCss, graphiteTheme } = await import('../build/graphite-theme.mjs');
+const source = '.panel {color:#202724;background:#fff;padding:28px;border:1px solid #ddd} @media(max-width:600px){.panel:hover{background:#f5f6f8}}';
+const output = graphiteCss(source);
+assert.match(output, /data-workspace-theme="graphite"/);
+assert.match(output, /color:var\(--g-text\)/);
+assert.match(output, /background:var\(--g-panel\)/);
+assert.match(output, /@media\(max-width:600px\)/);
+assert.doesNotMatch(output, /padding:/, 'Theme must not rewrite layout or visibility');
+assert.doesNotMatch(output, /#fff|#202724|#ddd/);
+postcss.parse(output);
+
+const semantics = graphiteCss('.status-error{color:#ef4444;background:#fee2e2}.status-success{color:#15803d;background:#dcfce7}.chart-line{stroke:#ef4444;fill:#fff}.photo{background:url(/image.png)}');
+assert.match(semantics, /--g-danger/);
+assert.match(semantics, /--g-success/);
+assert.match(graphiteCss('.progress::-webkit-progress-bar{background:#eee}'), /--g-raised/, 'Native progress track remains distinct from fill');
+assert.match(graphiteCss('.progress::-webkit-progress-value{background:#f90}'), /--g-accent/);
+assert.match(graphiteCss('.progress::-moz-progress-bar{background:#f90}'), /--g-accent/);
+assert.doesNotMatch(semantics, /stroke:|fill:|url\(/, 'Chart series and image assets stay untouched');
+assert.equal(graphiteCss('@keyframes fade{from{opacity:0}to{opacity:1}}'), '', 'No animation or layout mutations');
+assert.match(graphiteCss('.field{color:var(--ink,#222);background:var(--paper,#fff)}'), /--g-text/);
+assert.match(graphiteCss('.field::placeholder{color:rgba(255,255,255,.4)}'), /--g-muted/);
+assert.match(graphiteCss(':host{--text:#20232a;--panel:#fff}.app-shell{color:var(--text)}', { shadow:true }), /:host\(\[data-workspace-theme="graphite"\]\)/);
+const plugin = graphiteTheme();
+assert.equal(plugin.transform(source, '/node_modules/library/style.css'), null);
+assert.equal(plugin.transform(source, '/src/modules/analytics/styles/workspace-preview.css'), null);
+assert.equal(plugin.transform('export default "css"', '/src/modules/analytics/components/Test.css?raw'), null);
+assert.match(plugin.transform(source, '/src/modules/analytics/components/Test.css'), /data-workspace-theme/);
+assert.ok(readFileSync(new URL('../src/modules/analytics/styles/graphite-theme.css', import.meta.url), 'utf8').includes('--g-text: #f0f2f7'));
+console.log('Graphite theme: scope, surfaces, semantic status colors, responsive rules, CSS variables, shadow DOM, and chart/image isolation verified.');

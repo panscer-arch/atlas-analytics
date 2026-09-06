@@ -1,0 +1,19 @@
+/* The embedded legacy task board shares SuperSUS's approved graphite palette. */
+:root {
+  --bg: #111318; --panel: #1b1e25; --card: #232731; --line: #3b4351;
+  --text: #f0f2f7; --muted: #adb4c3; --accent: #a9c3ff; --accent-2: #a9c3ff; --warn: #ebc896;
+}
+body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.hero,.filters,.kanban,.site-materials,.column,.card,.site-material-card,.site-material-card.primary {
+  background: var(--panel); border-color: var(--line); border-radius: 15px; box-shadow: none; backdrop-filter: none;
+}
+.board-tab,.chip,.chips { border-radius: 9px; }
+.board-tab.active,.chip.active { color: var(--text); border-color: var(--accent); background: #2a3651; box-shadow: none; }
+.board-tab::before { display: none; }
+button,input,textarea,select { font-family: inherit; }
+button,input,select { min-height: 44px; }
+input,textarea,select { color-scheme: dark; background: #171a21; color: var(--text); border-color: var(--line); }
+input::placeholder,textarea::placeholder { color: var(--muted); opacity: 1; }
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+h1,h2,h3,strong { font-weight: 600; }
+@media (prefers-reduced-motion:reduce) { * { animation: none !important; transition: none !important; } }
