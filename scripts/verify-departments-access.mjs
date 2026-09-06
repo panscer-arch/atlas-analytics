@@ -18,6 +18,7 @@ try{
  assert.equal(login.status,200);
  const cookie=login.headers.get('set-cookie').split(';')[0];
  const payload={version:1,departments:[],processes:[],automations:[]};
+ assert.equal((await fetch(endpoint,{method:'PUT',headers:{Cookie:cookie,Origin:'https://supersussystem.com','Content-Type':'application/json'},body:JSON.stringify({value:payload})})).status,200,'Production origin must work behind a reverse proxy with an internal Host');
  assert.equal((await fetch(endpoint,{method:'PUT',headers:{Cookie:cookie,Origin:'https://unrelated.example','Content-Type':'application/json'},body:JSON.stringify({value:payload})})).status,403,'Cross-origin write blocked');
  assert.equal((await fetch(endpoint,{method:'PUT',headers:{Cookie:cookie,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({value:payload})})).status,200);
  const read=await fetch(endpoint,{headers:{Cookie:cookie}});assert.equal(read.status,200);assert.deepEqual((await read.json()).value,payload);

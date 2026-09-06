@@ -5331,7 +5331,13 @@ const server = http.createServer(async (request, response) => {
       }
       if (key === "supersus.departments.v1" && request.headers.origin) {
         let validOrigin = false;
-        try { validOrigin = new URL(request.headers.origin).host === request.headers.host; } catch {}
+        try {
+          const origin = new URL(request.headers.origin);
+          // Production proxies can replace Host with an internal address.
+          // Match the same explicit public origins as office-presence.
+          validOrigin = ["https://supersussystem.com", "https://www.supersussystem.com"].includes(origin.origin)
+            || (origin.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname) && origin.host === request.headers.host);
+        } catch {}
         if (!validOrigin) { sendJson(response, 403, { ok: false, error: "departments_origin_not_allowed" }); return; }
       }
       const body = await readBody(request);
