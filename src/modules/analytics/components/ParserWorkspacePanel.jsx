@@ -485,25 +485,39 @@ function MarketingOverview({
   onSelectDirection,
   onUpdateDirection,
 }) {
+  const [query, setQuery] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  const unassignedCount = VISIBLE_MARKETING_DIRECTIONS.filter((direction) => !hasAssignedOwner(dashboardState.directions[direction.id]?.owner)).length;
+  const filteredDirections = VISIBLE_MARKETING_DIRECTIONS.filter((direction) => {
+    const owner = dashboardState.directions[direction.id]?.owner || "";
+    const matchesOwner = ownerFilter === "all" || !hasAssignedOwner(owner);
+    return matchesOwner && `${direction.title} ${direction.description} ${owner}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru"));
+  });
   return (
     <div className="analytics-marketing-hub">
       <section className="analytics-marketing-hub-hero analytics-surface">
         <div>
-          <p className="analytics-kicker">Marketing command center</p>
-          <h2>Marketing Dashboard</h2>
+          <h2>Маркетинг</h2>
           <p>
-            Все каналы продвижения Atlas, ответственные, переговоры и результаты в одном рабочем пространстве.
+            Направления, люди и следующие шаги.
           </p>
         </div>
         <div className="analytics-marketing-hub-summary" aria-label="Сводка маркетинговых инструментов">
-          <span>Направления</span>
-          <strong>{VISIBLE_MARKETING_DIRECTIONS.length}</strong>
-          <small>{VISIBLE_MARKETING_DIRECTIONS.filter((direction) => hasAssignedOwner(dashboardState.directions[direction.id]?.owner)).length} с назначенным ответственным</small>
+          <span>{VISIBLE_MARKETING_DIRECTIONS.length} направлений</span>
+          <small>{VISIBLE_MARKETING_DIRECTIONS.length - unassignedCount} с ответственным</small>
         </div>
       </section>
 
+      <div className="sus-marketing-toolbar">
+        <div className="sus-direction-filters" aria-label="Фильтр направлений">
+          <button type="button" aria-pressed={ownerFilter === "all"} onClick={() => setOwnerFilter("all")}>Все направления</button>
+          <button type="button" aria-pressed={ownerFilter === "unassigned"} onClick={() => setOwnerFilter("unassigned")}>Без ответственного <span>{unassignedCount}</span></button>
+        </div>
+        <input type="search" aria-label="Найти направление или ответственного" placeholder="Найти направление или человека" value={query} onChange={(event) => setQuery(event.target.value)} />
+      </div>
       <section className="analytics-marketing-tool-grid" aria-label="Маркетинговые направления">
-        {VISIBLE_MARKETING_DIRECTIONS.map((direction) => {
+        <div className="sus-direction-columns" aria-hidden="true"><span>Направление</span><span>Статус</span><span>Показатели</span><span>Ответственный</span></div>
+        {filteredDirections.map((direction) => {
           const value = dashboardState.directions[direction.id];
           const stats = sourceStats[direction.sourceKey] || genericStats(value);
           const phase = operationalPhase(value, stats);
@@ -514,12 +528,8 @@ function MarketingOverview({
                 className="analytics-marketing-card-open"
                 onClick={() => onSelectDirection(direction.id)}
               >
-                <div className="analytics-marketing-card-meta">
-                  <span>{String(direction.order).padStart(2, "0")}</span>
-                  <em>{phase}</em>
-                </div>
-                <strong>{direction.title}</strong>
-                <p>{direction.description}</p>
+                <div className="sus-direction-copy"><strong>{direction.title}</strong><p>{direction.description}</p></div>
+                <div className="analytics-marketing-card-meta"><em data-phase={phase}>{phase}</em></div>
                 <div className="analytics-marketing-card-metrics">
                   {cardMetrics(direction, stats, value).map(([label, metricValue]) => (
                     <div key={label}>
@@ -553,6 +563,7 @@ function MarketingOverview({
             </article>
           );
         })}
+        {filteredDirections.length === 0 ? <div className="sus-empty-directions"><strong>Направления не найдены</strong><p>Попробуйте другое название или сбросьте фильтры.</p><button type="button" onClick={() => { setQuery(""); setOwnerFilter("all"); }}>Сбросить фильтры</button></div> : null}
       </section>
     </div>
   );
@@ -838,7 +849,7 @@ export default function ParserWorkspacePanel({ initialTab = "overview" } = {}) {
   }
 
   return (
-    <section className="analytics-parser-workspace">
+    <section className={`analytics-parser-workspace${activeTab === "overview" ? " sus-marketing-home" : ""}`}>
       <div className="analytics-parser-subtabs analytics-surface" role="tablist" aria-label="Тип парсера">
         {PARSER_TABS.map((tab) => (
           <button

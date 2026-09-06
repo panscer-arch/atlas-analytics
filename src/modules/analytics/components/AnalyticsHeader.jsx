@@ -1,6 +1,7 @@
 import { Building2, HandCoins, Handshake, LockKeyhole, Megaphone, Radar, TableProperties, UsersRound, Workflow } from "lucide-react";
 import AnalyticsDateTime from "./AnalyticsDateTime";
 import { HEADER_TOOL_ORDER } from "../data/navigationShell";
+import "../styles/workspace-shell.css";
 
 const VAULT_URL = String(import.meta.env.VITE_VAULT_URL || "").trim();
 
@@ -99,37 +100,20 @@ function AnalyticsHeader({
   };
 
   return (
-    <div className="analytics-surface analytics-header">
+    <div className="analytics-surface analytics-header sus-header">
       <div className="analytics-header-top">
         <div className="analytics-header-main">
-          <div className="analytics-header-title-row">
-            <span className="analytics-header-logo-wrap" aria-hidden="true">
-              <img className="analytics-header-logo" src="/generated/analytics-character-logo.png" alt="" />
-              <span className="analytics-header-logo-eye analytics-header-logo-eye-left" />
-              <span className="analytics-header-logo-eye analytics-header-logo-eye-right" />
-              <span className="analytics-header-logo-mouth" />
-            </span>
-            <h1 className="analytics-page-title analytics-page-title-animated">Аналитика</h1>
+          <div className="sus-brand-row">
+            <span className="sus-brand-mark" aria-hidden="true">S</span>
+            <div className="sus-brand-copy"><h1>SuperSUS<span> / </span></h1><p>Рабочее пространство команды</p></div>
             {showMotion ? (
               <button
                 type="button"
-                className="analytics-header-motion analytics-header-motion-inline analytics-header-motion-button"
+                className="sus-diary-button"
                 onClick={onLiveAnalyticsClick}
                 aria-label="Открыть дневник"
               >
-                <div className="analytics-header-motion-label">
-                  <span className="analytics-header-motion-dot" />
-                  <span>Live analytics</span>
-                </div>
-                <div className="analytics-header-wave">
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-1" />
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-2" />
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-3" />
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-4" />
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-5" />
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-6" />
-                  <span className="analytics-header-wave-bar analytics-header-wave-bar-7" />
-                </div>
+                <ToolIcon type="notes" /><span>Дневник</span>
               </button>
             ) : null}
           </div>
