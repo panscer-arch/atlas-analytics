@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:departments": "node scripts/verify-departments.mjs && node scripts/verify-departments-access.mjs",
+    "test:tables": "node scripts/verify-tables.mjs && node scripts/verify-tables-access.mjs && node scripts/verify-tables-navigation.mjs",
     "test:funnel": "node scripts/verify-atlas-funnel.mjs",
     "test:funnel-pilot": "node scripts/verify-atlas-funnel-pilot.mjs && node scripts/verify-atlas-funnel-api.mjs",
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",
@@ -17,7 +18,7 @@
     "memory:telegram:import": "node scripts/import-telegram-history.mjs",
     "refresh:direct-sales-directory": "node scripts/refresh-direct-sales-directory.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/verify-contacts-navigation.mjs && node scripts/verify-parser-tabs.mjs && node scripts/verify-agent-reach-parser.mjs && node scripts/verify-country-discovery-parser.mjs && node scripts/verify-listings-keyword-library.mjs && node scripts/verify-marketing-os.mjs",
+    "prebuild": "node scripts/verify-tables-navigation.mjs && node scripts/verify-contacts-navigation.mjs && node scripts/verify-parser-tabs.mjs && node scripts/verify-agent-reach-parser.mjs && node scripts/verify-country-discovery-parser.mjs && node scripts/verify-listings-keyword-library.mjs && node scripts/verify-marketing-os.mjs",
     "build": "vite build",
     "test:marketing-monitor": "node scripts/verify-marketing-dashboard-monitor.mjs && node scripts/verify-marketing-monitor-api.mjs",
     "test:marketing-os": "node scripts/verify-marketing-os.mjs",

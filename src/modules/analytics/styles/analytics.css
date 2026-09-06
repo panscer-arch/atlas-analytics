@@ -6,6 +6,11 @@
   padding: 1.5rem 1rem;
 }
 
+.analytics-layout-tables {
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
 /* Unified website analytics: GA4, Clarity and Rybbit */
 .web-analytics-board,
 .web-analytics-provider-board {
@@ -697,6 +702,10 @@
 
 .analytics-header-contacts-button {
   color: #7ee6c2;
+}
+
+.analytics-header-tables-button {
+  color: #ffb66f;
 }
 
 .analytics-header-contributions-button {

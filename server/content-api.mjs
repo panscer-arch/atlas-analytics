@@ -31,6 +31,7 @@ const MAX_BODY_BYTES = 10 * 1024 * 1024;
 const TELEGRAM_ENV_FILE = process.env.ATLAS_TELEGRAM_ENV_FILE || "/etc/atlas-telegram-bot.env";
 const OUTREACH_ENV_FILE = process.env.ATLAS_OUTREACH_ENV_FILE || "/etc/atlas-outreach.env";
 const OUTREACH_LOG_KEY = "atlas.analytics.hyipOutreach.emailLog.v1";
+const TABLES_CONTENT_KEY = "supersus.tables.v1";
 const YOUTUBE_API_LEADS_KEY = "atlas.analytics.youtubeApiSearch.leads.v1";
 const SEGMENT_OUTREACH_KEY = "atlas.analytics.segmentOutreach.v10";
 const BITNEST_YOUTUBE_KEY = "atlas.analytics.bitnestYoutube.channels.v1";
@@ -194,6 +195,7 @@ const MARKETING_MONITORED_CONTENT_KEYS = new Set([
 ]);
 const MARKETING_WRITE_CONTENT_KEYS = new Set([
   "supersus.departments.v1",
+  TABLES_CONTENT_KEY,
   ...MARKETING_MONITORED_CONTENT_KEYS,
   "atlas.analytics.atlasCreatives.v1",
   "atlas.analytics.firstFunnel.v1",
@@ -201,7 +203,12 @@ const MARKETING_WRITE_CONTENT_KEYS = new Set([
 ]);
 const MARKETING_READ_CONTENT_KEYS = new Set([
   "supersus.departments.v1",
+  TABLES_CONTENT_KEY,
   "atlas.analytics.listingsCrm.v1",
+]);
+const ORIGIN_RESTRICTED_CONTENT_KEYS = new Set([
+  "supersus.departments.v1",
+  TABLES_CONTENT_KEY,
 ]);
 
 // Private CRM content requires the existing SuperSUS marketing session.
@@ -5329,16 +5336,22 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
         return;
       }
-      if (key === "supersus.departments.v1" && request.headers.origin) {
+      if (ORIGIN_RESTRICTED_CONTENT_KEYS.has(key) && request.headers.origin) {
         let validOrigin = false;
         try {
           const origin = new URL(request.headers.origin);
+          const requestHost = new URL(`http://${request.headers.host || "invalid.local"}`);
+          const localHosts = ["127.0.0.1", "localhost", "[::1]", "::1"];
           // Production proxies can replace Host with an internal address.
           // Match the same explicit public origins as office-presence.
           validOrigin = ["https://supersussystem.com", "https://www.supersussystem.com"].includes(origin.origin)
-            || (origin.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname) && origin.host === request.headers.host);
+            || (origin.protocol === "http:" && localHosts.includes(origin.hostname) && localHosts.includes(requestHost.hostname));
         } catch {}
-        if (!validOrigin) { sendJson(response, 403, { ok: false, error: "departments_origin_not_allowed" }); return; }
+        if (!validOrigin) {
+          const error = key === "supersus.departments.v1" ? "departments_origin_not_allowed" : "tables_origin_not_allowed";
+          sendJson(response, 403, { ok: false, error });
+          return;
+        }
       }
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");

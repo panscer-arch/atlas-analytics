@@ -62,6 +62,7 @@ const MAIN_TAB_BOARD_IDS = {
   dashboard: "dashboard",
   session: "sessionQueue",
   contacts: "influencers",
+  tables: "tables",
   parser: "parser",
   marketingOs: "marketingOS",
   analytics: "analytics",
@@ -727,7 +728,7 @@ function AnalyticsPage() {
   }
 
   return (
-    <main className="analytics-layout">
+    <main className={`analytics-layout${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
       <AnalyticsHeader
         onAiReview={() => {
           handleMainTabChange("dashboard");
@@ -741,6 +742,7 @@ function AnalyticsPage() {
         onContributionsOpen={handleContributionsOpen}
         onToolRadarOpen={handleToolRadarOpen}
         onContactsOpen={() => handleMainTabChange("contacts")}
+        onTablesOpen={() => handleMainTabChange("tables")}
         onTeamOpen={() => handleMainTabChange("team")}
         onDepartmentsOpen={() => handleMainTabChange("departments")}
         listingsCrmUrl="https://node-panel-hq.com/"

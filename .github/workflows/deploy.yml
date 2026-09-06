@@ -43,6 +43,7 @@ jobs:
           npm run test:expenses
           npm run test:office
           npm run test:departments
+          npm run test:tables
           npm run test:telegram-memory
           npm run test:official-memory
           npm run test:hermes-voice
@@ -815,6 +816,27 @@ jobs:
           """
           if marker not in text:
               raise SystemExit("Missing content route for departments")
+          open(path, "w", encoding="utf-8").write(text.replace(marker, snippet + marker, 1))
+          PY
+            fi
+            if sudo grep -q 'server_name supersussystem.com' "$NGINX_FILE" && ! sudo grep -q 'location = /api/content/supersus.tables.v1' "$NGINX_FILE"; then
+              sudo python3 - "$NGINX_FILE" <<'PY'
+          import sys
+          path = sys.argv[1]
+          text = open(path, encoding="utf-8").read()
+          marker = "    location /api/content/ {"
+          snippet = """    location = /api/content/supersus.tables.v1 {
+                  proxy_pass http://127.0.0.1:8787;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header Origin $http_origin;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  client_max_body_size 10m;
+              }
+
+          """
+          if marker not in text:
+              raise SystemExit("Missing content route for tables")
           open(path, "w", encoding="utf-8").write(text.replace(marker, snippet + marker, 1))
           PY
             fi
