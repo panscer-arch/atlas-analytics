@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:departments": "node scripts/verify-departments.mjs && node scripts/verify-departments-access.mjs",
     "test:funnel": "node scripts/verify-atlas-funnel.mjs",
     "test:funnel-pilot": "node scripts/verify-atlas-funnel-pilot.mjs && node scripts/verify-atlas-funnel-api.mjs",
     "test:hyip-monitors": "node scripts/verify-hyip-monitor-expansion.mjs",

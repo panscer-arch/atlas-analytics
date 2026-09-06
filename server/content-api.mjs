@@ -193,12 +193,14 @@ const MARKETING_MONITORED_CONTENT_KEYS = new Set([
   ...MARKETING_SOURCE_CONFIGS.flatMap((config) => [config.key, config.outreachKey].filter(Boolean)),
 ]);
 const MARKETING_WRITE_CONTENT_KEYS = new Set([
+  "supersus.departments.v1",
   ...MARKETING_MONITORED_CONTENT_KEYS,
   "atlas.analytics.atlasCreatives.v1",
   "atlas.analytics.firstFunnel.v1",
   "atlas.analytics.listingsCrm.v1",
 ]);
 const MARKETING_READ_CONTENT_KEYS = new Set([
+  "supersus.departments.v1",
   "atlas.analytics.listingsCrm.v1",
 ]);
 
@@ -5326,6 +5328,11 @@ const server = http.createServer(async (request, response) => {
       if (!FINANCE_CONTENT_KEYS.has(key) && MARKETING_WRITE_CONTENT_KEYS.has(key) && !await hasMarketingWriteSession(request)) {
         sendJson(response, 401, { ok: false, error: "marketing_write_auth_required" });
         return;
+      }
+      if (key === "supersus.departments.v1" && request.headers.origin) {
+        let validOrigin = false;
+        try { validOrigin = new URL(request.headers.origin).host === request.headers.host; } catch {}
+        if (!validOrigin) { sendJson(response, 403, { ok: false, error: "departments_origin_not_allowed" }); return; }
       }
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");

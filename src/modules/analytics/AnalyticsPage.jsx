@@ -72,6 +72,7 @@ const MAIN_TAB_BOARD_IDS = {
   hermes: "hermesAssistant",
   diary: "diary",
   team: "team",
+  departments: "departments",
 };
 const ANALYTICS_TAB_BOARD_IDS = {
   dashboard: "analytics",
@@ -741,6 +742,7 @@ function AnalyticsPage() {
         onToolRadarOpen={handleToolRadarOpen}
         onContactsOpen={() => handleMainTabChange("contacts")}
         onTeamOpen={() => handleMainTabChange("team")}
+        onDepartmentsOpen={() => handleMainTabChange("departments")}
         listingsCrmUrl="https://node-panel-hq.com/"
         partnersCrmUrl="https://partner-cycle.com/"
         mediaPreviewUrl={ATLAS_SITE_PREVIEW_URL}

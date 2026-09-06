@@ -13,6 +13,7 @@ import ProductLibraryBoard from "./ProductLibraryBoard";
 import ProductsRegistry from "./ProductsRegistry";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import TeamGraphBoard from "./TeamGraphBoard";
+import DepartmentsBoard from "./DepartmentsBoard";
 import WorkSessionQueue from "./WorkSessionQueue";
 import Wrapper from "./Wrapper";
 import YouTrackTaskMonitor from "./YouTrackTaskMonitor";
@@ -143,6 +144,7 @@ export default function AnalyticsMainPanel({
   if (activeTab === "session") return <WorkSessionQueue />;
   if (activeTab === "hermes") return <HermesAssistantBoard />;
   if (activeTab === "team") return <TeamGraphBoard />;
+  if (activeTab === "departments") return <DepartmentsBoard />;
   if (activeTab === "tasks") return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} />;
   if (activeTab === "taskMonitor") {
     return <TasksWorkspacePanel analyticsBoardUrl={analyticsBoardUrl} initialView="monitor" />;
