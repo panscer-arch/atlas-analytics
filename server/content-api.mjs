@@ -5340,12 +5340,18 @@ const server = http.createServer(async (request, response) => {
         let validOrigin = false;
         try {
           const origin = new URL(request.headers.origin);
+          const requestHost = new URL(`http://${request.headers.host || "invalid.local"}`);
+          const localHosts = ["127.0.0.1", "localhost", "[::1]", "::1"];
           // Production proxies can replace Host with an internal address.
           // Match the same explicit public origins as office-presence.
           validOrigin = ["https://supersussystem.com", "https://www.supersussystem.com"].includes(origin.origin)
-            || (origin.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname) && origin.host === request.headers.host);
+            || (origin.protocol === "http:" && localHosts.includes(origin.hostname) && localHosts.includes(requestHost.hostname));
         } catch {}
-        if (!validOrigin) { sendJson(response, 403, { ok: false, error: "content_origin_not_allowed" }); return; }
+        if (!validOrigin) {
+          const error = key === "supersus.departments.v1" ? "departments_origin_not_allowed" : "tables_origin_not_allowed";
+          sendJson(response, 403, { ok: false, error });
+          return;
+        }
       }
       const body = await readBody(request);
       const parsed = JSON.parse(body || "{}");

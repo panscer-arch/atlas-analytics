@@ -40,6 +40,7 @@ import "../styles/tables.css";
 const TABLE_TABS = [
   { id: "growth", label: "Рост системы", hint: "A1:H19" },
   { id: "liquidity", label: "План ликвидности", hint: "A25:F32" },
+  { id: "forecast", label: "Прогноз GPT", hint: "план / факт / сценарии" },
 ];
 
 function readTableView() {

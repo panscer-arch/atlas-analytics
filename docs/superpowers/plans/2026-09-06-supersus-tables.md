@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a protected `Таблицы` workspace to SuperSus with two editable, server-backed tables imported from the approved Google Sheet snapshot.
+**Goal:** Add a protected `Таблицы` workspace to SuperSus with two editable tables imported from the approved Google Sheet snapshot and a third universal forecast model.
 
 **Architecture:** Store one validated versioned document under `supersus.tables.v1` in the existing content API. A focused model module owns seed fidelity, mutations, CSV export, validation, and conflict-safe saves; a React board owns UI state, local draft recovery, and explicit edit/save modes. Navigation follows the existing header-tool and `?board=` patterns, while the content endpoint reuses the departments authentication, origin guard, backup, and read-back approach.
 
@@ -14,7 +14,8 @@
 
 - SuperSus is the source of truth; Google Sheets remains a manual reference link with no background synchronization.
 - Preserve the two observed source ranges and all visible blank cells; do not invent missing formulas or values.
-- Route the page through `?board=tables` and the internal table through `tableView=growth|liquidity`.
+- Add `Прогноз GPT` as a management template with copied approved targets and blank unknown fact/control values.
+- Route the page through `?board=tables` and the internal table through `tableView=growth|liquidity|forecast`.
 - Require the existing authenticated SuperSus marketing session for both reads and writes.
 - Reject cross-origin writes while allowing `https://supersussystem.com`, `https://www.supersussystem.com`, and matching localhost development origins.
 - Keep unsaved drafts in `localStorage`, prevent silent multi-editor overwrite, and confirm the saved snapshot by reading it back.
@@ -65,7 +66,7 @@ const model = await import("../src/modules/analytics/data/tablesModel.js");
 const seed = model.createTablesSeed();
 
 assert.equal(model.validateTablesDocument(seed), "");
-assert.equal(seed.tables.length, 2);
+assert.equal(seed.tables.length, 3);
 assert.equal(seed.tables[0].columns.length, 8);
 assert.equal(seed.tables[0].rows.length, 13);
 assert.equal(seed.tables[0].rows[3].cells.month, "Ноябрь 2026");
@@ -286,7 +287,7 @@ git commit -m "feat: add SuperSus tables navigation"
 
 - [ ] **Step 1: Extend the failing integration test with UI outcomes**
 
-Add checks that the component contains the two tab labels, source link, read/edit switch, row and column controls, save status, draft recovery, CSV/JSON exports, and a real grid with table semantics. The test must fail before the component exists.
+Add checks that the component contains all three tab labels, source link, read/edit switch, row and column controls, save status, draft recovery, CSV/JSON exports, and a real grid with table semantics. The test must fail before the component exists.
 
 - [ ] **Step 2: Run navigation/UI verification RED**
 
@@ -381,7 +382,7 @@ Run the content API with a temporary `ATLAS_CONTENT_STORE_DIR` and a non-product
 - [ ] **Step 3: Verify desktop behavior near 1440 px**
 
 - Open `?board=tables`.
-- Confirm the `Таблицы` header tool, two tabs, source link, seed values, sticky table structure, and no horizontal page overflow.
+- Confirm the `Таблицы` header tool, three tabs, source link, seed values, sticky table structure, and no horizontal page overflow.
 - Unlock through the temporary local test session, edit a cell, add a row and column, undo, save, reload, and confirm the saved result is read back.
 - Confirm browser back/forward preserves both `board=tables` and `tableView`.
 

@@ -247,7 +247,7 @@
   .tables-mode-switch,
   .tables-edit-actions input { width: 100%; }
   .tables-mode-switch button { min-height: 44px; flex: 1; justify-content: center; }
-  .tables-tabs { display: grid; grid-template-columns: 1fr 1fr; }
+  .tables-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tables-tabs > button { min-width: 0; }
   .tables-notes { grid-template-columns: 1fr; }
   .tables-notes label { border-right: 0; border-bottom: 1px solid var(--tables-line); }

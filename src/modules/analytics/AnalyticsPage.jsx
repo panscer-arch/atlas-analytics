@@ -728,7 +728,7 @@ function AnalyticsPage() {
   }
 
   return (
-    <main className="analytics-layout">
+    <main className={`analytics-layout${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
       <AnalyticsHeader
         onAiReview={() => {
           handleMainTabChange("dashboard");

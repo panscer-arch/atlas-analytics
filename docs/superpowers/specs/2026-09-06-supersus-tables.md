@@ -1,13 +1,14 @@
 # SuperSus Tables — Design Specification
 
-**Status:** Approved direction, implementation pending  
+**Status:** Implemented; production verification pending
+
 **Date:** 2026-09-06  
 **Product:** SuperSus System  
 **Source spreadsheet:** [Таблица рост системы](https://docs.google.com/spreadsheets/d/1NDEI465gm7JQf4jIzB85yny2y0KCSl7JvTnY9qh_pKM/edit?gid=0#gid=0)
 
 ## 1. Purpose
 
-Add a protected, native table workspace to SuperSus so the team can keep, edit, extend, and export the two planning tables currently stored in one Google Sheet. SuperSus becomes the source of truth after the initial import. The Google Sheet remains a read-only reference and backup link; there is no automatic two-way synchronization in version 1.
+Add a protected, native table workspace to SuperSus so the team can keep, edit, extend, and export two planning tables from Google Sheets plus a third universal forecast model. SuperSus becomes the source of truth after the initial import. The Google Sheet remains a read-only reference and backup link; there is no automatic two-way synchronization in version 1.
 
 ## 2. Observed source structure
 
@@ -79,6 +80,30 @@ Rows:
 | 1 февраля | $4.000.000 | $2.000.000 |  | $8.500.000 | $285.000 |
 | 1 марта | $6.000.000 |  |  | $12.000.000 | $400.000 |
 
+### Table 3: Прогноз GPT
+
+This is an internal management template added after the initial source review. It combines the approved monthly targets with blank fact, risk, and control fields rather than presenting invented outcomes.
+
+Columns:
+
+1. Период
+2. Сценарий
+3. Входящий поток — план
+4. Входящий поток — факт
+5. Выполнение плана, %
+6. Новые активные кошельки — план
+7. Новые активные кошельки — факт
+8. Средний цикл, $
+9. Запуски циклов — план
+10. Повторные циклы, %
+11. Исходящий поток — прогноз
+12. Целевой LP
+13. Минимальный резерв
+14. Чистый поток — факт
+15. Главный риск / действие
+
+The initial rows cover August 2026 through July 2027. Existing inflow, wallet, cycle, average-cycle, and available LP targets are copied into the matching months; unknown facts and projections remain blank. Users may duplicate a month to compare conservative, base, and accelerated scenarios.
+
 ## 3. Navigation and page structure
 
 - Add a compact `Таблицы` tool to the existing SuperSus header, using the same dimensions, tooltip behavior, and visual language as `Контакты` and `Маркетинг`.
@@ -86,10 +111,11 @@ Rows:
 - Add `tables` to the main board route registry so browser back/forward and direct links work.
 - Do not add another item to the already dense primary tab row.
 - The page title is `Таблицы` with the subtitle `Планы роста и ликвидности`.
-- The page contains two internal tabs:
+- The page contains three internal tabs:
   - `Рост системы`
   - `План ликвидности`
-- Internal tab state is reflected in `tableView=growth|liquidity` so each table has a stable direct link.
+  - `Прогноз GPT`
+- Internal tab state is reflected in `tableView=growth|liquidity|forecast` so each table has a stable direct link.
 
 ## 4. Editing experience
 
@@ -207,7 +233,7 @@ Initial limits:
 
 Automated verification must cover:
 
-- seed fidelity for both tables and notes;
+- seed fidelity for both imported tables, the forecast template, and all notes;
 - validation and normalization boundaries;
 - row, cell, column, reorder, delete, and undo operations;
 - conflict-safe save and read-back verification;

@@ -77,9 +77,9 @@ try {
   const secondPayload = { version: 1, tables: [{ id: "liquidity", title: "План ликвидности" }] };
   assert.equal((await fetch(endpoint, {
     method: "PUT",
-    headers: { Cookie: cookie, Origin: base, "Content-Type": "application/json" },
+    headers: { Cookie: cookie, Origin: "http://localhost:4179", "Content-Type": "application/json" },
     body: JSON.stringify({ value: secondPayload }),
-  })).status, 200, "Matching localhost origin works");
+  })).status, 200, "Local Vite and API ports may differ while both hosts remain local");
   const secondRead = await fetch(endpoint, { headers: { Cookie: cookie } });
   assert.deepEqual((await secondRead.json()).value, secondPayload);
 
