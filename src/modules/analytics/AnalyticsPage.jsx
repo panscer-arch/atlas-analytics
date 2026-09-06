@@ -690,7 +690,7 @@ function AnalyticsPage() {
   }
 
   return (
-    <main className={`analytics-layout${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
+    <main className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
       <AnalyticsHeader
         onMarketingOsOpen={() => handleMainTabChange("marketingOs")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
