@@ -1,9 +1,11 @@
 @import "./supersus-harness.css";
 
 .analytics-layout {
+  box-sizing: border-box;
   min-height: 100vh;
   width: 100%;
   padding: 1.5rem 1rem;
+  overflow-x: hidden;
 }
 
 .analytics-layout-tables {
@@ -637,6 +639,11 @@
   transform: translateY(-2px);
 }
 
+.analytics-header-tool:hover,
+.analytics-header-tool:focus-visible {
+  z-index: 40;
+}
+
 .analytics-header-tool::after,
 .analytics-header-ai-button::after {
   position: absolute;
@@ -700,8 +707,12 @@
   color: #c9b8ff;
 }
 
-.analytics-header-contacts-button {
-  color: #7ee6c2;
+.analytics-header-marketing-os-button {
+  color: #c9b8ff;
+}
+
+.analytics-header-expenses-button {
+  color: #ffd28a;
 }
 
 .analytics-header-tables-button {

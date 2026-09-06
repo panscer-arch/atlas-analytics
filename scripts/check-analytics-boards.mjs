@@ -24,11 +24,13 @@ const filter = args.filter ? new Set(String(args.filter).split(",").map((item) =
 const screenshotDir = args.screenshotDir || "/tmp/supersus-board-checks";
 
 const checks = [
-  { id: "home", path: "/", text: "Аналитика" },
+  { id: "home", path: "/", text: "Marketing Dashboard" },
   { id: "expenses", path: "/?board=expenses", text: "Расходы" },
   { id: "contacts", path: "/?board=influencers", text: "Контакты", expectedBoard: "influencers" },
   { id: "parser", path: "/?board=parser", text: "Marketing Dashboard" },
   { id: "marketing-os", path: "/?board=marketingOS", text: "MarketingOS" },
+  { id: "dashboard-legacy", path: "/?board=dashboard", text: "Marketing Dashboard" },
+  { id: "products-legacy", path: "/?board=products", text: "Кто за что отвечает" },
   { id: "diary", path: "/?board=diary", text: "Код доступа" },
 
   { id: "tasks-launch", path: "/?board=launch", text: "Задачи запуска" },
@@ -39,8 +41,8 @@ const checks = [
   { id: "tasks-ideas", path: "/?board=ideas", text: "Идеи" },
   { id: "tasks-daily", path: "/?board=dailyTasks", text: "Ближайшие задачи" },
   { id: "tasks-social", path: "/?board=socialSubscriptions", text: "Подписки" },
-  { id: "tasks-library", path: "/?board=productLibrary", text: "Библиотека" },
-  { id: "tasks-developments", path: "/?board=developments", text: "Разработки" },
+  { id: "tasks-library", path: "/?board=productLibrary", text: "Кто за что отвечает" },
+  { id: "tasks-developments", path: "/?board=developments", text: "Кто за что отвечает" },
   { id: "tasks-crm", path: "/?board=crmBoard", text: "CRM-доска" },
 
   { id: "content-plan", path: "/?board=contentPlan", text: "Контент-план" },
@@ -61,8 +63,9 @@ const checks = [
 ];
 
 const interactionChecks = [
-  { id: "button-contacts", path: "/", clickSelector: '[aria-label="Контакты"]', text: "Контакты", expectedBoard: "influencers" },
-  { id: "button-parser", path: "/", clickSelector: '[aria-label="Маркетинг"]', text: "Marketing Dashboard", expectedBoard: "parser" },
+  { id: "button-contacts", path: "/?board=parser", clickSelector: '[data-parser-tab="contacts"]', text: "Контакты", expectedBoard: "influencers" },
+  { id: "button-parser", path: "/?board=analytics", clickSelector: '[data-main-tab="parser"]', text: "Marketing Dashboard", expectedBoard: "parser" },
+  { id: "button-marketing-os", path: "/", clickSelector: '[data-header-tool="marketingOs"]', text: "MarketingOS", expectedBoard: "marketingOS" },
   { id: "button-notes", path: "/", clickSelector: '[aria-label="Заметки"]', text: "Заметки" },
   { id: "button-diary", path: "/", clickSelector: ".analytics-header-motion-button", text: "Код доступа" },
 ];

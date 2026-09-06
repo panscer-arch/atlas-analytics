@@ -16,12 +16,14 @@ const contactsSource = read("src/modules/analytics/components/InfluencerProspect
 const contactsDataSource = read("src/modules/analytics/data/influencerProspectsData.js");
 
 const checks = [
-  [headerSource.includes("onContactsOpen") && headerSource.includes('label="Контакты"'), "В шапке нет отдельной кнопки «Контакты»."],
-  [pageSource.includes('contacts: "influencers"') && pageSource.includes('handleMainTabChange("contacts")'), "Маршрут контактов не подключён к шапке."],
-  [panelSource.includes('activeTab === "contacts"') && panelSource.includes("<InfluencerProspectsPanel />"), "Контакты не открываются отдельной основной панелью."],
-  [registrySource.includes('if (boardId === "influencers" || boardId === "marketing-influencers") return "contacts";'), "Старый URL инфлюенсеров не ведёт в контакты."],
+  [!headerSource.includes("onContactsOpen") && !headerSource.includes('label="Контакты"'), "Кнопка «Контакты» всё ещё находится в шапке."],
+  [!pageSource.includes('contacts: "influencers"') && !pageSource.includes('handleMainTabChange("contacts")'), "Контакты всё ещё подключены как самостоятельный основной раздел."],
+  [!panelSource.includes('activeTab === "contacts"'), "Контакты всё ещё открываются отдельной основной панелью."],
+  [registrySource.includes('if (boardId === "influencers" || boardId === "marketing-influencers") return "parser";'), "Старые URL контактов не ведут внутрь маркетинга."],
   [registrySource.includes('influencers: () => <InfluencerProspectsPanel />'), "Статическая доска инфлюенсеров не открывает контакты напрямую."],
-  [!parserSource.includes('label: "Инфлюенсеры"'), "В маркетинговых вкладках всё ещё показаны «Инфлюенсеры»."],
+  [parserSource.includes("MARKETING_CONTACTS_TAB"), "Во внутренних вкладках маркетинга нет «Контактов»."],
+  [parserSource.includes("contacts: MARKETING_CONTACTS_TAB.boardId") && parserSource.includes('activeTab === "contacts"'), "Вкладка «Контакты» не открывает существующую базу."],
+  [parserSource.includes('"marketing-influencers": "influencers"'), "Старая ссылка marketing-influencers не перенаправляется во внутренние «Контакты»."],
   [parserSource.includes("VISIBLE_MARKETING_DIRECTIONS"), "Карточка инфлюенсеров всё ещё видна в маркетинговом центре."],
   [contactsSource.includes('title="Контакты"') && contactsSource.includes('csvFilename="atlas-contacts.csv"'), "Экран контактов не переименован."],
   [contactsSource.includes("WhatsApp") && contactsSource.includes('name: "Новый контакт"'), "Поиск или ручное добавление контакта не обновлены."],
@@ -37,4 +39,4 @@ if (failed.length) {
   process.exit(1);
 }
 
-console.log("Contacts navigation verified: header, route, standalone panel, legacy URL and storage compatibility.");
+console.log("Contacts navigation verified: nested Marketing tab, legacy URLs and storage compatibility.");

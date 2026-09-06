@@ -8,8 +8,6 @@ function getFlowTone(value) {
 }
 
 function CrmCommandDashboard({
-  isAiReviewOpen,
-  aiTaskSummary,
   analyticsTitle,
   analyticsFlowTone,
   analyticsCoverageLabel,
@@ -48,22 +46,6 @@ function CrmCommandDashboard({
           {analyticsSource?.updatedAt ? <small>{new Date(analyticsSource.updatedAt).toLocaleString("ru-RU")}</small> : null}
         </div>
       </div>
-
-      {isAiReviewOpen ? (
-        <div className="analytics-crm-ai-review">
-          <div className="analytics-crm-ai-score">
-            <span>AI-аудит задач</span>
-            <strong>{aiTaskSummary.score}</strong>
-            <small>операционный балл</small>
-          </div>
-          <div className="analytics-crm-ai-list">
-            {aiTaskSummary.alerts.map((alert) => (
-              <p key={alert}>{alert}</p>
-            ))}
-            <small>Архив: {aiTaskSummary.archiveCount} · История: {aiTaskSummary.historyCount} записей</small>
-          </div>
-        </div>
-      ) : null}
 
       <div className="analytics-crm-command-grid">
         <article className="analytics-crm-command-card analytics-crm-command-card-featured">
