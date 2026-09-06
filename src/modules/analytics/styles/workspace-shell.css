@@ -18,6 +18,7 @@
 .sus-header .analytics-header-top { display: flex; align-items: center; gap: 20px; }
 .sus-header .analytics-header-main { min-width: 0; }
 .sus-brand-row { display: flex; align-items: center; gap: 13px; }
+.sus-brand-original { display: block; width: 64px; height: 76px; object-fit: contain; flex-shrink: 0; }
 .sus-brand-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; background: #256653; color: #fff; font-size: 26px; font-weight: 600; flex-shrink: 0; }
 .sus-brand-copy h1 { margin: 0; font-size: 23px; font-weight: 650; letter-spacing: -.7px; line-height: 1.15; color: #252a2d; }
 .sus-brand-copy h1 span { color: #8fa79d; margin-left: 5px; }
@@ -138,6 +139,7 @@
   .sus-marketing-toolbar { flex-wrap: wrap; }
 }
 @media (max-width: 540px) {
+  .sus-brand-original { width: 42px; height: 50px; }
   .sus-workspace.analytics-layout { padding: 12px; }
   .sus-workspace .sus-header { padding: 15px 12px; border-radius: 10px; }
   .sus-brand-row { gap: 8px; flex-wrap: wrap; }

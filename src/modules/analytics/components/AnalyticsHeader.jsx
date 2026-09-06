@@ -104,7 +104,7 @@ function AnalyticsHeader({
       <div className="analytics-header-top">
         <div className="analytics-header-main">
           <div className="sus-brand-row">
-            <span className="sus-brand-mark" aria-hidden="true">S</span>
+            <img className="sus-brand-original" src="/generated/analytics-character-logo.png" alt="" width="64" height="76" />
             <div className="sus-brand-copy"><h1>SuperSUS<span> / </span></h1><p>Рабочее пространство команды</p></div>
             {showMotion ? (
               <button
