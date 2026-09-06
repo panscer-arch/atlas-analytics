@@ -52,6 +52,7 @@ import {
   readStoredCrmMyTasks,
 } from "./utils/analyticsPageUtils";
 import "./styles/analytics.css";
+import "./styles/workspace-preview.css";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
@@ -124,6 +125,10 @@ function getInitialAnalyticsSectionTab() {
 }
 
 function AnalyticsPage() {
+  const [designPreview] = useState(() => {
+    const value = new URLSearchParams(window.location.search).get("designPreview");
+    return ["graphite", "platinum"].includes(value) ? value : undefined;
+  });
   const [activeTab, setActiveTab] = useState(getInitialAnalyticsTab);
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState(getInitialAnalyticsSectionTab);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
@@ -690,7 +695,17 @@ function AnalyticsPage() {
   }
 
   return (
-    <main className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
+    <main data-design-preview={designPreview} className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
+      {designPreview ? (
+        <div className="sus-design-switcher">
+          <span>Предпросмотр оформления</span>
+          <nav aria-label="Варианты дизайна">
+            <a aria-current={designPreview === "graphite" ? "page" : undefined} href="?board=parser&designPreview=graphite">Графит</a>
+            <a aria-current={designPreview === "platinum" ? "page" : undefined} href="?board=parser&designPreview=platinum">Платина</a>
+            <a href="?board=parser">Основной сайт ↗</a>
+          </nav>
+        </div>
+      ) : null}
       <AnalyticsHeader
         onMarketingOsOpen={() => handleMainTabChange("marketingOs")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
