@@ -4,9 +4,11 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const read = (name) => readFile(resolve(root, "deploy/admin-finance-staging", name), "utf8");
-const [dockerfile, compose, forecastCompose, nginx, hostNginx, example, viteConfig] = await Promise.all([
+const [dockerfile, webReleaseDockerfile, compose, webReleaseCompose, forecastCompose, nginx, hostNginx, example, viteConfig] = await Promise.all([
   read("Dockerfile"),
+  read("Dockerfile.web-release"),
   read("compose.yaml"),
+  read("compose.web-release.yaml"),
   read("compose.forecast.yaml"),
   read("nginx.conf.template"),
   read("host-nginx.basic-auth.conf.template"),
@@ -25,6 +27,11 @@ assert(dockerfile.includes("COPY .github ./.github"));
 assert(!dockerfile.includes("COPY index.html vite.config.js ./"));
 assert(dockerfile.includes("pnpm build:admin-finance-staging"));
 assert(dockerfile.includes("pnpm test:admin-finance-staging-build"));
+assert(dockerfile.includes("pnpm build:admin-finance-full-alpha"));
+assert(dockerfile.includes("pnpm test:admin-finance-full-alpha-build"));
+assert(dockerfile.includes("/app/dist-admin-finance-release"));
+assert(webReleaseDockerfile.includes("nginxinc/nginx-unprivileged:1.27.4-alpine"));
+assert(webReleaseDockerfile.includes("COPY site /usr/share/nginx/html"));
 assert(dockerfile.includes("pnpm install --prod --frozen-lockfile --ignore-scripts"));
 assert(dockerfile.includes("nginxinc/nginx-unprivileged:1.27.4-alpine"));
 assert(!compose.includes("oauth2-proxy"));
@@ -34,6 +41,9 @@ assert(!compose.includes("ATLAS_ADMIN_FINANCE_FORECAST_ENABLED"));
 assert(!compose.includes("ATLAS_ADMIN_FINANCE_TELEGRAM_TOKEN"));
 assert(!compose.includes("ATLAS_ADMIN_FINANCE_EMAIL_API_KEY"));
 assert(!compose.includes("ATLAS_ADMIN_FINANCE_MODE: demo"));
+assert(compose.includes("VITE_ADMIN_FINANCE_RELEASE_SCOPE: full"));
+assert(webReleaseCompose.includes("ATLAS_ADMIN_FINANCE_WEB_IMAGE:?required"));
+assert(webReleaseCompose.includes("build: null"));
 assert(forecastCompose.includes('ATLAS_ADMIN_FINANCE_FORECAST_ENABLED: "true"'));
 assert(forecastCompose.includes("ATLAS_ADMIN_FINANCE_DATABASE_CA_HOST_FILE:?required"));
 assert(forecastCompose.includes("/run/secrets/admin-finance-postgres-ca.pem:ro"));

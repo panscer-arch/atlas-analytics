@@ -28,7 +28,6 @@ export default defineConfig(() => {
   const adminFinanceEntry = process.env.VITE_APP_ENTRY === "admin-finance";
   const adminFinanceMvp = process.env.VITE_ADMIN_FINANCE_RELEASE_SCOPE === "mvp";
   const adminFinanceApiOnly = adminFinanceEntry
-    && adminFinanceMvp
     && process.env.VITE_ADMIN_FINANCE_DATA_SOURCE === "api";
   const adminFinanceProxy = localCaptureSession
     ? {

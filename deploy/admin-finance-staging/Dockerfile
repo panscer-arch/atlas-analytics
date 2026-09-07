@@ -21,13 +21,24 @@ ENV VITE_ADMIN_FINANCE_DATA_SOURCE=$VITE_ADMIN_FINANCE_DATA_SOURCE
 ENV VITE_ADMIN_FINANCE_RELEASE_SCOPE=$VITE_ADMIN_FINANCE_RELEASE_SCOPE
 RUN test "$VITE_APP_ENTRY" = "admin-finance" \
   && test "$VITE_ADMIN_FINANCE_DATA_SOURCE" = "api" \
-  && test "$VITE_ADMIN_FINANCE_RELEASE_SCOPE" = "mvp" \
-  && pnpm build:admin-finance-staging \
-  && pnpm test:admin-finance-staging-build
+  && if [ "$VITE_ADMIN_FINANCE_RELEASE_SCOPE" = "mvp" ]; then \
+       pnpm build:admin-finance-staging \
+       && pnpm test:admin-finance-staging-build; \
+     elif [ "$VITE_ADMIN_FINANCE_RELEASE_SCOPE" = "full" ]; then \
+       pnpm build:admin-finance-full-alpha \
+       && ATLAS_ADMIN_FINANCE_BUILD_DIR=dist-admin-finance-full-alpha pnpm test:admin-finance-full-alpha-build; \
+     else \
+       echo "Unsupported Admin Finance release scope" >&2; exit 1; \
+     fi \
+  && if [ "$VITE_ADMIN_FINANCE_RELEASE_SCOPE" = "mvp" ]; then \
+       cp -R dist-admin-finance-staging dist-admin-finance-release; \
+     else \
+       cp -R dist-admin-finance-full-alpha dist-admin-finance-release; \
+     fi
 
 FROM nginxinc/nginx-unprivileged:1.27.4-alpine AS web
 COPY deploy/admin-finance-staging/nginx.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=web-build /app/dist-admin-finance-staging /usr/share/nginx/html
+COPY --from=web-build /app/dist-admin-finance-release /usr/share/nginx/html
 EXPOSE 8080
 
 FROM base AS api-deps

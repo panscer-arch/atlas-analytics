@@ -47,7 +47,7 @@ services:
       target: web
       args:
         VITE_ADMIN_FINANCE_DATA_SOURCE: api
-        VITE_ADMIN_FINANCE_RELEASE_SCOPE: mvp
+        VITE_ADMIN_FINANCE_RELEASE_SCOPE: full
     environment:
       ATLAS_ADMIN_FINANCE_SESSION_TOKEN: ${ATLAS_ADMIN_FINANCE_SESSION_TOKEN:?required}
     user: "101:101"

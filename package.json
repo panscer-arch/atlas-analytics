@@ -47,6 +47,8 @@
     "prebuild:admin-finance-staging": "npm run prebuild",
     "build:admin-finance-staging": "VITE_APP_ENTRY=admin-finance VITE_ADMIN_FINANCE_DATA_SOURCE=api VITE_ADMIN_FINANCE_RELEASE_SCOPE=mvp vite build --outDir dist-admin-finance-staging",
     "test:admin-finance-staging-build": "node scripts/verify-admin-finance-staging-build.mjs",
+    "build:admin-finance-full-alpha": "VITE_APP_ENTRY=admin-finance VITE_ADMIN_FINANCE_DATA_SOURCE=api VITE_ADMIN_FINANCE_RELEASE_SCOPE=full vite build --outDir dist-admin-finance-full-alpha",
+    "test:admin-finance-full-alpha-build": "node scripts/verify-admin-finance-full-alpha-build.mjs",
     "qa:admin-finance-forecast": "node scripts/qa-admin-finance-forecast.mjs",
     "test:marketing-monitor": "node scripts/verify-marketing-dashboard-monitor.mjs && node scripts/verify-marketing-monitor-api.mjs",
     "test:agent-reach": "node scripts/verify-agent-reach-parser.mjs",

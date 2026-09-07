@@ -1,0 +1,4 @@
+services:
+  web:
+    image: ${ATLAS_ADMIN_FINANCE_WEB_IMAGE:?required}
+    build: null

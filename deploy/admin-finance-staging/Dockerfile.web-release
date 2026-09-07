@@ -1,0 +1,6 @@
+FROM nginxinc/nginx-unprivileged:1.27.4-alpine
+
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY site /usr/share/nginx/html
+
+EXPOSE 8080
