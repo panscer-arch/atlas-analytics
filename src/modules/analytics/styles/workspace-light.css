@@ -1,0 +1,56 @@
+/* Same workspace and table geometry; only the shared paint tokens change. */
+.sus-workspace[data-workspace-theme="graphite"][data-color-mode="light"] {
+  color-scheme: light;
+  --g-bg: #edf0f5;
+  --g-panel: #ffffff;
+  --g-raised: #f1f4f9;
+  --g-input: #ffffff;
+  --g-text: #202738;
+  --g-muted: #526078;
+  --g-line: #b5c0d1;
+  --g-accent: #254b97;
+  --g-active: #dde7fa;
+  --g-success: #21603d;
+  --g-success-soft: #e1f2e8;
+  --g-warning: #77501d;
+  --g-warning-soft: #fff0d9;
+  --g-danger: #a02b3d;
+  --g-danger-soft: #fde7eb;
+  --g-backdrop: rgba(20, 28, 42, .5);
+  --sus-ui-focus: 0 0 0 3px #254b9740;
+  --pv-bg: var(--g-bg);
+  --pv-panel: var(--g-panel);
+  --pv-raised: var(--g-raised);
+  --pv-text: var(--g-text);
+  --pv-muted: var(--g-muted);
+  --pv-line: var(--g-line);
+  --pv-accent: var(--g-accent);
+  --pv-active: var(--g-active);
+  --pv-button: var(--g-raised);
+  background: var(--g-bg);
+  color: var(--g-text);
+}
+.sus-workspace[data-color-mode="light"] .sus-content-theme :is(input,textarea,select) { color-scheme: light; }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-header {
+  background: var(--g-panel); border-color: var(--g-line); color: var(--g-text); box-shadow: none;
+}
+.sus-workspace[data-design-preview][data-color-mode="light"] :is(.sus-brand-copy h1,.sus-clock time) { color: var(--g-text); }
+.sus-workspace[data-design-preview][data-color-mode="light"] :is(.sus-brand-copy p,.sus-clock-copy span) { color: var(--g-muted); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .analytics-header-center { border-color: var(--g-line); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-header .analytics-header-tool {
+  background: var(--g-raised); border-color: var(--g-line); color: var(--g-text);
+}
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-header .analytics-header-tool:hover {
+  background: var(--g-active); border-color: var(--g-accent); color: var(--g-text);
+}
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-header .analytics-header-tool-icon svg { color: var(--g-accent); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-clock-rim { fill: var(--g-raised); stroke: var(--g-line); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-clock-tick { stroke: var(--g-muted); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-clock-hour { stroke: var(--g-text); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-clock-minute { stroke: var(--g-accent); }
+.sus-workspace[data-design-preview][data-color-mode="light"] .sus-clock-pin { fill: var(--g-accent); }
+.sus-workspace .sus-theme-toggle { cursor: pointer; }
+.sus-workspace .sus-theme-toggle:focus-visible { outline: 2px solid var(--g-accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .sus-workspace[data-color-mode] .sus-header .analytics-header-tool { transition: none; }
+}
