@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "check:local": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-local-page.mjs",
     "check:boards": "NODE_PATH=/Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/digitex/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/check-analytics-boards.mjs",
+    "check:n8n-preflight": "node scripts/n8n-preflight.mjs --self-test",
     "test:n8n-bundle": "node scripts/verify-n8n-bundle.mjs",
     "open:atlas": "node scripts/open-atlas-browser.mjs",
     "api:content": "node server/content-api.mjs",

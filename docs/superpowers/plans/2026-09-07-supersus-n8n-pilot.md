@@ -162,7 +162,7 @@ Use `execFileSync('ssh', args)` rather than a shell string. The remote command m
 In `ops/n8n/README.md`, document:
 
 1. Run preflight and stop on exit `2`.
-2. Resolve immutable image digests using `docker buildx imagetools inspect` and place digest-pinned references only in the server `.env`.
+2. Resolve immutable image digests using `docker manifest inspect --verbose` and place digest-pinned references only in the server `.env`.
 3. Create `/opt/supersus-n8n` with mode `750`.
 4. Generate both secrets without displaying them and write `.env` with mode `600`.
 5. Validate with `docker compose --env-file .env config --quiet`.
