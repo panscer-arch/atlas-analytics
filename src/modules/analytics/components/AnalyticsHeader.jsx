@@ -1,4 +1,4 @@
-import { Building2, HandCoins, Handshake, LockKeyhole, Megaphone, Radar, TableProperties, UsersRound, Workflow } from "lucide-react";
+import { Building2, HandCoins, Handshake, LockKeyhole, Megaphone, Moon, Radar, Sun, TableProperties, UsersRound, Workflow } from "lucide-react";
 import AnalyticsDateTime from "./AnalyticsDateTime";
 import { HEADER_TOOL_ORDER } from "../data/navigationShell";
 import "../styles/workspace-shell.css";
@@ -31,6 +31,8 @@ function ToolIcon({ type }) {
 }
 
 function AnalyticsHeader({
+  colorMode = "dark",
+  onToggleColorMode,
   onMarketingOsOpen,
   onQuickNotes,
   onHermesOpen,
@@ -112,6 +114,14 @@ function AnalyticsHeader({
       </div>
 
       <div className="analytics-header-center" aria-label="Инструменты SuperSUS">
+        {onToggleColorMode ? (
+          <button type="button" className="analytics-header-tool sus-theme-toggle" onClick={onToggleColorMode}
+            aria-label="Светлая тема" aria-pressed={colorMode === "light"}
+            title={colorMode === "light" ? "Включить тёмную тему" : "Включить светлую тему"}>
+            <span className="analytics-header-tool-icon" aria-hidden="true">{colorMode === "light" ? <Moon size={17} /> : <Sun size={17} />}</span>
+            <span className="analytics-header-tool-label">{colorMode === "light" ? "Тёмная тема" : "Светлая тема"}</span>
+          </button>
+        ) : null}
         {HEADER_TOOL_ORDER.map((toolId) => headerTools[toolId])}
       </div>
 

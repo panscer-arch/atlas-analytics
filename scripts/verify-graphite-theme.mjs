@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import postcss from 'postcss';
+import './verify-workspace-theme.mjs';
 
 assert.ok(existsSync(new URL('../build/graphite-theme.mjs', import.meta.url)), 'Shared graphite palette adapter is implemented');
 const { graphiteCss, graphiteTheme } = await import('../build/graphite-theme.mjs');

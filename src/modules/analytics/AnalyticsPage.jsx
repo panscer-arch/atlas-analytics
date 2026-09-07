@@ -54,6 +54,8 @@ import {
 import "./styles/analytics.css";
 import "./styles/workspace-preview.css";
 import "./styles/graphite-theme.css";
+import "./styles/workspace-light.css";
+import { readWorkspaceTheme, saveWorkspaceTheme } from "./utils/workspaceTheme";
 import { useEffect, useRef, useState } from "react";
 
 const ANALYTICS_BOARD_URL = (import.meta.env.VITE_ANALYTICS_BOARD_URL || "/analytics-board/").trim() || "/analytics-board/";
@@ -126,6 +128,15 @@ function getInitialAnalyticsSectionTab() {
 }
 
 function AnalyticsPage() {
+  const [colorMode, setColorMode] = useState(() => {
+    try { return readWorkspaceTheme(window.localStorage, window.location.search); }
+    catch { return "dark"; }
+  });
+  function toggleColorMode() {
+    const next = colorMode === "light" ? "dark" : "light";
+    setColorMode(next);
+    try { saveWorkspaceTheme(window.localStorage, next); } catch { /* Storage may be disabled. */ }
+  }
   const [designPreview] = useState(() => {
     const value = new URLSearchParams(window.location.search).get("designPreview");
     return value === "platinum" ? "platinum" : "graphite";
@@ -696,7 +707,7 @@ function AnalyticsPage() {
   }
 
   return (
-    <main data-design-preview={designPreview} data-workspace-theme={designPreview} className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
+    <main data-design-preview={designPreview} data-workspace-theme="graphite" data-color-mode={colorMode} className={`analytics-layout sus-workspace${activeTab === "parser" ? " sus-workspace-marketing" : ""}${activeTab === "tables" ? " analytics-layout-tables" : ""}`}>
       {designPreview === "platinum" ? (
         <div className="sus-design-switcher">
           <span>Предпросмотр оформления</span>
@@ -708,6 +719,8 @@ function AnalyticsPage() {
         </div>
       ) : null}
       <AnalyticsHeader
+        colorMode={colorMode}
+        onToggleColorMode={toggleColorMode}
         onMarketingOsOpen={() => handleMainTabChange("marketingOs")}
         onQuickNotes={() => setIsQuickNotesOpen(true)}
         onHermesOpen={() => handleMainTabChange("hermes")}
