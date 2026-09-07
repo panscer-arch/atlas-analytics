@@ -45,7 +45,7 @@
 - Produces: `npm run test:n8n-bundle`, which exits `0` only when the bundle meets the isolation rules.
 - Produces: Compose variables `N8N_IMAGE`, `POSTGRES_IMAGE`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `N8N_ENCRYPTION_KEY`, and `TZ`.
 
-- [ ] **Step 1: Write the failing bundle verifier**
+- [x] **Step 1: Write the failing bundle verifier**
 
 Create `scripts/verify-n8n-bundle.mjs`. It must read `ops/n8n/compose.yaml` and `.env.example`, fail if either is absent, and assert all of the following literal properties:
 
@@ -67,7 +67,7 @@ const forbiddenCompose = [
 
 It must also parse `ops/n8n/workflows/supersus-draft-approval-pilot.json` only when that file exists and reject credential objects, schedule nodes, email nodes, Telegram nodes, social-media nodes, HTTP Request nodes, and Execute Command nodes.
 
-- [ ] **Step 2: Register and run the failing test**
+- [x] **Step 2: Register and run the failing test**
 
 Add this exact script to `package.json`:
 
@@ -79,7 +79,7 @@ Run: `npm run test:n8n-bundle`
 
 Expected: FAIL because `ops/n8n/compose.yaml` and `.env.example` do not exist.
 
-- [ ] **Step 3: Create the minimal isolated Compose bundle**
+- [x] **Step 3: Create the minimal isolated Compose bundle**
 
 Create two services named `postgres` and `n8n`. Use `${POSTGRES_IMAGE}` and `${N8N_IMAGE}`, dedicated `n8n_db_data` and `n8n_app_data` volumes, an internal backend network, and a separate frontend network used only by n8n. Set PostgreSQL health checking with `pg_isready`; make n8n depend on the healthy database. Bind only `127.0.0.1:5678:5678`.
 
@@ -109,13 +109,13 @@ N8N_ENCRYPTION_KEY=
 TZ=Europe/Moscow
 ```
 
-- [ ] **Step 4: Run static verification**
+- [x] **Step 4: Run static verification**
 
 Run: `npm run test:n8n-bundle`
 
 Expected: PASS and a concise JSON summary containing `composeSafe: true` and `workflowChecked: false`.
 
-- [ ] **Step 5: Commit the bundle**
+- [x] **Step 5: Commit the bundle**
 
 ```bash
 git add package.json ops/n8n/compose.yaml ops/n8n/.env.example scripts/verify-n8n-bundle.mjs
@@ -133,7 +133,7 @@ git commit -m "ops: add isolated n8n deployment bundle"
 - Produces: `node scripts/n8n-preflight.mjs --remote root@46.202.153.132 --identity /Users/digitex/.ssh/atlas_analytics_vps`, returning JSON with `passed`, `diskFreeGiB`, `memoryAvailableMiB`, `port5678Free`, `upgradeJobsIdle`, and `existingContainersHealthy`.
 - Consumes: SSH host supplied by the operator and the user's configured SSH identity; the script contains no IP address, username, key path, or credential.
 
-- [ ] **Step 1: Write fixture-driven failing tests inside the preflight script**
+- [x] **Step 1: Write fixture-driven failing tests inside the preflight script**
 
 Implement `--self-test` with three fixed fixtures:
 
@@ -147,17 +147,17 @@ const cases = [
 
 The gate is `diskFreeGiB >= 10`, `memoryAvailableMiB >= 2048`, port 5678 free, no active systemd jobs, and all pre-existing running containers still running with any declared health status equal to `healthy`.
 
-- [ ] **Step 2: Run self-test before remote collection exists**
+- [x] **Step 2: Run self-test before remote collection exists**
 
 Run: `node scripts/n8n-preflight.mjs --self-test`
 
 Expected: FAIL because remote collection and output validation are not implemented.
 
-- [ ] **Step 3: Implement read-only remote collection**
+- [x] **Step 3: Implement read-only remote collection**
 
 Use `execFileSync('ssh', args)` rather than a shell string. The remote command may read `free -m`, `df -Pk /`, `ss -ltn`, `systemctl list-jobs --no-pager`, and `docker ps --format`; it must not run Docker pull/start/stop, package installation, cleanup, resize, reboot, or filesystem writes. Parse the output into the documented JSON interface and exit `2` when the gate fails.
 
-- [ ] **Step 4: Document exact safe operations**
+- [x] **Step 4: Document exact safe operations**
 
 In `ops/n8n/README.md`, document:
 
@@ -175,7 +175,7 @@ In `ops/n8n/README.md`, document:
 
 The runbook must explicitly prohibit copying secrets from terminal history and prohibit `down -v`, prune, global Docker restart, or edits to existing services.
 
-- [ ] **Step 5: Register and run checks**
+- [x] **Step 5: Register and run checks**
 
 Add:
 
@@ -187,7 +187,7 @@ Run: `npm run check:n8n-preflight && npm run test:n8n-bundle`
 
 Expected: both PASS.
 
-- [ ] **Step 6: Commit preflight and runbook**
+- [x] **Step 6: Commit preflight and runbook**
 
 ```bash
 git add package.json scripts/n8n-preflight.mjs ops/n8n/README.md
