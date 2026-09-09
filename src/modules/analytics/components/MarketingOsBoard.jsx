@@ -12,6 +12,7 @@ import {
   Megaphone,
   Radar,
   Save,
+  Sparkles,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -427,6 +428,7 @@ export default function MarketingOsBoard() {
         <div className="marketing-os-hero-state"><span><ShieldCheck size={18} /> Approval-first</span><strong>Внешние действия только после решения человека</strong><small><Save size={14} /> {saveState}</small></div>
       </section>
       <nav className="analytics-surface marketing-os-tabs" role="tablist" aria-label="Разделы MarketingOS">{MARKETING_OS_TABS.map((tab) => { const Icon = TAB_ICONS[tab.id]; return <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => selectTab(tab.id)}><Icon size={17} /><span>{tab.label}</span><small>{tab.id === "approvals" && summary.approvals ? summary.approvals : tab.hint}</small></button>; })}</nav>
+      <a className="analytics-surface marketing-os-library-link" href="/?board=creatorPlatforms"><Sparkles size={18} /><span><strong>UGC и инфлюенсеры</strong><small>Каталог международных и региональных creator-платформ</small></span><ChevronRight size={18} /></a>
       {renderers[activeTab]?.()}
     </div>
   );

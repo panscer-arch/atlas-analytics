@@ -1,6 +1,7 @@
 import AnalyticsBoardEmbed from "./AnalyticsBoardEmbed";
 import AnalyticsSectionPanel from "./AnalyticsSectionPanel";
 import CrmDashboardTab from "./CrmDashboardTab";
+import CreatorPlatformsBoard from "./CreatorPlatformsBoard";
 import ExpensesBoard from "./ExpensesBoard";
 import HermesAssistantBoard from "./HermesAssistantBoard";
 import LaunchChecklistSection from "./LaunchChecklistSection";
@@ -117,9 +118,10 @@ export default function AnalyticsMainPanel({
   }
 
   if (activeTab === "marketingOs") {
+    const boardId = typeof window === "undefined" ? "" : new URL(window.location.href).searchParams.get("board");
     return (
       <Wrapper as="section" marginTop="lg">
-        <MarketingOsBoard />
+        {boardId === "creatorPlatforms" ? <CreatorPlatformsBoard /> : <MarketingOsBoard />}
       </Wrapper>
     );
   }

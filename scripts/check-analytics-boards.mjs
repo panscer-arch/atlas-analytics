@@ -31,6 +31,7 @@ const checks = [
   { id: "marketing-os", path: "/?board=marketingOS", text: "MarketingOS" },
   { id: "dashboard-legacy", path: "/?board=dashboard", text: "Marketing Dashboard" },
   { id: "products-legacy", path: "/?board=products", text: "Кто за что отвечает" },
+  { id: "creator-platforms", path: "/?board=creatorPlatforms", text: "UGC и инфлюенсеры", waitForText: true },
   { id: "diary", path: "/?board=diary", text: "Код доступа" },
 
   { id: "tasks-launch", path: "/?board=launch", text: "Задачи запуска" },
@@ -111,6 +112,10 @@ async function runCheck(page, check) {
   try {
     await page.goto(url, { waitUntil, timeout });
     await page.waitForTimeout(Number(args.settleMs || 550));
+
+    if (check.waitForText) {
+      await page.getByText(check.text, { exact: false }).first().waitFor({ timeout });
+    }
 
     if (check.clickSelector) {
       await page.locator(check.clickSelector).first().click({ timeout });

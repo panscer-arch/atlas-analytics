@@ -116,6 +116,22 @@
   color: #dffdf8;
 }
 
+.marketing-os-library-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.8rem 0.9rem;
+  border-color: rgba(114, 239, 214, 0.2);
+  color: #9ff6e5;
+  text-decoration: none;
+}
+
+.marketing-os-library-link > span { display: grid; gap: 0.18rem; }
+.marketing-os-library-link strong { color: #fff; font-size: 0.86rem; }
+.marketing-os-library-link small { color: rgba(185, 204, 225, 0.68); font-size: 0.72rem; font-weight: 700; }
+.marketing-os-library-link:hover { border-color: rgba(114, 239, 214, 0.42); background: rgba(114, 239, 214, 0.055); }
+
 .marketing-os-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

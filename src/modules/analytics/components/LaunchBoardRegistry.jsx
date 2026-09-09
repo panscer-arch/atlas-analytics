@@ -190,6 +190,7 @@ export function getAnalyticsTabForBoard(boardId) {
   if (boardId === "influencers" || boardId === "marketing-influencers") return "parser";
   if (boardId === "listings") return "parser";
   if (boardId === "marketingOS") return "marketingOs";
+  if (boardId === "creatorPlatforms") return "marketingOs";
   if (boardId === "analytics" || boardId.startsWith("analytics-") || boardId === "contractBalances" || boardId === "contracts") return "analytics";
   if (boardId === "parser" || boardId.startsWith("marketing-") || boardId === "hyipParser" || boardId === "atlasCreatives" || boardId === "reelsCampaign" || boardId === "utmBuilder" || boardId === "telegramParser" || boardId === "influencers" || boardId === "instagramInfluencers" || boardId === "youtubeApiSearch" || boardId === "bitnestYoutube" || boardId === "articlePlacement" || boardId === "marketSegments" || boardId === "regionalHiring" || boardId === "mlmLeaders" || boardId === "mlmGateway" || boardId === "segmentOutreach" || boardId === "socialParser" || boardId === "web3Segments" || boardId === "poolMonitor") return "parser";
   if (boardId === "taskMonitor") return "taskMonitor";
