@@ -1,7 +1,22 @@
 name: Sync Gate Memory to Hermes
 
+run-name: Gate memory ${{ inputs.sync_id || github.run_id }}
+
 on:
   workflow_dispatch:
+    inputs:
+      part_count:
+        description: Number of encrypted bundle parts (1-16); empty for legacy
+        required: false
+        type: string
+      bundle_sha256:
+        description: SHA-256 of the reconstructed archive
+        required: false
+        type: string
+      sync_id:
+        description: Client correlation ID
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -17,23 +32,89 @@ jobs:
       - name: Validate and decode encrypted memory bundle
         shell: bash
         env:
-          GATE_HERMES_MEMORY_B64: ${{ secrets.GATE_HERMES_MEMORY_B64 }}
+          PART_COUNT: ${{ inputs.part_count }}
+          BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+          LEGACY_BUNDLE: ${{ secrets.GATE_HERMES_MEMORY_B64 }}
+          PART_01: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_01 }}
+          PART_02: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_02 }}
+          PART_03: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_03 }}
+          PART_04: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_04 }}
+          PART_05: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_05 }}
+          PART_06: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_06 }}
+          PART_07: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_07 }}
+          PART_08: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_08 }}
+          PART_09: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_09 }}
+          PART_10: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_10 }}
+          PART_11: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_11 }}
+          PART_12: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_12 }}
+          PART_13: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_13 }}
+          PART_14: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_14 }}
+          PART_15: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_15 }}
+          PART_16: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_16 }}
         run: |
           set -euo pipefail
-          test -n "$GATE_HERMES_MEMORY_B64"
-          printf '%s' "$GATE_HERMES_MEMORY_B64" | base64 --decode > /tmp/gate-memory.tar.gz
-          mkdir -p /tmp/gate-memory-check
-          tar -tzf /tmp/gate-memory.tar.gz > /tmp/gate-memory-files.txt
-          if grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/gate-memory-files.txt; then
-            echo "Unsafe archive path"
-            exit 1
-          fi
-          if grep -Evq '^(\./)?[A-Za-z0-9._-]+\.md$' /tmp/gate-memory-files.txt; then
-            echo "Bundle must contain top-level Markdown files only"
-            exit 1
-          fi
-          tar -xzf /tmp/gate-memory.tar.gz -C /tmp/gate-memory-check
-          test -f /tmp/gate-memory-check/_SYNC_MANIFEST.md
+          umask 077
+          python3 - <<'PYVALIDATE'
+          import base64, hashlib, io, os, pathlib, re, tarfile
+          
+          count_text = os.environ.get("PART_COUNT", "")
+          if count_text:
+              if not re.fullmatch(r"[0-9]+", count_text):
+                  raise SystemExit("Invalid part count")
+              count = int(count_text)
+              if not 1 <= count <= 16:
+                  raise SystemExit("Invalid part count")
+              parts = [os.environ.get(f"PART_{i:02d}", "") for i in range(1, count + 1)]
+              if any(not part or len(part) > 49000 for part in parts):
+                  raise SystemExit("Missing or oversized bundle part")
+              encoded = "".join(parts)
+          else:
+              encoded = os.environ.get("LEGACY_BUNDLE", "")
+          if not encoded:
+              raise SystemExit("Empty bundle")
+          try:
+              archive = base64.b64decode(encoded, validate=True)
+          except ValueError:
+              raise SystemExit("Invalid bundle encoding")
+          if count_text:
+              expected = os.environ.get("BUNDLE_SHA256", "")
+              if not re.fullmatch(r"[0-9a-f]{64}", expected) or hashlib.sha256(archive).hexdigest() != expected:
+                  raise SystemExit("Bundle checksum mismatch; no files installed")
+          root = pathlib.Path("/tmp/gate-memory-check")
+          root.mkdir(mode=0o700, exist_ok=True)
+          with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
+              members = tar.getmembers()
+              names = set()
+              total = 0
+              for member in members:
+                  name = member.name.removeprefix("./")
+                  if not member.isfile() or not re.fullmatch(r"[A-Za-z0-9._-]+\.md", name) or name in names:
+                      raise SystemExit("Unsafe or duplicate archive member")
+                  names.add(name)
+                  total += member.size
+                  if total > 50_000_000:
+                      raise SystemExit("Unpacked bundle too large")
+              if "_SYNC_MANIFEST.md" not in names:
+                  raise SystemExit("Missing manifest")
+              if count_text and "_SYNC_SHA256.md" not in names:
+                  raise SystemExit("Missing checksums")
+              for member in members:
+                  (root / member.name.removeprefix("./")).write_bytes(tar.extractfile(member).read())
+          if count_text:
+              checked = set()
+              for line in (root / "_SYNC_SHA256.md").read_text().splitlines():
+                  match = re.fullmatch(r"([0-9a-f]{64})  \./([A-Za-z0-9._-]+\.md)", line)
+                  if not match:
+                      raise SystemExit("Invalid checksum manifest")
+                  digest, name = match.groups()
+                  if name not in names or name in checked or hashlib.sha256((root / name).read_bytes()).hexdigest() != digest:
+                      raise SystemExit("File checksum mismatch")
+                  checked.add(name)
+              if checked != names - {"_SYNC_SHA256.md"}:
+                  raise SystemExit("Incomplete checksum manifest")
+          pathlib.Path("/tmp/gate-memory.tar.gz").write_bytes(archive)
+          print(f"Validated {len(names)} Markdown files; archive SHA-256 {hashlib.sha256(archive).hexdigest()}")
+          PYVALIDATE
 
       - name: Configure SSH
         shell: bash
@@ -74,5 +155,9 @@ jobs:
           done
           test "$found" -eq 1
           sudo test -f /opt/hermes/files/gate/_SYNC_MANIFEST.md
+          if test -f "$staging_dir/_SYNC_SHA256.md"; then
+            sudo bash -c 'cd /opt/hermes/files/gate && sha256sum --check --quiet _SYNC_SHA256.md'
+            echo 'Installed Markdown checksums verified'
+          fi
           sudo find /opt/hermes/files/gate -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sort
           REMOTE
