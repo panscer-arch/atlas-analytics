@@ -65,7 +65,7 @@ jobs:
               if not 1 <= count <= 16:
                   raise SystemExit("Invalid part count")
               parts = [os.environ.get(f"PART_{i:02d}", "") for i in range(1, count + 1)]
-              if any(not part or len(part) > 49000 for part in parts):
+              if any(not part or len(part) > 32000 for part in parts):
                   raise SystemExit("Missing or oversized bundle part")
               encoded = "".join(parts)
           else:
