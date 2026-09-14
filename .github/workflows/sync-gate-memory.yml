@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       part_count:
-        description: Number of encrypted bundle parts (1-16); empty for legacy
+        description: Number of encrypted bundle parts (1-32); empty for legacy
         required: false
         type: string
       bundle_sha256:
@@ -51,6 +51,22 @@ jobs:
           PART_14: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_14 }}
           PART_15: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_15 }}
           PART_16: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_16 }}
+          PART_17: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_17 }}
+          PART_18: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_18 }}
+          PART_19: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_19 }}
+          PART_20: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_20 }}
+          PART_21: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_21 }}
+          PART_22: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_22 }}
+          PART_23: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_23 }}
+          PART_24: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_24 }}
+          PART_25: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_25 }}
+          PART_26: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_26 }}
+          PART_27: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_27 }}
+          PART_28: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_28 }}
+          PART_29: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_29 }}
+          PART_30: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_30 }}
+          PART_31: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_31 }}
+          PART_32: ${{ secrets.GATE_HERMES_MEMORY_B64_PART_32 }}
         run: |
           set -euo pipefail
           umask 077
@@ -62,7 +78,7 @@ jobs:
               if not re.fullmatch(r"[0-9]+", count_text):
                   raise SystemExit("Invalid part count")
               count = int(count_text)
-              if not 1 <= count <= 16:
+              if not 1 <= count <= 32:
                   raise SystemExit("Invalid part count")
               parts = [os.environ.get(f"PART_{i:02d}", "") for i in range(1, count + 1)]
               if any(not part or len(part) > 32000 for part in parts):
