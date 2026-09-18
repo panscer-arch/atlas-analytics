@@ -5,6 +5,7 @@ export const MAIN_NAV_TABS = [
   { id: "analytics", label: "Аналитика" },
   { id: "tasks", label: "Задачи" },
   { id: "content", label: "Контент" },
+  { id: "reels", label: "Ролики" },
 ];
 
 export const MAIN_TAB_BOARD_IDS = {
@@ -16,6 +17,7 @@ export const MAIN_TAB_BOARD_IDS = {
   expenses: "expenses",
   tasks: "launch",
   content: "materials",
+  reels: "reels",
   hermes: "hermesAssistant",
   diary: "diary",
   team: "team",

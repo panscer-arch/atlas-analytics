@@ -23,8 +23,8 @@ const {
 assert.equal(DEFAULT_MAIN_TAB, "parser", "Marketing must be the default workspace.");
 assert.deepEqual(
   MAIN_NAV_TABS.map((tab) => tab.id),
-  ["parser", "analytics", "tasks", "content"],
-  "The main navigation must contain only the four approved workspaces.",
+  ["parser", "analytics", "tasks", "content", "reels"],
+  "The main navigation must contain the approved workspaces in order.",
 );
 assert.deepEqual(
   HEADER_TOOL_ORDER,

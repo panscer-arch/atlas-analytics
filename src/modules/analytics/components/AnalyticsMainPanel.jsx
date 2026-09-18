@@ -8,6 +8,7 @@ import LaunchChecklistSection from "./LaunchChecklistSection";
 import LifeDiaryBoard from "./LifeDiaryBoard";
 import MarketingOsBoard from "./MarketingOsBoard";
 import ParserWorkspacePanel from "./ParserWorkspacePanel";
+import ReelLibraryBoard from "./ReelLibraryBoard";
 import SocialSubscriptionsBoard from "./SocialSubscriptionsBoard";
 import TeamGraphBoard from "./TeamGraphBoard";
 import TablesBoard from "./TablesBoard";
@@ -108,6 +109,9 @@ export default function AnalyticsMainPanel({
     );
   }
   if (activeTab === "content") return <LaunchChecklistSection mode="content" analyticsBoardUrl={analyticsBoardUrl} />;
+  if (activeTab === "reels") {
+    return <Wrapper as="section" marginTop="lg"><ReelLibraryBoard /></Wrapper>;
+  }
 
   if (activeTab === "parser") {
     return (

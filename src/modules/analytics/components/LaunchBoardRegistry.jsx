@@ -182,6 +182,7 @@ export const TASK_BOARD_IDS = [
 ];
 
 export function getAnalyticsTabForBoard(boardId) {
+  if (boardId === "reels") return "reels";
   if (!boardId) return DEFAULT_MAIN_TAB;
   if (LEGACY_PRIMARY_TAB_REDIRECTS[boardId]) return LEGACY_PRIMARY_TAB_REDIRECTS[boardId];
   if (boardId === "sessionQueue") return "session";
