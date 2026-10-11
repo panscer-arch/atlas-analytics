@@ -27,6 +27,7 @@ import VideoGeneratorBoard from "./VideoGeneratorBoard";
 import VideoScriptsBoard from "./VideoScriptsBoard";
 import WhitePaperBoard from "./WhitePaperBoard";
 import Wrapper from "./Wrapper";
+import Web3PrinciplesBoard from "./Web3PrinciplesBoard";
 import { DEFAULT_MAIN_TAB, LEGACY_PRIMARY_TAB_REDIRECTS } from "../data/navigationShell";
 
 const TASK_CATEGORY_STORAGE_PREFIX = "atlas.analytics.taskCategoryChecklist";
@@ -131,6 +132,7 @@ export const CONTENT_BOARD_TABS = [
   { id: "toolRadar", label: "Радар инструментов" },
   { id: "terminology", label: "Терминология" },
   { id: "localization", label: "Локализация" },
+  { id: "web3Principles", label: "Принципы Web3" },
   { id: "securityReview", label: "Security Review" },
   { id: "codexSystem", label: "Codex OS" },
 ];
@@ -168,6 +170,7 @@ export const STATIC_CONTENT_BOARD_IDS = [
   "videoGenerator",
   "terminology",
   "localization",
+  "web3Principles",
   "securityReview",
   "codexSystem",
 ];
@@ -342,6 +345,10 @@ export const STATIC_BOARD_META = {
     title: "Security Review",
     description: "Внутренняя проверка smart-contract: взломоустойчивость, owner-полномочия, Transport, LP-риски и публичные формулировки.",
   },
+  web3Principles: {
+    title: "Принципы Web3",
+    description: "Шесть принципов GATE для обсуждения прозрачности и устойчивости проекта на смарт-контрактах.",
+  },
   codexSystem: {
     title: "Codex OS",
     description: "Суперсистема работы с Codex: PRD, маленькие задачи, review-loop, security gate, refactoring и автоматизации.",
@@ -390,6 +397,7 @@ const STATIC_BOARD_RENDERERS = {
   terminology: () => <AgentTerminologyTemplate />,
   localization: () => <LocalizationBibleBoard />,
   securityReview: () => <SecurityReviewBoard />,
+  web3Principles: () => <Web3PrinciplesBoard />,
   codexSystem: () => <CodexSystemBoard />,
   dailyTasks: () => <DailyTasksBoard />,
   launchCalendar: () => <LaunchCalendarBoard />,

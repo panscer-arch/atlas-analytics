@@ -1,0 +1,29 @@
+.web3-principles {
+  display: grid;
+  gap: 16px;
+  max-width: 1100px;
+  margin-inline: auto;
+  color: var(--g-text, #e8edf4);
+}
+
+.web3-principles .analytics-surface { padding: clamp(20px, 3vw, 32px); }
+.web3-principles h2 { margin: 16px 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.25; }
+.web3-principles h3 { margin: 0 0 14px; font-size: 20px; line-height: 1.4; }
+.web3-principles h4 { margin: 24px 0 12px; }
+.web3-principles p { margin: 0 0 16px; line-height: 1.75; }
+.web3-principles p:last-child { margin-bottom: 0; }
+.web3-principles a { color: var(--g-accent, #b8c7dd); text-underline-offset: 4px; }
+.web3-principles a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.web3-principles-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--g-muted, #a5afbd); }
+.web3-principles-meta [data-slot="badge"] { height: auto; padding: 6px 10px; border: 1px solid var(--g-line, #404752); border-radius: 8px; }
+.web3-principles-download { display: inline-flex; padding: 10px 16px; border: 1px solid var(--g-line, #404752); border-radius: 10px; text-decoration: none; }
+.web3-principles-index ol, .web3-principles-footer ul { margin-bottom: 0; padding-left: 24px; }
+.web3-principles-index li, .web3-principles-footer li { padding: 5px 0; line-height: 1.6; }
+.web3-principles-card { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 20px; scroll-margin-top: 24px; }
+.web3-principles-number { color: var(--g-muted, #a5afbd); font-size: 24px; font-weight: 700; }
+.web3-principles-meaning { padding-top: 16px; border-top: 1px solid var(--g-line, #404752); }
+
+@media (max-width: 600px) {
+  .web3-principles-card { grid-template-columns: 1fr; gap: 10px; }
+  .web3-principles h3 { font-size: 18px; }
+}
