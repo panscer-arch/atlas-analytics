@@ -8,15 +8,12 @@ import {
 import { loadServerContent, saveServerContent } from "../services/contentStore";
 
 const STATUS_OPTIONS = ["Активно искать", "Готовить angle", "Фильтровать", "Запас", "Пауза"];
-const ALLOWED_ATLAS_FIT = new Set(["Высокая", "Очень высокая"]);
 
 function hydrateSegments(savedRows, seedRows) {
   if (!Array.isArray(savedRows) || !savedRows.length) return seedRows;
 
   const seedById = new Map(seedRows.map((row) => [row.id, row]));
-  const hydrated = savedRows
-    .map((row) => ({ ...(seedById.get(row.id) || {}), ...row }))
-    .filter((row) => ALLOWED_ATLAS_FIT.has(row.atlasFit));
+  const hydrated = savedRows.map((row) => ({ ...(seedById.get(row.id) || {}), ...row }));
   const savedIds = new Set(hydrated.map((row) => row.id));
   const missingRows = seedRows.filter((row) => !savedIds.has(row.id));
   return [...hydrated, ...missingRows];
